@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { memo } from "react";
 import Image from "next/image";
 import { QuickRegisterForm } from "./QuickRegisterForm";
 
@@ -8,11 +8,11 @@ interface HeroSectionProps {
   onLoginClick?: () => void;
 }
 
-export const HeroSection: React.FC<HeroSectionProps> = ({ onLoginClick }) => {
+const HeroSectionComponent: React.FC<HeroSectionProps> = ({ onLoginClick }) => {
   return (
-    <section className="relative w-full overflow-hidden bg-stone-950 text-white flex flex-col justify-center items-center min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-4.5rem)]">
-      {/* Background Couples Collage Grid (Confined strictly to Hero Section) */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden="true">
+    <section className="relative w-full overflow-hidden [clip-path:inset(0)] bg-stone-950 text-white flex flex-col justify-center items-center min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-4.5rem)]">
+      {/* Background Couples Collage Grid (Fixed to Viewport, Clipped strictly to Hero Section) */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <Image
           src="/images/couples-collage.jpg"
           alt="Happy Sindhi Wedding Couples and Newlyweds"
@@ -88,4 +88,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onLoginClick }) => {
     </section>
   );
 };
+
+export const HeroSection = memo(HeroSectionComponent);
+HeroSection.displayName = "HeroSection";
 

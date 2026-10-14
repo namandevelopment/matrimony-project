@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { memo } from "react";
 import {
   MedalRibbonIcon,
   InterlockedRingsIcon,
@@ -13,7 +13,7 @@ interface TrustBadgesProps {
   communityName?: string;
 }
 
-export const TrustBadges: React.FC<TrustBadgesProps> = ({
+const TrustBadgesComponent: React.FC<TrustBadgesProps> = ({
   communityName = "Sindhis",
 }) => {
   const badges = [
@@ -87,3 +87,6 @@ export const TrustBadges: React.FC<TrustBadgesProps> = ({
     </section>
   );
 };
+
+export const TrustBadges = memo(TrustBadgesComponent);
+TrustBadges.displayName = "TrustBadges";
