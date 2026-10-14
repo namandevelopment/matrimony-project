@@ -73,3 +73,95 @@ h1, h2, h3, h4, h5, h6 {
   background: transparent;
 }
 
+/* Subtle Floating Chat Micro-Animations */
+@keyframes chatGentleWave {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  20%, 60% {
+    transform: rotate(14deg);
+  }
+  40%, 80% {
+    transform: rotate(-10deg);
+  }
+}
+
+@keyframes chatGentleFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes chatPulseRing {
+  0% {
+    transform: scale(0.96);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 0.15;
+  }
+  100% {
+    transform: scale(0.96);
+    opacity: 0.7;
+  }
+}
+
+@keyframes chatBubbleSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes chatTypingBounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-chat-wave {
+  animation: chatGentleWave 2.2s ease-in-out infinite;
+  transform-origin: 70% 70%;
+  display: inline-block;
+}
+
+.animate-chat-float {
+  animation: chatGentleFloat 3.8s ease-in-out infinite;
+}
+
+.animate-chat-ring {
+  animation: chatPulseRing 2.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-chat-bubble {
+  animation: chatBubbleSlideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-typing-1 {
+  animation: chatTypingBounce 1.4s infinite ease-in-out both;
+  animation-delay: 0s;
+}
+
+.animate-typing-2 {
+  animation: chatTypingBounce 1.4s infinite ease-in-out both;
+  animation-delay: 0.2s;
+}
+
+.animate-typing-3 {
+  animation: chatTypingBounce 1.4s infinite ease-in-out both;
+  animation-delay: 0.4s;
+}
+

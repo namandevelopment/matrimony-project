@@ -7,6 +7,7 @@ import { TrustBadges } from "./components/TrustBadges";
 import { AboutSection } from "./components/AboutSection";
 import { Footer } from "./components/Footer";
 import { LoginModal } from "./components/LoginModal";
+import { FloatingChatWidget } from "@/components";
 
 const LandingScreenComponent: React.FC = () => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -44,6 +45,9 @@ const LandingScreenComponent: React.FC = () => {
         isOpen={isLoginModalOpen}
         onClose={handleCloseLoginModal}
       />
+
+      {/* 7. Floating Customer Support Chat Widget (Smooth & Isolated State) */}
+      <FloatingChatWidget />
     </div>
   );
 };
