@@ -32,7 +32,10 @@ matrimony-project/
 │
 ├── sindhiMatrimonyBackhend/                   # Backend API Services & Database Logics
 │
-├── sindhiMatrimonyUser/                       # User Portal Frontend
+├── sindhiMatrimonyUserPanel/                  # User Portal & Public Landing Web App (Next.js 16 + React 19 + Tailwind v4)
+│   ├── src/                                   # Screens, Components, Modals, Hooks
+│   ├── package.json
+│   └── next.config.ts
 │
 ├── docs/                                      # Operational & Architecture Guides
 │   ├── ADMIN_OPERATIONS_AND_GOVERNANCE_ARCHITECTURE.md
@@ -41,6 +44,28 @@ matrimony-project/
 │
 └── *.md                                       # High-level architecture specification files
 ```
+
+---
+
+## 🌐 Live Deployments
+
+### User Panel (Public Web Portal)
+- **Status:** 🟢 Live in Production
+- **Live URL:** [https://sindhi-matrimony-user-panel.vercel.app](https://sindhi-matrimony-user-panel.vercel.app)
+- **Platform:** Vercel (Hobby)
+- **Account:** `namandevelopment-9594` (`naman.development@gmail.com`)
+- **Project Name:** `sindhi-matrimony-user-panel`
+- **Framework:** Next.js (App Router, Turbopack)
+- **Root Directory:** `sindhiMatrimonyUserPanel`
+- **Public Routes:**
+  - `/` - Main Landing Page (Hero, Trust Badges, About, Footer, Login/Register Modal)
+  - `/terms-and-conditions` - SEO-optimized Terms & Conditions
+  - `/privacy-policy` - Privacy Policy Screen
+- **Deploy Command:**
+  ```bash
+  cd sindhiMatrimonyUserPanel
+  npx vercel --prod
+  ```
 
 ---
 
