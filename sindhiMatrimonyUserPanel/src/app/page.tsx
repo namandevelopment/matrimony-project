@@ -3,15 +3,13 @@ import { LandingScreen } from "@/screens/landingScreen";
 import {
   createMetadata,
   JsonLd,
-  generateOrganizationSchema,
-  generateWebSiteSchema,
   generateServiceSchema,
 } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "No. 1 Sindhi Matrimony Service | Official Sindhi Marriage Portal",
+  title: "Sindhi Matrimony – Find Your Perfect Sindhi Life Partner",
   description:
-    "Register Free on SindhiMatrimony.com - The official & most trusted matchmaking portal exclusively for Sindhis worldwide. 1 Lakh+ verified profiles, 2 Lakh+ success stories.",
+    "Discover Sindhi matrimonial profiles and connect with compatible life partners from the Sindhi community. Explore meaningful matches with SindhiMatrimony.",
   canonicalPath: "/",
   keywords: [
     "Sindhi Matrimony",
@@ -24,20 +22,19 @@ export const metadata: Metadata = createMetadata({
     "Lohana Matrimony",
     "Sahiti Sindhi",
     "Larkana Sindhi",
-    "Free Matrimony Registration",
+    "Sindhi NRI Matrimony",
     "Verified Sindhi Profiles",
   ],
 });
 
 export default function Home() {
-  const organizationSchema = generateOrganizationSchema();
-  const webSiteSchema = generateWebSiteSchema();
   const serviceSchema = generateServiceSchema();
 
   return (
     <>
-      <JsonLd data={[organizationSchema, webSiteSchema, serviceSchema]} />
+      <JsonLd data={[serviceSchema]} />
       <LandingScreen />
     </>
   );
 }
+

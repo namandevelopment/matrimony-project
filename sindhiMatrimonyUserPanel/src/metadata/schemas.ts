@@ -11,18 +11,9 @@ export function generateOrganizationSchema() {
     "@id": `${siteConfig.url}/#organization`,
     name: siteConfig.name,
     url: siteConfig.url,
-    logo: `${siteConfig.url}/logo.png`,
+    logo: `${siteConfig.url}${siteConfig.logo}`,
     description: siteConfig.description,
     email: siteConfig.links.supportEmail,
-    telephone: siteConfig.links.supportPhone,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: siteConfig.address.street,
-      addressLocality: siteConfig.address.city,
-      addressRegion: siteConfig.address.state,
-      postalCode: siteConfig.address.postalCode,
-      addressCountry: siteConfig.address.country,
-    },
     sameAs: [
       siteConfig.links.facebook,
       siteConfig.links.instagram,
@@ -97,7 +88,7 @@ export function generateServiceSchema() {
   return {
     "@context": "https://schema.org",
     "@type": "Service",
-    serviceType: "Matrimonial and Matchmaking Services",
+    serviceType: "Sindhi Matrimonial and Matchmaking Services",
     provider: {
       "@id": `${siteConfig.url}/#organization`,
     },
@@ -105,24 +96,11 @@ export function generateServiceSchema() {
       "@type": "Country",
       name: "India",
     },
-    hasOfferCatalog: {
-      "@type": "OfferCatalog",
-      name: "Sindhi Matrimony Membership Plans",
-      itemListElement: [
-        {
-          "@type": "Offer",
-          itemOffered: {
-            "@type": "Service",
-            name: "Free Registration",
-            description: "Create profile, browse matches, and receive interest requests",
-          },
-          price: "0",
-          priceCurrency: "INR",
-        },
-      ],
-    },
+    description:
+      "Online matrimonial and matchmaking services connecting eligible brides and grooms from the Sindhi community.",
   };
 }
+
 
 /**
  * Generates WebPage Schema for static, legal, or informational pages

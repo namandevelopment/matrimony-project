@@ -3,7 +3,6 @@ import { TermsAndCondition } from "@/screens/termsAndCondition";
 import {
   createMetadata,
   JsonLd,
-  generateOrganizationSchema,
   generateWebPageSchema,
   generateBreadcrumbSchema,
 } from "@/metadata";
@@ -27,7 +26,6 @@ export const metadata: Metadata = createMetadata({
 });
 
 export default function TermsAndConditionsPage() {
-  const organizationSchema = generateOrganizationSchema();
   const webPageSchema = generateWebPageSchema({
     title: "Terms and Conditions & Service Agreement | SindhiMatrimony.com",
     description:
@@ -43,7 +41,7 @@ export default function TermsAndConditionsPage() {
 
   return (
     <>
-      <JsonLd data={[organizationSchema, webPageSchema, breadcrumbSchema]} />
+      <JsonLd data={[webPageSchema, breadcrumbSchema]} />
       <TermsAndCondition />
     </>
   );

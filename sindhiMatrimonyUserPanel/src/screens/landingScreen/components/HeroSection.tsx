@@ -28,44 +28,20 @@ const HeroSectionComponent: React.FC<HeroSectionProps> = ({ onLoginClick }) => {
 
       {/* Main Hero Container: fills full viewport height so on initial view there is zero bottom gap */}
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 md:py-14 lg:py-16 flex flex-col items-center justify-center flex-1">
-        {/* DESKTOP HERO CARD (Matching Photo 5) */}
-        <div className="hidden lg:flex flex-col items-center text-center w-full max-w-6xl bg-black/40 backdrop-blur-[1px] border border-white/20 rounded-2xl p-8 sm:p-10 shadow-2xl animate-fade-in my-auto">
-          <h1 className="text-2xl lg:text-[28px] xl:text-[33px] 2xl:text-[36px] font-extrabold text-white tracking-tight leading-snug drop-shadow-md lg:whitespace-nowrap">
-            No. 1 and official matrimony service exclusively for Sindhis
-          </h1>
-          <p className="mt-2 text-lg sm:text-xl text-stone-200 font-medium drop-shadow-xs">
-            Meet your soulmate here!
-          </p>
-
-          <div className="mt-8 w-full">
-            <QuickRegisterForm variant="desktop" />
-          </div>
-        </div>
-
-        {/* TABLET VIEW */}
-        <div className="hidden sm:flex lg:hidden flex-col items-center text-center w-full max-w-2xl bg-black/45 backdrop-blur-[1px] border border-white/20 rounded-2xl p-6 sm:p-8 shadow-2xl my-auto">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-snug">
-            No. 1 and official matrimony service exclusively for Sindhis
-          </h1>
-          <p className="mt-2 text-base text-stone-200 font-medium">
-            Meet your soulmate here!
-          </p>
-          <div className="mt-6 w-full">
-            <QuickRegisterForm variant="mobile" />
-          </div>
-        </div>
-
-        {/* MOBILE VIEW (Matching Photos 3 & 4) */}
-        <div className="sm:hidden w-full flex flex-col items-center py-4">
-          {/* Mobile Dark Banner */}
-          <div className="w-full bg-black/45 backdrop-blur-[1px] border border-white/20 rounded-xl p-5 shadow-xl mb-4 text-center">
-            <h1 className="text-xl font-extrabold text-white tracking-tight leading-snug">
+        {/* Unified Responsive Hero Card */}
+        <div className="w-full max-w-full sm:max-w-2xl lg:max-w-6xl mx-auto flex flex-col items-center text-center my-auto">
+          {/* Main Card / Banner */}
+          <div className="w-full bg-black/45 lg:bg-black/40 backdrop-blur-[1px] border border-white/20 rounded-xl sm:rounded-2xl p-5 sm:p-8 lg:p-10 shadow-xl sm:shadow-2xl animate-fade-in mb-4 sm:mb-0">
+            {/* Single Canonical H1 for SEO & Accessibility across all viewports */}
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-[28px] xl:text-[33px] 2xl:text-[36px] font-extrabold text-white tracking-tight leading-snug drop-shadow-md lg:whitespace-nowrap">
               No. 1 and official matrimony service exclusively for Sindhis
             </h1>
-            <p className="mt-1.5 text-sm text-stone-200 font-medium">
+            <p className="mt-1.5 sm:mt-2 text-sm sm:text-base lg:text-xl text-stone-200 font-medium drop-shadow-xs">
               Meet your soulmate here!
             </p>
-            <div className="mt-3 pt-2.5 border-t border-white/20">
+
+            {/* Mobile login prompt (only on mobile screens) */}
+            <div className="sm:hidden mt-3 pt-2.5 border-t border-white/20">
               <span className="text-xs text-stone-300">
                 Already a member?{" "}
                 <button
@@ -77,10 +53,20 @@ const HeroSectionComponent: React.FC<HeroSectionProps> = ({ onLoginClick }) => {
                 </button>
               </span>
             </div>
+
+            {/* Desktop Form (>= 1024px) */}
+            <div className="hidden lg:block mt-8 w-full">
+              <QuickRegisterForm variant="desktop" />
+            </div>
+
+            {/* Tablet Form (640px - 1023px) */}
+            <div className="hidden sm:block lg:hidden mt-6 w-full">
+              <QuickRegisterForm variant="mobile" />
+            </div>
           </div>
 
-          {/* Mobile Registration Card Form - seamless with zero empty gap */}
-          <div className="w-full">
+          {/* Mobile Registration Card Form (< 640px) */}
+          <div className="sm:hidden w-full">
             <QuickRegisterForm variant="mobile" />
           </div>
         </div>

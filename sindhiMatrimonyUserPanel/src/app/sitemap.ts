@@ -1,76 +1,51 @@
 import { MetadataRoute } from "next";
 import { siteConfig } from "@/metadata";
 
+/**
+ * Production Sitemap Generator for SindhiMatrimony
+ * Adheres strictly to Google Search Console best practices:
+ * - Only includes valid, existing, 200-OK canonical URLs.
+ * - Does not include pending/unimplemented routes or 404s.
+ * - Does not include private/auth/member dashboard routes.
+ */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = siteConfig.url;
 
-  // Core static public routes
-  const staticRoutes: MetadataRoute.Sitemap = [
+  // Currently developed & publicly indexable canonical routes
+  const routes: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: "daily",
+      lastModified: new Date("2026-10-14T00:00:00.000Z"),
+      changeFrequency: "weekly",
       priority: 1.0,
     },
     {
-      url: `${baseUrl}/about-us`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/success-stories`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/faq`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
-      url: `${baseUrl}/contact-us`,
-      lastModified: new Date(),
+      url: `${baseUrl}/terms-and-conditions`,
+      lastModified: new Date("2026-10-14T00:00:00.000Z"),
       changeFrequency: "monthly",
       priority: 0.5,
     },
     {
-      url: `${baseUrl}/terms-and-conditions`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
       url: `${baseUrl}/privacy-policy`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-10-14T00:00:00.000Z"),
       changeFrequency: "monthly",
-      priority: 0.6,
+      priority: 0.5,
     },
   ];
 
-  // High intent programmatic landing pages for Sindhi community
-  const targetCities = [
-    "mumbai",
-    "delhi",
-    "ahmedabad",
-    "jaipur",
-    "pune",
-    "indore",
-    "bhopal",
-    "vadodara",
-    "surat",
-    "bangalore",
-    "dubai",
-  ];
+  /*
+   * ARCHITECTURAL NOTE FOR FUTURE EXPANSION:
+   * When future public routes (e.g. About Us, City landing pages, Sindhi sub-caste pages)
+   * are implemented, import their slug arrays or query their DB models and append them here:
+   *
+   * Example:
+   * const futureRoutes: MetadataRoute.Sitemap = [
+   *   { url: `${baseUrl}/about-us`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
+   *   ...cityPages.map(city => ({ url: `${baseUrl}/sindhi-matrimony-${city.slug}`, ... })),
+   * ];
+   * return [...routes, ...futureRoutes];
+   */
 
-  const cityRoutes: MetadataRoute.Sitemap = targetCities.map((city) => ({
-    url: `${baseUrl}/sindhi-matrimony-${city}`,
-    lastModified: new Date(),
-    changeFrequency: "weekly",
-    priority: 0.8,
-  }));
-
-  return [...staticRoutes, ...cityRoutes];
+  return routes;
 }
+

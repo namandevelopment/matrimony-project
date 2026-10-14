@@ -30,16 +30,18 @@ export function createMetadata(options: MetadataOptions = {}): Metadata {
     new Set([...siteConfig.keywords, ...keywords])
   );
 
+  // Prevent duplicate branding in title if title already includes site name
+  const computedTitle = title
+    ? title.includes(siteConfig.name) || title.includes(siteConfig.shortName)
+      ? title
+      : `${title} | ${siteConfig.name}`
+    : `${siteConfig.name} – Find Your Perfect Sindhi Life Partner`;
+
   return {
-    title: title
-      ? {
-          default: `${title} | ${siteConfig.name}`,
-          template: `%s | ${siteConfig.name}`,
-        }
-      : {
-          default: `${siteConfig.name} - Find Your Perfect Life Partner`,
-          template: `%s | ${siteConfig.name}`,
-        },
+    title: {
+      default: computedTitle,
+      template: `%s | ${siteConfig.name}`,
+    },
     description,
     keywords: mergedKeywords,
     authors: (authors || [siteConfig.author]).map((name) => ({ name })),
@@ -49,8 +51,13 @@ export function createMetadata(options: MetadataOptions = {}): Metadata {
     alternates: {
       canonical: canonicalUrl,
     },
+    icons: {
+      icon: "/favicon.ico",
+      shortcut: "/favicon.ico",
+      apple: "/favicon.ico",
+    },
     openGraph: {
-      title: title ? `${title} | ${siteConfig.name}` : siteConfig.name,
+      title: computedTitle,
       description,
       url: canonicalUrl,
       siteName: siteConfig.name,
@@ -69,7 +76,7 @@ export function createMetadata(options: MetadataOptions = {}): Metadata {
     },
     twitter: {
       card: "summary_large_image",
-      title: title ? `${title} | ${siteConfig.name}` : siteConfig.name,
+      title: computedTitle,
       description,
       images: [imageUrl],
       creator: "@sindhimatrimony",

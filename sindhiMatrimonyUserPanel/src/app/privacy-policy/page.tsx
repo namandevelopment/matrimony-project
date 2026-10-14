@@ -3,7 +3,6 @@ import { PrivacyPolicy } from "@/screens/privacyPolicy";
 import {
   createMetadata,
   JsonLd,
-  generateOrganizationSchema,
   generateWebPageSchema,
   generateBreadcrumbSchema,
 } from "@/metadata";
@@ -26,7 +25,6 @@ export const metadata: Metadata = createMetadata({
 });
 
 export default function PrivacyPolicyPage() {
-  const organizationSchema = generateOrganizationSchema();
   const webPageSchema = generateWebPageSchema({
     title: "Privacy Policy & Personal Data Protection | SindhiMatrimony.com",
     description:
@@ -42,7 +40,7 @@ export default function PrivacyPolicyPage() {
 
   return (
     <>
-      <JsonLd data={[organizationSchema, webPageSchema, breadcrumbSchema]} />
+      <JsonLd data={[webPageSchema, breadcrumbSchema]} />
       <PrivacyPolicy />
     </>
   );
