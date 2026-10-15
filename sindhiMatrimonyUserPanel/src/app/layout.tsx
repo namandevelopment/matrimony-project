@@ -7,6 +7,7 @@ import {
   generateOrganizationSchema,
   generateWebSiteSchema,
 } from "@/metadata";
+import { ReactScan } from "@/components/ReactScan";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -42,6 +43,7 @@ export default function RootLayout({
         <JsonLd data={[organizationSchema, webSiteSchema]} />
       </head>
       <body className="antialiased font-sans" suppressHydrationWarning>
+        {process.env.NODE_ENV === "development" && <ReactScan />}
         {children}
       </body>
     </html>

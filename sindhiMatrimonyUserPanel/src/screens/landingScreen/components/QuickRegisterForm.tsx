@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronDown, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { QuickRegisterFormData } from "../types";
 
@@ -220,6 +221,7 @@ export const QuickRegisterForm: React.FC<QuickRegisterFormProps> = ({
   variant,
   onSuccess,
 }) => {
+  const router = useRouter();
   const [formData, setFormData] = useState<QuickRegisterFormData>({
     profileFor: "",
     name: "",
@@ -278,11 +280,31 @@ export const QuickRegisterForm: React.FC<QuickRegisterFormProps> = ({
     if (!validate()) return;
 
     setIsLoading(true);
+
+    const cleanNumber = formData.mobileNumber.replace(/\D/g, "");
+
+    // Persist registration draft in sessionStorage for reliability
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem("sindhi_reg_draft", JSON.stringify(formData));
+      } catch {
+        // Safe fallback
+      }
+    }
+
+    if (onSuccess) onSuccess(formData);
+
+    const params = new URLSearchParams({
+      mobile: cleanNumber,
+      code: formData.countryCode || "+91",
+      name: formData.name.trim(),
+      for: formData.profileFor || "Myself",
+    });
+
+    // Seamless navigation to registration OTP verification screen
     setTimeout(() => {
-      setIsLoading(false);
-      setIsSuccess(true);
-      if (onSuccess) onSuccess(formData);
-    }, 900);
+      router.push(`/registration/otp?${params.toString()}`);
+    }, 350);
   };
 
   if (isSuccess) {

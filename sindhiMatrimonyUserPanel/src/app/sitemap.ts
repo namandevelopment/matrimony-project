@@ -31,6 +31,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.5,
     },
+    {
+      url: `${baseUrl}/safety-tips`,
+      lastModified: new Date("2026-10-14T00:00:00.000Z"),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
   ];
 
   /*
