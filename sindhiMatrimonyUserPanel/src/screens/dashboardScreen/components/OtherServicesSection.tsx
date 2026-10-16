@@ -126,6 +126,7 @@ const OtherServicesSectionComponent: React.FC<OtherServicesSectionProps> = ({
                   alt="AstroFreeChat"
                   className="w-full h-full object-cover"
                   loading="lazy"
+                  decoding="async"
                 />
                 <div className="absolute -bottom-1 -left-1 bg-gradient-to-r from-[#FF4D5A] to-[#DC2626] text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-xs tracking-wider">
                   1st chat FREE

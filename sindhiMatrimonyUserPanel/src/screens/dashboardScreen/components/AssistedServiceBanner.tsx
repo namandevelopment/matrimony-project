@@ -97,6 +97,7 @@ const AssistedServiceBannerComponent: React.FC<AssistedServiceBannerProps> = ({
             alt="Relationship Manager"
             className="relative z-10 w-52 sm:w-60 h-64 sm:h-80 object-cover object-top rounded-2xl shadow-2xl border border-emerald-400/20 transition-transform duration-300 hover:scale-[1.02]"
             loading="lazy"
+            decoding="async"
           />
         </div>
       </div>

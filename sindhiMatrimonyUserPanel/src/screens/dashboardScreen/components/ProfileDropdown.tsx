@@ -42,6 +42,8 @@ const DropdownUserInfo = memo<{ user: UserProfile }>(({ user }) => {
             src={user.avatarUrl}
             alt={user.name}
             className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
           />
         ) : (
           <MaleSilhouetteAvatar className="w-full h-full" />
@@ -291,6 +293,8 @@ const ProfileDropdownComponent: React.FC<ProfileDropdownProps> = ({
               src={user.avatarUrl}
               alt={user.name}
               className="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
             />
           ) : (
             <MaleSilhouetteAvatar className="w-full h-full" />

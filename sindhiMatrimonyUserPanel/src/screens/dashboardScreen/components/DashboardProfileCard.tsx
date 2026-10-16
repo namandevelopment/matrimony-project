@@ -57,6 +57,8 @@ const DashboardProfileCardComponent: React.FC<DashboardProfileCardProps> = ({
                 src={user.avatarUrl}
                 alt={user.name}
                 className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
               />
             ) : (
               <MaleSilhouetteAvatar className="w-full h-full" />

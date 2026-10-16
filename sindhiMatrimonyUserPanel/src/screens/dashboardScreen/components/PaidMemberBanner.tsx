@@ -93,6 +93,7 @@ const PaidMemberBannerComponent: React.FC<PaidMemberBannerProps> = ({
             alt="Sindhi Matrimony Member"
             className="relative z-10 w-auto h-60 sm:h-72 object-contain object-bottom drop-shadow-sm transition-transform duration-300 hover:scale-[1.02]"
             loading="lazy"
+            decoding="async"
           />
         </div>
       </div>

@@ -50,6 +50,7 @@ const ViewedProfileCard = memo<{ profile: ViewedProfile }>(({ profile }) => {
           alt={profile.name}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           loading="lazy"
+          decoding="async"
         />
         <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/25 to-transparent pointer-events-none" />
       </div>
