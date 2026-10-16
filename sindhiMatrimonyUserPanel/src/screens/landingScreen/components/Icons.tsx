@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 
 interface IconProps {
   className?: string;
@@ -7,7 +7,7 @@ interface IconProps {
 }
 
 // 1. Two connected figures / loving couple heart symbol (Matrimony Logo style)
-export const MatrimonyHeartLogo: React.FC<IconProps> = ({
+export const MatrimonyHeartLogo = memo<IconProps>(({
   className = "w-10 h-10",
   size = 40,
   color = "#DB2F3C",
@@ -42,10 +42,11 @@ export const MatrimonyHeartLogo: React.FC<IconProps> = ({
       strokeLinecap="round"
     />
   </svg>
-);
+));
+MatrimonyHeartLogo.displayName = "MatrimonyHeartLogo";
 
 // 2. 10+ years of service ribbon medal (Photo 2 Badge 1)
-export const MedalRibbonIcon: React.FC<IconProps> = ({
+export const MedalRibbonIcon = memo<IconProps>(({
   className = "w-12 h-12",
   size = 48,
   color = "#FF4A57",
@@ -98,10 +99,11 @@ export const MedalRibbonIcon: React.FC<IconProps> = ({
       strokeLinejoin="round"
     />
   </svg>
-);
+));
+MedalRibbonIcon.displayName = "MedalRibbonIcon";
 
 // 3. 2 Lakh+ people interlocked wedding rings (Photo 2 Badge 2)
-export const InterlockedRingsIcon: React.FC<IconProps> = ({
+export const InterlockedRingsIcon = memo<IconProps>(({
   className = "w-12 h-12",
   size = 48,
   color = "#FF4A57",
@@ -164,10 +166,11 @@ export const InterlockedRingsIcon: React.FC<IconProps> = ({
       strokeLinecap="round"
     />
   </svg>
-);
+));
+InterlockedRingsIcon.displayName = "InterlockedRingsIcon";
 
 // 4. Growth Champions Trophy Cup (Photo 2 Badge 3)
-export const TrophyStarIcon: React.FC<IconProps> = ({
+export const TrophyStarIcon = memo<IconProps>(({
   className = "w-12 h-12",
   size = 48,
   color = "#FF4A57",
@@ -218,10 +221,11 @@ export const TrophyStarIcon: React.FC<IconProps> = ({
       strokeLinecap="round"
     />
   </svg>
-);
+));
+TrophyStarIcon.displayName = "TrophyStarIcon";
 
 // 5. 100% Verified Profiles Shield (Photo 2 Badge 4)
-export const VerifiedShieldIcon: React.FC<IconProps> = ({
+export const VerifiedShieldIcon = memo<IconProps>(({
   className = "w-12 h-12",
   size = 48,
   color = "#FF4A57",
@@ -262,10 +266,11 @@ export const VerifiedShieldIcon: React.FC<IconProps> = ({
       strokeLinejoin="round"
     />
   </svg>
-);
+));
+VerifiedShieldIcon.displayName = "VerifiedShieldIcon";
 
 // 6. 130+ branches Location Pin (Photo 2 Badge 5)
-export const LocationBranchIcon: React.FC<IconProps> = ({
+export const LocationBranchIcon = memo<IconProps>(({
   className = "w-12 h-12",
   size = 48,
   color = "#FF4A57",
@@ -297,4 +302,5 @@ export const LocationBranchIcon: React.FC<IconProps> = ({
       strokeLinecap="round"
     />
   </svg>
-);
+));
+LocationBranchIcon.displayName = "LocationBranchIcon";

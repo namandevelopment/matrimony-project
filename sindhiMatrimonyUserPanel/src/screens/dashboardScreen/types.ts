@@ -37,9 +37,30 @@ export interface DashboardNavTab {
 
 export type DashboardMode = "regular" | "prime";
 
+export interface ViewedProfile {
+  id: string;
+  name: string;
+  age: number;
+  height: string;
+  viewedDate: string;
+  photoUrl: string;
+}
+
+export interface MarriageSuccessStory {
+  id: string;
+  coupleNames: string;
+  photoUrl: string;
+  postedDate?: string;
+  testimonial?: string;
+  storySnippet?: string;
+}
+
 export interface DashboardScreenProps {
   initialUser?: UserProfile;
   initialMatches?: MatchProfile[];
+  initialViewedProfiles?: ViewedProfile[];
+  initialSuccessStories?: MarriageSuccessStory[];
   onLogout?: () => void;
   onUpgradeClick?: () => void;
+  onAssistedServiceClick?: () => void;
 }

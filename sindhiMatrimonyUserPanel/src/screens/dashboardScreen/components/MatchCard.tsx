@@ -14,10 +14,10 @@ const MatchCardComponent: React.FC<MatchCardProps> = ({ profile, className = "" 
   return (
     <Link
       href={`/matches/${profile.id}`}
-      className={`group shrink-0 w-36 sm:w-40 flex flex-col bg-white rounded-xl overflow-hidden transition-all duration-200 hover:shadow-md cursor-pointer ${className}`}
+      className={`group shrink-0 w-36 sm:w-40 flex flex-col bg-white rounded-2xl overflow-hidden transition-all duration-200 hover:shadow-md cursor-pointer ${className}`}
     >
       {/* Profile Photo / Silhouette Container */}
-      <div className="relative w-full h-44 sm:h-48 rounded-xl overflow-hidden bg-stone-100 border border-stone-200">
+      <div className="relative w-full h-44 sm:h-48 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 shadow-2xs">
         {profile.photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img

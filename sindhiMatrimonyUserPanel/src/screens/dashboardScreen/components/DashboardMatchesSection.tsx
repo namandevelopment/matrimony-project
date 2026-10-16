@@ -15,40 +15,40 @@ export interface DashboardMatchesSectionProps {
 const defaultMatches: MatchProfile[] = [
   {
     id: "snd-1",
-    name: "Shivangi Tiwari",
-    age: 25,
+    name: "Aisha Pandit",
+    age: 24,
     height: "4'6\"",
     city: "Mumbai",
-    photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
+    isSilhouette: true,
   },
   {
     id: "snd-2",
-    name: "Vaishnavi Sharma",
-    age: 22,
-    height: "4'6\"",
+    name: "S Sreyashi",
+    age: 25,
+    height: "4'7\"",
     city: "Pune",
-    photoUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80",
+    isSilhouette: true,
   },
   {
     id: "snd-3",
-    name: "Aisha Pandit",
-    age: 24,
+    name: "Kajal Kumari",
+    age: 26,
     height: "4'6\"",
     city: "Ahmedabad",
     isSilhouette: true,
   },
   {
     id: "snd-4",
-    name: "S Sreyashi",
-    age: 25,
-    height: "4'7\"",
+    name: "Hsarfrajg",
+    age: 26,
+    height: "4'6\"",
     city: "Delhi",
     isSilhouette: true,
   },
   {
     id: "snd-5",
-    name: "Kajal Kumari",
-    age: 25,
+    name: "Kamal",
+    age: 24,
     height: "4'6\"",
     city: "Jaipur",
     isSilhouette: true,
@@ -56,18 +56,10 @@ const defaultMatches: MatchProfile[] = [
   {
     id: "snd-6",
     name: "Simran Motwani",
-    age: 26,
+    age: 25,
     height: "5'2\"",
     city: "Bangalore",
-    photoUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "snd-7",
-    name: "Pooja Vazirani",
-    age: 24,
-    height: "5'3\"",
-    city: "Indore",
-    photoUrl: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500&auto=format&fit=crop&q=80",
+    photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
   },
 ];
 
@@ -143,7 +135,7 @@ const DashboardMatchesSectionComponent: React.FC<DashboardMatchesSectionProps> =
       <div className="flex justify-center pt-3 border-t border-stone-100">
         <Link
           href="/matches"
-          className="inline-flex items-center justify-center px-8 py-2 rounded-full border border-[#DB2F3C] text-xs sm:text-sm font-semibold text-[#DB2F3C] hover:bg-red-50 active:scale-[0.98] transition-all duration-200"
+          className="inline-flex items-center justify-center px-10 py-2 rounded-full border border-[#DB2F3C] text-xs sm:text-sm font-semibold text-[#DB2F3C] hover:bg-gradient-to-r hover:from-[#FF4D5A] hover:via-[#DB2F3C] hover:to-[#B71F2A] hover:text-white hover:border-transparent active:scale-[0.98] shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer"
         >
           View all &gt;
         </Link>

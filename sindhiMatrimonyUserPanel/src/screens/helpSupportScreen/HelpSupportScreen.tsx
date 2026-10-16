@@ -16,7 +16,6 @@ import { HelpFAQSection } from "./components/HelpFAQSection";
 import { HelpTicketForm } from "./components/HelpTicketForm";
 import { HelpOfficeDetails } from "./components/HelpOfficeDetails";
 import { HelpFooter } from "./components/HelpFooter";
-import { FloatingChatWidget } from "@/components/FloatingChatWidget";
 
 export const HelpSupportScreen: React.FC = React.memo(() => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -115,9 +114,6 @@ export const HelpSupportScreen: React.FC = React.memo(() => {
 
       {/* 3. Footer */}
       <HelpFooter />
-
-      {/* 4. Floating Customer Chat Widget */}
-      <FloatingChatWidget />
     </div>
   );
 });

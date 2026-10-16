@@ -27,7 +27,7 @@ const DashboardModeSwitcherComponent: React.FC<DashboardModeSwitcherProps> = ({
           onClick={() => onModeChange("regular")}
           className={`px-5 py-1.5 rounded-full text-xs sm:text-[13px] font-semibold transition-all duration-200 cursor-pointer ${
             currentMode === "regular"
-              ? "bg-[#DB2F3C] text-white shadow-xs"
+              ? "bg-gradient-to-r from-[#FF525F] via-[#DB2F3C] to-[#B71F2A] text-white shadow-xs"
               : "text-[#555555] hover:text-[#1A1A1A]"
           }`}
         >
@@ -40,12 +40,12 @@ const DashboardModeSwitcherComponent: React.FC<DashboardModeSwitcherProps> = ({
           onClick={() => onModeChange("prime")}
           className={`px-5 py-1.5 rounded-full text-xs sm:text-[13px] font-semibold transition-all duration-200 cursor-pointer flex items-center gap-1 ${
             currentMode === "prime"
-              ? "bg-[#DB2F3C] text-white shadow-xs"
+              ? "bg-gradient-to-r from-[#FF525F] via-[#DB2F3C] to-[#B71F2A] text-white shadow-xs"
               : "text-[#555555] hover:text-[#1A1A1A]"
           }`}
         >
           <span>PRIME</span>
-          <span className="text-[#DB2F3C] text-xs font-bold leading-none">*</span>
+          <span className={`${currentMode === "prime" ? "text-white" : "text-[#DB2F3C]"} text-xs font-bold leading-none`}>*</span>
         </button>
       </div>
     </div>

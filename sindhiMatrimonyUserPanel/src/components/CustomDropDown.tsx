@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo, useCallback, forwardRef } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback, forwardRef, memo } from "react";
 import { ChevronDown, ChevronUp, Search, AlertCircle, Check } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -39,7 +39,7 @@ export interface CustomDropDownProps {
   size?: "sm" | "md" | "lg";
 }
 
-export const CustomDropDown = forwardRef<HTMLDivElement, CustomDropDownProps>(
+const CustomDropDownComponent = forwardRef<HTMLDivElement, CustomDropDownProps>(
   (
     {
       id,
@@ -313,5 +313,8 @@ export const CustomDropDown = forwardRef<HTMLDivElement, CustomDropDownProps>(
     );
   }
 );
+CustomDropDownComponent.displayName = "CustomDropDownComponent";
 
+export const CustomDropDown = memo(CustomDropDownComponent);
 CustomDropDown.displayName = "CustomDropDown";
+export default CustomDropDown;

@@ -9,8 +9,13 @@ import {
   ProfileCompletenessCard,
   DashboardMatchesSection,
   PaidMemberBanner,
+  AssistedServiceBanner,
+  ProfilesViewedSection,
+  HappyMarriagesSection,
+  OtherServicesSection,
+  HelpContactBanner,
+  DashboardFooter,
 } from "./components";
-import { FloatingChatWidget } from "@/components";
 import type {
   UserProfile,
   DashboardNavTab,
@@ -23,14 +28,17 @@ const defaultUserProfile: UserProfile = {
   matrimonyId: "SND4517087",
   community: "SindhiMatrimony",
   membershipStatus: "Free member",
-  completenessScore: 41,
+  completenessScore: 42,
 };
 
 const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
   initialUser = defaultUserProfile,
   initialMatches,
+  initialViewedProfiles,
+  initialSuccessStories,
   onLogout,
   onUpgradeClick,
+  onAssistedServiceClick,
 }) => {
   const router = useRouter();
   const [user] = useState<UserProfile>(initialUser);
@@ -53,6 +61,14 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
     }
   }, [onUpgradeClick, router]);
 
+  const handleAssistedService = useCallback(() => {
+    if (onAssistedServiceClick) {
+      onAssistedServiceClick();
+    } else {
+      router.push("/subscription?plan=assisted");
+    }
+  }, [onAssistedServiceClick, router]);
+
   const handleLogoutAction = useCallback(() => {
     if (onLogout) {
       onLogout();
@@ -72,47 +88,66 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
         onUpgradeClick={handleUpgrade}
       />
 
-      {/* 2. Mode Switcher (Regular vs PRIME*) */}
-      <div className="bg-white border-b border-stone-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <DashboardModeSwitcher
-            currentMode={mode}
-            onModeChange={handleModeChange}
-          />
-        </div>
+      {/* 2. Sub-Header Mode Switcher (Regular vs PRIME*) */}
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-1">
+        <DashboardModeSwitcher
+          currentMode={mode}
+          onModeChange={handleModeChange}
+        />
       </div>
 
-      {/* 3. Main Dashboard Body (2 Columns Layout) */}
+      {/* 3. Main Dashboard Body (2 Columns Responsive Layout) */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="flex flex-col lg:flex-row items-start gap-6">
-          {/* Left Column: Sidebar with Profile Card & Navigation */}
+          {/* Left Column: Sidebar with Profile Card, Peach Promo & Settings */}
           <DashboardSidebar
             user={user}
             onUpgradeClick={handleUpgrade}
           />
 
-          {/* Right Column: Profile Completeness + Matches Carousel + Upgrade Offer Banner */}
+          {/* Right Column: All Member Sections */}
           <div className="flex-1 w-full min-w-0 space-y-6">
-            {/* Complete Your Profile (Completeness Score & 3 Action Tiles) */}
+            {/* 1. Complete Your Profile (Completeness Score & 3 Action Tiles) */}
             <ProfileCompletenessCard score={user.completenessScore} />
 
-            {/* All Matches (28) Horizontal Carousel */}
+            {/* 2. All Matches (23) Horizontal Carousel */}
             <DashboardMatchesSection
               matches={initialMatches}
-              totalMatchesCount={28}
+              totalMatchesCount={23}
             />
 
-            {/* Become a Paid Member 71% OFF Banner */}
+            {/* 3. Become a Paid Member 71% OFF Banner */}
             <PaidMemberBanner
               discountPercent={71}
               onUpgradeClick={handleUpgrade}
             />
+
+            {/* 4. Assisted Service Luxury Banner (3X Faster with Relationship Manager) */}
+            <AssistedServiceBanner
+              onGetAssistedService={handleAssistedService}
+            />
+
+            {/* 5. Profiles You Viewed (3) */}
+            <ProfilesViewedSection
+              profiles={initialViewedProfiles}
+            />
+
+            {/* 6. Lakhs of Happy Marriages! (Limca Book of Records & View Success Stories) */}
+            <HappyMarriagesSection
+              stories={initialSuccessStories}
+            />
+
+            {/* 7. Matrimony.com - Other Services (AstroFreeChat, Mandap.com, WeddingBazaar) */}
+            <OtherServicesSection />
+
+            {/* 8. Need help in using SindhiMatrimony? (Call now & Chat with us) */}
+            <HelpContactBanner />
           </div>
         </div>
       </main>
 
-      {/* 4. Bottom Right Floating Support Chat / Feedback Widget with badge */}
-      <FloatingChatWidget />
+      {/* 4. Full-Width Footer with About Us, Other Services, Help, Quick Links, Limca badge & Socials */}
+      <DashboardFooter />
     </div>
   );
 };

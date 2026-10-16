@@ -23,12 +23,12 @@ const ActionTile = memo<ActionTileProps>(({ icon, label, href }) => {
   return (
     <Link
       href={href}
-      className="flex-1 min-w-[130px] p-3 sm:p-4 rounded-xl border border-stone-200 bg-white hover:border-[#DB2F3C]/40 hover:shadow-md transition-all duration-200 flex items-center gap-3 group cursor-pointer"
+      className="flex-1 min-w-[140px] p-3.5 sm:p-4 rounded-2xl border border-stone-200/90 bg-white hover:border-[#DB2F3C]/50 hover:shadow-sm active:scale-[0.99] transition-all duration-200 flex items-center gap-3.5 group cursor-pointer"
     >
       <div className="shrink-0 transition-transform duration-200 group-hover:scale-105">
         {icon}
       </div>
-      <span className="text-xs sm:text-sm font-semibold text-[#1A1A1A] group-hover:text-[#DB2F3C] transition-colors leading-snug">
+      <span className="text-xs sm:text-[13px] font-bold text-[#1A1A1A] group-hover:text-[#DB2F3C] transition-colors leading-snug">
         {label}
       </span>
     </Link>
@@ -37,7 +37,7 @@ const ActionTile = memo<ActionTileProps>(({ icon, label, href }) => {
 ActionTile.displayName = "ActionTile";
 
 const ProfileCompletenessCardComponent: React.FC<ProfileCompletenessCardProps> = ({
-  score = 41,
+  score = 42,
   className = "",
 }) => {
   return (

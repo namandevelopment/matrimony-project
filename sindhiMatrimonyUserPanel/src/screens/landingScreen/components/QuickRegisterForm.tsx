@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, memo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronDown, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
@@ -32,7 +32,7 @@ interface ProfileForDropdownProps {
   variant: "desktop" | "mobile";
 }
 
-const ProfileForDropdown: React.FC<ProfileForDropdownProps> = ({
+const ProfileForDropdown = memo<ProfileForDropdownProps>(({
   value,
   onChange,
   error,
@@ -215,9 +215,10 @@ const ProfileForDropdown: React.FC<ProfileForDropdownProps> = ({
       </div>
     </div>
   );
-};
+});
+ProfileForDropdown.displayName = "ProfileForDropdown";
 
-export const QuickRegisterForm: React.FC<QuickRegisterFormProps> = ({
+const QuickRegisterFormComponent: React.FC<QuickRegisterFormProps> = ({
   variant,
   onSuccess,
 }) => {
@@ -595,3 +596,7 @@ export const QuickRegisterForm: React.FC<QuickRegisterFormProps> = ({
     </div>
   );
 };
+
+export const QuickRegisterForm = memo(QuickRegisterFormComponent);
+QuickRegisterForm.displayName = "QuickRegisterForm";
+export default QuickRegisterForm;

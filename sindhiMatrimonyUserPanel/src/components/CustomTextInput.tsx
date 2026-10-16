@@ -1,6 +1,6 @@
 "use client";
 
-import React, { forwardRef, useId, useState } from "react";
+import React, { forwardRef, useId, useState, memo } from "react";
 import { Eye, EyeOff, AlertCircle, X } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -53,7 +53,7 @@ export interface CustomTextInputProps
   helperClassName?: string;
 }
 
-export const CustomTextInput = forwardRef<HTMLInputElement, CustomTextInputProps>(
+const CustomTextInputComponent = forwardRef<HTMLInputElement, CustomTextInputProps>(
   (
     {
       id,
@@ -319,7 +319,9 @@ export const CustomTextInput = forwardRef<HTMLInputElement, CustomTextInputProps
     );
   }
 );
+CustomTextInputComponent.displayName = "CustomTextInputComponent";
 
+export const CustomTextInput = memo(CustomTextInputComponent);
 CustomTextInput.displayName = "CustomTextInput";
 
 export default CustomTextInput;
