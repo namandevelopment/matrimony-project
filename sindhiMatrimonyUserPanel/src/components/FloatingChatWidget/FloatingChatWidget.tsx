@@ -12,8 +12,7 @@ import {
   ShieldCheck,
   ExternalLink,
   ThumbsUp,
-  Smile,
-  Paperclip,
+  AlertTriangle,
 } from "lucide-react";
 import type { ChatMessage, QuickSuggestion, FloatingChatWidgetProps } from "./types";
 
@@ -25,7 +24,7 @@ const DEFAULT_SUGGESTIONS: QuickSuggestion[] = [
     response:
       "You can browse thousands of verified profiles by Sub-caste (Bhaiband, Amil, Lohana, Sahiti, etc.), City, Education, and Horoscope. Register for free to start viewing matches!",
     actionLabel: "Browse Matches",
-    actionUrl: "#browse-matches",
+    actionUrl: "/dashboard",
   },
   {
     id: "membership",
@@ -34,14 +33,25 @@ const DEFAULT_SUGGESTIONS: QuickSuggestion[] = [
     response:
       "Our Premium Membership includes direct contact views, personalized matchmaker assistance, verified contact numbers, and priority profile placement.",
     actionLabel: "View Plans",
-    actionUrl: "#plans",
+    actionUrl: "https://wa.me/918769530667?text=Hello%20Sindhi%20Matrimony%2C%20please%20share%20plans",
   },
   {
-    id: "verify",
-    label: "🛡️ Profile Verification",
-    query: "How is profile verification done?",
+    id: "registration",
+    label: "📝 Free Registration",
+    query: "Registration kaise kare?",
     response:
-      "All profiles undergo a strict 2-step verification process including Government ID check and phone number verification to ensure 100% genuine Sindhi matches.",
+      "Sindhi Matrimony par registration bilkul 100% free aur aasan hai. Kewal 4 steps me apni profile create karein!",
+    actionLabel: "Start Free Registration",
+    actionUrl: "/registration/basic-info",
+  },
+  {
+    id: "gotra",
+    label: "🕉️ Gotra & Sub-caste",
+    query: "Gotra aur Sub-caste kaise search karein?",
+    response:
+      "Aap Bhaiband, Amil, Lohana, Sahiti aadi sub-castes aur apne Gotra (Nukh) ke anusaar compatible profiles filter kar sakte hain.",
+    actionLabel: "Filter by Gotra",
+    actionUrl: "/dashboard",
   },
   {
     id: "whatsapp",
@@ -76,17 +86,35 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
       sender: "support",
       text: initialGreeting,
       timestamp: "Just now",
+      suggestedQuestions: [
+        "Free Registration Kaise Kare?",
+        "Find Compatible Sindhi Matches",
+        "Membership Plans & Fees",
+        "Talk to Relationship Manager",
+      ],
     },
   ]);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const botTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMountedRef = useRef<boolean>(true);
+
+  // Clean up all pending timers on unmount to guarantee zero memory leaks
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (botTimerRef.current) {
+        clearTimeout(botTimerRef.current);
+      }
+    };
+  }, []);
 
   // Auto-scroll inside chat box only (never affects page window scroll)
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
-
 
   useEffect(() => {
     if (isOpen) {
@@ -97,10 +125,16 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
     }
   }, [isOpen, messages, scrollToBottom]);
 
+  // Pre-load the bot engine lazily in idle time or on user interaction
+  const prefetchBotEngine = useCallback(() => {
+    import("./chatBotEngine").catch(() => {});
+  }, []);
+
   const handleToggle = useCallback(() => {
     setIsOpen((prev) => {
       const nextState = !prev;
       if (nextState) {
+        prefetchBotEngine();
         setHasUnread(false);
         setIsTeaserDismissed(true);
         try {
@@ -114,7 +148,7 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
       }
       return nextState;
     });
-  }, [onOpen, onClose]);
+  }, [onOpen, onClose, prefetchBotEngine]);
 
   const handleDismissTeaser = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -142,40 +176,54 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
       if (!textToSend) setInputText("");
       setIsTyping(true);
 
-      // Subtle bot reply after 700ms simulation
-      setTimeout(() => {
-        setIsTyping(false);
-        const lower = query.toLowerCase();
+      // Clear any pending reply timer before starting a new one
+      if (botTimerRef.current) {
+        clearTimeout(botTimerRef.current);
+      }
 
-        let replyText =
-          "Thank you for reaching out! Our Sindhi relationship manager is reviewing your query. You can also connect with us directly on WhatsApp for immediate assistance.";
-        let actionLabel = "Chat on WhatsApp";
-        let actionUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-          `Hi Sindhi Matrimony, I asked: ${query}`
-        )}`;
+      // Bot response based on intelligent knowledge base & moderation (Lazy Loaded)
+      botTimerRef.current = setTimeout(async () => {
+        try {
+          const { getBotResponse } = await import("./chatBotEngine");
+          if (!isMountedRef.current) return;
+          const botResult = getBotResponse(query, { whatsappNumber });
 
-        if (lower.includes("price") || lower.includes("cost") || lower.includes("plan") || lower.includes("membership")) {
-          replyText =
-            "We have flexible Premium Plans offering direct contact numbers, horoscope matching, and personal relationship managers. Click below to view plan details or chat with our team.";
-          actionLabel = "View Plans on WhatsApp";
-        } else if (lower.includes("match") || lower.includes("profile") || lower.includes("register")) {
-          replyText =
-            "Registration is completely free! You can search profiles by gotra, education, city, and sub-caste with 100% privacy control.";
-          actionLabel = "Register / Connect Now";
+          const botReply: ChatMessage = {
+            id: `support-${Date.now()}`,
+            sender: "support",
+            text: botResult.text,
+            timestamp: "Just now",
+            actionType: botResult.actionType,
+            actionUrl: botResult.actionUrl,
+            actionLabel: botResult.actionLabel,
+            suggestedQuestions: botResult.suggestedQuestions,
+            isAbusiveWarning: botResult.isAbusiveWarning,
+          };
+
+          if (isMountedRef.current) {
+            setMessages((prev) => [...prev, botReply]);
+          }
+        } catch {
+          if (isMountedRef.current) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: `support-${Date.now()}`,
+                sender: "support",
+                text: "Namaste! 🙏 Hamare Sindhi Relationship Manager se seedhe WhatsApp par baat karein:",
+                timestamp: "Just now",
+                actionType: "whatsapp",
+                actionUrl: `https://wa.me/${whatsappNumber}?text=Namaste%2C%20I%20need%20assistance`,
+                actionLabel: "Chat on WhatsApp",
+              },
+            ]);
+          }
+        } finally {
+          if (isMountedRef.current) {
+            setIsTyping(false);
+          }
         }
-
-        const botReply: ChatMessage = {
-          id: `support-${Date.now()}`,
-          sender: "support",
-          text: replyText,
-          timestamp: "Just now",
-          actionType: "whatsapp",
-          actionUrl,
-          actionLabel,
-        };
-
-        setMessages((prev) => [...prev, botReply]);
-      }, 750);
+      }, 650);
     },
     [inputText, whatsappNumber]
   );
@@ -187,10 +235,15 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
     [handleSendMessage]
   );
 
+  // IME-safe enter-to-submit handling
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
+        // Block submission if IME composition is active (Chinese/Japanese/Hindi virtual typing)
+        if (e.nativeEvent.isComposing || e.keyCode === 229) {
+          return;
+        }
         handleSendMessage();
       }
     },
@@ -216,7 +269,7 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
           }`}
         style={{ willChange: "transform, opacity" }}
       >
-        <div className="w-[calc(100vw-2rem)] sm:w-[380px] h-[540px] max-h-[82vh] bg-white rounded-2xl shadow-2xl border border-gray-200/90 flex flex-col overflow-hidden">
+        <div className="w-[calc(100vw-2rem)] sm:w-[390px] h-[550px] max-h-[82vh] bg-white rounded-2xl shadow-2xl border border-gray-200/90 flex flex-col overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-[#DB2F3C] via-[#FF4A57] to-[#B71F2A] text-white p-3.5 sm:p-4 flex items-center justify-between shadow-sm relative">
             <div className="flex items-center space-x-3">
@@ -274,7 +327,7 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
             </div>
           </div>
 
-          {/* Quick Contact Bar Banner (matching screenshot 2 style) */}
+          {/* Quick Contact Bar Banner */}
           <div className="bg-gradient-to-r from-red-50 to-amber-50/50 border-b border-red-100 px-3.5 py-2 text-[11px] text-gray-700 flex items-center justify-between">
             <span className="flex items-center gap-1 text-[#B71F2A] font-semibold">
               <ShieldCheck className="w-3.5 h-3.5 text-[#DB2F3C]" />
@@ -301,14 +354,23 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
               >
                 {msg.sender === "support" && (
                   <span className="text-[10px] font-semibold text-gray-500 mb-1 ml-1 flex items-center gap-1">
-                    Sindhi Matrimony Team
+                    {msg.isAbusiveWarning ? (
+                      <span className="text-amber-600 flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3 text-amber-500" />
+                        Community Moderation
+                      </span>
+                    ) : (
+                      "Sindhi Matrimony Team"
+                    )}
                   </span>
                 )}
 
                 <div
-                  className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs sm:text-[13px] leading-relaxed shadow-sm ${msg.sender === "user"
+                  className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 text-xs sm:text-[13px] leading-relaxed shadow-sm transition-all ${msg.sender === "user"
                     ? "bg-gradient-to-br from-[#DB2F3C] to-[#B71F2A] text-white rounded-br-xs font-normal"
-                    : "bg-white text-gray-800 border border-gray-200/80 rounded-bl-xs"
+                    : msg.isAbusiveWarning
+                      ? "bg-amber-50/95 text-amber-950 border border-amber-300 rounded-bl-xs shadow-amber-900/5 font-medium"
+                      : "bg-white text-gray-800 border border-gray-200/80 rounded-bl-xs"
                     }`}
                 >
                   <p className="whitespace-pre-wrap">{msg.text}</p>
@@ -317,13 +379,32 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
                   {msg.actionUrl && (
                     <a
                       href={msg.actionUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-medium text-xs rounded-lg transition-all shadow-sm"
+                      target={msg.actionUrl.startsWith("http") ? "_blank" : undefined}
+                      rel={msg.actionUrl.startsWith("http") ? "noopener noreferrer" : undefined}
+                      className={`mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 text-white font-medium text-xs rounded-lg transition-all shadow-sm active:scale-95 ${msg.actionType === "whatsapp" || msg.actionUrl.includes("wa.me")
+                        ? "bg-[#25D366] hover:bg-[#20bd5a]"
+                        : "bg-gradient-to-r from-[#DB2F3C] to-[#B71F2A] hover:brightness-105"
+                        }`}
                     >
                       <span>{msg.actionLabel || "Proceed"}</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
+                  )}
+
+                  {/* Follow-up Quick Suggestion Chips */}
+                  {msg.suggestedQuestions && msg.suggestedQuestions.length > 0 && (
+                    <div className="mt-3 pt-2 border-t border-gray-100 flex flex-wrap gap-1.5">
+                      {msg.suggestedQuestions.map((q, idx) => (
+                        <button
+                          key={`${msg.id}-sq-${idx}`}
+                          type="button"
+                          onClick={() => handleSendMessage(q)}
+                          className="text-left text-[11px] bg-red-50/90 hover:bg-red-100 text-[#B71F2A] hover:text-[#DB2F3C] border border-red-200/80 px-2.5 py-1 rounded-full transition-all active:scale-95 cursor-pointer font-medium"
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
 
@@ -343,8 +424,8 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
               </div>
             )}
 
-            {/* Quick Suggestion Chips */}
-            {messages.length <= 3 && !isTyping && (
+            {/* Initial Quick Suggestion Chips when conversation just started */}
+            {messages.length <= 1 && !isTyping && (
               <div className="pt-2">
                 <p className="text-[11px] font-medium text-gray-400 mb-2">
                   Frequently asked questions:
@@ -355,7 +436,7 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
                       key={s.id}
                       type="button"
                       onClick={() => handleQuickSuggestionClick(s)}
-                      className="text-left text-xs bg-white hover:bg-red-50 hover:text-[#DB2F3C] hover:border-red-200 border border-gray-200 text-gray-700 px-2.5 py-1.5 rounded-full transition-all shadow-2xs active:scale-95"
+                      className="text-left text-xs bg-white hover:bg-red-50 hover:text-[#DB2F3C] hover:border-red-200 border border-gray-200 text-gray-700 px-2.5 py-1.5 rounded-full transition-all shadow-2xs active:scale-95 cursor-pointer"
                     >
                       {s.label}
                     </button>
@@ -376,7 +457,8 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Type your question here..."
+                placeholder="Apna prashna type karein..."
+                aria-label="Chat input"
                 className="flex-1 text-xs sm:text-[13px] bg-transparent text-gray-800 placeholder-gray-400 focus:outline-none"
               />
 
@@ -385,7 +467,8 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
                   type="button"
                   onClick={handleQuickLike}
                   title="Send thumbs up"
-                  className="p-1 text-gray-400 hover:text-amber-500 active:scale-90 transition-all"
+                  aria-label="Interested thumbs up"
+                  className="p-1 text-gray-400 hover:text-amber-500 active:scale-90 transition-all cursor-pointer"
                 >
                   <ThumbsUp className="w-4 h-4" />
                 </button>
@@ -395,8 +478,8 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
                   onClick={() => handleSendMessage()}
                   disabled={!inputText.trim()}
                   aria-label="Send message"
-                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${inputText.trim()
-                    ? "bg-[#DB2F3C] text-white hover:bg-[#B71F2A] active:scale-90 shadow-sm"
+                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer ${inputText.trim()
+                    ? "bg-gradient-to-r from-[#FF4A57] via-[#DB2F3C] to-[#B71F2A] hover:brightness-105 text-white active:scale-90 shadow-sm"
                     : "bg-gray-200 text-gray-400 cursor-not-allowed"
                     }`}
                 >
@@ -409,7 +492,7 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
               <span className="flex items-center gap-1">
                 🔒 100% Confidential
               </span>
-              <span>Direct Support</span>
+              <span>Sindhi Family Support</span>
             </div>
           </div>
         </div>
@@ -417,7 +500,7 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
 
       {/* 2. FLOATING TRIGGER BUTTON & "WE ARE HERE! 👋" BADGE */}
       <div className="pointer-events-auto flex items-end justify-end space-x-2.5 relative">
-        {/* Animated "We Are Here!" Tooltip Badge (matching screenshot 1) */}
+        {/* Animated "We Are Here!" Tooltip Badge */}
         {!isOpen && !isTeaserDismissed && (
           <div className="animate-chat-float relative flex items-center mb-1 select-none">
             <div
@@ -460,8 +543,9 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
           <button
             type="button"
             onClick={handleToggle}
+            onMouseEnter={prefetchBotEngine}
             aria-label={isOpen ? "Close Support Chat" : "Open Support Chat"}
-            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white border-2 border-emerald-500 shadow-xl shadow-red-950/15 flex items-center justify-center p-1.5 transition-transform duration-300 ease-out hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-red-200"
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white border-2 border-emerald-500 shadow-xl shadow-red-950/15 flex items-center justify-center p-1.5 transition-transform duration-300 ease-out hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-red-200 cursor-pointer"
           >
             {isOpen ? (
               <X className="w-6 h-6 text-[#DB2F3C] transition-transform duration-200 rotate-0 hover:rotate-90" />

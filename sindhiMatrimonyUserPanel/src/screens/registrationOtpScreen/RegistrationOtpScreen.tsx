@@ -3,14 +3,13 @@
 import React, { useState, useCallback, memo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Pencil, Loader2 } from "lucide-react";
-import { Header } from "@/components";
+import { Header, CustomButton } from "@/components";
 import {
   OtpIllustration,
   OtpInputBoxes,
   OtpTimerResend,
   OtpMissedCallOption,
   OtpEditPhoneModal,
-  OtpSuccessCelebration,
 } from "./components";
 import { VerificationStatus, ResendChannel } from "./types";
 
@@ -56,12 +55,12 @@ const RegistrationOtpScreenComponent: React.FC = () => {
     setStatus("verifying");
     setErrorMessage(null);
 
-    // Simulate verification API request
+    // Simulate verification API request then route directly
     setTimeout(() => {
-      // Any 4 digits accepted for demonstration
-      setStatus("success");
-    }, 750);
-  }, [otpDigits]);
+      const params = new URLSearchParams(window.location.search);
+      router.push(`/registration/basic-info?${params.toString()}`);
+    }, 600);
+  }, [otpDigits, router]);
 
   // Resend Handler
   const handleResend = useCallback(async (channel: ResendChannel) => {
@@ -93,20 +92,14 @@ const RegistrationOtpScreenComponent: React.FC = () => {
     setErrorMessage(null);
     setTimeout(() => {
       setOtpDigits(["7", "4", "4", "9"]);
-      setStatus("success");
-    }, 700);
-  }, []);
+      const params = new URLSearchParams(window.location.search);
+      router.push(`/registration/basic-info?${params.toString()}`);
+    }, 600);
+  }, [router]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F7F8FA] text-[#1A1A1A] selection:bg-red-100 selection:text-red-900 font-sans">
-      {/* 1. Reusable Lightweight Header with helpline */}
-      <Header
-        showHelpPhone
-        helpPhoneNumber="8144-77-88-66"
-        position="sticky"
-      />
-
-      {/* 2. Main Content Area */}
+    <div className="flex-1 w-full flex flex-col">
+      {/* Main Content Area */}
       <main className="flex-1 w-full flex flex-col items-center justify-start px-4 pt-6 sm:pt-10 pb-16">
         <div className="w-full max-w-3xl lg:max-w-4xl mx-auto">
           {/* Section Main Title: Left-aligned above card */}
@@ -114,16 +107,8 @@ const RegistrationOtpScreenComponent: React.FC = () => {
             Enter OTP
           </h1>
 
-          {/* Conditional Rendering: Success Screen vs Horizontal Verification Card */}
-          {status === "success" ? (
-            <OtpSuccessCelebration
-              name={name}
-              profileFor={profileFor}
-              mobile={mobile}
-            />
-          ) : (
-            /* Main Horizontal Verification Card (Matching BrahminMatrimony reference) */
-            <div className="w-full bg-white rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs sm:shadow-sm px-6 sm:px-12 md:px-16 py-8 sm:py-10 text-center">
+          {/* Main Horizontal Verification Card (Matching BrahminMatrimony reference) */}
+          <div className="w-full bg-white rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs sm:shadow-sm px-6 sm:px-12 md:px-16 py-8 sm:py-10 text-center">
               {/* 1. Phone & OTP Bubble Graphic */}
               <OtpIllustration />
 
@@ -179,26 +164,18 @@ const RegistrationOtpScreenComponent: React.FC = () => {
               </div>
 
               {/* 5. Center Pill Submit Button */}
-              <div className="mt-8">
-                <button
+              <div className="mt-8 flex justify-center">
+                <CustomButton
                   type="button"
                   onClick={handleVerify}
-                  disabled={status === "verifying"}
-                  className={`w-60 sm:w-72 h-11 sm:h-12 rounded-full font-bold text-white text-base transition-all flex items-center justify-center gap-2 mx-auto cursor-pointer shadow-sm hover:shadow-md active:scale-[0.98] ${
-                    isOtpComplete
-                      ? "bg-[#EA5558] hover:bg-[#DB2F3C]"
-                      : "bg-[#EA5558] hover:bg-[#DB2F3C] opacity-95"
-                  }`}
+                  isLoading={status === "verifying"}
+                  loadingText="Verifying..."
+                  shape="rounded-full"
+                  size="lg"
+                  className="w-60 sm:w-72"
                 >
-                  {status === "verifying" ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Verifying...</span>
-                    </>
-                  ) : (
-                    <span>Submit</span>
-                  )}
-                </button>
+                  Submit
+                </CustomButton>
               </div>
 
               {/* Demo Hint */}
@@ -217,7 +194,6 @@ const RegistrationOtpScreenComponent: React.FC = () => {
                 <span>) or click Submit to test.</span>
               </div>
             </div>
-          )}
         </div>
       </main>
 

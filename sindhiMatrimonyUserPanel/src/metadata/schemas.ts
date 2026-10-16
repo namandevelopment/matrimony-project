@@ -133,3 +133,45 @@ export function generateWebPageSchema(params: {
     },
   };
 }
+
+/**
+ * Generates ContactPage Schema (JSON-LD) for Google Search Contact & Help Rich Results
+ */
+export function generateContactPageSchema(params: {
+  title: string;
+  description: string;
+  path?: string;
+}) {
+  const cleanPath = params.path ? (params.path.startsWith("/") ? params.path : `/${params.path}`) : "/help";
+  const pageUrl = `${siteConfig.url}${cleanPath}`;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "ContactPage",
+    "@id": `${pageUrl}/#contactpage`,
+    url: pageUrl,
+    name: params.title,
+    description: params.description,
+    mainEntity: {
+      "@type": "Organization",
+      name: siteConfig.name,
+      url: siteConfig.url,
+      contactPoint: [
+        {
+          "@type": "ContactPoint",
+          telephone: "+91-8144-77-88-66",
+          contactType: "customer support",
+          areaServed: "IN",
+          availableLanguage: ["English", "Hindi", "Sindhi"],
+        },
+        {
+          "@type": "ContactPoint",
+          email: siteConfig.links.supportEmail,
+          contactType: "customer service",
+          availableLanguage: ["English", "Hindi"],
+        },
+      ],
+    },
+  };
+}
+

@@ -6,6 +6,8 @@ export interface ChatMessage {
   actionType?: "whatsapp" | "link";
   actionUrl?: string;
   actionLabel?: string;
+  suggestedQuestions?: string[];
+  isAbusiveWarning?: boolean;
 }
 
 export interface QuickSuggestion {
@@ -32,4 +34,46 @@ export interface FloatingChatWidgetProps {
   onOpen?: () => void;
   /** Callback when chat window closed */
   onClose?: () => void;
+}
+
+export interface BotResponseResult {
+  text: string;
+  actionType?: "whatsapp" | "link";
+  actionUrl?: string;
+  actionLabel?: string;
+  suggestedQuestions?: string[];
+  isAbusiveWarning?: boolean;
+  matchedCategoryId?: string;
+}
+
+export interface KnowledgeBaseCategory {
+  id: string;
+  title: string;
+  primaryKeywords: string[];
+  secondaryKeywords: string[];
+  sampleQuestions: string[];
+  response: string;
+  actionLabel?: string;
+  actionUrl?: string;
+  actionType?: "whatsapp" | "link";
+  suggestedQuestions?: string[];
+}
+
+export interface KnowledgeBaseModeration {
+  abusiveKeywords: string[];
+  abusivePatterns: string[];
+  warningResponses: string[];
+}
+
+export interface KnowledgeBaseSchema {
+  version: string;
+  lastUpdated: string;
+  moderation: KnowledgeBaseModeration;
+  categories: KnowledgeBaseCategory[];
+  fallback: {
+    response: string;
+    actionLabel?: string;
+    actionUrl?: string;
+    suggestedQuestions?: string[];
+  };
 }

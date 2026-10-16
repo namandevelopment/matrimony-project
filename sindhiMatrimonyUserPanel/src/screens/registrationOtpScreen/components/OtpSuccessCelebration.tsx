@@ -54,10 +54,10 @@ const OtpSuccessCelebrationComponent: React.FC<OtpSuccessCelebrationProps> = ({
       {/* Continue CTA */}
       <div className="mt-6">
         <Link
-          href="/"
+          href={`/registration/basic-info?mobile=${encodeURIComponent(mobile)}&name=${encodeURIComponent(name)}&for=${encodeURIComponent(profileFor)}`}
           className="w-full py-3.5 px-6 rounded-full font-bold text-white text-sm sm:text-base bg-gradient-to-r from-[#FF4A57] via-[#DB2F3C] to-[#B71F2A] hover:brightness-105 active:scale-98 transition-all shadow-md shadow-red-700/20 hover:shadow-lg hover:shadow-red-600/30 flex items-center justify-center gap-2 cursor-pointer"
         >
-          <span>Continue to Partner Match</span>
+          <span>Continue to Basic Details (Step 1/4)</span>
           <ArrowRight className="w-4 h-4" />
         </Link>
       </div>

@@ -28,7 +28,7 @@ export const metadata: Metadata = createMetadata({
  */
 function RegistrationOtpSkeleton() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#FAF9F6] p-4">
+    <div className="flex-1 w-full flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-xl bg-white rounded-3xl p-10 shadow-xl border border-stone-200 text-center space-y-4 animate-pulse">
         <div className="w-20 h-20 rounded-full bg-stone-100 mx-auto" />
         <div className="h-6 w-48 bg-stone-200 rounded-md mx-auto" />

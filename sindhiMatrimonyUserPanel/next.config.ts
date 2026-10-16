@@ -16,6 +16,31 @@ const nextConfig: NextConfig = {
         destination: "/registration/otp",
         permanent: true,
       },
+      {
+        source: "/registration/step-1",
+        destination: "/registration/basic-info",
+        permanent: true,
+      },
+      {
+        source: "/registration/basic",
+        destination: "/registration/basic-info",
+        permanent: true,
+      },
+      {
+        source: "/registration/step-2",
+        destination: "/registration/personal-religious-info",
+        permanent: true,
+      },
+      {
+        source: "/registration/step-3",
+        destination: "/registration/location-professional-info",
+        permanent: true,
+      },
+      {
+        source: "/registration/professional",
+        destination: "/registration/location-professional-info",
+        permanent: true,
+      },
     ];
   },
 };

@@ -148,6 +148,85 @@ export const ApiURL = {
     daily_reward: `${BASE_URL}/api/v1/popup/daily-reward/users/config`, // "popup_type": "external-redirect", 
     daily_reward_claim: `${BASE_URL}/api/v1/popup/daily-reward/users/claim`, // "popup_type": "external-redirect", 
 
+    // =========================================================================
+    // 💍 OFFICIAL SINDHI MATRIMONY CORE MOBILE ENDPOINTS
+    // =========================================================================
+    // 1. Startup & Master Dropdowns (Zero Token Required)
+    commonDropdowns: `${BASE_URL}/api/v1/common/dropdowns`,
+
+    // 2. Authentication & Onboarding
+    authSendOtp: `${BASE_URL}/api/v1/auth/send-otp`,
+    authVerifyOtp: `${BASE_URL}/api/v1/auth/verify-otp`,
+    authResendOtp: `${BASE_URL}/api/v1/auth/resend-otp`,
+    authLogin: `${BASE_URL}/api/v1/auth/login`,
+    authRegister: `${BASE_URL}/api/v1/auth/register`,
+    authForgotPasswordSendOtp: `${BASE_URL}/api/v1/auth/forgot-password/send-otp`,
+    authForgotPasswordVerifyOtp: `${BASE_URL}/api/v1/auth/forgot-password/verify-otp`,
+    authForgotPasswordReset: `${BASE_URL}/api/v1/auth/forgot-password/reset`,
+    authLogout: `${BASE_URL}/api/v1/auth/logout`,
+
+    // 3. Home Feed & Quick Action Dashboard
+    homeFeed: `${BASE_URL}/api/v1/feed/home`,
+
+    // 4. Matches Discovery Feed (Cursor Paginated)
+    matchesRecommendations: `${BASE_URL}/api/v1/matches/recommendations`,
+
+    // 5. Connection Interests
+    interestsReceived: `${BASE_URL}/api/v1/interests/received`,
+    interestsSent: `${BASE_URL}/api/v1/interests/sent`,
+    interestsSend: `${BASE_URL}/api/v1/interests/send`,
+    interestsAccept: (id: string) => `${BASE_URL}/api/v1/interests/${id}/accept`,
+    interestsDecline: (id: string) => `${BASE_URL}/api/v1/interests/${id}/decline`,
+
+    // 6. Real-Time Chat & Messages
+    chatConversations: `${BASE_URL}/api/v1/chat/conversations`,
+    chatMessages: (conversationId: string) => `${BASE_URL}/api/v1/chat/messages/${conversationId}`,
+    chatSendMessage: `${BASE_URL}/api/v1/chat/messages/send`,
+    chatClearConversation: (conversationId: string) => `${BASE_URL}/api/v1/chat/conversations/${conversationId}/clear`,
+
+    // 7. Advanced Community Search
+    searchMembers: `${BASE_URL}/api/v1/members/search`,
+
+    // 8. Membership & Payments
+    getPlans: `${BASE_URL}/api/v1/plans`,
+    createPaymentOrder: `${BASE_URL}/api/v1/payments/create-order`,
+    verifyPaymentSignature: `${BASE_URL}/api/v1/payments/verify`,
+
+    // 9. Profile Viewing & Multi-Section Edit
+    getProfileMe: `${BASE_URL}/api/v1/profile/me`,
+    updateProfileBasic: `${BASE_URL}/api/v1/profile/basic`,
+    updateProfileEducationCareer: `${BASE_URL}/api/v1/profile/education-career`,
+    updateProfileFamily: `${BASE_URL}/api/v1/profile/family`,
+    updateProfileHoroscope: `${BASE_URL}/api/v1/profile/horoscope`,
+    updatePartnerPreferences: `${BASE_URL}/api/v1/profile/partner-preferences`,
+    uploadProfilePhoto: `${BASE_URL}/api/v1/profile/photos`,
+    deleteProfilePhoto: (photoId: string) => `${BASE_URL}/api/v1/profile/photos/${photoId}`,
+
+    // 10. Profile Verification & KYC Desk
+    kycSelfieVerify: `${BASE_URL}/api/v1/kyc/selfie`,
+    kycAadhaarVerify: `${BASE_URL}/api/v1/kyc/aadhaar`,
+    kycStatus: `${BASE_URL}/api/v1/kyc/status`,
+
+    // 11. In-App Notifications & FCM
+    getNotificationsList: `${BASE_URL}/api/v1/notifications`,
+    markNotificationAsRead: (notificationId: string) => `${BASE_URL}/api/v1/notifications/${notificationId}/read`,
+    markAllNotificationsAsRead: `${BASE_URL}/api/v1/notifications/mark-all-read`,
+    deleteNotificationItem: (notificationId: string) => `${BASE_URL}/api/v1/notifications/${notificationId}`,
+    updateFcmDeviceToken: `${BASE_URL}/api/v1/notifications/fcm-token`,
+
+    // 12. Support & Help Center
+    supportConfig: `${BASE_URL}/api/v1/support/config`,
+    createSupportTicket: `${BASE_URL}/api/v1/support/tickets`,
+
+    // 13. Settings, Privacy & Account Deletion
+    updatePrivacySettings: `${BASE_URL}/api/v1/settings/privacy`,
+    updateNotificationPreferences: `${BASE_URL}/api/v1/settings/notifications`,
+    deleteUserAccount: `${BASE_URL}/api/v1/account/delete`,
+
+    // 14. WatermelonDB Delta Sync Engine
+    syncPullDelta: `${BASE_URL}/api/v1/sync/pull`,
+    syncPushDelta: `${BASE_URL}/api/v1/sync/push`,
+    syncMasterVersion: `${BASE_URL}/api/v1/sync/version`,
 };
 
 

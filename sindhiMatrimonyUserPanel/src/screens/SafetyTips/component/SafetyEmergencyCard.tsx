@@ -46,7 +46,7 @@ export const SafetyEmergencyCard: React.FC = React.memo(() => {
               href={item.actionUrl}
               target={item.actionUrl.startsWith("http") ? "_blank" : undefined}
               rel={item.actionUrl.startsWith("http") ? "noopener noreferrer" : undefined}
-              className="px-3 py-1.5 rounded-lg bg-[#DB2F3C] hover:bg-red-700 text-white font-semibold text-[11px] shrink-0 transition-colors inline-flex items-center gap-1 cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#FF4A57] via-[#DB2F3C] to-[#B71F2A] hover:brightness-105 active:scale-95 text-white font-semibold text-[11px] shrink-0 transition-all inline-flex items-center gap-1 cursor-pointer shadow-xs"
             >
               {item.actionUrl.startsWith("tel:") ? (
                 <PhoneCall className="w-3 h-3" />

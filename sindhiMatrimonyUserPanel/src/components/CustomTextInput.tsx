@@ -11,10 +11,12 @@ function cn(...inputs: ClassValue[]) {
 
 export interface CustomTextInputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
-  /** Label text or custom React node displayed above input */
+  /** Label text or custom React node */
   label?: React.ReactNode;
-  /** Right-aligned node in label row (e.g., 'Forgot Password?' link or counter) */
+  /** Right-aligned node in label row */
   labelRight?: React.ReactNode;
+  /** Whether the label floats over the top border (matches CustomDropDown & BrahminMatrimony reference) */
+  labelFloating?: boolean;
   /** Error message to display below input with red styling */
   error?: string;
   /** Helper/hint text displayed below input when there is no error */
@@ -27,10 +29,10 @@ export interface CustomTextInputProps
   leftAdornment?: React.ReactNode;
   /** Suffix/Adornment rendered on the right */
   rightAdornment?: React.ReactNode;
-  /** Input size variation: sm (36px), md (44px), lg (48px) */
+  /** Input size variation: sm (36px), md (44-48px), lg (48px) */
   inputSize?: "sm" | "md" | "lg";
   /** Visual variant */
-  variant?: "outlined" | "filled" | "flush";
+  variant?: "outlined" | "filled" | "flush" | "registration";
   /** Automatically show eye/eye-off toggle button when type="password" (default: true) */
   showPasswordToggle?: boolean;
   /** Show clear button when value is present */
@@ -59,6 +61,7 @@ export const CustomTextInput = forwardRef<HTMLInputElement, CustomTextInputProps
       type = "text",
       label,
       labelRight,
+      labelFloating = false,
       placeholder,
       value,
       defaultValue,
@@ -71,8 +74,8 @@ export const CustomTextInput = forwardRef<HTMLInputElement, CustomTextInputProps
       rightIcon,
       leftAdornment,
       rightAdornment,
-      inputSize = "md",
-      variant = "outlined",
+      inputSize = "lg",
+      variant = "registration",
       showPasswordToggle = true,
       clearable = false,
       onClear,
@@ -84,6 +87,8 @@ export const CustomTextInput = forwardRef<HTMLInputElement, CustomTextInputProps
       errorClassName,
       helperClassName,
       onChange,
+      onFocus,
+      onBlur,
       ...restProps
     },
     ref
@@ -92,6 +97,9 @@ export const CustomTextInput = forwardRef<HTMLInputElement, CustomTextInputProps
     const inputId = id || generatedId;
     const errorId = `${inputId}-error`;
     const helperId = `${inputId}-helper`;
+
+    // Focus state for active styling and floating label
+    const [isFocused, setIsFocused] = useState(false);
 
     // State for toggling password visibility
     const isPasswordField = type === "password";
@@ -104,14 +112,17 @@ export const CustomTextInput = forwardRef<HTMLInputElement, CustomTextInputProps
         : "password"
       : type;
 
-    // Check if input has value (for clear button)
-    const hasValue = Boolean(value !== undefined ? value : defaultValue);
+    // Check if input has value
+    const hasValue = Boolean(
+      (value !== undefined && value !== null && value !== "") ||
+        (defaultValue !== undefined && defaultValue !== null && defaultValue !== "")
+    );
 
-    // Size mappings
+    // Size mappings matching CustomDropDown
     const sizeStyles = {
       sm: "h-9 text-xs px-3",
-      md: "h-11 text-sm px-4",
-      lg: "h-12 text-base px-4",
+      md: "h-11 sm:h-12 text-sm sm:text-base px-4",
+      lg: "h-11 sm:h-12 text-sm sm:text-base px-4",
     };
 
     // Variant base styles
@@ -120,19 +131,33 @@ export const CustomTextInput = forwardRef<HTMLInputElement, CustomTextInputProps
         "bg-white border rounded-lg transition-all duration-150",
         error
           ? "border-red-500 text-red-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
-          : "border-stone-300 text-[#1A1A1A] hover:border-stone-400 focus:border-[#DB2F3C] focus:ring-2 focus:ring-[#DB2F3C]/15"
+          : isFocused
+          ? "border-[#28A745] ring-1 ring-[#28A745] text-[#1A1A1A]"
+          : hasValue
+          ? "border-stone-400 text-[#1A1A1A]"
+          : "border-stone-300 text-[#1A1A1A] hover:border-stone-400"
+      ),
+      registration: cn(
+        "bg-white border rounded-xl transition-all duration-150 text-[#1A1A1A]",
+        error
+          ? "border-red-400 focus:border-red-500 ring-1 ring-red-400/30"
+          : isFocused
+          ? "border-[#28A745] ring-1 ring-[#28A745]"
+          : hasValue
+          ? "border-stone-400 hover:border-stone-600"
+          : "border-stone-300 hover:border-stone-400"
       ),
       filled: cn(
         "bg-stone-100 border border-transparent rounded-lg transition-all duration-150",
         error
           ? "bg-red-50/60 border-red-500 text-red-900 focus:bg-white focus:ring-2 focus:ring-red-500/20"
-          : "text-[#1A1A1A] hover:bg-stone-200/60 focus:bg-white focus:border-[#DB2F3C] focus:ring-2 focus:ring-[#DB2F3C]/15"
+          : "text-[#1A1A1A] hover:bg-stone-200/60 focus:bg-white focus:border-[#28A745] focus:ring-1 focus:ring-[#28A745]"
       ),
       flush: cn(
         "bg-transparent border-b rounded-none px-0 transition-all duration-150",
         error
           ? "border-red-500 text-red-900 focus:border-red-600"
-          : "border-stone-300 text-[#1A1A1A] hover:border-stone-400 focus:border-[#DB2F3C]"
+          : "border-stone-300 text-[#1A1A1A] hover:border-stone-400 focus:border-[#28A745]"
       ),
     };
 
@@ -144,16 +169,26 @@ export const CustomTextInput = forwardRef<HTMLInputElement, CustomTextInputProps
       rightIcon || rightAdornment || hasRightToggle || hasRightClear
     );
 
+    const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+      setIsFocused(true);
+      onFocus?.(e);
+    };
+
+    const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+      setIsFocused(false);
+      onBlur?.(e);
+    };
+
     return (
-      <div className={cn("w-full flex flex-col gap-1.5", containerClassName)}>
-        {/* Label Row */}
+      <div className={cn("w-full flex flex-col gap-1 text-left", containerClassName)}>
+        {/* Simple Standard Label Row (Above input) */}
         {(label || labelRight) && (
-          <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center justify-between text-xs sm:text-sm mb-1">
             {label && (
               <label
                 htmlFor={inputId}
                 className={cn(
-                  "font-semibold text-[#444444] uppercase tracking-wider select-none",
+                  "block text-xs sm:text-sm font-semibold text-stone-700 select-none",
                   disabled && "opacity-60 cursor-not-allowed",
                   labelClassName
                 )}
@@ -172,8 +207,9 @@ export const CustomTextInput = forwardRef<HTMLInputElement, CustomTextInputProps
           </div>
         )}
 
-        {/* Input Wrapper */}
+        {/* Input Relative Wrapper */}
         <div className={cn("relative flex items-center w-full", wrapperClassName)}>
+
           {/* Left Icon / Adornment */}
           {hasLeftElement && (
             <div className="absolute left-3.5 z-10 flex items-center justify-center text-stone-400 pointer-events-none">
@@ -195,6 +231,8 @@ export const CustomTextInput = forwardRef<HTMLInputElement, CustomTextInputProps
             value={value}
             defaultValue={defaultValue}
             onChange={onChange}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
             aria-invalid={Boolean(error)}
             aria-describedby={
               error ? errorId : helperText ? helperId : undefined
@@ -259,7 +297,7 @@ export const CustomTextInput = forwardRef<HTMLInputElement, CustomTextInputProps
             id={errorId}
             role="alert"
             className={cn(
-              "flex items-center gap-1 text-xs text-red-600 font-medium animate-fade-in mt-0.5",
+              "flex items-center gap-1 text-xs text-red-600 font-medium animate-fade-in mt-0.5 pl-1",
               errorClassName
             )}
           >
@@ -270,7 +308,7 @@ export const CustomTextInput = forwardRef<HTMLInputElement, CustomTextInputProps
           <p
             id={helperId}
             className={cn(
-              "text-xs text-stone-500 font-normal mt-0.5",
+              "text-xs text-stone-500 font-normal mt-0.5 pl-1",
               helperClassName
             )}
           >

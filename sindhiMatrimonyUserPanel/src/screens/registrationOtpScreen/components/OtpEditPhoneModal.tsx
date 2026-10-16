@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, memo } from "react";
 import { X, Phone, Check, AlertCircle } from "lucide-react";
+import { CustomButton } from "@/components";
 
 interface OtpEditPhoneModalProps {
   isOpen: boolean;
@@ -137,13 +138,15 @@ const InnerEditForm: React.FC<InnerEditFormProps> = ({
           >
             Cancel
           </button>
-          <button
+          <CustomButton
             type="submit"
-            className="flex-1 py-2.5 px-4 text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-[#FF4A57] via-[#DB2F3C] to-[#B71F2A] hover:brightness-105 rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            size="sm"
+            shape="rounded-xl"
+            icon={<Check className="w-4 h-4" />}
+            className="flex-1 py-2.5 px-4 text-xs sm:text-sm"
           >
-            <Check className="w-4 h-4" />
-            <span>Update & Resend OTP</span>
-          </button>
+            Update & Resend OTP
+          </CustomButton>
         </div>
       </form>
     </div>

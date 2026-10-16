@@ -1,31 +1,151 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { X, Lock, Phone, Eye, EyeOff, Loader2 } from "lucide-react";
+import React, { useState, useEffect, useCallback, useRef, memo } from "react";
+import { useRouter } from "next/navigation";
+import { X, Lock, Phone, AlertCircle, CheckCircle2 } from "lucide-react";
 import { MatrimonyHeartLogo } from "./Icons";
+import { CustomTextInput, CustomButton } from "@/components";
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
-  const [identifier, setIdentifier] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+interface FormState {
+  identifier: string;
+  password: string;
+  rememberMe: boolean;
+}
+
+interface FormErrors {
+  identifier?: string;
+  password?: string;
+}
+
+interface FormTouched {
+  identifier?: boolean;
+  password?: boolean;
+}
+
+// ----------------------------------------------------
+// Validation Logic
+// ----------------------------------------------------
+const validateIdentifier = (value: string): string | undefined => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "Please enter your Mobile Number, Matrimony ID, or Email";
+  }
+
+  // Case 1: Email Address (contains '@')
+  if (trimmed.includes("@")) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(trimmed)) {
+      return "Please enter a valid email address";
+    }
+    return undefined;
+  }
+
+  // Case 2: Phone number check
+  // Matches pure digits or phone formats like +91 9876543210 / 98765-43210
+  const digitsOnly = trimmed.replace(/\D/g, "");
+  const hasOnlyDigitsOrPhoneSymbols = /^[\d\s+\-()]+$/.test(trimmed);
+
+  if (hasOnlyDigitsOrPhoneSymbols && digitsOnly.length > 0) {
+    // If user prefixed country code +91
+    const cleanDigits =
+      digitsOnly.startsWith("91") && digitsOnly.length === 12
+        ? digitsOnly.slice(2)
+        : digitsOnly;
+
+    if (cleanDigits.length < 10) {
+      return "Please enter a valid 10-digit mobile number";
+    }
+    if (cleanDigits.length === 10) {
+      if (!/^[6-9]\d{9}$/.test(cleanDigits)) {
+        return "Mobile number must start with 6, 7, 8, or 9";
+      }
+      return undefined;
+    }
+    if (cleanDigits.length > 10) {
+      return "Mobile number cannot exceed 10 digits";
+    }
+    return undefined;
+  }
+
+  // Case 3: Matrimony ID (e.g., SND4517087, BRH123456)
+  if (trimmed.length < 4) {
+    return "Matrimony ID must be at least 4 characters";
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(trimmed)) {
+    return "Matrimony ID can only contain letters, numbers, and dashes";
+  }
+
+  return undefined;
+};
+
+const validatePassword = (value: string): string | undefined => {
+  if (!value) {
+    return "Please enter your password";
+  }
+  if (value.length < 6) {
+    return "Password must be at least 6 characters";
+  }
+  if (value.length > 50) {
+    return "Password cannot exceed 50 characters";
+  }
+  return undefined;
+};
+
+const LoginModalComponent: React.FC<LoginModalProps> = ({
+  isOpen,
+  onClose,
+  onSuccess,
+}) => {
+  const router = useRouter();
+  const identifierInputRef = useRef<HTMLInputElement>(null);
+
+  const [form, setForm] = useState<FormState>({
+    identifier: "",
+    password: "",
+    rememberMe: true,
+  });
+
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<FormTouched>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
+  const [forgotPasswordMsg, setForgotPasswordMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const handleClose = useCallback(() => {
+    setForm({ identifier: "", password: "", rememberMe: true });
+    setErrors({});
+    setTouched({});
+    setGeneralError(null);
+    setForgotPasswordMsg(null);
+    setIsLoading(false);
+    onClose();
+  }, [onClose]);
+
+  // Auto focus identifier on modal open
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setTimeout(() => {
+      identifierInputRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [isOpen]);
 
   // Close on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
-        onClose();
+        handleClose();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, handleClose]);
 
   // Prevent background body scroll when open
   useEffect(() => {
@@ -39,31 +159,107 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  // Real-time Field Change Handler
+  const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setForm((prev) => ({ ...prev, identifier: value }));
+    setGeneralError(null);
 
+    // Revalidate if field has already been touched or had an error
+    if (touched.identifier || errors.identifier) {
+      const errorMsg = validateIdentifier(value);
+      setErrors((prev) => ({ ...prev, identifier: errorMsg }));
+    }
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setForm((prev) => ({ ...prev, password: value }));
+    setGeneralError(null);
+
+    if (touched.password || errors.password) {
+      const errorMsg = validatePassword(value);
+      setErrors((prev) => ({ ...prev, password: errorMsg }));
+    }
+  };
+
+  // Blur Handlers (validate on field exit)
+  const handleIdentifierBlur = () => {
+    setTouched((prev) => ({ ...prev, identifier: true }));
+    const errorMsg = validateIdentifier(form.identifier);
+    setErrors((prev) => ({ ...prev, identifier: errorMsg }));
+  };
+
+  const handlePasswordBlur = () => {
+    setTouched((prev) => ({ ...prev, password: true }));
+    const errorMsg = validatePassword(form.password);
+    setErrors((prev) => ({ ...prev, password: errorMsg }));
+  };
+
+  // Forgot password handler
+  const handleForgotPassword = useCallback(() => {
+    const trimmedId = form.identifier.trim();
+    if (trimmedId) {
+      setForgotPasswordMsg(
+        `Password reset instructions have been sent to your registered contact (${trimmedId}).`
+      );
+    } else {
+      setForgotPasswordMsg(
+        "Please enter your Mobile Number or Matrimony ID above to receive reset instructions."
+      );
+    }
+  }, [form.identifier]);
+
+  // Form Submit Handler
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!identifier.trim() || !password.trim()) {
-      setError("Please fill in both fields");
+
+    // Mark all as touched
+    setTouched({ identifier: true, password: true });
+
+    const identifierError = validateIdentifier(form.identifier);
+    const passwordError = validatePassword(form.password);
+
+    if (identifierError || passwordError) {
+      setErrors({
+        identifier: identifierError,
+        password: passwordError,
+      });
+
+      // Focus first error field
+      if (identifierError) {
+        identifierInputRef.current?.focus();
+      }
       return;
     }
-    setError(null);
+
+    // Clear any previous errors
+    setErrors({});
+    setGeneralError(null);
     setIsLoading(true);
 
+    // Simulated login API request
     setTimeout(() => {
       setIsLoading(false);
-      alert(`Logged in successfully as ${identifier}`);
-      onClose();
-    }, 1000);
+      handleClose();
+
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push("/dashboard");
+      }
+    }, 800);
   };
+
+  if (!isOpen) return null;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="login-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-[1.5px] animate-fade-in"
-    // className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
+      onClick={handleClose}
     >
       <div
         className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden transform transition-all animate-scale-up"
@@ -73,13 +269,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 bg-stone-50/70">
           <div className="flex items-center gap-2.5">
             <MatrimonyHeartLogo size={32} className="w-8 h-8" color="#DB2F3C" />
-            <h3 id="login-title" className="text-lg font-bold text-[#1A1A1A]">
+            <h3 id="login-title" className="text-lg font-bold text-[#1A1A1A] font-heading">
               Member Login
             </h3>
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Close modal"
             className="p-1 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 transition-colors cursor-pointer"
           >
@@ -88,102 +284,115 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Form content */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && (
-            <div className="p-3 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg">
-              {error}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4" noValidate>
+          {/* General Alert Banner */}
+          {generalError && (
+            <div
+              role="alert"
+              className="p-3 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 animate-fade-in"
+            >
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              <span>{generalError}</span>
             </div>
           )}
 
-          <div>
-            <label
-              htmlFor="login-identifier"
-              className="block text-xs font-semibold text-[#444444] uppercase tracking-wider mb-1.5"
+          {/* Forgot Password Notification */}
+          {forgotPasswordMsg && (
+            <div
+              role="status"
+              className="p-3 text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2 animate-fade-in"
             >
-              Mobile Number
-            </label>
-            <div className="relative">
-              <input
-                id="login-identifier"
-                type="text"
-                required
-                placeholder="Enter Mobile Number"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                className="w-full px-4 py-2.5 text-sm rounded-lg border border-stone-300 focus:border-[#DB2F3C] focus:ring-1 focus:ring-[#DB2F3C] focus:outline-hidden"
-              />
-              <Phone className="w-4 h-4 text-stone-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{forgotPasswordMsg}</span>
             </div>
-          </div>
+          )}
 
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label
-                htmlFor="login-password"
-                className="block text-xs font-semibold text-[#444444] uppercase tracking-wider"
-              >
-                Password
-              </label>
-              <a
-                href="#forgot-password"
-                onClick={(e) => {
-                  e.preventDefault();
-                  alert("Reset password link sent to your registered contact!");
-                }}
-                className="text-xs text-[#DB2F3C] hover:underline font-medium"
-              >
-                Forgot Password?
-              </a>
-            </div>
-            <div className="relative">
-              <input
-                id="login-password"
-                type={showPassword ? "text" : "password"}
-                required
-                placeholder="Enter password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2.5 text-sm rounded-lg border border-stone-300 focus:border-[#DB2F3C] focus:ring-1 focus:ring-[#DB2F3C] focus:outline-hidden pr-10"
-              />
+          {/* Identifier Field (Mobile Number / Matrimony ID / Email) */}
+          <CustomTextInput
+            ref={identifierInputRef}
+            id="login-identifier"
+            name="identifier"
+            type="text"
+            label="Mobile Number / Matrimony ID"
+            placeholder="Enter Mobile Number or Matrimony ID"
+            value={form.identifier}
+            onChange={handleIdentifierChange}
+            onBlur={handleIdentifierBlur}
+            error={touched.identifier ? errors.identifier : undefined}
+            rightIcon={<Phone className="w-4 h-4 text-stone-400" />}
+            variant="registration"
+            inputSize="md"
+            autoComplete="username"
+            required
+          />
+
+          {/* Password Field */}
+          <CustomTextInput
+            id="login-password"
+            name="password"
+            type="password"
+            label="Password"
+            labelRight={
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                onClick={handleForgotPassword}
+                className="text-xs text-[#DB2F3C] hover:underline font-semibold cursor-pointer"
               >
-                {showPassword ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
+                Forgot Password?
               </button>
-            </div>
+            }
+            placeholder="Enter your password"
+            value={form.password}
+            onChange={handlePasswordChange}
+            onBlur={handlePasswordBlur}
+            error={touched.password ? errors.password : undefined}
+            variant="registration"
+            inputSize="md"
+            autoComplete="current-password"
+            showPasswordToggle
+            required
+          />
+
+          {/* Remember Me Checkbox */}
+          <div className="flex items-center justify-between pt-1">
+            <label className="flex items-center gap-2 text-xs text-[#555555] cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={form.rememberMe}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, rememberMe: e.target.checked }))
+                }
+                className="w-4 h-4 text-[#DB2F3C] border-stone-300 rounded focus:ring-[#DB2F3C] accent-[#DB2F3C] cursor-pointer"
+              />
+              <span>Keep me logged in</span>
+            </label>
           </div>
 
+          {/* Submit Button */}
           <div className="pt-2">
-            <button
+            <CustomButton
               type="submit"
-              disabled={isLoading}
-              className="w-full h-11 rounded-lg font-bold text-white text-sm bg-gradient-to-r from-[#FF4A57] via-[#DB2F3C] to-[#B71F2A] hover:brightness-105 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-md shadow-red-700/25 hover:shadow-lg cursor-pointer"
+              fullWidth
+              size="md"
+              shape="rounded-xl"
+              isLoading={isLoading}
+              loadingText="Logging in..."
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Logging in...</span>
-                </>
-              ) : (
-                "Log In"
-              )}
-            </button>
+              Log In
+            </CustomButton>
           </div>
 
+          {/* Register Free Link */}
           <div className="text-center pt-2">
             <p className="text-xs text-[#666666]">
               Not a member yet?{" "}
               <button
                 type="button"
-                onClick={onClose}
-                className="font-bold text-[#DB2F3C] hover:underline"
+                onClick={() => {
+                  handleClose();
+                  router.push("/#quick-register");
+                }}
+                className="font-bold text-[#DB2F3C] hover:underline cursor-pointer"
               >
                 Register Free
               </button>
@@ -194,3 +403,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     </div>
   );
 };
+
+export const LoginModal = memo(LoginModalComponent);
+LoginModal.displayName = "LoginModal";
+export default LoginModal;
+
