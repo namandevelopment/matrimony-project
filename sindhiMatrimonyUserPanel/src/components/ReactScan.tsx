@@ -7,8 +7,8 @@ export function ReactScan() {
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
       scan({
-        enabled: true,
-        log: false, // Set to true if you also want console logs for why components re-render
+        enabled: false, // Set to true only when explicitly profiling component re-renders
+        log: false,
       });
     }
   }, []);
