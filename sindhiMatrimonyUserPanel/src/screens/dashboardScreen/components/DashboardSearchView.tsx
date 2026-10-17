@@ -78,9 +78,9 @@ const DashboardSearchViewComponent: React.FC<DashboardSearchViewProps> = ({
 
         {/* 2. Top Title */}
         <div className="px-6 py-4 border-b border-stone-100 bg-white">
-          <h2 className="text-sm sm:text-base font-bold text-stone-900 tracking-tight">
+          <h1 className="text-sm sm:text-base font-bold text-stone-900 tracking-tight">
             Search profiles using the below criteria
-          </h2>
+          </h1>
         </div>
 
         {/* 3. Tab Contents */}

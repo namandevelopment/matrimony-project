@@ -20,6 +20,7 @@ export const metadata: Metadata = createMetadata({
     "Sindhi Matches Activity",
     "Verified Matches",
   ],
+  noIndex: true,
 });
 
 function NotificationsSkeleton() {

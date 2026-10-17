@@ -61,7 +61,7 @@ const MatchesHeaderBarComponent: React.FC<MatchesHeaderBarProps> = ({
     <div className={`w-full space-y-3 ${className}`}>
       {/* 1. Header Title */}
       <div>
-        <h2 className="text-lg sm:text-xl font-bold text-[#111827] tracking-tight">
+        <h1 className="text-lg sm:text-xl font-bold text-[#111827] tracking-tight">
           <span>{totalMatchesCount} Matches based on your </span>
           <button
             type="button"
@@ -70,7 +70,7 @@ const MatchesHeaderBarComponent: React.FC<MatchesHeaderBarProps> = ({
           >
             preferences
           </button>
-        </h2>
+        </h1>
       </div>
 
       {/* 2. Controls Row: Filter button, Sort dropdown, and horizontal chip carousel */}

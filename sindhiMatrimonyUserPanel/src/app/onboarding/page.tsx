@@ -20,6 +20,7 @@ export const metadata: Metadata = createMetadata({
     "Sindhi Matrimony Hobbies",
     "Sindhi Matrimony Onboarding",
   ],
+  noIndex: true,
 });
 
 function OnboardingSkeleton() {

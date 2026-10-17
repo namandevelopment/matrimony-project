@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Outfit } from "next/font/google";
 import "./globals.css";
 import {
@@ -22,6 +22,13 @@ const outfit = Outfit({
   display: "swap",
   weight: ["400", "500", "600", "700", "800", "900"],
 });
+
+export const viewport: Viewport = {
+  themeColor: "#DB2F3C",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
 
 export const metadata: Metadata = createMetadata();
 

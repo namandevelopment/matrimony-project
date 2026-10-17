@@ -19,6 +19,7 @@ export const metadata: Metadata = createMetadata({
     "Direct Messaging",
     "Prospect Conversations",
   ],
+  noIndex: true,
 });
 
 function MessagesSkeleton() {

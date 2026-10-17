@@ -1,5 +1,13 @@
 import React from "react";
+import type { Metadata } from "next";
 import { Header } from "@/components/Header";
+import { createMetadata } from "@/metadata";
+
+export const metadata: Metadata = createMetadata({
+  title: "Sindhi Matrimony Registration",
+  description: "Register and create your free profile on SindhiMatrimony.",
+  noIndex: true,
+});
 
 export default function RegistrationLayout({
   children,

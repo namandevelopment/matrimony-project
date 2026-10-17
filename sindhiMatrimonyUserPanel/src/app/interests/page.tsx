@@ -19,6 +19,7 @@ export const metadata: Metadata = createMetadata({
     "Sent Interests",
     "Matrimony Mailbox",
   ],
+  noIndex: true,
 });
 
 function InterestsSkeleton() {

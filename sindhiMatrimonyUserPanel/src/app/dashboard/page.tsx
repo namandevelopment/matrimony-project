@@ -19,6 +19,7 @@ export const metadata: Metadata = createMetadata({
     "Sindhi Grooms",
     "Matrimonial Profile",
   ],
+  noIndex: true,
 });
 
 function DashboardSkeleton() {
