@@ -47,7 +47,7 @@ const TrustBadgesComponent: React.FC<TrustBadgesProps> = ({
   return (
     <section
       aria-label="Trust and Achievements"
-      className="w-full bg-white border-y border-[#E9E9E9] py-8 sm:py-12"
+      className="relative z-10 w-full bg-white border-y border-[#E9E9E9] py-8 sm:py-12"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* DESKTOP 5-COLUMN ROW (Matching Photo 2) */}

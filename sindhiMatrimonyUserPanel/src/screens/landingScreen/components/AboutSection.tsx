@@ -4,7 +4,7 @@ const AboutSectionComponent: React.FC = () => {
   return (
     <section
       aria-label="About Sindhi Matrimony"
-      className="w-full py-12 bg-stone-50 border-t border-[#E9E9E9] text-stone-600 text-sm"
+      className="relative z-10 w-full py-12 bg-stone-50 border-t border-[#E9E9E9] text-stone-600 text-sm"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl">

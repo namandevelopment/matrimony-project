@@ -4,7 +4,7 @@ import { MatrimonyHeartLogo } from "./Icons";
 
 const FooterComponent: React.FC = () => {
   return (
-    <footer className="w-full bg-stone-900 text-stone-400 py-8 text-xs border-t border-stone-800">
+    <footer className="relative z-10 w-full bg-stone-900 text-stone-400 py-8 text-xs border-t border-stone-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
         <div className="flex items-center gap-2">
           <MatrimonyHeartLogo size={24} className="w-6 h-6" color="#FF4A57" />

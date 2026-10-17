@@ -259,7 +259,7 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
   return (
     <aside
       aria-label="Customer Support Chat"
-      className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 pointer-events-none"
+      className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 pointer-events-none transform-gpu will-change-transform"
     >
       {/* 1. CHAT WINDOW (Smooth Scale & Fade with GPU acceleration) */}
       <div

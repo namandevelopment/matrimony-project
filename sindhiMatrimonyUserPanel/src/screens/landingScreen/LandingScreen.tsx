@@ -1,13 +1,19 @@
 "use client";
 
 import React, { useState, useCallback, memo } from "react";
+import dynamic from "next/dynamic";
 import { Header } from "./components/Header";
 import { HeroSection } from "./components/HeroSection";
 import { TrustBadges } from "./components/TrustBadges";
 import { AboutSection } from "./components/AboutSection";
 import { Footer } from "./components/Footer";
-import { LoginModal } from "./components/LoginModal";
 import { FloatingChatWidget } from "@/components";
+
+// Dynamically import LoginModal to reduce critical initial bundle size
+const LoginModal = dynamic(
+  () => import("./components/LoginModal").then((mod) => mod.LoginModal),
+  { ssr: false }
+);
 
 const LandingScreenComponent: React.FC = () => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -26,7 +32,7 @@ const LandingScreenComponent: React.FC = () => {
       <Header onLoginClick={handleOpenLoginModal} />
 
       {/* 2. Main Content */}
-      <main className="relative flex-1 w-full flex flex-col pt-16 sm:pt-18 bg-white">
+      <main className="relative flex-1 w-full flex flex-col pt-16 sm:pt-18">
         {/* Hero Section with Couples Collage & Registration Forms */}
         <HeroSection onLoginClick={handleOpenLoginModal} />
 

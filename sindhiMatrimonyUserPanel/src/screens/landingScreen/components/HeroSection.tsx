@@ -1,7 +1,6 @@
 "use client";
 
 import React, { memo } from "react";
-import Image from "next/image";
 import { QuickRegisterForm } from "./QuickRegisterForm";
 
 interface HeroSectionProps {
@@ -10,20 +9,36 @@ interface HeroSectionProps {
 
 const HeroSectionComponent: React.FC<HeroSectionProps> = ({ onLoginClick }) => {
   return (
-    <section className="relative w-full overflow-hidden [clip-path:inset(0)] bg-stone-950 text-white flex flex-col justify-center items-center min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-4.5rem)]">
-      {/* Background Couples Collage Grid (Fixed to Viewport, Clipped strictly to Hero Section) */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        <Image
-          src="/images/couples-collage.webp"
-          alt="Happy Sindhi Wedding Couples and Newlyweds"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-center"
-        />
+    <section className="relative w-full overflow-hidden bg-stone-950 text-white flex flex-col justify-center items-center min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-4.5rem)]">
+      {/* Background Couples Collage Grid (Fixed to Viewport with GPU acceleration, zero clip-path repaints) */}
+      <div
+        className="fixed inset-0 z-0 pointer-events-none overflow-hidden transform-gpu will-change-transform"
+        aria-hidden="true"
+      >
+        <picture className="absolute inset-0 w-full h-full">
+          <source
+            media="(max-width: 639px)"
+            srcSet="/images/couples-collage-mobile.webp"
+            type="image/webp"
+          />
+          <source
+            media="(min-width: 640px)"
+            srcSet="/images/couples-collage.webp"
+            type="image/webp"
+          />
+          <img
+            src="/images/couples-collage.webp"
+            alt="Happy Sindhi Wedding Couples and Newlyweds"
+            fetchPriority="high"
+            loading="eager"
+            decoding="async"
+            className="w-full h-full object-cover object-center pointer-events-none select-none"
+          />
+        </picture>
+
         {/* Cinematic dark gradient overlays for contrast & luxury feel */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/35 to-black/65" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,rgba(0,0,0,0.45)_100%)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/35 to-black/65 transform-gpu" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,rgba(0,0,0,0.45)_100%)] transform-gpu" />
       </div>
 
       {/* Main Hero Container: fills full viewport height so on initial view there is zero bottom gap */}

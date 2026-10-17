@@ -48,6 +48,22 @@ export default function RootLayout({
     >
       <head>
         <JsonLd data={[organizationSchema, webSiteSchema]} />
+        <link
+          rel="preload"
+          as="image"
+          href="/images/couples-collage-mobile.webp"
+          type="image/webp"
+          media="(max-width: 639px)"
+          fetchPriority="high"
+        />
+        <link
+          rel="preload"
+          as="image"
+          href="/images/couples-collage.webp"
+          type="image/webp"
+          media="(min-width: 640px)"
+          fetchPriority="high"
+        />
       </head>
       <body className="antialiased font-sans" suppressHydrationWarning>
         {process.env.NODE_ENV === "development" && <ReactScan />}
