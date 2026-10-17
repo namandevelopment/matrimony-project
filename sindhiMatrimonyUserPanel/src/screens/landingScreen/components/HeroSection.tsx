@@ -14,7 +14,7 @@ const HeroSectionComponent: React.FC<HeroSectionProps> = ({ onLoginClick }) => {
       {/* Background Couples Collage Grid (Fixed to Viewport, Clipped strictly to Hero Section) */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <Image
-          src="/images/couples-collage.jpg"
+          src="/images/couples-collage.webp"
           alt="Happy Sindhi Wedding Couples and Newlyweds"
           fill
           priority
