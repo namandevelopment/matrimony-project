@@ -2,26 +2,16 @@
 
 import React, { memo, useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
+import { ChevronDown, ChevronUp, LogOut } from "lucide-react";
 import {
-  ChevronDown,
-  ChevronUp,
-  Edit3,
-  Sliders,
-  Settings,
-  HelpCircle,
-  Trophy,
-  PlusCircle,
-  LogOut,
-  ExternalLink,
-} from "lucide-react";
-import { MatrimonyHeartLogo } from "@/screens/landingScreen/components/Icons";
-import {
-  CrownIcon,
-  HoroscopeIcon,
   MaleSilhouetteAvatar,
-  MatchAstroIcon,
-  WeddingBazaarIcon,
-  MandapIcon,
+  EditProfileMenuIcon,
+  EditPreferencesMenuIcon,
+  HoroscopeMenuIcon,
+  SettingsMenuIcon,
+  HelpMenuIcon,
+  SafeMatrimonyMenuIcon,
+  SuccessStoriesMenuIcon,
 } from "./DashboardIcons";
 import type { UserProfile } from "../types";
 
@@ -31,175 +21,6 @@ export interface ProfileDropdownProps {
   onUpgradeClick?: () => void;
 }
 
-// 1. User Info Header inside Dropdown
-const DropdownUserInfo = memo<{ user: UserProfile }>(({ user }) => {
-  return (
-    <div className="flex flex-col items-center text-center pb-3">
-      <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-stone-200 shadow-xs mb-2 bg-stone-100 flex items-center justify-center">
-        {user.avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={user.avatarUrl}
-            alt={user.name}
-            className="w-full h-full object-cover"
-            loading="lazy"
-            decoding="async"
-          />
-        ) : (
-          <MaleSilhouetteAvatar className="w-full h-full" />
-        )}
-      </div>
-      <h3 className="text-base font-bold text-[#1A1A1A] leading-tight font-heading">
-        {user.name}
-      </h3>
-      <div className="flex items-center gap-1.5 mt-1 text-xs text-[#444444]">
-        <MatrimonyHeartLogo size={14} className="w-3.5 h-3.5" color="#DB2F3C" />
-        <span className="font-medium text-[#1A1A1A]">{user.community}</span>
-      </div>
-      <span className="text-xs font-semibold text-[#666666] tracking-wide mt-0.5">
-        {user.matrimonyId}
-      </span>
-      <span className="text-[11px] text-[#888888] mt-0.5">
-        {user.membershipStatus}
-      </span>
-    </div>
-  );
-});
-DropdownUserInfo.displayName = "DropdownUserInfo";
-
-// 2. Mini Upgrade Membership Card inside Dropdown
-const DropdownUpgradeCard = memo<{ onUpgradeClick?: () => void }>(({ onUpgradeClick }) => {
-  return (
-    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#FFF7ED] via-[#FFF1F2] to-[#FFFBEB] border border-amber-200/80 p-3 my-2 shadow-xs">
-      <div className="relative z-10">
-        <p className="text-[11px] font-medium text-[#78350F] leading-snug">
-          Upgrade membership to call/chat with matches
-        </p>
-        <button
-          type="button"
-          onClick={onUpgradeClick}
-          className="mt-2 w-full py-1.5 px-3 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#FF4A57] via-[#DB2F3C] to-[#B71F2A] hover:brightness-105 active:scale-[0.98] shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
-        >
-          <CrownIcon size={13} color="#FFFFFF" />
-          <span>Upgrade now</span>
-        </button>
-      </div>
-      {/* Crown watermark in background */}
-      <div className="absolute -bottom-2 -right-2 opacity-15 pointer-events-none">
-        <CrownIcon size={52} color="#D97706" />
-      </div>
-    </div>
-  );
-});
-DropdownUpgradeCard.displayName = "DropdownUpgradeCard";
-
-// 3. Dropdown Menu Link item
-interface DropdownLinkItemProps {
-  icon: React.ReactNode;
-  label: string;
-  href?: string;
-  onClick?: () => void;
-  isRed?: boolean;
-}
-
-const DropdownLinkItem = memo<DropdownLinkItemProps>(
-  ({ icon, label, href = "#", onClick, isRed = false }) => {
-    const content = (
-      <div
-        className={`w-full flex items-center gap-3 px-3 py-2 text-[13px] font-medium rounded-lg transition-colors cursor-pointer ${
-          isRed
-            ? "text-[#DB2F3C] hover:bg-red-50"
-            : "text-[#333333] hover:text-[#DB2F3C] hover:bg-stone-50"
-        }`}
-      >
-        <span className="shrink-0 text-stone-500 group-hover:text-[#DB2F3C]">{icon}</span>
-        <span className="flex-1 text-left">{label}</span>
-      </div>
-    );
-
-    if (onClick) {
-      return (
-        <button type="button" onClick={onClick} className="w-full text-left">
-          {content}
-        </button>
-      );
-    }
-
-    return (
-      <Link href={href} className="block w-full">
-        {content}
-      </Link>
-    );
-  }
-);
-DropdownLinkItem.displayName = "DropdownLinkItem";
-
-// 4. Accordion Section for Settings & Help
-interface AccordionItemProps {
-  icon: React.ReactNode;
-  title: string;
-  isOpen: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}
-
-const DropdownAccordion = memo<AccordionItemProps>(
-  ({ icon, title, isOpen, onToggle, children }) => {
-    return (
-      <div className="w-full">
-        <button
-          type="button"
-          onClick={onToggle}
-          className="w-full flex items-center justify-between px-3 py-2 text-[13px] font-medium text-[#333333] hover:text-[#DB2F3C] hover:bg-stone-50 rounded-lg transition-colors cursor-pointer"
-        >
-          <div className="flex items-center gap-3">
-            <span className="shrink-0 text-stone-500">{icon}</span>
-            <span>{title}</span>
-          </div>
-          {isOpen ? (
-            <ChevronUp className="w-4 h-4 text-stone-400" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-stone-400" />
-          )}
-        </button>
-
-        {isOpen && (
-          <div className="pl-9 pr-3 py-1 space-y-1 bg-stone-50/60 rounded-lg my-1">
-            {children}
-          </div>
-        )}
-      </div>
-    );
-  }
-);
-DropdownAccordion.displayName = "DropdownAccordion";
-
-// 5. External Services item
-const OtherServiceItem = memo<{
-  icon: React.ReactNode;
-  label: string;
-  url: string;
-}>(({ icon, label, url }) => {
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex items-center justify-between px-3 py-1.5 text-xs text-[#555555] hover:text-[#1A1A1A] hover:bg-stone-50 rounded-md transition-colors"
-    >
-      <div className="flex items-center gap-2.5">
-        {icon}
-        <span className="font-medium">{label}</span>
-      </div>
-      <ExternalLink className="w-3 h-3 text-stone-400" />
-    </a>
-  );
-});
-OtherServiceItem.displayName = "OtherServiceItem";
-
-// ==========================================
-// Main ProfileDropdown Component (Hover & Click)
-// ==========================================
 const ProfileDropdownComponent: React.FC<ProfileDropdownProps> = ({
   user,
   onLogout,
@@ -221,22 +42,27 @@ const ProfileDropdownComponent: React.FC<ProfileDropdownProps> = ({
     setIsOpen(true);
   }, []);
 
-  // Mouse Leave with 200ms grace period so dropdown does not vanish if cursor wanders slightly
+  // Mouse Leave with 300ms grace period to guarantee zero jitter when cursor moves across boundary
   const handleMouseLeave = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
     timeoutRef.current = setTimeout(() => {
       setIsOpen(false);
-    }, 200);
+    }, 300);
   }, []);
 
-  // Click trigger (for mobile/touch or toggling)
-  const handleTriggerClick = useCallback(() => {
+  // Click trigger (for touch devices, mobile screens, or deliberate toggle)
+  const handleTriggerClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
     setIsOpen((prev) => !prev);
   }, []);
 
-  // Close when clicking outside
+  // Close when clicking outside or pressing Escape
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -262,11 +88,16 @@ const ProfileDropdownComponent: React.FC<ProfileDropdownProps> = ({
     };
   }, []);
 
-  const toggleSettings = useCallback(() => {
+  // Accordion toggle handlers
+  const toggleSettings = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsSettingsOpen((prev) => !prev);
   }, []);
 
-  const toggleHelp = useCallback(() => {
+  const toggleHelp = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsHelpOpen((prev) => !prev);
   }, []);
 
@@ -277,7 +108,7 @@ const ProfileDropdownComponent: React.FC<ProfileDropdownProps> = ({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* 1. Header Profile Trigger: Circular Avatar + Chevron */}
+      {/* 1. Header Profile Trigger: Avatar circle + Chevron */}
       <button
         type="button"
         onClick={handleTriggerClick}
@@ -286,7 +117,7 @@ const ProfileDropdownComponent: React.FC<ProfileDropdownProps> = ({
         aria-label="User Profile Menu"
         className="flex items-center gap-1.5 p-1 rounded-full hover:bg-stone-100 transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#DB2F3C]"
       >
-        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-stone-200 bg-stone-100 shrink-0">
+        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-stone-200 bg-stone-100 shrink-0 shadow-2xs">
           {user.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -307,158 +138,219 @@ const ProfileDropdownComponent: React.FC<ProfileDropdownProps> = ({
         />
       </button>
 
-      {/* 2. Floating Dropdown Menu Card (Hover Triggered) */}
+      {/* 2. Floating Dropdown Menu (1:1 with Screenshot Architecture) */}
       {isOpen && (
         <div
-          className="absolute right-0 top-full mt-2 w-72 sm:w-80 max-h-[82vh] overflow-y-auto bg-white rounded-2xl shadow-2xl border border-stone-200 z-50 p-4 transition-all duration-200 ease-out origin-top-right focus:outline-hidden"
-          style={{
-            scrollbarWidth: "thin",
-            scrollbarColor: "#CBD5E1 transparent",
-          }}
+          className="absolute right-0 top-full pt-2 z-50 animate-in fade-in zoom-in-95 duration-150 focus:outline-hidden"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
-          {/* Top User Info */}
-          <DropdownUserInfo user={user} />
+          {/* Caret / Upward Pointing Arrow directly under the circular avatar */}
+          <div
+            className="absolute top-[2px] right-[37px] sm:right-[39px] w-3.5 h-3.5 bg-white border-t border-l border-stone-200/90 rotate-45 z-20 shadow-[-2px_-2px_4px_rgba(0,0,0,0.03)]"
+            aria-hidden="true"
+          />
 
-          {/* Mini Upgrade CTA Banner */}
-          <DropdownUpgradeCard onUpgradeClick={onUpgradeClick} />
+          {/* Main Dropdown Card */}
+          <div
+            className="relative w-[295px] sm:w-[315px] max-h-[85vh] overflow-y-auto bg-white rounded-2xl shadow-[0_16px_40px_-6px_rgba(0,0,0,0.18),0_4px_12px_rgba(0,0,0,0.06)] border border-stone-200/90 p-4 sm:p-4.5 z-10"
+            style={{
+              scrollbarWidth: "thin",
+              scrollbarColor: "#CBD5E1 transparent",
+            }}
+          >
+            {/* Top User Details */}
+            <div className="flex flex-col items-center text-center pt-1 pb-1">
+              <h2 className="text-[19px] sm:text-[20px] font-bold text-stone-900 leading-tight tracking-tight font-heading">
+                {user.name || "Naman"}
+              </h2>
 
-          {/* Quick Action Links */}
-          <div className="space-y-0.5 border-t border-stone-100 pt-2">
-            <DropdownLinkItem
-              icon={<Edit3 className="w-4 h-4" />}
-              label="Edit Profile"
-              href="/profile/edit"
-            />
-            <DropdownLinkItem
-              icon={<Sliders className="w-4 h-4" />}
-              label="Edit Preferences"
-              href="/profile/preferences"
-            />
-            <DropdownLinkItem
-              icon={<HoroscopeIcon className="w-4 h-4" />}
-              label="View/Edit Horoscope"
-              href="/profile/horoscope"
-            />
-          </div>
+              <p className="mt-1 text-[15px] font-semibold text-stone-700 tracking-wide">
+                {user.matrimonyId || "BRH4517087"}
+              </p>
 
-          {/* Support & Feedback Section */}
-          <div className="border-t border-stone-100 pt-3 mt-2">
-            <span className="block px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-stone-400">
-              Support & feedback
-            </span>
-
-            {/* Settings Accordion */}
-            <DropdownAccordion
-              icon={<Settings className="w-4 h-4" />}
-              title="Settings"
-              isOpen={isSettingsOpen}
-              onToggle={toggleSettings}
-            >
-              <Link
-                href="/settings/account"
-                className="block py-1 px-2 text-xs text-stone-600 hover:text-[#DB2F3C] rounded transition-colors"
-              >
-                Account Settings
-              </Link>
-              <Link
-                href="/settings/communication"
-                className="block py-1 px-2 text-xs text-stone-600 hover:text-[#DB2F3C] rounded transition-colors"
-              >
-                Communication Settings
-              </Link>
-              <Link
-                href="/settings/privacy"
-                className="block py-1 px-2 text-xs text-stone-600 hover:text-[#DB2F3C] rounded transition-colors"
-              >
-                Privacy Settings
-              </Link>
-              <Link
-                href="/settings/ignored"
-                className="block py-1 px-2 text-xs text-stone-600 hover:text-[#DB2F3C] rounded transition-colors"
-              >
-                Ignored Profiles
-              </Link>
-              <Link
-                href="/settings/blocked"
-                className="block py-1 px-2 text-xs text-stone-600 hover:text-[#DB2F3C] rounded transition-colors"
-              >
-                Blocked Profiles
-              </Link>
-            </DropdownAccordion>
-
-            {/* Help Accordion */}
-            <DropdownAccordion
-              icon={<HelpCircle className="w-4 h-4" />}
-              title="Help"
-              isOpen={isHelpOpen}
-              onToggle={toggleHelp}
-            >
-              <Link
-                href="/help"
-                className="block py-1 px-2 text-xs text-stone-600 hover:text-[#DB2F3C] rounded transition-colors"
-              >
-                24x7 Help Centre
-              </Link>
-              <Link
-                href="/help/contact"
-                className="block py-1 px-2 text-xs text-stone-600 hover:text-[#DB2F3C] rounded transition-colors"
-              >
-                Contact Us
-              </Link>
-              <Link
-                href="/safety-tips"
-                className="block py-1 px-2 text-xs text-stone-600 hover:text-[#DB2F3C] rounded transition-colors"
-              >
-                Safety Tips
-              </Link>
-              <Link
-                href="/help/feedback"
-                className="block py-1 px-2 text-xs text-stone-600 hover:text-[#DB2F3C] rounded transition-colors"
-              >
-                Feedback
-              </Link>
-            </DropdownAccordion>
-
-            <DropdownLinkItem
-              icon={<Trophy className="w-4 h-4" />}
-              label="Success Stories"
-              href="/success-stories"
-            />
-            <DropdownLinkItem
-              icon={<PlusCircle className="w-4 h-4" />}
-              label="More"
-              href="/more"
-            />
-            <DropdownLinkItem
-              icon={<LogOut className="w-4 h-4 text-[#DB2F3C]" />}
-              label="Logout"
-              onClick={onLogout}
-              isRed
-            />
-          </div>
-
-          {/* Matrimony.com - Other Services Section */}
-          <div className="border-t border-stone-100 pt-3 mt-2">
-            <span className="block px-3 pb-1 text-[11px] font-semibold text-stone-400">
-              Matrimony.com - Other Services
-            </span>
-            <div className="space-y-0.5 mt-1">
-              <OtherServiceItem
-                icon={<MatchAstroIcon className="w-3.5 h-3.5" />}
-                label="MatchAstro.com"
-                url="https://www.matchastro.com"
-              />
-              <OtherServiceItem
-                icon={<WeddingBazaarIcon className="w-3.5 h-3.5" />}
-                label="WeddingBazaar.com"
-                url="https://www.weddingbazaar.com"
-              />
-              <OtherServiceItem
-                icon={<MandapIcon className="w-3.5 h-3.5" />}
-                label="Mandap.com"
-                url="https://www.mandap.com"
-              />
+              <p className="mt-0.5 text-[13px] text-stone-500 font-normal">
+                {user.membershipStatus || "Free member"}
+              </p>
             </div>
+
+            {/* Upgrade Membership Banner Card */}
+            <div className="mt-3.5 mb-2.5 p-3.5 rounded-xl bg-gradient-to-b from-[#FFF5F2] to-[#FFF0EC] border border-[#FFE2DC] text-center shadow-2xs">
+              <p className="text-[13.5px] font-bold text-stone-900 leading-snug">
+                Upgrade membership to
+                <br />
+                call/chat with matches
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  if (onUpgradeClick) onUpgradeClick();
+                }}
+                className="mt-2.5 inline-flex items-center justify-center px-6 py-1.5 rounded-full bg-[#E54848] hover:bg-[#D93838] active:scale-95 text-white text-[12.5px] font-bold shadow-xs hover:shadow-md hover:shadow-red-500/20 transition-all cursor-pointer"
+              >
+                Upgrade now
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-stone-200/70 my-2" />
+
+            {/* 3 Top Primary Action Links */}
+            <div className="space-y-0.5">
+              <Link
+                href="/profile/edit"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-3.5 px-2 py-2 rounded-lg text-[14px] sm:text-[14.5px] font-medium text-stone-800 hover:text-[#DB2F3C] hover:bg-stone-50 transition-colors group"
+              >
+                <EditProfileMenuIcon className="w-5 h-5 shrink-0 transition-transform group-hover:scale-105" />
+                <span>Edit Profile</span>
+              </Link>
+
+              <Link
+                href="/profile/preferences"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-3.5 px-2 py-2 rounded-lg text-[14px] sm:text-[14.5px] font-medium text-stone-800 hover:text-[#DB2F3C] hover:bg-stone-50 transition-colors group"
+              >
+                <EditPreferencesMenuIcon className="w-5 h-5 shrink-0 transition-transform group-hover:scale-105" />
+                <span>Edit Preferences</span>
+              </Link>
+
+              <Link
+                href="/profile/horoscope"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-3.5 px-2 py-2 rounded-lg text-[14px] sm:text-[14.5px] font-medium text-stone-800 hover:text-[#DB2F3C] hover:bg-stone-50 transition-colors group"
+              >
+                <HoroscopeMenuIcon className="w-5 h-5 shrink-0 transition-transform group-hover:scale-105" />
+                <span>View/Edit Horoscope</span>
+              </Link>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-stone-200/70 my-2" />
+
+            {/* Accordion 1: Settings (Expandable / Collapsible) */}
+            <div className="space-y-0.5">
+              <button
+                type="button"
+                onClick={toggleSettings}
+                className="w-full flex items-center justify-between px-2 py-2 rounded-lg text-[14px] sm:text-[14.5px] font-medium text-stone-800 hover:text-[#DB2F3C] hover:bg-stone-50 transition-colors cursor-pointer group text-left"
+              >
+                <div className="flex items-center gap-3.5">
+                  <SettingsMenuIcon className="w-5 h-5 shrink-0 transition-transform group-hover:scale-105" />
+                  <span>Settings</span>
+                </div>
+                {isSettingsOpen ? (
+                  <ChevronUp className="w-4 h-4 text-stone-500 group-hover:text-[#DB2F3C] transition-colors" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-stone-500 group-hover:text-[#DB2F3C] transition-colors" />
+                )}
+              </button>
+
+              {/* Sub-menu items when Settings is expanded */}
+              {isSettingsOpen && (
+                <div className="pl-10.5 pr-2 pt-0.5 pb-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <Link
+                    href="/settings/account"
+                    onClick={() => setIsOpen(false)}
+                    className="block text-[13.5px] font-medium text-stone-700 hover:text-[#DB2F3C] hover:translate-x-1 py-1 transition-all"
+                  >
+                    Account Settings
+                  </Link>
+                  <Link
+                    href="/settings/communication"
+                    onClick={() => setIsOpen(false)}
+                    className="block text-[13.5px] font-medium text-stone-700 hover:text-[#DB2F3C] hover:translate-x-1 py-1 transition-all"
+                  >
+                    Communication Settings
+                  </Link>
+                  <Link
+                    href="/settings/privacy"
+                    onClick={() => setIsOpen(false)}
+                    className="block text-[13.5px] font-medium text-stone-700 hover:text-[#DB2F3C] hover:translate-x-1 py-1 transition-all"
+                  >
+                    Privacy Settings
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Accordion 2: Help (Expandable / Collapsible) */}
+            <div className="space-y-0.5">
+              <button
+                type="button"
+                onClick={toggleHelp}
+                className="w-full flex items-center justify-between px-2 py-2 rounded-lg text-[14px] sm:text-[14.5px] font-medium text-stone-800 hover:text-[#DB2F3C] hover:bg-stone-50 transition-colors cursor-pointer group text-left"
+              >
+                <div className="flex items-center gap-3.5">
+                  <HelpMenuIcon className="w-5 h-5 shrink-0 transition-transform group-hover:scale-105" />
+                  <span>Help</span>
+                </div>
+                {isHelpOpen ? (
+                  <ChevronUp className="w-4 h-4 text-stone-500 group-hover:text-[#DB2F3C] transition-colors" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-stone-500 group-hover:text-[#DB2F3C] transition-colors" />
+                )}
+              </button>
+
+              {/* Sub-menu items when Help is expanded */}
+              {isHelpOpen && (
+                <div className="pl-10.5 pr-2 pt-0.5 pb-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <Link
+                    href="/help"
+                    onClick={() => setIsOpen(false)}
+                    className="block text-[13.5px] font-medium text-stone-700 hover:text-[#DB2F3C] hover:translate-x-1 py-1 transition-all"
+                  >
+                    24x7 Help Center
+                  </Link>
+                  <Link
+                    href="/help#faqs"
+                    onClick={() => setIsOpen(false)}
+                    className="block text-[13.5px] font-medium text-stone-700 hover:text-[#DB2F3C] hover:translate-x-1 py-1 transition-all"
+                  >
+                    FAQ&apos;s
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Safe Matrimony Link */}
+            <Link
+              href="/safety-tips"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-3.5 px-2 py-2 rounded-lg text-[14px] sm:text-[14.5px] font-medium text-stone-800 hover:text-[#DB2F3C] hover:bg-stone-50 transition-colors group"
+            >
+              <SafeMatrimonyMenuIcon className="w-5 h-5 shrink-0 transition-transform group-hover:scale-105" />
+              <span>Safe Matrimony</span>
+            </Link>
+
+            {/* Success Stories Link */}
+            <Link
+              href="/success-stories"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-3.5 px-2 py-2 rounded-lg text-[14px] sm:text-[14.5px] font-medium text-stone-800 hover:text-[#DB2F3C] hover:bg-stone-50 transition-colors group"
+            >
+              <SuccessStoriesMenuIcon className="w-5 h-5 shrink-0 transition-transform group-hover:scale-105" />
+              <span>Success Stories</span>
+            </Link>
+
+            {/* Optional Logout Link */}
+            {onLogout && (
+              <>
+                <div className="border-t border-stone-200/70 my-2" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    onLogout();
+                  }}
+                  className="w-full flex items-center gap-3.5 px-2 py-2 rounded-lg text-[14px] font-semibold text-[#DB2F3C] hover:bg-red-50/80 transition-colors cursor-pointer group"
+                >
+                  <LogOut className="w-4.5 h-4.5 shrink-0 transition-transform group-hover:-translate-x-0.5" />
+                  <span>Logout</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

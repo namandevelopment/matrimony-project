@@ -4,7 +4,15 @@ import * as CONSTANTS_MSG from "../../utils/constantsMessage.js";
 import { User, Profile, PartnerPreference } from "../../models/index.js";
 import { updateDocumentByQueryAndData } from "../../services/serviceGlobal.js";
 
-const getUserId = (req) => req.user?.id || req.auth?.id || req.user?._id || req.auth?._id;
+const getUserId = (req) => req.user?.id || req.auth?.id || req.user?._id || req.auth?._id || req.user?.userId || req.auth?.userId;
+
+const getProfileQuery = (req, userId) => {
+  const activeProfileId = req.headers["x-active-profile-id"] || req.user?.activeProfileId || req.user?.profileId;
+  if (activeProfileId) {
+    return { _id: activeProfileId, isDeleted: false };
+  }
+  return { userId, isDeleted: false };
+};
 
 /**
  * 👤 Get Full Consolidated Profile (User + Profile + PartnerPreference)
@@ -12,10 +20,11 @@ const getUserId = (req) => req.user?.id || req.auth?.id || req.user?._id || req.
  */
 export const getMyProfile = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
+  const profileQuery = getProfileQuery(req, userId);
 
   const [user, profile, partnerPreference] = await Promise.all([
     User.findById(userId).select("-password -verificationToken -passwordResetToken").lean(),
-    Profile.findOne({ userId, isDeleted: false }).lean(),
+    Profile.findOne(profileQuery).lean(),
     PartnerPreference.findOne({ userId, isDeleted: false }).lean(),
   ]);
 
@@ -63,7 +72,7 @@ export const updateProfileBasic = asyncHandler(async (req, res) => {
 
   const result = await updateDocumentByQueryAndData(
     Profile,
-    { userId, isDeleted: false },
+    getProfileQuery(req, userId),
     updateData
   );
 
@@ -100,7 +109,7 @@ export const updateProfileEducationCareer = asyncHandler(async (req, res) => {
 
   const result = await updateDocumentByQueryAndData(
     Profile,
-    { userId, isDeleted: false },
+    getProfileQuery(req, userId),
     updateData
   );
 
@@ -137,7 +146,7 @@ export const updateProfileFamily = asyncHandler(async (req, res) => {
 
   const result = await updateDocumentByQueryAndData(
     Profile,
-    { userId, isDeleted: false },
+    getProfileQuery(req, userId),
     updateData
   );
 
@@ -174,7 +183,7 @@ export const updateProfileHoroscope = asyncHandler(async (req, res) => {
 
   const result = await updateDocumentByQueryAndData(
     Profile,
-    { userId, isDeleted: false },
+    getProfileQuery(req, userId),
     updateData
   );
 

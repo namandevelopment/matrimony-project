@@ -2,20 +2,21 @@
 
 import React, { memo, useState, useCallback } from "react";
 import Link from "next/link";
-import {
-  Camera,
-  Edit3,
-  Sliders,
-  Settings,
-  HelpCircle,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { Camera, ChevronDown, ChevronUp } from "lucide-react";
 import { MatrimonyHeartLogo } from "@/screens/landingScreen/components/Icons";
 import {
-  CrownIcon,
-  HoroscopeIcon,
   MaleSilhouetteAvatar,
+  UpgradeCrownArt,
+  EditProfileMenuIcon,
+  EditPreferencesMenuIcon,
+  HoroscopeMenuIcon,
+  SettingsMenuIcon,
+  HelpMenuIcon,
+  SuccessStoriesMenuIcon,
+  MoreMenuIcon,
+  MatchAstroBrandIcon,
+  WeddingBazaarBrandIcon,
+  MandapBrandIcon,
 } from "./DashboardIcons";
 import type { UserProfile } from "../types";
 
@@ -23,7 +24,10 @@ export interface DashboardProfileCardProps {
   user: UserProfile;
   onUpgradeClick?: () => void;
   onPhotoEditClick?: () => void;
+  onLogout?: () => void;
   className?: string;
+  defaultSettingsOpen?: boolean;
+  defaultHelpOpen?: boolean;
 }
 
 const DashboardProfileCardComponent: React.FC<DashboardProfileCardProps> = ({
@@ -31,9 +35,11 @@ const DashboardProfileCardComponent: React.FC<DashboardProfileCardProps> = ({
   onUpgradeClick,
   onPhotoEditClick,
   className = "",
+  defaultSettingsOpen = false,
+  defaultHelpOpen = false,
 }) => {
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(defaultSettingsOpen);
+  const [isHelpOpen, setIsHelpOpen] = useState(defaultHelpOpen);
 
   const toggleSettings = useCallback(() => {
     setIsSettingsOpen((prev) => !prev);
@@ -45,12 +51,12 @@ const DashboardProfileCardComponent: React.FC<DashboardProfileCardProps> = ({
 
   return (
     <div
-      className={`w-full bg-white rounded-2xl border border-stone-200 shadow-xs p-5 flex flex-col ${className}`}
+      className={`w-full bg-white rounded-2xl border border-stone-200/90 shadow-xs p-4 sm:p-5 flex flex-col ${className}`}
     >
-      {/* 1. User Avatar + Camera Badge */}
-      <div className="flex flex-col items-center text-center pb-4">
-        <div className="relative group">
-          <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-stone-200 bg-stone-100 flex items-center justify-center shadow-xs">
+      {/* 1. Avatar + Camera Upload Button */}
+      <div className="flex flex-col items-center text-center">
+        <div className="relative">
+          <div className="w-[88px] h-[88px] rounded-full overflow-hidden border border-stone-200 bg-[#CBD5E1] flex items-center justify-center shadow-xs">
             {user.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -64,178 +70,249 @@ const DashboardProfileCardComponent: React.FC<DashboardProfileCardProps> = ({
               <MaleSilhouetteAvatar className="w-full h-full" />
             )}
           </div>
-          {/* Camera upload badge */}
+          {/* Circular Camera Badge Button */}
           <button
             type="button"
             onClick={onPhotoEditClick}
-            aria-label="Change Profile Photo"
-            className="absolute bottom-0 right-0 w-7 h-7 bg-white rounded-full border border-stone-300 shadow-xs flex items-center justify-center text-stone-600 hover:text-[#DB2F3C] hover:border-[#DB2F3C] transition-colors cursor-pointer"
+            aria-label="Change profile photo"
+            className="absolute bottom-0 right-1 w-6 h-6 rounded-full bg-white border border-stone-300 shadow-xs flex items-center justify-center text-[#1E293B] hover:text-[#DB2F3C] transition-colors cursor-pointer"
           >
             <Camera className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* User Info */}
-        <h2 className="mt-3 text-lg font-bold text-[#1A1A1A] leading-tight font-heading">
+        {/* User Name */}
+        <h2 className="mt-3 text-[22px] font-bold text-[#111827] leading-tight font-heading">
           {user.name}
         </h2>
-        <div className="flex items-center gap-1.5 mt-1 text-xs text-[#444444]">
-          <MatrimonyHeartLogo size={14} className="w-3.5 h-3.5" color="#DB2F3C" />
-          <span className="font-medium text-[#1A1A1A]">{user.community}</span>
+
+        {/* Community Badge */}
+        <div className="flex items-center justify-center gap-1.5 mt-1">
+          <MatrimonyHeartLogo size={18} className="w-4 h-4 shrink-0" color="#E53935" />
+          <span className="text-[15px] font-semibold text-[#111827]">
+            {user.community || "BrahminMatrimony"}
+          </span>
         </div>
-        <span className="text-xs font-semibold text-[#666666] tracking-wide mt-1">
-          {user.matrimonyId}
-        </span>
-        <span className="text-xs text-[#888888] mt-0.5">
-          {user.membershipStatus}
-        </span>
+
+        {/* Matrimony ID */}
+        <p className="mt-1 text-[17px] font-bold text-[#111827] tracking-normal">
+          {user.matrimonyId || "BRH4517087"}
+        </p>
+
+        {/* Membership Tier */}
+        <p className="mt-0.5 text-[14px] text-stone-500 font-normal">
+          {user.membershipStatus || "Free member"}
+        </p>
       </div>
 
-      {/* 2. Upgrade Membership Banner Card */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#FFF7ED] via-[#FFF1F2] to-[#FFFBEB] border border-amber-200/80 p-3.5 my-2 shadow-xs">
-        <div className="relative z-10">
-          <p className="text-xs font-medium text-[#78350F] leading-snug">
+      {/* 2. Upgrade Membership Peach Banner Card */}
+      <div className="relative mt-4 mb-3 overflow-hidden rounded-2xl bg-[#FFF5EE] border border-[#FFE4D6] p-4 flex items-center justify-between">
+        <div className="flex-1 pr-2 z-10">
+          <p className="text-[13.5px] font-bold text-[#111827] leading-[1.25]">
             Upgrade membership to call/chat with matches
           </p>
           <button
             type="button"
             onClick={onUpgradeClick}
-            className="mt-2.5 w-full py-1.5 px-3 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#FF4A57] via-[#DB2F3C] to-[#B71F2A] hover:brightness-105 active:scale-[0.98] shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+            className="mt-3 inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#E54848] text-white text-[13px] font-semibold hover:bg-[#D93D3D] active:scale-[0.98] shadow-xs transition-all cursor-pointer"
           >
-            <CrownIcon size={13} color="#FFFFFF" />
-            <span>Upgrade now</span>
+            Upgrade now
           </button>
         </div>
-        {/* Crown watermark illustration in corner */}
-        <div className="absolute -bottom-3 -right-3 opacity-15 pointer-events-none">
-          <CrownIcon size={64} color="#D97706" />
+        <div className="shrink-0 flex items-center justify-center">
+          <UpgradeCrownArt className="w-24 h-18 text-[#EEA47F]" />
         </div>
       </div>
 
-      {/* 3. Action Links */}
-      <div className="space-y-1 border-t border-stone-100 pt-3 mt-1">
+      {/* 3. Profile Edit Links with Clean Separator Lines */}
+      <div className="mt-1">
+        {/* Edit Profile */}
         <Link
           href="/profile/edit"
-          className="flex items-center gap-3 px-3 py-2 text-xs sm:text-[13px] font-medium text-[#333333] hover:text-[#DB2F3C] hover:bg-stone-50 rounded-lg transition-colors"
+          className="flex items-center gap-3.5 py-3 text-[15px] font-medium text-[#111827] hover:text-[#DB2F3C] transition-colors"
         >
-          <Edit3 className="w-4 h-4 text-stone-500" />
+          <EditProfileMenuIcon className="w-5 h-5 shrink-0" />
           <span>Edit Profile</span>
         </Link>
+        <div className="border-b border-stone-200/70" />
+
+        {/* Edit Preferences */}
         <Link
           href="/profile/preferences"
-          className="flex items-center gap-3 px-3 py-2 text-xs sm:text-[13px] font-medium text-[#333333] hover:text-[#DB2F3C] hover:bg-stone-50 rounded-lg transition-colors"
+          className="flex items-center gap-3.5 py-3 text-[15px] font-medium text-[#111827] hover:text-[#DB2F3C] transition-colors"
         >
-          <Sliders className="w-4 h-4 text-stone-500" />
+          <EditPreferencesMenuIcon className="w-5 h-5 shrink-0" />
           <span>Edit Preferences</span>
         </Link>
+        <div className="border-b border-stone-200/70" />
+
+        {/* View/Edit Horoscope */}
         <Link
           href="/profile/horoscope"
-          className="flex items-center gap-3 px-3 py-2 text-xs sm:text-[13px] font-medium text-[#333333] hover:text-[#DB2F3C] hover:bg-stone-50 rounded-lg transition-colors"
+          className="flex items-center gap-3.5 py-3 text-[15px] font-medium text-[#111827] hover:text-[#DB2F3C] transition-colors"
         >
-          <HoroscopeIcon className="w-4 h-4 text-stone-500" />
+          <HoroscopeMenuIcon className="w-5 h-5 shrink-0" />
           <span>View/Edit Horoscope</span>
         </Link>
+        <div className="border-b border-stone-200/70" />
       </div>
 
-      {/* 4. Support & Feedback Section */}
-      <div className="border-t border-stone-100 pt-3 mt-2">
-        <span className="block px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+      {/* 4. Support & feedback Section */}
+      <div className="mt-2">
+        <h3 className="pt-4 pb-2 text-[16px] font-bold text-[#111827]">
           Support & feedback
-        </span>
+        </h3>
 
         {/* Settings Accordion */}
-        <div className="w-full">
-          <button
-            type="button"
-            onClick={toggleSettings}
-            className="w-full flex items-center justify-between px-3 py-2 text-xs sm:text-[13px] font-medium text-[#333333] hover:text-[#DB2F3C] hover:bg-stone-50 rounded-lg transition-colors cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <Settings className="w-4 h-4 text-stone-500" />
-              <span>Settings</span>
-            </div>
-            {isSettingsOpen ? (
-              <ChevronUp className="w-4 h-4 text-stone-400" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-stone-400" />
-            )}
-          </button>
-          {isSettingsOpen && (
-            <div className="pl-9 pr-3 py-1 space-y-1 bg-stone-50/60 rounded-lg my-1">
-              <Link
-                href="/settings/account"
-                className="block py-1 px-2 text-xs text-stone-600 hover:text-[#DB2F3C] rounded transition-colors"
-              >
-                Account Settings
-              </Link>
-              <Link
-                href="/settings/communication"
-                className="block py-1 px-2 text-xs text-stone-600 hover:text-[#DB2F3C] rounded transition-colors"
-              >
-                Communication Settings
-              </Link>
-              <Link
-                href="/settings/privacy"
-                className="block py-1 px-2 text-xs text-stone-600 hover:text-[#DB2F3C] rounded transition-colors"
-              >
-                Privacy Settings
-              </Link>
-              <Link
-                href="/settings/ignored"
-                className="block py-1 px-2 text-xs text-stone-600 hover:text-[#DB2F3C] rounded transition-colors"
-              >
-                Ignored Profiles
-              </Link>
-              <Link
-                href="/settings/blocked"
-                className="block py-1 px-2 text-xs text-stone-600 hover:text-[#DB2F3C] rounded transition-colors"
-              >
-                Blocked Profiles
-              </Link>
-            </div>
+        <button
+          type="button"
+          onClick={toggleSettings}
+          className="w-full flex items-center justify-between py-3 text-[15px] font-medium text-[#111827] hover:text-[#DB2F3C] transition-colors cursor-pointer text-left"
+        >
+          <div className="flex items-center gap-3.5">
+            <SettingsMenuIcon className="w-5 h-5 shrink-0" />
+            <span>Settings</span>
+          </div>
+          {isSettingsOpen ? (
+            <ChevronUp className="w-4 h-4 text-stone-500" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-stone-500" />
           )}
-        </div>
+        </button>
+
+        {isSettingsOpen && (
+          <div className="pl-9 pb-2 space-y-2">
+            <Link
+              href="/settings/account"
+              className="block text-[14.5px] text-[#111827] hover:text-[#DB2F3C] transition-colors py-1"
+            >
+              Account Settings
+            </Link>
+            <Link
+              href="/settings/communication"
+              className="block text-[14.5px] text-[#111827] hover:text-[#DB2F3C] transition-colors py-1"
+            >
+              Communication Settings
+            </Link>
+            <Link
+              href="/settings/privacy"
+              className="block text-[14.5px] text-[#111827] hover:text-[#DB2F3C] transition-colors py-1"
+            >
+              Privacy Settings
+            </Link>
+            <Link
+              href="/settings/ignored"
+              className="block text-[14.5px] text-[#111827] hover:text-[#DB2F3C] transition-colors py-1"
+            >
+              Ignored Profiles
+            </Link>
+            <Link
+              href="/settings/blocked"
+              className="block text-[14.5px] text-[#111827] hover:text-[#DB2F3C] transition-colors py-1"
+            >
+              Blocked Profiles
+            </Link>
+          </div>
+        )}
+        <div className="border-b border-stone-200/70" />
 
         {/* Help Accordion */}
-        <div className="w-full">
-          <button
-            type="button"
-            onClick={toggleHelp}
-            className="w-full flex items-center justify-between px-3 py-2 text-xs sm:text-[13px] font-medium text-[#333333] hover:text-[#DB2F3C] hover:bg-stone-50 rounded-lg transition-colors cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <HelpCircle className="w-4 h-4 text-stone-500" />
-              <span>Help</span>
-            </div>
-            {isHelpOpen ? (
-              <ChevronUp className="w-4 h-4 text-stone-400" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-stone-400" />
-            )}
-          </button>
-          {isHelpOpen && (
-            <div className="pl-9 pr-3 py-1 space-y-1 bg-stone-50/60 rounded-lg my-1">
-              <Link
-                href="/help"
-                className="block py-1 px-2 text-xs text-stone-600 hover:text-[#DB2F3C] rounded transition-colors"
-              >
-                24x7 Help Centre
-              </Link>
-              <Link
-                href="/help/contact"
-                className="block py-1 px-2 text-xs text-stone-600 hover:text-[#DB2F3C] rounded transition-colors"
-              >
-                Contact Us
-              </Link>
-              <Link
-                href="/safety-tips"
-                className="block py-1 px-2 text-xs text-stone-600 hover:text-[#DB2F3C] rounded transition-colors"
-              >
-                Safety Tips
-              </Link>
-            </div>
+        <button
+          type="button"
+          onClick={toggleHelp}
+          className="w-full flex items-center justify-between py-3 text-[15px] font-medium text-[#111827] hover:text-[#DB2F3C] transition-colors cursor-pointer text-left"
+        >
+          <div className="flex items-center gap-3.5">
+            <HelpMenuIcon className="w-5 h-5 shrink-0" />
+            <span>Help</span>
+          </div>
+          {isHelpOpen ? (
+            <ChevronUp className="w-4 h-4 text-stone-500" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-stone-500" />
           )}
-        </div>
+        </button>
+
+        {isHelpOpen && (
+          <div className="pl-9 pb-2 space-y-2">
+            <Link
+              href="/help/faqs"
+              className="block text-[14.5px] text-[#111827] hover:text-[#DB2F3C] transition-colors py-1"
+            >
+              FAQ&apos;s
+            </Link>
+            <Link
+              href="/help/24x7"
+              className="block text-[14.5px] text-[#111827] hover:text-[#DB2F3C] transition-colors py-1"
+            >
+              24x7 Help Center
+            </Link>
+          </div>
+        )}
+        <div className="border-b border-stone-200/70" />
+
+        {/* Success Stories */}
+        <Link
+          href="/success-stories"
+          className="flex items-center gap-3.5 py-3 text-[15px] font-medium text-[#111827] hover:text-[#DB2F3C] transition-colors"
+        >
+          <SuccessStoriesMenuIcon className="w-5 h-5 shrink-0" />
+          <span>Success Stories</span>
+        </Link>
+        <div className="border-b border-stone-200/70" />
+
+        {/* More */}
+        <Link
+          href="/more"
+          className="flex items-center gap-3.5 py-3 text-[15px] font-medium text-[#111827] hover:text-[#DB2F3C] transition-colors"
+        >
+          <MoreMenuIcon className="w-5 h-5 shrink-0" />
+          <span>More</span>
+        </Link>
+        <div className="border-b border-stone-200/70" />
+      </div>
+
+      {/* 5. Matrimony.com - Other Services Section */}
+      <div className="mt-2">
+        <h3 className="pt-4 pb-2 text-[16px] font-bold text-[#111827]">
+          Matrimony.com - Other Services
+        </h3>
+
+        {/* MatchAstro.com */}
+        <a
+          href="https://www.matchastro.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3.5 py-3 text-[15px] font-medium text-[#111827] hover:text-[#DB2F3C] transition-colors"
+        >
+          <MatchAstroBrandIcon className="w-5 h-5 shrink-0" />
+          <span>MatchAstro.com</span>
+        </a>
+        <div className="border-b border-stone-200/70" />
+
+        {/* WeddingBazaar.com */}
+        <a
+          href="https://www.weddingbazaar.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3.5 py-3 text-[15px] font-medium text-[#111827] hover:text-[#DB2F3C] transition-colors"
+        >
+          <WeddingBazaarBrandIcon className="w-5 h-5 shrink-0" />
+          <span>WeddingBazaar.com</span>
+        </a>
+        <div className="border-b border-stone-200/70" />
+
+        {/* Mandap.com */}
+        <a
+          href="https://www.mandap.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3.5 py-3 text-[15px] font-medium text-[#111827] hover:text-[#DB2F3C] transition-colors"
+        >
+          <MandapBrandIcon className="w-5 h-5 shrink-0" />
+          <span>Mandap.com</span>
+        </a>
+        <div className="border-b border-stone-200/70" />
       </div>
     </div>
   );

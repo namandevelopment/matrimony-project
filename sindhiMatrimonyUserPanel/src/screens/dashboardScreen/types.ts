@@ -50,12 +50,22 @@ export interface MarriageSuccessStory {
   id: string;
   coupleNames: string;
   photoUrl: string;
+  photoUrls?: string[];
+  weddingDate?: string;
   postedDate?: string;
   testimonial?: string;
   storySnippet?: string;
+  fullStory?: string;
+  location?: string;
+  groomMatrimonyId?: string;
+  brideMatrimonyId?: string;
+  isVerified?: boolean;
+  verifiedBy?: string;
+  likesCount?: number;
 }
 
 export interface DashboardScreenProps {
+  initialTab?: DashboardNavTab["id"];
   initialUser?: UserProfile;
   initialMatches?: MatchProfile[];
   initialViewedProfiles?: ViewedProfile[];

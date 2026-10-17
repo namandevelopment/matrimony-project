@@ -73,7 +73,7 @@ export const RegistrationCompleteModal: React.FC<RegistrationCompleteModalProps>
               className="px-5 py-3 rounded-2xl border border-stone-300 text-stone-700 hover:bg-stone-50 text-sm font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5"
             >
               <Home className="w-4 h-4" />
-              <span>Home</span>
+              <span>Dashboard</span>
             </button>
           </div>
         </div>

@@ -132,7 +132,7 @@ const CustomTextInputComponent = forwardRef<HTMLInputElement, CustomTextInputPro
         error
           ? "border-red-500 text-red-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
           : isFocused
-          ? "border-[#28A745] ring-1 ring-[#28A745] text-[#1A1A1A]"
+          ? "border-[#DB2F3C] ring-1 ring-[#DB2F3C] text-[#1A1A1A]"
           : hasValue
           ? "border-stone-400 text-[#1A1A1A]"
           : "border-stone-300 text-[#1A1A1A] hover:border-stone-400"
@@ -142,7 +142,7 @@ const CustomTextInputComponent = forwardRef<HTMLInputElement, CustomTextInputPro
         error
           ? "border-red-400 focus:border-red-500 ring-1 ring-red-400/30"
           : isFocused
-          ? "border-[#28A745] ring-1 ring-[#28A745]"
+          ? "border-[#DB2F3C] ring-1 ring-[#DB2F3C]"
           : hasValue
           ? "border-stone-400 hover:border-stone-600"
           : "border-stone-300 hover:border-stone-400"
@@ -151,13 +151,13 @@ const CustomTextInputComponent = forwardRef<HTMLInputElement, CustomTextInputPro
         "bg-stone-100 border border-transparent rounded-lg transition-all duration-150",
         error
           ? "bg-red-50/60 border-red-500 text-red-900 focus:bg-white focus:ring-2 focus:ring-red-500/20"
-          : "text-[#1A1A1A] hover:bg-stone-200/60 focus:bg-white focus:border-[#28A745] focus:ring-1 focus:ring-[#28A745]"
+          : "text-[#1A1A1A] hover:bg-stone-200/60 focus:bg-white focus:border-[#DB2F3C] focus:ring-1 focus:ring-[#DB2F3C]"
       ),
       flush: cn(
         "bg-transparent border-b rounded-none px-0 transition-all duration-150",
         error
           ? "border-red-500 text-red-900 focus:border-red-600"
-          : "border-stone-300 text-[#1A1A1A] hover:border-stone-400 focus:border-[#28A745]"
+          : "border-stone-300 text-[#1A1A1A] hover:border-stone-400 focus:border-[#DB2F3C]"
       ),
     };
 

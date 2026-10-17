@@ -25,6 +25,13 @@ export const publicPaths = [
 
   // External Webhooks (Razorpay & Exotel)
   /^\/api\/v1\/webhooks\/.*$/,
+
+  // Dev API Tracker & Telemetry (Dev Mode Only)
+  /^\/api\/v1\/dev(\/.*)?$/,
+
+  // API Documentation (Swagger UI)
+  /^\/api-docs(\/.*)?$/,
+  /^\/api\/v1\/api-docs(\/.*)?$/,
 ];
 
 const jwtMiddleware = () => {

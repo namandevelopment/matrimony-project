@@ -14,6 +14,8 @@ import {
   verifyOtpSchema,
   resendOtpSchema,
   checkPhoneSchema,
+  createSecondaryProfileSchema,
+  switchProfileSchema,
 } from "../../validators/auth/users.js";
 import {
   sendOtp,
@@ -22,6 +24,9 @@ import {
   resendOtp,
   checkPhoneExists,
   logout,
+  createSecondaryProfile,
+  getMyProfiles,
+  switchActiveProfile,
 } from "../../controllers/auth/users.js";
 
 const router = express.Router();
@@ -41,5 +46,10 @@ router.post("/reSendOtp", otpRateLimiter, validationMiddleware(resendOtpSchema),
 router.post("/check-phone", validationMiddleware(checkPhoneSchema), checkPhoneExists);
 router.post("/logout", logout);
 router.post("/userLogout", logout); // Legacy camelCase support
+
+// Shorthand multi-profile endpoints
+router.get("/my-profiles", getMyProfiles);
+router.post("/profiles", registerRateLimiter, validationMiddleware(createSecondaryProfileSchema), createSecondaryProfile);
+router.post("/switch-profile", validationMiddleware(switchProfileSchema), switchActiveProfile);
 
 export default router;

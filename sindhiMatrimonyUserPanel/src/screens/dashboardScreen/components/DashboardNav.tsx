@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo } from "react";
+import React, { memo, useCallback } from "react";
 import Link from "next/link";
 import {
   Home,
@@ -11,6 +11,7 @@ import {
   Bell,
 } from "lucide-react";
 import type { DashboardNavTab } from "../types";
+import { useDashboardNav, defaultNavContext } from "../context/DashboardNavContext";
 
 export interface DashboardNavProps {
   activeTab?: DashboardNavTab["id"];
@@ -25,16 +26,23 @@ interface NavItemProps {
   icon: React.ReactNode;
   isActive: boolean;
   badgeCount?: number;
-  onClick?: () => void;
+  onSelect: (id: DashboardNavTab["id"], href: string, e: React.MouseEvent) => void;
 }
 
 const NavItem = memo<NavItemProps>(
-  ({ label, href, icon, isActive, badgeCount, onClick }) => {
+  ({ id, label, href, icon, isActive, badgeCount, onSelect }) => {
+    const handleClick = useCallback(
+      (e: React.MouseEvent) => {
+        onSelect(id, href, e);
+      },
+      [id, href, onSelect]
+    );
+
     return (
       <Link
         href={href}
-        onClick={onClick}
-        className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs sm:text-[13px] font-medium transition-all duration-150 cursor-pointer ${
+        onClick={handleClick}
+        className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs sm:text-[13px] font-medium transition-colors duration-150 cursor-pointer ${
           isActive
             ? "text-[#DB2F3C] font-semibold"
             : "text-[#555555] hover:text-[#DB2F3C] hover:bg-stone-50"
@@ -62,65 +70,112 @@ const NavItem = memo<NavItemProps>(
         )}
       </Link>
     );
+  },
+  (prev, next) => {
+    return (
+      prev.id === next.id &&
+      prev.label === next.label &&
+      prev.href === next.href &&
+      prev.isActive === next.isActive &&
+      prev.badgeCount === next.badgeCount &&
+      prev.onSelect === next.onSelect
+    );
   }
 );
 NavItem.displayName = "NavItem";
 
+// Static invariant icons
+const HOME_ICON = <Home className="w-4 h-4 fill-current" />;
+const MATCHES_ICON = <Users className="w-4 h-4" />;
+const INTERESTS_ICON = <Heart className="w-4 h-4" />;
+const MESSAGES_ICON = <MessageSquare className="w-4 h-4" />;
+const SEARCH_ICON = <Search className="w-4 h-4" />;
+const NOTIFICATIONS_ICON = <Bell className="w-4 h-4" />;
+
 const DashboardNavComponent: React.FC<DashboardNavProps> = ({
-  activeTab = "home",
-  onTabChange,
-  notificationCount = 0,
+  activeTab: propActiveTab,
+  onTabChange: propOnTabChange,
+  notificationCount: propNotificationCount,
 }) => {
+  const context = useDashboardNav();
+
+  const isInsideSPA = Boolean(context.isInsideProvider);
+  const currentTab = propActiveTab ?? context.activeTab;
+  const notificationCount = propNotificationCount ?? context.notificationCount ?? 0;
+
+  const handleSelect = useCallback(
+    (id: DashboardNavTab["id"], href: string, e: React.MouseEvent) => {
+      // 1. If we are inside DashboardNavProvider (SPA mode on DashboardScreen):
+      if (
+        isInsideSPA &&
+        context.onTabChange &&
+        context.onTabChange !== defaultNavContext.onTabChange
+      ) {
+        e.preventDefault();
+        context.onTabChange(id);
+        if (typeof window !== "undefined") {
+          window.history.pushState(null, "", href);
+        }
+        return;
+      }
+
+      // 2. Standalone pages (e.g. /profile/edit, /profile/horoscope, /settings, /matches/viewprofile):
+      // Do NOT preventDefault and do NOT call window.history.pushState!
+      // Next.js Link natively performs smooth client-side navigation to href.
+    },
+    [isInsideSPA, context.onTabChange]
+  );
+
   return (
     <nav className="flex items-center gap-1 sm:gap-2" aria-label="Dashboard Navigation">
       <NavItem
         id="home"
         label="Home"
         href="/dashboard"
-        icon={<Home className="w-4 h-4 fill-current" />}
-        isActive={activeTab === "home"}
-        onClick={() => onTabChange?.("home")}
+        icon={HOME_ICON}
+        isActive={currentTab === "home"}
+        onSelect={handleSelect}
       />
       <NavItem
         id="matches"
         label="Matches"
         href="/matches"
-        icon={<Users className="w-4 h-4" />}
-        isActive={activeTab === "matches"}
-        onClick={() => onTabChange?.("matches")}
+        icon={MATCHES_ICON}
+        isActive={currentTab === "matches"}
+        onSelect={handleSelect}
       />
       <NavItem
         id="interests"
         label="Interests"
         href="/interests"
-        icon={<Heart className="w-4 h-4" />}
-        isActive={activeTab === "interests"}
-        onClick={() => onTabChange?.("interests")}
+        icon={INTERESTS_ICON}
+        isActive={currentTab === "interests"}
+        onSelect={handleSelect}
       />
       <NavItem
         id="messages"
         label="Messages"
         href="/messages"
-        icon={<MessageSquare className="w-4 h-4" />}
-        isActive={activeTab === "messages"}
-        onClick={() => onTabChange?.("messages")}
+        icon={MESSAGES_ICON}
+        isActive={currentTab === "messages"}
+        onSelect={handleSelect}
       />
       <NavItem
         id="search"
         label="Search"
         href="/search"
-        icon={<Search className="w-4 h-4" />}
-        isActive={activeTab === "search"}
-        onClick={() => onTabChange?.("search")}
+        icon={SEARCH_ICON}
+        isActive={currentTab === "search"}
+        onSelect={handleSelect}
       />
       <NavItem
         id="notifications"
         label="Notification"
         href="/notifications"
-        icon={<Bell className="w-4 h-4" />}
-        isActive={activeTab === "notifications"}
+        icon={NOTIFICATIONS_ICON}
+        isActive={currentTab === "notifications"}
         badgeCount={notificationCount}
-        onClick={() => onTabChange?.("notifications")}
+        onSelect={handleSelect}
       />
     </nav>
   );

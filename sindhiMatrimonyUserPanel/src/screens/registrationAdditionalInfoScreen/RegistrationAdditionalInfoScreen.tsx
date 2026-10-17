@@ -207,11 +207,43 @@ const RegistrationAdditionalInfoScreenComponent: React.FC = () => {
         userName={name}
         onExploreMatches={() => {
           setIsCompleteModalOpen(false);
-          router.push("/");
+          if (typeof window !== "undefined") {
+            try {
+              const userProfile = {
+                name: name || "Member",
+                matrimonyId: "SND" + Math.floor(100000 + Math.random() * 900000),
+                community: "SindhiMatrimony",
+                membershipStatus: "Free member",
+                completenessScore: 80,
+                isLoggedIn: true,
+              };
+              localStorage.setItem("sindhi_matrimony_user", JSON.stringify(userProfile));
+              localStorage.setItem("sindhi_matrimony_is_authenticated", "true");
+            } catch {
+              // Ignore quota
+            }
+          }
+          router.push("/matches");
         }}
         onGoHome={() => {
           setIsCompleteModalOpen(false);
-          router.push("/");
+          if (typeof window !== "undefined") {
+            try {
+              const userProfile = {
+                name: name || "Member",
+                matrimonyId: "SND" + Math.floor(100000 + Math.random() * 900000),
+                community: "SindhiMatrimony",
+                membershipStatus: "Free member",
+                completenessScore: 80,
+                isLoggedIn: true,
+              };
+              localStorage.setItem("sindhi_matrimony_user", JSON.stringify(userProfile));
+              localStorage.setItem("sindhi_matrimony_is_authenticated", "true");
+            } catch {
+              // Ignore quota
+            }
+          }
+          router.push("/dashboard");
         }}
       />
     </div>

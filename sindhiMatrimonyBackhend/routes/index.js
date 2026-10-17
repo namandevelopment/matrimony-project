@@ -4,6 +4,7 @@ import { apiHTTPResponse } from "../utils/globalFunction.js";
 import authRoutes from "./auth/index.js";
 import profileRoutes from "./members/profile.js";
 import membersRoutes from "./members/index.js";
+import devApiTrackerRoutes from "./dev/apiTrackerRoutes.js";
 
 const router = express.Router();
 
@@ -30,5 +31,10 @@ router.use("/auth", authRoutes);
 // Candidate Profile & Partner Preferences Router (Matches Mobile App & Web Panel)
 router.use("/profile", profileRoutes);
 router.use("/members", membersRoutes);
+
+// Dev API Tracker (under /api/v1/dev)
+if (process.env.NODE_ENV !== "production") {
+  router.use("/dev", devApiTrackerRoutes);
+}
 
 export default router;

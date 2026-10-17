@@ -40,6 +40,18 @@ const userSchema = new Schema(
       default: ACCOUNT_STATUS.ACTIVE,
       index: true,
     },
+    // Reference to the currently active profile selected by the user
+    activeProfileId: {
+      type: Schema.Types.ObjectId,
+      ref: "Profile",
+      default: null,
+    },
+    // Maximum profiles allowed per mobile account (anti-abuse limit)
+    maxProfilesAllowed: {
+      type: Number,
+      default: 4,
+      max: 6,
+    },
     isPhoneVerified: {
       type: Boolean,
       default: true,

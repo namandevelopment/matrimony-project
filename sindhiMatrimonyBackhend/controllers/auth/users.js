@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
-import { asyncHandler, apiHTTPResponse, hashPassword, logMessage } from "../../utils/globalFunction.js";
+import { asyncHandler, apiHTTPResponse, hashPassword, logMessage, generateCandidateDeduplicationHash } from "../../utils/globalFunction.js";
 import * as CONSTANTS from "../../utils/constants.js";
 import * as CONSTANTS_MSG from "../../utils/constantsMessage.js";
 import { ROLES, ACCOUNT_STATUS, MEMBERSHIP_TIERS, KYC_STATUS } from "../../utils/variables.js";
-import { User, Profile, PartnerPreference } from "../../models/index.js";
+import { User, Profile, PartnerPreference, ProfileAccessGrant, ACCESS_ROLES } from "../../models/index.js";
 import serviceOTP from "../../services/serviceOTP.js";
 import { sendMultiChannelNotification } from "../../services/serviceNotifications.js";
 import { signToken, generateRefreshToken } from "../../utils/jwtTokenUtils.js";
@@ -179,6 +179,32 @@ export const register = asyncHandler(async (req, res) => {
   const normalizedProfileFor = String(profileFor).trim().toUpperCase();
   const normalizedPlatform = String(clientPlatform || req.clientInfo?.platform || "WEB").toUpperCase();
 
+  // 4.5 Deduplication Check (Name + DOB + Gender + Subcaste)
+  const identityHash = generateCandidateDeduplicationHash({
+    name,
+    dateOfBirth: dobTimestamp,
+    dob,
+    gender: normalizedGender,
+    subcaste: subcaste || "Amil",
+  });
+
+  const duplicateCandidate = await Profile.findOne({
+    identityDeduplicationHash: identityHash,
+    isDeleted: false,
+  }).lean();
+
+  if (duplicateCandidate) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_CONFLICT,
+      "A candidate with identical details (Name, DOB, Gender, Subcaste) is already registered.",
+      { duplicateProfileId: duplicateCandidate._id },
+      CONSTANTS.CONFLICT,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
   // 5. Create Core User Account Document
   const user = await User.create({
     phone,
@@ -192,6 +218,7 @@ export const register = asyncHandler(async (req, res) => {
     clientPlatform: normalizedPlatform,
     onboardingStep: (education || occupation || city || subcaste) ? 4 : 1,
     isOnboardingComplete: false,
+    maxProfilesAllowed: 4,
     lastLoginAt: Date.now(),
     lastActiveAt: Date.now(),
   });
@@ -224,8 +251,11 @@ export const register = asyncHandler(async (req, res) => {
           nativePlace: nativePlace || undefined,
         } : undefined,
         aboutMe: (aboutMe || aboutMyself) ? String(aboutMe || aboutMyself).trim() : undefined,
+        isPrimary: true,
+        status: "ACTIVE",
         membershipTier: MEMBERSHIP_TIERS.FREE,
         verificationBadge: KYC_STATUS.NOT_SUBMITTED,
+        identityDeduplicationHash: identityHash,
       }),
       PartnerPreference.create({
         userId: user._id,
@@ -238,6 +268,10 @@ export const register = asyncHandler(async (req, res) => {
 
     profile = createdProfile;
     partnerPreference = createdPreferences;
+
+    // Set activeProfileId on the user account
+    user.activeProfileId = profile._id;
+    await user.save();
   } catch (creationError) {
     // Rollback: delete orphaned User document to preserve database consistency
     await User.deleteOne({ _id: user._id }).catch(() => {});
@@ -245,12 +279,14 @@ export const register = asyncHandler(async (req, res) => {
     throw creationError;
   }
 
-  // 7. Issue JWT Access & Refresh Tokens
+  // 7. Issue JWT Access & Refresh Tokens carrying both userId and activeProfileId
   const tokenPayload = {
     userId: user._id.toString(),
     role: ROLES.USER,
     phone: user.phone,
     profileId: profile._id.toString(),
+    activeProfileId: profile._id.toString(),
+    profileRole: "OWNER",
   };
 
   const token = signToken(tokenPayload, "1d");
@@ -279,6 +315,8 @@ export const register = asyncHandler(async (req, res) => {
         phone: user.phone,
         email: user.email,
         role: user.role,
+        activeProfileId: profile._id,
+        maxProfilesAllowed: user.maxProfilesAllowed || 4,
         onboardingStep: user.onboardingStep,
         isOnboardingComplete: user.isOnboardingComplete,
       },
@@ -290,6 +328,8 @@ export const register = asyncHandler(async (req, res) => {
         subcaste: profile.subcaste,
         age: profile.age,
         location: profile.location,
+        isPrimary: profile.isPrimary,
+        status: profile.status,
         membershipTier: profile.membershipTier,
         verificationBadge: profile.verificationBadge,
       },
@@ -351,7 +391,15 @@ export const verifyLoginOtp = asyncHandler(async (req, res) => {
     );
   }
 
-  // 3. Ultra-fast parallel session update and profile fetch
+  // 3. Resolve active profile context
+  let activeProfile = null;
+  if (user.activeProfileId) {
+    activeProfile = await Profile.findOne({ _id: user.activeProfileId, isDeleted: false }).lean();
+  }
+  if (!activeProfile) {
+    activeProfile = await Profile.findOne({ userId: user._id, isDeleted: false }).lean();
+  }
+
   const updateQuery = {
     $set: {
       lastLoginAt: Date.now(),
@@ -359,21 +407,23 @@ export const verifyLoginOtp = asyncHandler(async (req, res) => {
       clientPlatform: clientPlatform || user.clientPlatform || "WEB",
     },
   };
+  if (activeProfile && (!user.activeProfileId || user.activeProfileId.toString() !== activeProfile._id.toString())) {
+    updateQuery.$set.activeProfileId = activeProfile._id;
+  }
   if (fcmToken) {
     updateQuery.$addToSet = { fcmTokens: fcmToken };
   }
 
-  const [_, profile] = await Promise.all([
-    User.updateOne({ _id: user._id }, updateQuery),
-    Profile.findOne({ userId: user._id, isDeleted: false }).lean(),
-  ]);
+  await User.updateOne({ _id: user._id }, updateQuery);
 
-  // 4. Issue Tokens
+  // 4. Issue Tokens carrying activeProfileId
   const tokenPayload = {
     userId: user._id.toString(),
     role: ROLES.USER,
     phone: user.phone,
-    profileId: profile?._id?.toString() || "",
+    profileId: activeProfile?._id?.toString() || "",
+    activeProfileId: activeProfile?._id?.toString() || "",
+    profileRole: "OWNER",
   };
 
   const token = signToken(tokenPayload, "1d");
@@ -392,10 +442,12 @@ export const verifyLoginOtp = asyncHandler(async (req, res) => {
         phone: user.phone,
         email: user.email,
         role: user.role,
+        activeProfileId: activeProfile?._id || null,
+        maxProfilesAllowed: user.maxProfilesAllowed || 4,
         onboardingStep: user.onboardingStep,
         isOnboardingComplete: user.isOnboardingComplete,
       },
-      profile: profile || null,
+      profile: activeProfile || null,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -499,6 +551,634 @@ export const logout = asyncHandler(async (req, res) => {
   );
 });
 
+/**
+ * ➕ Create Secondary Profile Under Existing Account
+ * POST /api/v1/auth/users/profiles (or /api/v1/auth/profiles)
+ */
+export const createSecondaryProfile = asyncHandler(async (req, res) => {
+  const userId = req.user?.userId || req.user?.id || req.user?._id;
+  const {
+    name,
+    profileFor = "MYSELF",
+    gender,
+    subcaste,
+    dateOfBirth,
+    dob,
+    maritalStatus,
+    height,
+    education,
+    profession,
+    occupation,
+    annualIncome,
+    city,
+    state,
+    nativePlace,
+    aboutMe,
+  } = req.body;
+
+  // 1. Fetch user and check max profile limit
+  const user = await User.findById(userId);
+  if (!user) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      CONSTANTS_MSG.USER_NOT_FOUND,
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const existingProfileCount = await Profile.countDocuments({
+    userId: user._id,
+    isDeleted: false,
+  });
+  const maxAllowed = user.maxProfilesAllowed || 4;
+  if (existingProfileCount >= maxAllowed) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_BAD_REQUEST,
+      `Maximum profile limit reached (${maxAllowed}). You cannot create more profiles under this mobile number.`,
+      { existingProfileCount, maxAllowed },
+      CONSTANTS.BAD_REQUEST,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  // 2. Normalization & Age calculation
+  const normalizedGender = String(gender).trim().toUpperCase();
+  const normalizedProfileFor = String(profileFor).trim().toUpperCase();
+
+  let dobTimestamp = undefined;
+  let calculatedAge = undefined;
+  if (dateOfBirth) {
+    dobTimestamp = Number(dateOfBirth);
+  } else if (dob) {
+    const parsedDate = new Date(dob);
+    if (!isNaN(parsedDate.getTime())) {
+      dobTimestamp = parsedDate.getTime();
+    }
+  }
+
+  if (dobTimestamp) {
+    const diffMs = Date.now() - dobTimestamp;
+    calculatedAge = Math.floor(diffMs / (365.25 * 24 * 60 * 60 * 1000));
+  }
+
+  // 3. Deduplication Check (Name + DOB + Gender + Subcaste)
+  const identityHash = generateCandidateDeduplicationHash({
+    name,
+    dateOfBirth: dobTimestamp,
+    dob,
+    gender: normalizedGender,
+    subcaste: subcaste || "Amil",
+  });
+
+  const duplicateCandidate = await Profile.findOne({
+    identityDeduplicationHash: identityHash,
+    isDeleted: false,
+  }).lean();
+
+  if (duplicateCandidate) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_CONFLICT,
+      "A candidate with identical details (Name, DOB, Gender, Subcaste) is already registered.",
+      { duplicateProfileId: duplicateCandidate._id },
+      CONSTANTS.CONFLICT,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  // 4. Create secondary profile & partner preferences
+  const [newProfile, newPreferences] = await Promise.all([
+    Profile.create({
+      userId: user._id,
+      name: name.trim(),
+      profileFor: normalizedProfileFor,
+      gender: normalizedGender,
+      subcaste: subcaste || "Amil",
+      dateOfBirth: dobTimestamp,
+      age: calculatedAge,
+      maritalStatus: maritalStatus || "NEVER_MARRIED",
+      height: height ? Number(height) : undefined,
+      education: education ? { degree: education } : undefined,
+      profession: (occupation || profession || annualIncome) ? {
+        occupation: occupation || profession || undefined,
+        annualIncome: annualIncome ? Number(annualIncome) : 0,
+      } : undefined,
+      location: (city || state || nativePlace) ? {
+        city: city || undefined,
+        state: state || undefined,
+        country: "India",
+        nativePlace: nativePlace || undefined,
+      } : undefined,
+      aboutMe: aboutMe ? String(aboutMe).trim() : undefined,
+      isPrimary: false,
+      status: "ACTIVE",
+      membershipTier: MEMBERSHIP_TIERS.FREE,
+      verificationBadge: KYC_STATUS.NOT_SUBMITTED,
+      identityDeduplicationHash: identityHash,
+    }),
+    PartnerPreference.create({
+      userId: user._id,
+      ageMin: normalizedGender === "MALE" ? 18 : 21,
+      ageMax: 35,
+      subcastes: subcaste ? [subcaste] : [],
+      preferredCities: city ? [city] : [],
+    }),
+  ]);
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_CREATED,
+    "Secondary candidate profile created successfully.",
+    {
+      profile: newProfile,
+      partnerPreference: newPreferences,
+    },
+    CONSTANTS.CREATED,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+/**
+ * 📋 List All Owned and Delegated Profiles
+ * GET /api/v1/auth/users/my-profiles (or /api/v1/auth/my-profiles)
+ */
+export const getMyProfiles = asyncHandler(async (req, res) => {
+  const userId = req.user?.userId || req.user?.id || req.user?._id;
+
+  const [user, ownedProfiles, grants] = await Promise.all([
+    User.findById(userId).select("activeProfileId maxProfilesAllowed phone").lean(),
+    Profile.find({ userId, isDeleted: false }).lean(),
+    ProfileAccessGrant.find({ granteeUserId: userId, status: "ACTIVE", isDeleted: false }).lean(),
+  ]);
+
+  if (!user) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      CONSTANTS_MSG.USER_NOT_FOUND,
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  // Fetch granted profiles if any
+  let grantedProfiles = [];
+  if (grants && grants.length > 0) {
+    const grantMap = new Map(grants.map((g) => [g.profileId.toString(), g]));
+    const profileDocs = await Profile.find({
+      _id: { $in: grants.map((g) => g.profileId) },
+      isDeleted: false,
+    }).lean();
+
+    grantedProfiles = profileDocs.map((p) => ({
+      ...p,
+      role: grantMap.get(p._id.toString())?.accessRole || "VIEWER",
+      relationshipToCandidate: grantMap.get(p._id.toString())?.relationshipToCandidate || "RELATIVE",
+      isOwner: false,
+      isActive: user.activeProfileId ? p._id.toString() === user.activeProfileId.toString() : false,
+    }));
+  }
+
+  const activeIdStr = user.activeProfileId?.toString();
+  const formattedOwned = ownedProfiles.map((p) => ({
+    ...p,
+    role: "OWNER",
+    isOwner: true,
+    isActive: activeIdStr ? p._id.toString() === activeIdStr : Boolean(p.isPrimary),
+  }));
+
+  const allProfiles = [...formattedOwned, ...grantedProfiles];
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    CONSTANTS_MSG.RECORD_FOUND,
+    {
+      totalProfiles: allProfiles.length,
+      maxProfilesAllowed: user.maxProfilesAllowed || 4,
+      activeProfileId: user.activeProfileId || (ownedProfiles[0]?._id ?? null),
+      profiles: allProfiles,
+    },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+/**
+ * 🔄 Seamless Active Profile Context Switching
+ * POST /api/v1/auth/users/switch-profile (or /api/v1/auth/switch-profile)
+ */
+export const switchActiveProfile = asyncHandler(async (req, res) => {
+  const userId = req.user?.userId || req.user?.id || req.user?._id;
+  const { targetProfileId } = req.body;
+
+  const profile = await Profile.findOne({ _id: targetProfileId, isDeleted: false }).lean();
+  if (!profile) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      "Target profile not found or has been deactivated.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  // Check direct ownership or delegation grant
+  const isDirectOwner = profile.userId.toString() === userId.toString();
+  let accessRole = "OWNER";
+
+  if (!isDirectOwner) {
+    const grant = await ProfileAccessGrant.findOne({
+      profileId: targetProfileId,
+      granteeUserId: userId,
+      status: "ACTIVE",
+      isDeleted: false,
+    }).lean();
+
+    if (!grant) {
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_FORBIDDEN,
+        "You do not have permission to access or switch to this profile.",
+        CONSTANTS.DATA_NULL,
+        CONSTANTS.FORBIDDEN,
+        CONSTANTS.ERROR_TRUE
+      );
+    }
+    accessRole = grant.accessRole;
+  }
+
+  // Update activeProfileId in user account
+  await User.updateOne({ _id: userId }, { activeProfileId: targetProfileId });
+
+  // Issue fresh JWT token with targetProfileId and profileRole
+  const tokenPayload = {
+    userId: userId.toString(),
+    role: req.user?.role || ROLES.USER,
+    phone: req.user?.phone,
+    profileId: targetProfileId.toString(),
+    activeProfileId: targetProfileId.toString(),
+    profileRole: accessRole,
+  };
+
+  const token = signToken(tokenPayload, "1d");
+  const refreshToken = generateRefreshToken(tokenPayload, "7d");
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    "Profile context switched successfully.",
+    {
+      token,
+      refreshToken,
+      activeProfileId: targetProfileId,
+      profileRole: accessRole,
+      profile,
+    },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+/**
+ * 🔒 Update Profile Status (Deactivate, Hide, Reactivate)
+ * PATCH /api/v1/auth/users/profiles/:profileId/status
+ */
+export const updateProfileStatus = asyncHandler(async (req, res) => {
+  const userId = req.user?.userId || req.user?.id || req.user?._id;
+  const { profileId } = req.params;
+  const { status } = req.body;
+
+  const profile = await Profile.findOne({ _id: profileId, isDeleted: false });
+  if (!profile) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      CONSTANTS_MSG.PROFILE_NOT_FOUND,
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  if (profile.userId.toString() !== userId.toString()) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_FORBIDDEN,
+      "Only the primary profile owner can update profile status.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.FORBIDDEN,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  profile.status = status;
+  if (status === "DEACTIVATED") {
+    profile.isDisable = true;
+  } else if (status === "ACTIVE") {
+    profile.isDisable = false;
+  }
+  profile.updatedAt = Date.now();
+  await profile.save();
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    `Profile status updated to ${status}.`,
+    { profile },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+/**
+ * 🤝 Grant Profile Delegation Access to Family Member
+ * POST /api/v1/auth/users/profiles/:profileId/grants
+ */
+export const grantProfileAccess = asyncHandler(async (req, res) => {
+  const userId = req.user?.userId || req.user?.id || req.user?._id;
+  const { profileId } = req.params;
+  const { granteePhone, accessRole = "VIEWER", relationshipToCandidate = "PARENT" } = req.body;
+
+  const profile = await Profile.findOne({ _id: profileId, isDeleted: false });
+  if (!profile) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      CONSTANTS_MSG.PROFILE_NOT_FOUND,
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  if (profile.userId.toString() !== userId.toString()) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_FORBIDDEN,
+      "Only the primary profile owner can grant access delegation.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.FORBIDDEN,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const granteeUser = await User.findOne({ phone: granteePhone, isDeleted: false });
+  if (!granteeUser) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      "No account found with this mobile number. Family member must register first.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  if (granteeUser._id.toString() === userId.toString()) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_BAD_REQUEST,
+      "You cannot grant access delegation to yourself.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.BAD_REQUEST,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const grant = await ProfileAccessGrant.findOneAndUpdate(
+    { profileId, granteeUserId: granteeUser._id },
+    {
+      grantedByUserId: userId,
+      accessRole,
+      relationshipToCandidate,
+      status: "ACTIVE",
+      isDeleted: false,
+      updatedAt: Date.now(),
+    },
+    { upsert: true, new: true }
+  );
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_CREATED,
+    `Successfully granted ${accessRole} access to ${granteePhone}.`,
+    { grant },
+    CONSTANTS.CREATED,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+/**
+ * 👥 List Delegation Grants for Profile
+ * GET /api/v1/auth/users/profiles/:profileId/grants
+ */
+export const listProfileGrants = asyncHandler(async (req, res) => {
+  const userId = req.user?.userId || req.user?.id || req.user?._id;
+  const { profileId } = req.params;
+
+  const profile = await Profile.findOne({ _id: profileId, isDeleted: false });
+  if (!profile) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      CONSTANTS_MSG.PROFILE_NOT_FOUND,
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const isOwner = profile.userId.toString() === userId.toString();
+  if (!isOwner) {
+    const userGrant = await ProfileAccessGrant.findOne({
+      profileId,
+      granteeUserId: userId,
+      status: "ACTIVE",
+      isDeleted: false,
+    });
+    if (!userGrant) {
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_FORBIDDEN,
+        "Access denied.",
+        CONSTANTS.DATA_NULL,
+        CONSTANTS.FORBIDDEN,
+        CONSTANTS.ERROR_TRUE
+      );
+    }
+  }
+
+  const grants = await ProfileAccessGrant.find({ profileId, isDeleted: false })
+    .populate("granteeUserId", "phone email")
+    .lean();
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    CONSTANTS_MSG.RECORD_FOUND,
+    { grants },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+/**
+ * ❌ Revoke Family Member Access Delegation
+ * DELETE /api/v1/auth/users/profiles/:profileId/grants/:grantId
+ */
+export const revokeProfileGrant = asyncHandler(async (req, res) => {
+  const userId = req.user?.userId || req.user?.id || req.user?._id;
+  const { profileId, grantId } = req.params;
+
+  const profile = await Profile.findOne({ _id: profileId, isDeleted: false });
+  if (!profile || profile.userId.toString() !== userId.toString()) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_FORBIDDEN,
+      "Only the primary profile owner can revoke delegation grants.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.FORBIDDEN,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const grant = await ProfileAccessGrant.findOneAndUpdate(
+    { _id: grantId, profileId },
+    { status: "REVOKED", isDeleted: true, updatedAt: Date.now() },
+    { new: true }
+  );
+
+  if (!grant) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      "Access grant not found.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    "Access grant successfully revoked.",
+    CONSTANTS.DATA_NULL,
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+/**
+ * 🔀 Transfer Candidate Profile Ownership to Candidate's Own Account
+ * POST /api/v1/auth/users/profiles/:profileId/transfer
+ */
+export const transferProfileOwnership = asyncHandler(async (req, res) => {
+  const userId = req.user?.userId || req.user?.id || req.user?._id;
+  const { profileId } = req.params;
+  const { candidatePhone } = req.body;
+
+  const profile = await Profile.findOne({ _id: profileId, isDeleted: false });
+  if (!profile) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      CONSTANTS_MSG.PROFILE_NOT_FOUND,
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  if (profile.userId.toString() !== userId.toString()) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_FORBIDDEN,
+      "Only profile owner can initiate profile transfer.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.FORBIDDEN,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const targetUser = await User.findOne({ phone: candidatePhone, isDeleted: false });
+  if (!targetUser) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      "Target candidate account not found. Candidate must create an account first.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  if (targetUser._id.toString() === userId.toString()) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_BAD_REQUEST,
+      "Cannot transfer profile to the same user account.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.BAD_REQUEST,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  // Atomically re-point profile ownership
+  profile.userId = targetUser._id;
+  profile.isPrimary = true;
+  profile.updatedAt = Date.now();
+  await profile.save();
+
+  // Point target user's activeProfileId to this transferred profile
+  targetUser.activeProfileId = profile._id;
+  await targetUser.save();
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    `Profile '${profile.name}' ownership successfully transferred to ${candidatePhone}.`,
+    { profileId: profile._id, newOwnerUserId: targetUser._id },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
 export default {
   sendOtp,
   register,
@@ -506,4 +1186,13 @@ export default {
   resendOtp,
   checkPhoneExists,
   logout,
+  createSecondaryProfile,
+  getMyProfiles,
+  switchActiveProfile,
+  updateProfileStatus,
+  grantProfileAccess,
+  listProfileGrants,
+  revokeProfileGrant,
+  transferProfileOwnership,
 };
+

@@ -60,6 +60,18 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
 }
 
+/* Ensure all form inputs use brand theme color when selected/checked */
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"] {
+  accent-color: #DB2F3C;
+}
+
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline-color: #DB2F3C;
+}
+
 /* Remove and hide scrollbars completely while keeping scroll functionality */
 * {
   -ms-overflow-style: none; /* IE and Edge */

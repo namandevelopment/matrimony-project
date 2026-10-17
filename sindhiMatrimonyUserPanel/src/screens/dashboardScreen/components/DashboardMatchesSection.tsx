@@ -14,11 +14,23 @@ export interface DashboardMatchesSectionProps {
 
 const defaultMatches: MatchProfile[] = [
   {
+    id: "BRH4486236",
+    name: "Riya Dubey",
+    age: 24,
+    height: "5'1\"",
+    city: "Lucknow",
+    caste: "Brahmin - Kanyakubja",
+    education: "B.Tech / IT Professional",
+    photoUrl: "/images/dashboard/viewed_riya.jpg",
+  },
+  {
     id: "snd-1",
     name: "Aisha Pandit",
     age: 24,
     height: "4'6\"",
     city: "Mumbai",
+    caste: "Brahmin - Saraswat",
+    education: "MBA / Business Analyst",
     isSilhouette: true,
   },
   {
@@ -27,6 +39,8 @@ const defaultMatches: MatchProfile[] = [
     age: 25,
     height: "4'7\"",
     city: "Pune",
+    caste: "Brahmin - Gaur",
+    education: "B.Tech / Software Eng.",
     isSilhouette: true,
   },
   {
@@ -35,6 +49,8 @@ const defaultMatches: MatchProfile[] = [
     age: 26,
     height: "4'6\"",
     city: "Ahmedabad",
+    caste: "Brahmin - Kanyakubja",
+    education: "M.Com / Finance",
     isSilhouette: true,
   },
   {
@@ -43,14 +59,18 @@ const defaultMatches: MatchProfile[] = [
     age: 26,
     height: "4'6\"",
     city: "Delhi",
+    caste: "Brahmin - Sanadhya",
+    education: "B.Arch / Architect",
     isSilhouette: true,
   },
   {
     id: "snd-5",
-    name: "Kamal",
+    name: "Kamal Sharma",
     age: 24,
     height: "4'6\"",
     city: "Jaipur",
+    caste: "Brahmin - Saraswat",
+    education: "B.Ed / Educator",
     isSilhouette: true,
   },
   {
@@ -59,26 +79,28 @@ const defaultMatches: MatchProfile[] = [
     age: 25,
     height: "5'2\"",
     city: "Bangalore",
+    caste: "Sindhi - Baibhand",
+    education: "MS / Data Scientist",
     photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
   },
 ];
 
 const DashboardMatchesSectionComponent: React.FC<DashboardMatchesSectionProps> = ({
   matches = defaultMatches,
-  totalMatchesCount = 28,
+  totalMatchesCount = 23,
   className = "",
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollLeft = useCallback(() => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -260, behavior: "smooth" });
+      scrollContainerRef.current.scrollBy({ left: -360, behavior: "smooth" });
     }
   }, []);
 
   const scrollRight = useCallback(() => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 260, behavior: "smooth" });
+      scrollContainerRef.current.scrollBy({ left: 360, behavior: "smooth" });
     }
   }, []);
 
@@ -104,15 +126,15 @@ const DashboardMatchesSectionComponent: React.FC<DashboardMatchesSectionProps> =
           type="button"
           onClick={scrollLeft}
           aria-label="Scroll matches left"
-          className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 -ml-3 z-10 w-8 h-8 rounded-full bg-white border border-stone-200 shadow-md items-center justify-center text-stone-600 hover:text-[#DB2F3C] hover:scale-105 transition-all cursor-pointer"
+          className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 -ml-4 z-20 w-9 h-9 rounded-full bg-white/95 backdrop-blur-md border border-stone-200 shadow-md items-center justify-center text-stone-700 hover:text-[#DB2F3C] hover:scale-110 active:scale-95 transition-all cursor-pointer"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-5 h-5" />
         </button>
 
         {/* Scrollable Row */}
         <div
           ref={scrollContainerRef}
-          className="flex items-start gap-3 sm:gap-4 overflow-x-auto pb-3 pt-1 scroll-smooth no-scrollbar"
+          className="flex items-stretch gap-3.5 sm:gap-4 overflow-x-auto pb-3 pt-1 px-0.5 scroll-smooth no-scrollbar"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {matches.map((profile) => (
@@ -125,9 +147,9 @@ const DashboardMatchesSectionComponent: React.FC<DashboardMatchesSectionProps> =
           type="button"
           onClick={scrollRight}
           aria-label="Scroll matches right"
-          className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 -mr-3 z-10 w-8 h-8 rounded-full bg-white border border-stone-200 shadow-md items-center justify-center text-stone-600 hover:text-[#DB2F3C] hover:scale-105 transition-all cursor-pointer"
+          className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 -mr-4 z-20 w-9 h-9 rounded-full bg-white/95 backdrop-blur-md border border-stone-200 shadow-md items-center justify-center text-stone-700 hover:text-[#DB2F3C] hover:scale-110 active:scale-95 transition-all cursor-pointer"
         >
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-5 h-5" />
         </button>
       </div>
 

@@ -13,9 +13,18 @@ import checkDisableUser from "./middlewares/CheckDisableUserMiddleware.js";
 import { BOOLEAN_TRUE, DATA_NULL, NOT_FOUND } from "./utils/constants.js";
 import routes from "./routes/index.js";
 import corsMiddleware from "./middlewares/corsMiddleware.js";
+import devPerformanceTracker from "./middlewares/devPerformanceTracker.js";
+import devApiTrackerRoutes from "./routes/dev/apiTrackerRoutes.js";
+import attachMongooseProfiler from "./utils/mongooseProfilerPlugin.js";
+
+// Attach Mongoose query latency profiler for development
+attachMongooseProfiler();
 
 const app = express();
 const API_END_POINT_V1 = process.env.API_END_POINT_V1 || "/api/v1/";
+
+// High-resolution dev performance profiler (zero overhead in production)
+app.use(devPerformanceTracker);
 
 // Security & Parsing Pipeline
 app.use(corsMiddleware());
@@ -25,6 +34,8 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev"));
+  // Mount Dev Tracker Dashboard & Metrics
+  app.use("/dev", devApiTrackerRoutes);
 }
 
 // Request Filter & Authorization Chain

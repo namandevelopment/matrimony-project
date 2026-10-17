@@ -50,9 +50,7 @@ export default function DashboardPage() {
   return (
     <>
       <JsonLd data={webPageSchema} />
-      <Suspense fallback={<DashboardSkeleton />}>
-        <DashboardScreen />
-      </Suspense>
+      <DashboardScreen />
     </>
   );
 }

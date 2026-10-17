@@ -1,21 +1,20 @@
 "use client";
 
-import React, { useState, useCallback, memo } from "react";
+import React, { useState, useCallback, useEffect, memo } from "react";
 import { useRouter } from "next/navigation";
 import {
   DashboardHeader,
   DashboardModeSwitcher,
-  DashboardSidebar,
-  ProfileCompletenessCard,
-  DashboardMatchesSection,
-  PaidMemberBanner,
-  AssistedServiceBanner,
-  ProfilesViewedSection,
-  HappyMarriagesSection,
-  OtherServicesSection,
-  HelpContactBanner,
+  DashboardHomeView,
+  DashboardMatchesView,
+  DashboardInterestsView,
+  DashboardMessagesView,
+  DashboardSearchView,
   DashboardFooter,
 } from "./components";
+import { DashboardNavProvider } from "./context/DashboardNavContext";
+import { FloatingChatWidget } from "@/screens/matchesScreen/components";
+import { NotificationsScreen } from "@/screens/notificationsScreen";
 import type {
   UserProfile,
   DashboardNavTab,
@@ -25,13 +24,14 @@ import type {
 
 const defaultUserProfile: UserProfile = {
   name: "Naman",
-  matrimonyId: "SND4517087",
-  community: "SindhiMatrimony",
+  matrimonyId: "BRH4517087",
+  community: "BrahminMatrimony",
   membershipStatus: "Free member",
   completenessScore: 42,
 };
 
 const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
+  initialTab = "home",
   initialUser = defaultUserProfile,
   initialMatches,
   initialViewedProfiles,
@@ -42,8 +42,31 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
 }) => {
   const router = useRouter();
   const [user] = useState<UserProfile>(initialUser);
-  const [activeTab, setActiveTab] = useState<DashboardNavTab["id"]>("home");
+  const [activeTab, setActiveTab] = useState<DashboardNavTab["id"]>(initialTab);
   const [mode, setMode] = useState<DashboardMode>("regular");
+
+  // Synchronize activeTab on browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path.includes("matches")) {
+        setActiveTab("matches");
+      } else if (path.includes("interests")) {
+        setActiveTab("interests");
+      } else if (path.includes("messages")) {
+        setActiveTab("messages");
+      } else if (path.includes("search")) {
+        setActiveTab("search");
+      } else if (path.includes("notifications")) {
+        setActiveTab("notifications");
+      } else {
+        setActiveTab("home");
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const handleTabChange = useCallback((tabId: DashboardNavTab["id"]) => {
     setActiveTab(tabId);
@@ -78,77 +101,68 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
   }, [onLogout, router]);
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-[#F8F9FA] text-[#1A1A1A] selection:bg-red-100 selection:text-red-900">
-      {/* 1. Sticky Header with Logo, Navigation, and Profile Hover Dropdown */}
-      <DashboardHeader
-        user={user}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        onLogout={handleLogoutAction}
-        onUpgradeClick={handleUpgrade}
-      />
-
-      {/* 2. Sub-Header Mode Switcher (Regular vs PRIME*) */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-1">
-        <DashboardModeSwitcher
-          currentMode={mode}
-          onModeChange={handleModeChange}
+    <DashboardNavProvider activeTab={activeTab} onTabChange={handleTabChange}>
+      <div className="relative min-h-screen flex flex-col bg-[#F8F9FA] text-[#1A1A1A] selection:bg-red-100 selection:text-red-900">
+        {/* 1. Sticky Header - DOES NOT RE-RENDER ON TAB CHANGE */}
+        <DashboardHeader
+          user={user}
+          onLogout={handleLogoutAction}
+          onUpgradeClick={handleUpgrade}
         />
-      </div>
 
-      {/* 3. Main Dashboard Body (2 Columns Responsive Layout) */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="flex flex-col lg:flex-row items-start gap-6">
-          {/* Left Column: Sidebar with Profile Card, Peach Promo & Settings */}
-          <DashboardSidebar
-            user={user}
-            onUpgradeClick={handleUpgrade}
-          />
-
-          {/* Right Column: All Member Sections */}
-          <div className="flex-1 w-full min-w-0 space-y-6">
-            {/* 1. Complete Your Profile (Completeness Score & 3 Action Tiles) */}
-            <ProfileCompletenessCard score={user.completenessScore} />
-
-            {/* 2. All Matches (23) Horizontal Carousel */}
-            <DashboardMatchesSection
-              matches={initialMatches}
-              totalMatchesCount={23}
+        {/* 2. Sub-Header Mode Switcher (Regular vs PRIME*) for Home and Matches */}
+        {(activeTab === "home" || activeTab === "matches") && (
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-1">
+            <DashboardModeSwitcher
+              currentMode={mode}
+              onModeChange={handleModeChange}
             />
+          </div>
+        )}
 
-            {/* 3. Become a Paid Member 71% OFF Banner */}
-            <PaidMemberBanner
-              discountPercent={71}
+        {/* 3. Main Dashboard Body: Switches between all 5 screens with ZERO Header re-render */}
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          {activeTab === "matches" ? (
+            <DashboardMatchesView
+              user={user}
+              onUpgradeClick={handleUpgrade}
+              onAssistedServiceClick={handleAssistedService}
+            />
+          ) : activeTab === "interests" ? (
+            <DashboardInterestsView
               onUpgradeClick={handleUpgrade}
             />
-
-            {/* 4. Assisted Service Luxury Banner (3X Faster with Relationship Manager) */}
-            <AssistedServiceBanner
-              onGetAssistedService={handleAssistedService}
+          ) : activeTab === "messages" ? (
+            <DashboardMessagesView
+              onUpgradeClick={handleUpgrade}
             />
-
-            {/* 5. Profiles You Viewed (3) */}
-            <ProfilesViewedSection
-              profiles={initialViewedProfiles}
+          ) : activeTab === "search" ? (
+            <DashboardSearchView
+              onUpgradeClick={handleUpgrade}
             />
-
-            {/* 6. Lakhs of Happy Marriages! (Limca Book of Records & View Success Stories) */}
-            <HappyMarriagesSection
-              stories={initialSuccessStories}
+          ) : activeTab === "notifications" ? (
+            <NotificationsScreen
+              onUpgradeClick={handleUpgrade}
             />
+          ) : (
+            <DashboardHomeView
+              user={user}
+              initialMatches={initialMatches}
+              initialViewedProfiles={initialViewedProfiles}
+              initialSuccessStories={initialSuccessStories}
+              onUpgradeClick={handleUpgrade}
+              onAssistedServiceClick={handleAssistedService}
+            />
+          )}
+        </main>
 
-            {/* 7. Matrimony.com - Other Services (AstroFreeChat, Mandap.com, WeddingBazaar) */}
-            <OtherServicesSection />
+        {/* 4. Full-Width Footer */}
+        <DashboardFooter />
 
-            {/* 8. Need help in using SindhiMatrimony? (Call now & Chat with us) */}
-            <HelpContactBanner />
-          </div>
-        </div>
-      </main>
-
-      {/* 4. Full-Width Footer with About Us, Other Services, Help, Quick Links, Limca badge & Socials */}
-      <DashboardFooter />
-    </div>
+        {/* 5. Floating Chat Widget */}
+        <FloatingChatWidget />
+      </div>
+    </DashboardNavProvider>
   );
 };
 

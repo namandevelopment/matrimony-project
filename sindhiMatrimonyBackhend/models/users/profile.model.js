@@ -13,11 +13,18 @@ const { Schema } = mongoose;
 
 const profileSchema = new Schema(
   {
+    // The master account that owns this profile
     userId: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true,
+      // ⚠️ IMPORTANT: Removed unique: true to allow 1 User -> Many Profiles!
+      index: true,
+    },
+    // True if this is the primary candidate profile on the account
+    isPrimary: {
+      type: Boolean,
+      default: false,
       index: true,
     },
     name: {
@@ -141,6 +148,18 @@ const profileSchema = new Schema(
       default: false,
       index: true,
     },
+    // Profile Status & Visibility
+    status: {
+      type: String,
+      enum: ["ACTIVE", "DEACTIVATED", "HIDDEN", "SUSPENDED", "MATCHED"],
+      default: "ACTIVE",
+      index: true,
+    },
+    // Hash for duplicate candidate detection: SHA256(lowercase(name)+dob+gender+subcaste)
+    identityDeduplicationHash: {
+      type: String,
+      index: true,
+    },
     ...addTimeStamp(),
   },
   {
@@ -148,9 +167,11 @@ const profileSchema = new Schema(
   }
 );
 
-// High-speed matchmaking compound indexes
-profileSchema.index({ gender: 1, subcaste: 1, age: 1, isDeleted: 1 });
-profileSchema.index({ gender: 1, "location.city": 1, isDeleted: 1 });
+// High-speed compound indexes
+profileSchema.index({ userId: 1, isDeleted: 1 });
+profileSchema.index({ gender: 1, subcaste: 1, age: 1, status: 1, isDeleted: 1 });
+profileSchema.index({ gender: 1, "location.city": 1, status: 1, isDeleted: 1 });
+profileSchema.index({ identityDeduplicationHash: 1, isDeleted: 1 });
 profileSchema.index({ membershipTier: 1, isDeleted: 1 });
 
 export const Profile = mongoose.model("Profile", profileSchema);

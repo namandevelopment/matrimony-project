@@ -133,21 +133,21 @@ export const HoroscopeDetailsStep: React.FC<HoroscopeDetailsStepProps> = memo(
             <button
               type="button"
               onClick={() => setIsTimeModalOpen(true)}
-              className="w-full h-11 sm:h-12 px-4 rounded-xl border border-stone-300 bg-white flex items-center justify-between text-sm sm:text-base text-left hover:border-stone-400 focus:border-[#28A745] focus:ring-1 focus:ring-[#28A745] cursor-pointer transition-colors"
+              className="w-full h-11 sm:h-12 px-4 rounded-xl border border-stone-300 bg-white hover:bg-stone-50/50 flex items-center justify-between text-sm sm:text-base text-left hover:border-stone-400 focus:border-[#DB2F3C] focus:ring-2 focus:ring-red-100 cursor-pointer transition-all shadow-2xs"
             >
-              <span
-                className={
-                  formData.timeOfBirth
-                    ? "font-medium text-[#1A1A1A]"
-                    : "text-stone-500"
-                }
-              >
-                {formData.timeOfBirth || "Select your time of birth"}
-              </span>
-              <div className="flex items-center gap-1.5 text-stone-500">
-                <Clock className="w-4 h-4 text-stone-600" />
-                <ChevronDown className="w-4 h-4 text-stone-600" />
+              <div className="flex items-center gap-2.5">
+                <Clock className="w-4 h-4 text-[#DB2F3C]" />
+                <span
+                  className={
+                    formData.timeOfBirth
+                      ? "font-semibold text-stone-900"
+                      : "text-stone-400"
+                  }
+                >
+                  {formData.timeOfBirth || "Select your time of birth"}
+                </span>
               </div>
+              <ChevronDown className="w-4 h-4 text-stone-500" />
             </button>
           </div>
 

@@ -3,6 +3,8 @@ import { runValidatorsUnitTests } from "./unit/validators.test.js";
 import { runAuthFlowIntegrationTests } from "./integration/authFlow.test.js";
 import { runProfileOnboardingIntegrationTests } from "./integration/profileOnboarding.test.js";
 import { runErrorBoundaryIntegrationTests } from "./integration/errorBoundary.test.js";
+import { runMultiProfileScenariosTests } from "./integration/multiProfileScenarios.test.js";
+import { runDevPerformanceTrackerIntegrationTests } from "./integration/devPerformanceTracker.test.js";
 
 async function runMasterTestEngine() {
   const masterStart = Date.now();
@@ -29,6 +31,12 @@ async function runMasterTestEngine() {
 
     // 5. Error Boundary, Middlewares & Resiliency Tests
     results.push(await runErrorBoundaryIntegrationTests());
+
+    // 6. Multi-Profile Architecture & Account Decoupling Tests (Scenarios SC-01 to SC-11)
+    results.push(await runMultiProfileScenariosTests());
+
+    // 7. Dev API Performance Tracker & PII Redaction Tests (Phase 4 / Task 2)
+    results.push(await runDevPerformanceTrackerIntegrationTests());
 
     const totalPassed = results.reduce((acc, r) => acc + (r?.passed || 0), 0);
     const totalFailed = results.reduce((acc, r) => acc + (r?.failed || 0), 0);

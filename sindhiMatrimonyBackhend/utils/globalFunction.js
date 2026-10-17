@@ -1,4 +1,5 @@
 import * as CONSTANTS from "./constants.js";
+import crypto from "crypto";
 import bcrypt from "bcrypt";
 import geoip from "geoip-lite";
 import moment from "moment-timezone";
@@ -244,4 +245,23 @@ export function logMessage(
     default:
       console.log(upperMessage);
   }
+}
+
+// Generates SHA-256 fingerprint for candidate deduplication (Name + DOB + Gender + Subcaste)
+export function generateCandidateDeduplicationHash({ name, dateOfBirth, dob, gender, subcaste }) {
+  const normName = String(name || "").toLowerCase().trim();
+  const normGender = String(gender || "").toUpperCase().trim();
+  const normSubcaste = String(subcaste || "").toLowerCase().trim();
+
+  let formattedDob = "";
+  const rawDob = dateOfBirth || dob;
+  if (rawDob) {
+    const d = new Date(isNaN(Number(rawDob)) ? rawDob : Number(rawDob));
+    if (!isNaN(d.getTime())) {
+      formattedDob = d.toISOString().split("T")[0]; // YYYY-MM-DD
+    }
+  }
+
+  const identityString = `${normName}_${formattedDob}_${normGender}_${normSubcaste}`;
+  return crypto.createHash("sha256").update(identityString).digest("hex");
 }

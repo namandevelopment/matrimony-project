@@ -1,0 +1,457 @@
+import {
+  SidebarNavGroup,
+  EditProfileState,
+} from "./types";
+
+export const PROFILE_CREATED_BY_OPTIONS = [
+  "Self",
+  "Parents",
+  "Sibling",
+  "Relative / Friend",
+];
+
+export const DAYS_OPTIONS = Array.from({ length: 31 }, (_, i) => String(i + 1));
+
+export const MONTHS_OPTIONS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+export const YEARS_OPTIONS = Array.from({ length: 59 }, (_, i) =>
+  String(2008 - i)
+);
+
+export const HEIGHT_OPTIONS = [
+  "4 feet 0 inches",
+  "4 feet 1 inches",
+  "4 feet 2 inches",
+  "4 feet 3 inches",
+  "4 feet 4 inches",
+  "4 feet 5 inches",
+  "4 feet 6 inches",
+  "4 feet 7 inches",
+  "4 feet 8 inches",
+  "4 feet 9 inches",
+  "4 feet 10 inches",
+  "4 feet 11 inches",
+  "5 feet 0 inches",
+  "5 feet 1 inches",
+  "5 feet 2 inches",
+  "5 feet 3 inches",
+  "5 feet 4 inches",
+  "5 feet 5 inches",
+  "5 feet 6 inches",
+  "5 feet 7 inches",
+  "5 feet 8 inches",
+  "5 feet 9 inches",
+  "5 feet 10 inches",
+  "5 feet 11 inches",
+  "6 feet 0 inches",
+  "6 feet 1 inches",
+  "6 feet 2 inches",
+  "6 feet 3 inches",
+  "6 feet 4 inches",
+  "6 feet 5 inches",
+  "6 feet 6 inches",
+  "6 feet 7 inches",
+  "6 feet 8 inches",
+  "6 feet 9 inches",
+  "6 feet 10 inches",
+  "6 feet 11 inches",
+  "7 feet 0 inches",
+];
+
+export const WEIGHT_KG_OPTIONS = [
+  "--Kgs--",
+  ...Array.from({ length: 91 }, (_, i) => `${40 + i} Kgs`),
+];
+
+export const WEIGHT_LBS_OPTIONS = [
+  "--Lbs--",
+  ...Array.from({ length: 111 }, (_, i) => `${90 + i * 2} Lbs`),
+];
+
+export const CASTE_DIVISION_OPTIONS = [
+  "Iyer",
+  "Iyengar",
+  "Sindhi - Amil",
+  "Sindhi - Bhaibhand",
+  "Sindhi - Sahiti",
+  "Sindhi - Sakhar",
+  "Sindhi - Larkana",
+  "Sindhi - Shikarpuri",
+  "Sindhi - Lohana",
+  "Sindhi - Bhatia",
+  "Sindhi - Dadu",
+  "Sindhi - Nawabshah",
+  "Sindhi - Rohri",
+  "Sindhi - Sukkur",
+  "Sindhi - Hyderabad Sindhi",
+  "Sindhi - Maharaj / Brahmin",
+  "Brahmin - Gaur",
+  "Brahmin - Saraswat",
+  "Brahmin - Kanyakubja",
+  "Brahmin - Sanadya",
+  "Others",
+];
+
+export const SUBCASTE_OPTIONS = [
+  "Vathima",
+  "Vadama",
+  "Brahacharanam",
+  "Ashtasahasram",
+  "Shikarpuri",
+  "Amil Sindhi",
+  "Bhaibhand Sindhi",
+  "Lohana",
+  "Not Specified",
+  "Other",
+];
+
+export const MOTHER_TONGUE_OPTIONS = [
+  "Hindi",
+  "Sindhi",
+  "English",
+  "Gujarati",
+  "Marathi",
+  "Punjabi",
+  "Bengali",
+  "Tamil",
+  "Telugu",
+  "Kannada",
+  "Malayalam",
+  "Odia",
+  "Marwari",
+  "Urdu",
+];
+
+export const ALL_LANGUAGES_LIST = [
+  "Assamese",
+  "Bengali",
+  "English",
+  "Gujarati",
+  "Hindi",
+  "Kannada",
+  "Kashmiri",
+  "Konkani",
+  "Malayalam",
+  "Marathi",
+  "Marwari",
+  "Odia",
+  "Punjabi",
+  "Sanskrit",
+  "Sindhi",
+  "Tamil",
+  "Telugu",
+  "Urdu",
+];
+
+export const GOTHRA_OPTIONS = [
+  "Don't wish to specify",
+  "Kashyap",
+  "Bharadwaj",
+  "Vashishta",
+  "Garg",
+  "Sandilya",
+  "Parashar",
+  "Vatsa",
+  "Gautam",
+  "Kaushik",
+  "Harita",
+  "Agastya",
+  "Vishwamitra",
+  "Kaundinya",
+  "Jamadagni",
+  "Atri",
+];
+
+export const STAR_NAKSHATRA_OPTIONS = [
+  "Anuradha",
+  "Ashwini",
+  "Bharani",
+  "Krittika",
+  "Rohini",
+  "Mrigashira",
+  "Ardra",
+  "Punarvasu",
+  "Pushya",
+  "Ashlesha",
+  "Magha",
+  "Purva Phalguni",
+  "Uttara Phalguni",
+  "Hasta",
+  "Chitra",
+  "Swati",
+  "Vishakha",
+  "Jyeshtha",
+  "Mula",
+  "Purva Ashadha",
+  "Uttara Ashadha",
+  "Shravana",
+  "Dhanishta",
+  "Shatabhisha",
+  "Purva Bhadrapada",
+  "Uttara Bhadrapada",
+  "Revati",
+];
+
+export const RAASI_ZODIAC_OPTIONS = [
+  "Vrishchik (Scorpio)",
+  "Mesha (Aries)",
+  "Vrishabha (Taurus)",
+  "Mithuna (Gemini)",
+  "Karka (Cancer)",
+  "Simha (Leo)",
+  "Kanya (Virgo)",
+  "Tula (Libra)",
+  "Dhanu (Sagittarius)",
+  "Makara (Capricorn)",
+  "Kumbha (Aquarius)",
+  "Meena (Pisces)",
+];
+
+export const EDUCATION_LEVEL_OPTIONS = [
+  "Bachelors - Engineering / Tech (B.Tech / B.E.)",
+  "Bachelors - Arts / Science / Commerce (B.A. / B.Sc / B.Com)",
+  "Bachelors - Management (BBA / BMS)",
+  "Bachelors - Medicine (MBBS / BDS)",
+  "Bachelors - Law (LLB)",
+  "Masters - Engineering / Tech (M.Tech / M.E. / MS)",
+  "Masters - Management (MBA / PGDM)",
+  "Masters - Arts / Science / Commerce (M.A. / M.Sc / M.Com)",
+  "Doctorate (Ph.D)",
+  "Chartered Accountant (CA / CS / CFA)",
+  "Diploma",
+  "Higher Secondary (12th)",
+];
+
+export const EMPLOYED_IN_OPTIONS = [
+  "Private Sector",
+  "Government / Public Sector",
+  "Civil Services",
+  "Defense",
+  "Business / Entrepreneur",
+  "Self Employed",
+  "Not Working",
+];
+
+export const OCCUPATION_OPTIONS = [
+  "Software Professional",
+  "IT / Telecom Professional",
+  "Business Owner / Entrepreneur",
+  "Manager / Consultant",
+  "Doctor / Healthcare Professional",
+  "Chartered Accountant / Finance",
+  "Civil Engineer / Architect",
+  "Teacher / Professor",
+  "Banking Professional",
+  "Sales & Marketing",
+  "Not Working",
+  "Other",
+];
+
+export const ANNUAL_INCOME_OPTIONS = [
+  "No Income",
+  "Under ₹2 Lakhs",
+  "₹2 - ₹4 Lakhs",
+  "₹4 - ₹7 Lakhs",
+  "₹7 - ₹10 Lakhs",
+  "₹10 - ₹15 Lakhs",
+  "₹15 - ₹20 Lakhs",
+  "₹20 - ₹30 Lakhs",
+  "₹30 - ₹50 Lakhs",
+  "₹50 Lakhs - ₹1 Crore",
+  "Above ₹1 Crore",
+];
+
+export const FAMILY_VALUES_OPTIONS = [
+  "Traditional",
+  "Moderate",
+  "Liberal",
+];
+
+export const FAMILY_TYPE_OPTIONS = [
+  "Nuclear Family",
+  "Joint Family",
+];
+
+export const FAMILY_STATUS_OPTIONS = [
+  "Middle Class",
+  "Upper Middle Class",
+  "High Class / Rich",
+  "Affluent",
+];
+
+export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
+  {
+    id: "profile_info",
+    title: "Profile Info",
+    items: [
+      { id: "basic_info", label: "Basic Information", actionText: "edit" },
+      { id: "education_occupation", label: "Education & Occupation", actionText: "edit" },
+      { id: "family_details", label: "Family Details", actionText: "edit" },
+      { id: "hobbies_interest", label: "Hobbies & Interest", actionText: "edit" },
+      { id: "partner_preference", label: "Partner Preference", actionText: "edit" },
+    ],
+  },
+  {
+    id: "contact_details",
+    title: "Contact Details",
+    items: [
+      { id: "location", label: "Location", actionText: "edit" },
+      { id: "email", label: "E-mail", actionText: "edit" },
+      { id: "contact_number", label: "Contact Number", actionText: "edit" },
+    ],
+  },
+  {
+    id: "enhance_profile",
+    title: "Enhance Profile",
+    items: [
+      { id: "photos", label: "Photos (0/10)", actionText: "add" },
+      { id: "horoscope", label: "Horoscope", actionText: "edit" },
+    ],
+  },
+  {
+    id: "trust_badge",
+    title: "Trust Badge",
+    items: [
+      { id: "identity_badge", label: "Identity Badge", actionText: "view" },
+      { id: "professional_badge", label: "Professional Badge", actionText: "add" },
+    ],
+  },
+];
+
+export const INITIAL_EDIT_PROFILE_DATA: EditProfileState = {
+  basicInfo: {
+    profileCreatedBy: "Self",
+    name: "naman",
+    dobDay: "11",
+    dobMonth: "April",
+    dobYear: "1999",
+    maritalStatus: "Unmarried",
+    height: "4 feet 7 inches",
+    weightUnit: "kg",
+    weightKg: "--Kgs--",
+    weightLbs: "--Lbs--",
+    physicalStatus: "Normal",
+    casteDivision: "Iyer",
+    subcaste: "Vathima",
+    motherTongue: "Hindi",
+    languagesKnown: [
+      "Assamese",
+      "Bengali",
+      "English",
+      "Gujarati",
+      "Hindi",
+    ],
+    gothra: "Don't wish to specify",
+    star: "Anuradha",
+    raasi: "Vrishchik (Scorpio)",
+    manglik: "Don't Know",
+    eatingHabits: "Non-vegetarian",
+    smokingHabits: "Non-smoker",
+    drinkingHabits: "Non-drinker",
+    aboutMe:
+      "I have completed my a Bachelor's degree. I am currently not working and I live in Ajmer.",
+  },
+  educationOccupation: {
+    highestEducation: "Bachelors - Engineering / Tech (B.Tech / B.E.)",
+    educationDetail: "B.Tech in Computer Science",
+    collegeInstitute: "Government Engineering College, Ajmer",
+    employedIn: "Not Working",
+    occupation: "Software Professional",
+    occupationDetail: "Full Stack Engineer & Solution Architect",
+    annualIncome: "₹10 - ₹15 Lakhs",
+    workCountry: "India",
+    workState: "Rajasthan",
+    workCity: "Ajmer",
+  },
+  familyDetails: {
+    familyValues: "Moderate",
+    familyType: "Nuclear Family",
+    familyStatus: "Upper Middle Class",
+    fatherOccupation: "Business Owner",
+    motherOccupation: "Homemaker",
+    brothersCount: "1",
+    brothersMarried: "0",
+    sistersCount: "0",
+    sistersMarried: "0",
+    livingWithParents: "Yes",
+    familyLocation: "Ajmer, Rajasthan, India",
+    aboutFamily:
+      "We are a close-knit, loving Sindhi family based in Ajmer, valuing traditional culture and modern outlook.",
+  },
+  hobbiesInterests: {
+    hobbies: ["Coding", "Reading Books", "Traveling"],
+    interests: ["Technology", "Spirituality", "Music"],
+    music: ["Classical", "Sufi", "Bollywood Classics"],
+    sports: ["Cricket", "Badminton", "Chess"],
+    food: ["Sindhi Curry", "Dal Pakwan", "North Indian"],
+  },
+  partnerPreference: {
+    ageFrom: "21",
+    ageTo: "27",
+    heightFrom: "4 feet 5 inches",
+    heightTo: "5 feet 8 inches",
+    maritalStatus: ["Unmarried"],
+    castePreference: ["Sindhi - All", "Brahmin"],
+    educationPreference: ["Bachelors", "Masters"],
+    occupationPreference: ["Any", "Working Professional"],
+    annualIncomePreference: "Doesn't Matter",
+    eatingHabitsPreference: ["Vegetarian", "Non-vegetarian"],
+    manglikPreference: "Doesn't Matter",
+    preferredCountry: "India",
+    preferredState: "Rajasthan, Gujarat, Maharashtra, Delhi NCR",
+    motherTonguePreference: ["Hindi", "Sindhi"],
+    physicalStatusPreference: "Normal",
+    smokingHabitsPreference: "Doesn't Matter",
+    drinkingHabitsPreference: "Doesn't Matter",
+    religionPreference: "Hindu",
+    subcastePreference: "Any",
+    starPreference: "Any",
+    gothramPreference: "Not Specified",
+    employmentTypePreference: "Any",
+    preferredCity: "Any",
+    preferredCitizenship: "Any",
+  },
+  contactDetails: {
+    country: "India",
+    state: "Rajasthan",
+    city: "Ajmer",
+    citizenship: "Indian",
+    ancestralOrigin: "Sindh / Rajasthan",
+    email: "naman@example.com",
+    isEmailVerified: true,
+    mobileCountryCode: "+91",
+    mobileNumber: "9876543210",
+    isMobileVerified: true,
+    alternateNumber: "9829012345",
+    contactPerson: "Self / Parents",
+    convenientTimeToCall: "10:00 AM - 8:00 PM",
+  },
+  photos: [],
+  horoscope: {
+    dateOfBirth: "11 April 1999",
+    timeOfBirth: "10:30 AM",
+    placeOfBirth: "Ajmer, Rajasthan",
+    raasi: "Vrishchik (Scorpio)",
+    nakshatra: "Anuradha",
+    horoscopeMatchRequired: "Must",
+    manglikStatus: "Non-Manglik",
+    hasKundaliFile: false,
+  },
+  trustBadge: {
+    identityBadgeStatus: "not_submitted",
+    professionalBadgeStatus: "not_submitted",
+  },
+};
