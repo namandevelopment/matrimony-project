@@ -1,0 +1,343 @@
+### ============================================================================
+### 💍 SINDHI MATRIMONY BACKEND - INTERACTIVE REST CLIENT COLLECTION
+### ============================================================================
+### Use this file with VS Code REST Client / IntelliJ HTTP Client.
+### 
+### Quick Start Instructions:
+### 1. Ensure backend is running: npm run dev (runs on http://localhost:5000)
+### 2. Hit "Health Check" below to verify connectivity.
+### 3. Hit "Send OTP" or "Verify OTP / Login" with master OTP 123456.
+### 4. Copy the "token" from response and paste it into @authToken below.
+### ============================================================================
+
+@baseUrl = http://localhost:5000/api/v1
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.your_token_here
+@profileId = 67b34a12c8e312a0f9000001
+@grantId = 67b34a12c8e312a0f9000002
+@photoId = 67b34a12c8e312a0f9000003
+
+### ============================================================================
+### 1. SYSTEM & HEALTH CHECK
+### ============================================================================
+
+### 1.1 Health Check (Verify API Gateway & DB status)
+GET {{baseUrl}}/health
+Content-Type: application/json
+
+### ============================================================================
+### 2. AUTHENTICATION & REGISTRATION MODULE
+### ============================================================================
+
+### 2.1 Send OTP (Login Purpose)
+POST {{baseUrl}}/auth/send-otp
+Content-Type: application/json
+
+{
+  "phone": "9876543210",
+  "countryCode": "+91",
+  "purpose": "LOGIN"
+}
+
+### 2.2 Send OTP (Register Purpose)
+POST {{baseUrl}}/auth/send-otp
+Content-Type: application/json
+
+{
+  "phone": "9829012345",
+  "countryCode": "+91",
+  "purpose": "REGISTER"
+}
+
+### 2.3 Verify OTP & Login (Returns JWT Token & Active Profile Context)
+### Note: In development mode (NODE_ENV=development), OTP "123456" is always accepted!
+POST {{baseUrl}}/auth/verify-otp
+Content-Type: application/json
+
+{
+  "phone": "9876543210",
+  "otp": "123456",
+  "countryCode": "+91",
+  "clientPlatform": "WEB"
+}
+
+### 2.4 Quick Registration (New User + Profile + Partner Preference Creation)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "phone": "9829012345",
+  "otp": "123456",
+  "name": "Rohan Advani",
+  "gender": "MALE",
+  "profileFor": "MYSELF",
+  "countryCode": "+91",
+  "clientPlatform": "WEB",
+  "subcaste": "Bhaiband",
+  "dob": "1997-06-15",
+  "maritalStatus": "NEVER_MARRIED",
+  "height": 178,
+  "education": "B.Tech Computer Science",
+  "profession": "Software Engineer",
+  "annualIncome": 1800000,
+  "city": "Jaipur",
+  "state": "Rajasthan",
+  "nativePlace": "Ajmer"
+}
+
+### 2.5 Resend OTP
+POST {{baseUrl}}/auth/resend-otp
+Content-Type: application/json
+
+{
+  "phone": "9876543210",
+  "countryCode": "+91",
+  "purpose": "LOGIN"
+}
+
+### 2.6 Instant Phone Number Check (For typing check on register screen)
+POST {{baseUrl}}/auth/check-phone
+Content-Type: application/json
+
+{
+  "phone": "9876543210",
+  "countryCode": "+91"
+}
+
+### 2.7 Logout (Blacklists JWT Token in Redis)
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{}
+
+### ============================================================================
+### 3. MULTI-PROFILE & FAMILY DELEGATION ARCHITECTURE
+### ============================================================================
+
+### 3.1 List All Candidate Profiles Managed by this Account
+GET {{baseUrl}}/auth/my-profiles
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 3.2 Create Secondary Profile (e.g. Sibling or Child under same parent phone)
+POST {{baseUrl}}/auth/profiles
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Simran Advani",
+  "profileFor": "DAUGHTER",
+  "gender": "FEMALE",
+  "subcaste": "Bhaiband",
+  "dob": "1999-09-20",
+  "maritalStatus": "NEVER_MARRIED",
+  "height": 165,
+  "education": "MBA Finance",
+  "profession": "Financial Analyst",
+  "annualIncome": 1200000,
+  "city": "Mumbai",
+  "state": "Maharashtra"
+}
+
+### 3.3 Switch Active Profile Context (Returns fresh JWT with updated profileId)
+POST {{baseUrl}}/auth/switch-profile
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "targetProfileId": "{{profileId}}"
+}
+
+### 3.4 Update Profile Status (ACTIVE / HIDDEN / DEACTIVATED)
+PATCH {{baseUrl}}/auth/users/profiles/{{profileId}}/status
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "status": "HIDDEN"
+}
+
+### 3.5 Grant Family Delegation Access (Allow relative/parent to co-manage profile)
+POST {{baseUrl}}/auth/users/profiles/{{profileId}}/grants
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "granteePhone": "9829099999",
+  "accessRole": "CO_MANAGER",
+  "relationshipToCandidate": "PARENT"
+}
+
+### 3.6 List Active Profile Delegation Grants
+GET {{baseUrl}}/auth/users/profiles/{{profileId}}/grants
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 3.7 Revoke Family Delegation Grant
+DELETE {{baseUrl}}/auth/users/profiles/{{profileId}}/grants/{{grantId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 3.8 Transfer Profile Ownership to Candidate's Own Account
+POST {{baseUrl}}/auth/users/profiles/{{profileId}}/transfer
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "candidatePhone": "9829099999",
+  "otp": "123456"
+}
+
+### ============================================================================
+### 4. CANDIDATE PROFILE MANAGEMENT MODULE
+### ============================================================================
+
+### 4.1 Get My Complete Candidate Profile
+GET {{baseUrl}}/profile/me
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 4.2 Update Basic & Cultural Details (Subcaste, Gotra, Location, Height)
+PUT {{baseUrl}}/profile/basic
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "maritalStatus": "NEVER_MARRIED",
+  "height": 178,
+  "subcaste": "Bhaiband",
+  "gotra": "Advani",
+  "motherGotra": "Chhabria",
+  "aboutMe": "Passionate software engineer from Jaipur, fond of Sindhi cuisine and travel.",
+  "location": {
+    "city": "Jaipur",
+    "state": "Rajasthan",
+    "country": "India",
+    "nativePlace": "Ajmer"
+  }
+}
+
+### 4.3 Update Education & Career Details
+PUT {{baseUrl}}/profile/education-career
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "education": {
+    "degree": "B.Tech",
+    "field": "Computer Science",
+    "college": "MNIT Jaipur"
+  },
+  "profession": {
+    "occupation": "Software Engineer",
+    "companyName": "Tech Enterprises",
+    "annualIncome": 1800000,
+    "currency": "INR"
+  }
+}
+
+### 4.4 Update Family Background Details
+PUT {{baseUrl}}/profile/family
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "family": {
+    "fatherName": "Rajesh Advani",
+    "fatherOccupation": "Business (Textiles)",
+    "motherName": "Kavita Advani",
+    "motherOccupation": "Homemaker",
+    "brothersCount": 1,
+    "sistersCount": 0,
+    "familyType": "NUCLEAR",
+    "familyValues": "MODERATE"
+  }
+}
+
+### 4.5 Update Astro & Kundli Horoscope Details
+PUT {{baseUrl}}/profile/horoscope
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "manglik": "NON_MANGLIK",
+  "horoscope": {
+    "nakshatra": "Rohini",
+    "rashi": "Vrishabha",
+    "charan": 2,
+    "birthTime": "10:30 AM",
+    "birthPlace": "Ajmer"
+  }
+}
+
+### 4.6 Update Partner Preferences
+PUT {{baseUrl}}/profile/partner-preferences
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "ageMin": 22,
+  "ageMax": 28,
+  "heightMin": 155,
+  "heightMax": 175,
+  "maritalStatus": [
+    "NEVER_MARRIED"
+  ],
+  "subcastes": [
+    "Bhaiband",
+    "Amil",
+    "Sindhi"
+  ],
+  "manglikPreference": [
+    "NON_MANGLIK",
+    "DON_T_KNOW"
+  ],
+  "preferredCities": [
+    "Jaipur",
+    "Mumbai",
+    "Pune",
+    "Ahmedabad"
+  ],
+  "minAnnualIncome": 500000
+}
+
+### 4.7 Save Onboarding Wizard Step (Step 1 to 7)
+POST {{baseUrl}}/profile/onboarding/step
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "step": 2,
+  "data": {
+    "subcaste": "Bhaiband",
+    "gotra": "Advani",
+    "motherGotra": "Chhabria"
+  }
+}
+
+### 4.8 Upload Profile Photo
+POST {{baseUrl}}/profile/photos
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600",
+  "isMain": true
+}
+
+### 4.9 Delete Profile Photo
+DELETE {{baseUrl}}/profile/photos/{{photoId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### ============================================================================
+### 5. DEV PERFORMANCE TRACKER & METRICS (DEV MODE ONLY)
+### ============================================================================
+
+### 5.1 Fetch API Performance Metrics JSON
+GET {{baseUrl}}/dev/metrics
+Content-Type: application/json
+
+### 5.2 Reset Performance Metrics
+DELETE {{baseUrl}}/dev/metrics
+Content-Type: application/json

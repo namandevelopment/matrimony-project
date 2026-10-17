@@ -7,6 +7,9 @@
     "dev": "NODE_ENV=development nodemon index.js",
     "start": "NODE_ENV=production node index.js",
     "test": "node test/runAllTests.js",
+    "loadtest": "node test/load/loadTestRunner.js",
+    "test:50k": "node test/load/login50kBenchmark.js",
+    "load-studio": "node load-testing/server.js",
     "worker": "node ./worker/index.js",
     "seed": "node ./script/seeders/runSeeder.js"
   },

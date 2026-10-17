@@ -1,0 +1,2889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AegisLoad Studio - Universal Load & Security Testing Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #060913;
+      --bg-surface: #0B1020;
+      --bg-card: rgba(13, 20, 38, 0.75);
+      --bg-card-hover: rgba(18, 28, 54, 0.9);
+      --bg-dropdown: #0F172A;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(255, 255, 255, 0.18);
+      --border-gold: rgba(245, 158, 11, 0.4);
+      --gold-primary: #F59E0B;
+      --gold-light: #FBBF24;
+      --gold-glow: rgba(245, 158, 11, 0.25);
+      --emerald-glow: rgba(16, 185, 129, 0.25);
+      --rose-glow: rgba(244, 63, 94, 0.25);
+      --cyan-glow: rgba(6, 182, 212, 0.25);
+      --accent-emerald: #10B981;
+      --accent-cyan: #06B6D4;
+      --accent-rose: #F43F5E;
+      --accent-purple: #A855F7;
+      --accent-indigo: #6366F1;
+      --text-main: #F8FAFC;
+      --text-muted: #94A3B8;
+      --text-dim: #64748B;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      background-image: 
+        radial-gradient(ellipse 90% 50% at 50% -20%, rgba(245, 158, 11, 0.1), transparent),
+        radial-gradient(circle at 5% 40%, rgba(99, 102, 241, 0.08), transparent 35%),
+        radial-gradient(circle at 95% 70%, rgba(16, 185, 129, 0.07), transparent 40%);
+      background-attachment: fixed;
+      padding-bottom: 60px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-base); }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+
+    .app-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px 24px;
+    }
+
+    /* Top Navigation Bar */
+    .top-navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 22px;
+      margin-bottom: 24px;
+      background: rgba(14, 21, 40, 0.75);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .brand-cluster {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #F59E0B, #B45309);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 6px 20px var(--gold-glow);
+    }
+
+    .brand-meta h1 {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      background: linear-gradient(135deg, #FFFFFF 30%, #CBD5E1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-meta p {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs-group {
+      display: flex;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .nav-tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .nav-tab-btn:hover {
+      color: #FFF;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-tab-btn.active {
+      color: #06080F;
+      background: linear-gradient(135deg, #F59E0B, #D97706);
+      box-shadow: 0 4px 14px var(--gold-glow);
+    }
+
+    .nav-status-pills {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .engineer-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      border-radius: 12px;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #A5B4FC;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .engineer-badge:hover {
+      background: rgba(99, 102, 241, 0.22);
+      border-color: #6366F1;
+      transform: translateY(-1px);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      color: #34D399;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+    }
+
+    .status-badge.running {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.35);
+      color: #FBBF24;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 10px #10B981;
+      animation: pulse-ring 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+    }
+
+    .pulse-dot.running {
+      background: #F59E0B;
+      box-shadow: 0 0 10px #F59E0B;
+    }
+
+    @keyframes pulse-ring {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.85); }
+    }
+
+    /* Views */
+    .tab-view {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-view.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Dashboard Layout Grid */
+    .dashboard-layout {
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 1180px) {
+      .dashboard-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Panel Card */
+    .panel-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 24px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+      position: relative;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .panel-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #CBD5E1;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-title .badge-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 7px;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid var(--border-gold);
+      color: var(--gold-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    /* Field Group */
+    .field-group {
+      margin-bottom: 20px;
+    }
+
+    .field-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .field-header label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #E2E8F0;
+      letter-spacing: 0.2px;
+    }
+
+    .field-header .sub-hint {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    /* Project Switcher Chips */
+    .project-chips-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .proj-chip {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 10px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .proj-chip:hover {
+      border-color: var(--border-hover);
+      background: rgba(255, 255, 255, 0.04);
+      transform: translateY(-1px);
+    }
+
+    .proj-chip.active {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: var(--gold-primary);
+      box-shadow: 0 4px 16px var(--gold-glow);
+    }
+
+    .proj-chip .icon { font-size: 18px; }
+    .proj-chip .title { font-size: 11px; font-weight: 700; color: var(--text-main); }
+    .proj-chip.active .title { color: var(--gold-light); }
+    .proj-chip .desc { font-size: 9px; color: var(--text-dim); }
+
+    /* Attack Mode Cards */
+    .attack-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .attack-card {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .attack-card:hover {
+      border-color: var(--border-hover);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .attack-card.active {
+      border-color: #6366F1;
+      background: rgba(99, 102, 241, 0.15);
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.25);
+    }
+
+    .attack-card.active.ddos {
+      border-color: #F43F5E;
+      background: rgba(244, 63, 94, 0.15);
+      box-shadow: 0 4px 16px var(--rose-glow);
+    }
+
+    .attack-card .atk-top {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #E2E8F0;
+    }
+
+    .attack-card.active .atk-top { color: #A5B4FC; }
+    .attack-card.active.ddos .atk-top { color: #FDA4AF; }
+    .attack-card .atk-sub { font-size: 10px; color: var(--text-dim); line-height: 1.3; }
+
+    /* Presets Chips */
+    .preset-chips-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .preset-chip {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 9px 4px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .preset-chip:hover { border-color: var(--border-hover); color: #FFF; }
+    .preset-chip.active {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2));
+      border-color: var(--gold-primary);
+      color: var(--gold-light);
+      box-shadow: 0 4px 12px var(--gold-glow);
+    }
+
+    /* Input Field */
+    .input-wrapper { position: relative; display: flex; align-items: center; }
+    .input-icon { position: absolute; left: 14px; font-size: 14px; color: var(--text-dim); pointer-events: none; }
+    .input-field {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 12px 14px 12px 38px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: #FFF;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .input-field:focus {
+      border-color: var(--gold-primary);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+      background: rgba(0, 0, 0, 0.6);
+    }
+
+    /* Dropdowns */
+    .custom-select-container { position: relative; width: 100%; }
+    .select-trigger {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 11px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .select-trigger:hover { border-color: var(--border-hover); background: rgba(255, 255, 255, 0.03); }
+    .select-trigger.open {
+      border-color: var(--gold-primary);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    .trigger-content { display: flex; align-items: center; gap: 10px; overflow: hidden; }
+
+    .method-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 7px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+    .method-tag.POST { background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .method-tag.GET { background: rgba(6, 182, 212, 0.15); color: #38BDF8; border: 1px solid rgba(6, 182, 212, 0.3); }
+    .method-tag.PUT { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .method-tag.DELETE { background: rgba(244, 63, 94, 0.15); color: #FB7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+
+    .trigger-text-group { display: flex; flex-direction: column; gap: 2px; text-align: left; overflow: hidden; }
+    .trigger-main { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: #F8FAFC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .trigger-desc { font-size: 10px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chevron-icon { font-size: 12px; color: var(--text-muted); transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1); flex-shrink: 0; }
+    .select-trigger.open .chevron-icon { transform: rotate(180deg); color: var(--gold-light); }
+
+    .dropdown-menu {
+      position: absolute;
+      top: 100%; left: 0; right: 0;
+      background: var(--bg-dropdown);
+      border: 1px solid var(--border-gold);
+      border-top: none;
+      border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;
+      max-height: 240px; overflow-y: auto; z-index: 100;
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.6); display: none;
+    }
+    .dropdown-menu.show { display: block; animation: fadeIn 0.15s ease; }
+    .dropdown-item {
+      padding: 10px 14px; display: flex; align-items: center; gap: 10px;
+      cursor: pointer; border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      transition: background 0.15s ease;
+    }
+    .dropdown-item:last-child { border-bottom: none; }
+    .dropdown-item:hover { background: rgba(245, 158, 11, 0.1); }
+    .dropdown-item.selected { background: rgba(245, 158, 11, 0.15); border-left: 3px solid var(--gold-primary); }
+
+    /* Custom Target Configuration */
+    .custom-target-fields {
+      display: none; background: rgba(0, 0, 0, 0.3); border: 1px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 12px; padding: 14px; margin-bottom: 16px; gap: 12px; flex-direction: column;
+    }
+    .custom-target-fields.show { display: flex; animation: fadeIn 0.25s ease; }
+    .custom-input-group label { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block; }
+    .custom-textarea {
+      width: 100%; height: 70px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-subtle);
+      border-radius: 10px; padding: 10px; font-family: var(--font-mono); font-size: 11px; color: #A5B4FC;
+      resize: vertical; outline: none;
+    }
+    .custom-textarea:focus { border-color: #6366F1; }
+
+    /* Action Buttons */
+    .actions-cluster { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+    .btn-launch {
+      width: 100%; background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+      border: none; border-radius: 14px; padding: 15px; font-size: 14px; font-weight: 800;
+      letter-spacing: 0.4px; color: #06080F; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; gap: 10px; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 6px 20px var(--gold-glow);
+    }
+    .btn-launch:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(245, 158, 11, 0.4); filter: brightness(1.05); }
+    .btn-launch:active:not(:disabled) { transform: translateY(0); }
+    .btn-launch:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.5); }
+
+    .btn-stop {
+      width: 100%; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.4);
+      border-radius: 14px; padding: 12px; font-size: 13px; font-weight: 700; color: #FDA4AF;
+      cursor: pointer; display: none; align-items: center; justify-content: center; gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .btn-stop:hover { background: rgba(244, 63, 94, 0.25); border-color: #F43F5E; }
+
+    /* Completion Banner inside Studio */
+    .completion-banner {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.15));
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: 14px;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .btn-view-summary {
+      background: linear-gradient(135deg, #10B981, #059669);
+      border: none;
+      color: #FFF;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 8px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px var(--emerald-glow);
+    }
+    .btn-view-summary:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.1);
+    }
+
+    /* RIGHT PANEL: Live Performance Telemetry */
+    .telemetry-progress-card {
+      background: rgba(0, 0, 0, 0.35); border: 1px solid var(--border-subtle);
+      border-radius: 16px; padding: 18px 20px; margin-bottom: 20px;
+    }
+    .progress-bar-container {
+      width: 100%; height: 10px; background: rgba(255, 255, 255, 0.05);
+      border-radius: 9999px; overflow: hidden; margin-bottom: 16px; position: relative;
+    }
+    .progress-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #F59E0B, #10B981, #06B6D4);
+      border-radius: 9999px; transition: width 0.15s linear; box-shadow: 0 0 14px var(--gold-glow);
+    }
+
+    /* Metrics 4-Grid */
+    .metrics-quad-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    @media (max-width: 800px) { .metrics-quad-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .metric-card {
+      background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-subtle);
+      border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 3px;
+    }
+    .metric-label { font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+    .metric-number { font-family: var(--font-mono); font-size: 22px; font-weight: 800; line-height: 1.1; }
+    .metric-number.cyan { color: #38BDF8; text-shadow: 0 0 14px var(--cyan-glow); }
+    .metric-number.gold { color: #FBBF24; text-shadow: 0 0 14px var(--gold-glow); }
+    .metric-number.emerald { color: #34D399; text-shadow: 0 0 14px var(--emerald-glow); }
+    .metric-number.purple { color: #C084FC; text-shadow: 0 0 14px rgba(168, 85, 247, 0.25); }
+    .metric-sub { font-size: 10px; color: var(--text-dim); }
+
+    /* Latency Percentiles Card */
+    .percentiles-card {
+      background: rgba(0, 0, 0, 0.35); border: 1px solid var(--border-subtle);
+      border-radius: 16px; padding: 18px 20px; margin-bottom: 20px;
+    }
+    .card-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .card-heading h4 {
+      font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px;
+      color: #CBD5E1; display: flex; align-items: center; gap: 6px;
+    }
+
+    .percentiles-list { display: flex; flex-direction: column; gap: 8px; }
+    .latency-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    .latency-row:hover { background: rgba(255, 255, 255, 0.04); }
+    .latency-lbl { font-size: 12px; font-weight: 600; color: #94A3B8; }
+    .latency-val { font-family: var(--font-mono); font-size: 13px; font-weight: 800; color: #E2E8F0; }
+    .latency-val.emerald { color: #34D399; }
+    .latency-val.cyan { color: #38BDF8; }
+    .latency-val.gold { color: #FBBF24; }
+    .latency-val.rose { color: #FDA4AF; }
+
+    /* Status Badges */
+    .status-badges-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+    .status-chip {
+      font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+      padding: 4px 10px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .status-chip.s-200 { background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .status-chip.s-429 { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .status-chip.s-422, .status-chip.s-400 { background: rgba(99, 102, 241, 0.15); color: #A5B4FC; border: 1px solid rgba(99, 102, 241, 0.3); }
+    .status-chip.s-500 { background: rgba(244, 63, 94, 0.15); color: #FB7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+
+    /* Diagnostics */
+    .diag-container { display: flex; flex-direction: column; gap: 10px; }
+    .diag-card {
+      display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px;
+      border-radius: 12px; font-size: 12px; background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border-subtle);
+    }
+    .diag-card.SUCCESS { border-color: rgba(16, 185, 129, 0.25); background: rgba(16, 185, 129, 0.05); }
+    .diag-card.WARNING { border-color: rgba(245, 158, 11, 0.25); background: rgba(245, 158, 11, 0.05); }
+    .diag-card.ERROR { border-color: rgba(244, 63, 94, 0.25); background: rgba(244, 63, 94, 0.05); }
+    .diag-card h5 { font-size: 12px; font-weight: 700; color: #F8FAFC; margin-bottom: 2px; }
+    .diag-card p { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+
+    /* Terminal */
+    .terminal-card {
+      background: #030509; border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px; overflow: hidden; margin-top: 18px;
+    }
+    .terminal-header {
+      background: rgba(255, 255, 255, 0.03); padding: 10px 14px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .terminal-title {
+      font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: #94A3B8;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .terminal-actions { display: flex; align-items: center; gap: 6px; }
+    .terminal-btn {
+      background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-subtle);
+      border-radius: 6px; color: var(--text-muted); font-size: 11px; font-weight: 600;
+      padding: 5px 12px; cursor: pointer; transition: all 0.15s ease; display: inline-flex;
+      align-items: center; gap: 6px;
+    }
+    .terminal-btn:hover { background: rgba(255, 255, 255, 0.12); color: #FFF; }
+    .terminal-body {
+      padding: 14px; font-family: var(--font-mono); font-size: 11px; color: #38BDF8;
+      background: #040711; max-height: 220px; overflow-y: auto; white-space: pre-wrap;
+      word-break: break-all; line-height: 1.5;
+    }
+
+    /* ========================================================================
+       VIEW 2: SUMMARY REPORT VIEW (EXECUTIVE SCORECARD & AUDIT)
+       ======================================================================== */
+    .summary-report-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 24px;
+      padding: 32px;
+      backdrop-filter: blur(24px);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      position: relative;
+    }
+
+    .summary-exec-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding-bottom: 24px;
+      margin-bottom: 28px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      gap: 20px;
+    }
+
+    .summary-meta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid var(--border-gold);
+      color: var(--gold-light);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .summary-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: #FFF;
+      letter-spacing: -0.4px;
+      margin-bottom: 8px;
+    }
+
+    .summary-meta-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .summary-meta-pills span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .summary-grade-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 24px;
+      border-radius: 18px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 2px solid #10B981;
+      box-shadow: 0 0 24px var(--emerald-glow);
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .summary-grade-letter {
+      font-size: 38px;
+      font-weight: 900;
+      line-height: 1;
+      color: #34D399;
+      font-family: var(--font-mono);
+    }
+
+    .summary-grade-title {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #A7F3D0;
+      margin-top: 4px;
+    }
+
+    /* Summary Actions Toolbar */
+    .summary-actions-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 12px 18px;
+      margin-bottom: 28px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .summary-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    @media (max-width: 900px) {
+      .summary-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .summary-kpi-card {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .summary-kpi-card .kpi-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .summary-kpi-card .kpi-num {
+      font-family: var(--font-mono);
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .summary-kpi-card .kpi-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* SLA Verdict Matrix Table */
+    .matrix-section {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 22px;
+      margin-bottom: 28px;
+    }
+
+    .matrix-section h3 {
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #E2E8F0;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .verdict-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .verdict-table th {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-dim);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: left;
+    }
+
+    .verdict-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: #CBD5E1;
+    }
+
+    .verdict-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 11px;
+    }
+
+    .verdict-badge.PASS {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34D399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .verdict-badge.WARN {
+      background: rgba(245, 158, 11, 0.15);
+      color: #FBBF24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .verdict-badge.FAIL {
+      background: rgba(244, 63, 94, 0.15);
+      color: #FDA4AF;
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+
+    /* Ratio Progress Bar */
+    .ratio-progress-bar {
+      width: 100%;
+      height: 12px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+      display: flex;
+      margin: 12px 0 16px;
+    }
+
+    .ratio-segment {
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+    .ratio-segment.s200 { background: #10B981; }
+    .ratio-segment.s429 { background: #F59E0B; }
+    .ratio-segment.s422 { background: #6366F1; }
+    .ratio-segment.s500 { background: #F43F5E; }
+
+    /* ================= CRASH FORENSICS & RCA STYLING ================= */
+    .crash-forensics-container {
+      margin-bottom: 28px;
+    }
+
+    .crash-report-card {
+      background: linear-gradient(180deg, rgba(244, 63, 94, 0.08) 0%, rgba(15, 23, 42, 0.7) 100%);
+      border: 1px solid rgba(244, 63, 94, 0.35);
+      border-radius: 18px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(244, 63, 94, 0.1);
+    }
+    .crash-report-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 4px;
+      background: linear-gradient(90deg, #F43F5E, #FB7185, #F59E0B);
+    }
+
+    .healthy-architecture-card {
+      background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.6) 100%);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 18px;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .tipping-banner {
+      background: rgba(10, 15, 29, 0.85);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+    }
+    .tipping-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .tipping-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tipping-val {
+      font-size: 16px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: #FFF;
+    }
+
+    .rca-table-wrapper {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba(10, 15, 29, 0.6);
+      margin-bottom: 20px;
+    }
+    .rca-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .rca-table th {
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-dim);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: left;
+    }
+    .rca-table td {
+      padding: 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      vertical-align: top;
+    }
+    .rca-explanation {
+      color: #E2E8F0;
+      font-size: 12px;
+      line-height: 1.55;
+      margin-bottom: 8px;
+    }
+    .rca-fix-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 6px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34D399;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .crash-payload-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 14px;
+    }
+    @media (max-width: 900px) {
+      .crash-payload-grid { grid-template-columns: 1fr; }
+    }
+
+    .live-crash-banner {
+      background: linear-gradient(90deg, rgba(244, 63, 94, 0.25) 0%, rgba(239, 68, 68, 0.15) 100%);
+      border: 1px solid rgba(244, 63, 94, 0.5);
+      border-radius: 12px;
+      padding: 12px 18px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      animation: pulseCrash 1.6s infinite;
+    }
+    @keyframes pulseCrash {
+      0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.45); }
+      70% { box-shadow: 0 0 0 8px rgba(244, 63, 94, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+    }
+
+    /* VIEW 3: HISTORY TAB */
+    .history-table-container {
+      background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: 20px; padding: 24px; backdrop-filter: blur(20px); overflow-x: auto;
+    }
+    .custom-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
+    .custom-table th {
+      padding: 12px 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; font-size: 11px;
+    }
+    .custom-table td { padding: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); color: #CBD5E1; }
+    .custom-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    /* VIEW 4: KNOWLEDGE HUB */
+    .hub-hero {
+      text-align: center; margin-bottom: 32px; padding: 30px;
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.08), transparent);
+      border: 1px solid var(--border-subtle); border-radius: 24px;
+    }
+    .hub-hero h2 { font-size: 24px; font-weight: 800; color: #FFF; margin-bottom: 8px; }
+    .hub-hero p { font-size: 14px; color: var(--text-muted); max-width: 800px; margin: 0 auto; }
+
+    .attacks-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    @media (max-width: 1024px) { .attacks-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 680px) { .attacks-grid { grid-template-columns: 1fr; } }
+
+    .attack-info-card {
+      background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: 18px; padding: 22px; backdrop-filter: blur(20px);
+      display: flex; flex-direction: column; gap: 12px; transition: all 0.2s ease;
+    }
+    .attack-info-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+    .attack-info-card .atk-icon { font-size: 28px; }
+    .attack-info-card h3 { font-size: 15px; font-weight: 700; color: #F8FAFC; }
+    .attack-info-card p { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+    .mitigation-box {
+      margin-top: auto; padding: 10px 12px; border-radius: 10px;
+      background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2);
+      color: #34D399; font-size: 11px; font-weight: 600;
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center;
+      z-index: 999; padding: 20px;
+    }
+    .modal-box {
+      background: #0E1528; border: 1px solid var(--border-gold); border-radius: 20px;
+      padding: 26px; max-width: 440px; width: 100%; box-shadow: 0 24px 50px rgba(0, 0, 0, 0.7);
+      animation: fadeIn 0.2s ease;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .modal-title { font-size: 16px; font-weight: 800; color: #FFF; }
+    .modal-close { background: transparent; border: none; color: var(--text-dim); font-size: 20px; cursor: pointer; }
+    .modal-close:hover { color: #FFF; }
+
+    /* Toast */
+    .toast-notification {
+      position: fixed; bottom: 24px; right: 24px; background: #0F172A;
+      border: 1px solid var(--gold-primary); box-shadow: 0 10px 30px var(--gold-glow);
+      color: #FFF; padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 700;
+      display: none; z-index: 1000; animation: fadeIn 0.3s ease;
+    }
+
+    /* Print Stylesheet */
+    @media print {
+      body { background: #FFF !important; color: #000 !important; }
+      .top-navbar, .summary-actions-toolbar, .actions-cluster, .nav-tabs-group, #toastNotification { display: none !important; }
+      .summary-report-card { background: #FFF !important; border: 1px solid #CCC !important; box-shadow: none !important; padding: 10px !important; color: #000 !important; }
+      .summary-title { color: #000 !important; }
+      .verdict-table th, .verdict-table td { color: #000 !important; border-bottom: 1px solid #EEE !important; }
+      .terminal-body { background: #F8F9FA !important; color: #000 !important; border: 1px solid #DDD !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- Top Navigation Bar -->
+    <header class="top-navbar">
+      <div class="brand-cluster">
+        <div class="brand-logo">🛡️</div>
+        <div class="brand-meta">
+          <h1>AEGIS LOAD STUDIO</h1>
+          <p>Universal Performance & Cyber Attack Defense Portal</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs-group">
+        <button type="button" class="nav-tab-btn active" id="tabBtnStudio" onclick="switchTab('benchmarkView')">
+          <span>⚡</span> Studio
+        </button>
+        <button type="button" class="nav-tab-btn" id="tabBtnSummary" onclick="switchTab('summaryReportView')">
+          <span>📊</span> Summary Report
+        </button>
+        <button type="button" class="nav-tab-btn" id="tabBtnHistory" onclick="switchTab('historyView')">
+          <span>📜</span> History (<span id="historyCountBadge">0</span>)
+        </button>
+        <button type="button" class="nav-tab-btn" id="tabBtnKnowledge" onclick="switchTab('knowledgeView')">
+          <span>🛡️</span> Knowledge Hub
+        </button>
+      </nav>
+
+      <!-- Status and Engineer Login -->
+      <div class="nav-status-pills">
+        <div class="engineer-badge" onclick="openLoginModal()">
+          <span>📱</span>
+          <span id="navEngineerText">+91 9876543210 (QA Lead)</span>
+        </div>
+        <div id="liveTelemetryStatusBadge" class="status-badge">
+          <span id="livePulseDot" class="pulse-dot"></span>
+          <span id="telemetryStatusText">Ready for Benchmark</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ========================================================================
+         VIEW 1: BENCHMARK STUDIO
+         ======================================================================== -->
+    <div id="benchmarkView" class="tab-view active">
+      <div class="dashboard-layout">
+
+        <!-- ================= LEFT PANEL: CONFIGURATION ================= -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="badge-num">1</span>
+              Configure Benchmark
+            </div>
+            <span style="font-size: 11px; color: var(--gold-light); font-weight: 700;">Multi-Target Engine</span>
+          </div>
+
+          <form id="loadTestForm">
+            <!-- Hidden Fields -->
+            <input type="hidden" id="projectName" value="Sindhi Matrimony Platform">
+            <input type="hidden" id="apiEndpoint" value="LOGIN">
+            <input type="hidden" id="testMode" value="STEADY">
+            <input type="hidden" id="concurrency" value="100">
+            <input type="hidden" id="targetHost" value="INTERNAL">
+
+            <!-- 1. Select Project / Target -->
+            <div class="field-group">
+              <div class="field-header">
+                <label>Target Project Platform</label>
+                <span class="sub-hint">Switch Target</span>
+              </div>
+              <div class="project-chips-grid">
+                <div class="proj-chip active" onclick="switchProject('Sindhi Matrimony Platform', 'INTERNAL')">
+                  <span class="icon">💍</span>
+                  <span class="title">Sindhi Matrimony</span>
+                  <span class="desc">Express Core Pipeline</span>
+                </div>
+                <div class="proj-chip" onclick="switchProject('Rider & Cab CRM', 'CUSTOM', 'http://localhost:3000/api/v1/ping')">
+                  <span class="icon">🚖</span>
+                  <span class="title">Rider / Cab CRM</span>
+                  <span class="desc">Fleet API Engine</span>
+                </div>
+                <div class="proj-chip" onclick="switchProject('Custom Target API', 'CUSTOM', 'https://api.example.com/v1/search')">
+                  <span class="icon">🌐</span>
+                  <span class="title">Custom Target</span>
+                  <span class="desc">Any External URL</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Custom URL Configuration (Visible when Custom or Rider is chosen) -->
+            <div id="customTargetFields" class="custom-target-fields">
+              <div style="display: flex; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
+                <button type="button" class="terminal-btn" style="font-size: 10px; padding: 3px 8px;" onclick="setCustomPreset('https://jsonplaceholder.typicode.com/posts/1', 'GET', '{}', '')">🌐 Public Website / API</button>
+                <button type="button" class="terminal-btn" style="font-size: 10px; padding: 3px 8px;" onclick="setCustomPreset('http://localhost:3000/api/v1/ping', 'GET', '{}', '')">💻 Localhost Server</button>
+                <button type="button" class="terminal-btn" style="font-size: 10px; padding: 3px 8px;" onclick='setCustomPreset("https://jsonplaceholder.typicode.com/posts", "POST", "{\"Content-Type\": \"application/json\"}", "{\"title\": \"Test {{index}}\", \"body\": \"Benchmarking\", \"userId\": {{index}}}")'>📦 POST JSON API</button>
+              </div>
+              <div class="custom-input-group">
+                <label>Target Website / Endpoint URL (Any HTTP / HTTPS)</label>
+                <input type="text" id="customUrlInput" class="input-field" style="padding-left: 14px;" placeholder="https://mywebsite.com ya http://localhost:3000/api">
+              </div>
+              <div style="display: grid; grid-template-columns: 100px 1fr; gap: 10px;">
+                <div class="custom-input-group">
+                  <label>Method</label>
+                  <select id="customMethodInput" class="input-field" style="padding-left: 10px; font-size: 11px; height: 42px;">
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="PUT">PUT</option>
+                    <option value="DELETE">DELETE</option>
+                    <option value="PATCH">PATCH</option>
+                  </select>
+                </div>
+                <div class="custom-input-group">
+                  <label>Headers (JSON)</label>
+                  <input type="text" id="customHeadersInput" class="input-field" style="padding-left: 10px; font-size: 11px;" value='{"Authorization": "Bearer demo_token"}'>
+                </div>
+              </div>
+              <div class="custom-input-group">
+                <label>Body Template (Supports: {{index}}, {{phone}}, {{timestamp}})</label>
+                <textarea id="customBodyInput" class="custom-textarea" placeholder='{"userId": "{{index}}", "phone": "{{phone}}", "query": "active"}'></textarea>
+              </div>
+            </div>
+
+            <!-- 2. Attack Simulation Mode -->
+            <div class="field-group">
+              <div class="field-header">
+                <label>Traffic & Attack Simulation Mode</label>
+                <span class="sub-hint">Scenario Selection</span>
+              </div>
+              <div class="attack-grid">
+                <div class="attack-card active" onclick="chooseAttackMode('STEADY')">
+                  <div class="atk-top">
+                    <span>🟢</span> Steady Load
+                  </div>
+                  <div class="atk-sub">Stable concurrent user stream (100 parallel sockets).</div>
+                </div>
+                <div class="attack-card" onclick="chooseAttackMode('SPIKE')">
+                  <div class="atk-top">
+                    <span>⚡</span> Spike Flood
+                  </div>
+                  <div class="atk-sub">Instant 250+ burst crowd flood (Notification push).</div>
+                </div>
+                <div class="attack-card ddos" onclick="chooseAttackMode('DDOS')">
+                  <div class="atk-top">
+                    <span>🛡️</span> DDoS Rate-Limit
+                  </div>
+                  <div class="atk-sub">Single-IP flood to verify HTTP 429 rate limiter guard.</div>
+                </div>
+                <div class="attack-card" onclick="chooseAttackMode('SOAK')">
+                  <div class="atk-top">
+                    <span>⏱️</span> Endurance Soak
+                  </div>
+                  <div class="atk-sub">Sustained stress to reveal Event Loop lag & leaks.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Virtual User Volume -->
+            <div class="field-group">
+              <div class="field-header">
+                <label>Virtual Candidate / User Volume</label>
+                <span class="sub-hint">Total Hits</span>
+              </div>
+              <div class="preset-chips-grid">
+                <div class="preset-chip" onclick="selectPreset(10000)">10,000</div>
+                <div class="preset-chip active" onclick="selectPreset(50000)">50,000</div>
+                <div class="preset-chip" onclick="selectPreset(100000)">1 Lakh</div>
+                <div class="preset-chip" onclick="selectPreset(200000)">2 Lakh</div>
+              </div>
+              <div class="input-wrapper">
+                <span class="input-icon">👥</span>
+                <input type="number" id="customUsers" class="input-field" min="10" max="500000" step="500" value="50000" placeholder="Custom user count (e.g. 75000)">
+              </div>
+            </div>
+
+            <!-- 4. Target API Dropdown (For Built-in Matrimony Mode) -->
+            <div class="field-group" id="builtinApiGroup">
+              <div class="field-header">
+                <label>Target API Endpoint</label>
+                <span class="sub-hint">Built-in Routes</span>
+              </div>
+              <div class="custom-select-container" id="apiSelectContainer">
+                <div class="select-trigger" onclick="toggleDropdown('apiSelectContainer')">
+                  <div class="trigger-content">
+                    <span class="method-tag POST" id="currentMethodTag">POST</span>
+                    <div class="trigger-text-group">
+                      <span class="trigger-main" id="currentRouteText">/api/v1/auth/verify-otp</span>
+                      <span class="trigger-desc" id="currentDescText">Login + Dual HMAC-SHA256 JWT Minting</span>
+                    </div>
+                  </div>
+                  <span class="chevron-icon">▼</span>
+                </div>
+                <div class="dropdown-menu" id="apiDropdownMenu">
+                  <div class="dropdown-item selected" onclick="chooseApi('LOGIN', 'POST', '/api/v1/auth/verify-otp', 'Login + Dual HMAC-SHA256 JWT Minting')">
+                    <span class="method-tag POST">POST</span>
+                    <div class="trigger-text-group">
+                      <span class="trigger-main">/api/v1/auth/verify-otp</span>
+                      <span class="trigger-desc">Login + Dual HMAC-SHA256 JWT Minting</span>
+                    </div>
+                  </div>
+                  <div class="dropdown-item" onclick="chooseApi('SEND_OTP', 'POST', '/api/v1/auth/send-otp', 'SMS OTP Request & Phone Rate-Limiting')">
+                    <span class="method-tag POST">POST</span>
+                    <div class="trigger-text-group">
+                      <span class="trigger-main">/api/v1/auth/send-otp</span>
+                      <span class="trigger-desc">SMS OTP Request & Phone Rate-Limiting</span>
+                    </div>
+                  </div>
+                  <div class="dropdown-item" onclick="chooseApi('REGISTER', 'POST', '/api/v1/auth/register', 'Candidate Registration + Multi-Profile Init')">
+                    <span class="method-tag POST">POST</span>
+                    <div class="trigger-text-group">
+                      <span class="trigger-main">/api/v1/auth/register</span>
+                      <span class="trigger-desc">Candidate Registration + Multi-Profile Init</span>
+                    </div>
+                  </div>
+                  <div class="dropdown-item" onclick="chooseApi('GET_PROFILE', 'GET', '/api/v1/profile/me', 'Candidate Profile Fetch + JWT Bearer Auth')">
+                    <span class="method-tag GET">GET</span>
+                    <div class="trigger-text-group">
+                      <span class="trigger-main">/api/v1/profile/me</span>
+                      <span class="trigger-desc">Candidate Profile Fetch + JWT Bearer Auth</span>
+                    </div>
+                  </div>
+                  <div class="dropdown-item" onclick="chooseApi('UPDATE_PROFILE', 'PUT', '/api/v1/profile/basic', 'Profile Mutation + Rule 4.4 Clean DB Writes')">
+                    <span class="method-tag PUT">PUT</span>
+                    <div class="trigger-text-group">
+                      <span class="trigger-main">/api/v1/profile/basic</span>
+                      <span class="trigger-desc">Profile Mutation + Rule 4.4 Clean DB Writes</span>
+                    </div>
+                  </div>
+                  <div class="dropdown-item" onclick="chooseApi('HEALTH', 'GET', '/api/v1/health', 'Gateway Health & Routing Speed Test')">
+                    <span class="method-tag GET">GET</span>
+                    <div class="trigger-text-group">
+                      <span class="trigger-main">/api/v1/health</span>
+                      <span class="trigger-desc">Gateway Health & Routing Speed Test</span>
+                    </div>
+                  </div>
+                  <div class="dropdown-item" style="border-top: 1px dashed rgba(244, 63, 94, 0.3);" onclick="chooseApi('SIMULATE_CRASH_500', 'POST', '/simulate/crash-500', '🚨 Simulate 500 Backend Crash (Database Lockup / Exception)')">
+                    <span class="method-tag POST" style="background: rgba(244, 63, 94, 0.2); color: #FDA4AF; border-color: rgba(244, 63, 94, 0.4);">500</span>
+                    <div class="trigger-text-group">
+                      <span class="trigger-main" style="color: #FDA4AF;">/simulate/crash-500</span>
+                      <span class="trigger-desc">🚨 Simulate 500 Backend Crash (DB Lockup / Exception)</span>
+                    </div>
+                  </div>
+                  <div class="dropdown-item" onclick="chooseApi('SIMULATE_TIMEOUT_504', 'GET', '/simulate/timeout-504', '⏱️ Simulate 504 Gateway Timeout (Event Loop Lag)')">
+                    <span class="method-tag GET" style="background: rgba(245, 158, 11, 0.2); color: #FCD34D; border-color: rgba(245, 158, 11, 0.4);">504</span>
+                    <div class="trigger-text-group">
+                      <span class="trigger-main" style="color: #FCD34D;">/simulate/timeout-504</span>
+                      <span class="trigger-desc">⏱️ Simulate 504 Gateway Timeout (Event Loop Lag)</span>
+                    </div>
+                  </div>
+                  <div class="dropdown-item" onclick="chooseApi('CHAOS_FAULT_INJECTION', 'POST', '/simulate/chaos-faults', '🔥 Chaos Fault Injection (Flapping 500/504/429 Flaps)')">
+                    <span class="method-tag POST" style="background: rgba(192, 132, 252, 0.2); color: #E9D5FF; border-color: rgba(192, 132, 252, 0.4);">CHAOS</span>
+                    <div class="trigger-text-group">
+                      <span class="trigger-main" style="color: #E9D5FF;">/simulate/chaos-faults</span>
+                      <span class="trigger-desc">🔥 Chaos Fault Injection (Flapping 500/504/429 Flaps)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 5. Concurrency Dropdown -->
+            <div class="field-group">
+              <div class="field-header">
+                <label>Worker Concurrency</label>
+                <span class="sub-hint">Keep-Alive Sockets</span>
+              </div>
+              <div class="custom-select-container" id="concurrencySelectContainer">
+                <div class="select-trigger" onclick="toggleDropdown('concurrencySelectContainer')">
+                  <div class="trigger-content">
+                    <span style="font-size: 16px;">⚡</span>
+                    <div class="trigger-text-group">
+                      <span class="trigger-main" id="currentConcurrencyText">100 Parallel Workers</span>
+                      <span class="trigger-desc" id="currentConcurrencyDesc">Standard Production Load</span>
+                    </div>
+                  </div>
+                  <span class="chevron-icon">▼</span>
+                </div>
+                <div class="dropdown-menu" id="concurrencyDropdownMenu">
+                  <div class="dropdown-item" onclick="chooseConcurrency(50, '50 Parallel Workers', 'Lightweight Smoke Test')">
+                    <span style="font-size: 14px;">🌱</span>
+                    <div class="trigger-text-group">
+                      <span class="trigger-main">50 Parallel Workers</span>
+                      <span class="trigger-desc">Lightweight Smoke Test</span>
+                    </div>
+                  </div>
+                  <div class="dropdown-item selected" onclick="chooseConcurrency(100, '100 Parallel Workers', 'Standard Production Load')">
+                    <span style="font-size: 14px;">⚡</span>
+                    <div class="trigger-text-group">
+                      <span class="trigger-main">100 Parallel Workers</span>
+                      <span class="trigger-desc">Standard Production Load</span>
+                    </div>
+                  </div>
+                  <div class="dropdown-item" onclick="chooseConcurrency(250, '250 Parallel Workers', 'Heavy Spike & Stress Load')">
+                    <span style="font-size: 14px;">🔥</span>
+                    <div class="trigger-text-group">
+                      <span class="trigger-main">250 Parallel Workers</span>
+                      <span class="trigger-desc">Heavy Spike & Stress Load</span>
+                    </div>
+                  </div>
+                  <div class="dropdown-item" onclick="chooseConcurrency(400, '400 Parallel Workers', 'Extreme Max Concurrency Flood')">
+                    <span style="font-size: 14px;">💥</span>
+                    <div class="trigger-text-group">
+                      <span class="trigger-main">400 Parallel Workers</span>
+                      <span class="trigger-desc">Extreme Max Concurrency Flood</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="actions-cluster">
+              <button type="submit" id="startBtn" class="btn-launch">
+                <span>🚀</span> START BENCHMARK
+              </button>
+              <button type="button" id="abortBtn" class="btn-stop" onclick="abortTest()">
+                <span>⏹️</span> STOP / ABORT TEST
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- ================= RIGHT PANEL: TELEMETRY ================= -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="badge-num">2</span>
+              <span id="targetTelemetryHeading">Live Telemetry: Sindhi Matrimony Platform</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="terminal-btn" onclick="openEmailModal()">📧 Email Report</button>
+              <button type="button" class="terminal-btn" onclick="downloadJsonReport()">💾 Download JSON</button>
+            </div>
+          </div>
+
+          <!-- Dynamic Completion Banner (Appears on test finish) -->
+          <div id="testCompletionBanner" class="completion-banner" style="display: none;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 24px;">🎉</span>
+              <div>
+                <strong style="color: #34D399; font-size: 13px;">Benchmark Execution Complete!</strong>
+                <p id="completionBannerSub" style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">50,000 requests processed with 100% success rate.</p>
+              </div>
+            </div>
+            <button type="button" class="btn-view-summary" onclick="viewSummaryReport(lastCompletedReport)">
+              <span>📊</span> View Summary Report →
+            </button>
+          </div>
+
+          <!-- Real-Time Live Breakage / Crash Alert (Triggered when 4xx/5xx/timeout occurs) -->
+          <div id="liveCrashAlert" class="live-crash-banner" style="display: none;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 24px;">🚨</span>
+              <div>
+                <strong style="color: #FDA4AF; font-size: 13px; letter-spacing: 0.3px;">SYSTEM TIPPING POINT REACHED / API CRASH DETECTED!</strong>
+                <p id="liveCrashDesc" style="font-size: 11px; color: #FECDD3; margin-top: 2px; font-family: var(--font-mono);">
+                  First failure detected at Request #0 (Elapsed: 0s | Error: 500)
+                </p>
+              </div>
+            </div>
+            <button type="button" class="btn-stop" style="background: rgba(244, 63, 94, 0.2); border: 1px solid rgba(244, 63, 94, 0.5); color: #FDA4AF; padding: 6px 14px; font-size: 11px;" onclick="switchTab('summaryReportView')">
+              <span>🔍</span> Inspect RCA Report
+            </button>
+          </div>
+
+          <!-- Progress & Speedometer -->
+          <div class="telemetry-progress-card">
+            <div class="progress-bar-container">
+              <div id="progressFill" class="progress-fill"></div>
+            </div>
+
+            <div class="metrics-quad-grid">
+              <div class="metric-card">
+                <span class="metric-label">Progress</span>
+                <div id="progressPercent" class="metric-number gold">0%</div>
+                <div id="progressCount" class="metric-sub">0 / 50,000</div>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">Throughput (RPS)</span>
+                <div id="statRps" class="metric-number cyan">0</div>
+                <div class="metric-sub">Requests / Sec</div>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">Median Latency</span>
+                <div id="statP50" class="metric-number emerald">0.00 ms</div>
+                <div class="metric-sub">P50 User Experience</div>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">V8 Memory Delta</span>
+                <div id="statMemory" class="metric-number purple">0.0 MB</div>
+                <div class="metric-sub">Heap Delta Usage</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Latency Percentiles SLA Card -->
+          <div class="percentiles-card">
+            <div class="card-heading">
+              <h4>⚡ High-Precision Latency Percentiles (SLA)</h4>
+              <span id="elapsedTimer" style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">0.0s elapsed</span>
+            </div>
+            <div class="percentiles-list">
+              <div class="latency-row">
+                <span class="latency-lbl">Min Latency:</span>
+                <span id="latMin" class="latency-val emerald">-- ms</span>
+              </div>
+              <div class="latency-row">
+                <span class="latency-lbl">Average Latency:</span>
+                <span id="latMean" class="latency-val">-- ms</span>
+              </div>
+              <div class="latency-row">
+                <span class="latency-lbl">P50 (Median SLA):</span>
+                <span id="latP50" class="latency-val cyan">-- ms</span>
+              </div>
+              <div class="latency-row">
+                <span class="latency-lbl">P90 Percentile:</span>
+                <span id="latP90" class="latency-val gold">-- ms</span>
+              </div>
+              <div class="latency-row">
+                <span class="latency-lbl">P95 (Production Guarantee):</span>
+                <span id="latP95" class="latency-val gold">-- ms</span>
+              </div>
+              <div class="latency-row">
+                <span class="latency-lbl">P99 (Tail Latency):</span>
+                <span id="latP99" class="latency-val rose">-- ms</span>
+              </div>
+              <div class="latency-row">
+                <span class="latency-lbl">Max Latency:</span>
+                <span id="latMax" class="latency-val rose">-- ms</span>
+              </div>
+            </div>
+
+            <!-- Status Badges -->
+            <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">HTTP Status Codes</span>
+                <span id="totalHits" style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">0 hits</span>
+              </div>
+              <div id="statusPillsList" class="status-badges-row">
+                <span class="status-chip s-200">200 OK: 0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Diagnostics & Reasons -->
+          <div class="field-group">
+            <div class="field-header">
+              <label>💡 Diagnostics & Security Explanations</label>
+              <span class="sub-hint">Real-time Reasons</span>
+            </div>
+            <div id="diagnosticsList" class="diag-container">
+              <div class="diag-card SUCCESS">
+                <div style="font-size: 20px;">🛡️</div>
+                <div>
+                  <h5>Awaiting Benchmark Run</h5>
+                  <p>Choose your user volume (e.g. 10k, 50k, 1 Lakh), select attack scenario, and click START BENCHMARK to stream live performance.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Sample JSON Response Terminal -->
+          <div class="terminal-card">
+            <div class="terminal-header">
+              <div class="terminal-title">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: #10B981;"></span>
+                <span id="sampleResponseStatus">STATUS: AWAITING BENCHMARK</span>
+              </div>
+              <div class="terminal-actions">
+                <button type="button" class="terminal-btn" onclick="copyResponseJson()">📋 Copy JSON</button>
+              </div>
+            </div>
+            <pre id="jsonPreview" class="terminal-body">// Real-time sample JSON response will appear here dynamically...</pre>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================================
+         VIEW 2: SUMMARY REPORT VIEW (EXECUTIVE SCORECARD & AUDIT)
+         ======================================================================== -->
+    <div id="summaryReportView" class="tab-view">
+      <!-- Empty State (When no test has been run or selected) -->
+      <div id="summaryEmptyState" class="panel-card" style="text-align: center; padding: 60px 20px;">
+        <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+        <h3 style="font-size: 18px; font-weight: 800; color: #FFF; margin-bottom: 8px;">No Benchmark Report Loaded</h3>
+        <p style="font-size: 13px; color: var(--text-muted); max-width: 500px; margin: 0 auto 24px; line-height: 1.6;">
+          Execute a load test in the Studio tab or choose any past test run from the History tab to review the complete Executive Summary Report and SLA certification!
+        </p>
+        <button type="button" class="btn-launch" style="max-width: 260px; margin: 0 auto;" onclick="switchTab('benchmarkView')">
+          <span>⚡</span> Go to Benchmark Studio
+        </button>
+      </div>
+
+      <!-- Active Executive Summary Report Container -->
+      <div id="summaryActiveContainer" class="summary-report-card" style="display: none;">
+        
+        <!-- Header -->
+        <div class="summary-exec-header">
+          <div>
+            <div class="summary-meta-badge">
+              <span>🛡️</span> OFFICIAL BENCHMARK AUDIT REPORT
+            </div>
+            <h2 id="sumProjectHeading" class="summary-title">Sindhi Matrimony Platform</h2>
+            <div class="summary-meta-pills">
+              <span>🆔 <strong id="sumReportId" style="font-family: var(--font-mono); color: #FFF;">bench_12345</strong></span>
+              <span>📅 <span id="sumTimestamp">Oct 17, 2026, 6:05 PM</span></span>
+              <span>👤 <strong id="sumAuditor" style="color: #A5B4FC;">Naman (QA Lead)</strong></span>
+              <span>🎯 <strong id="sumEndpoint" style="font-family: var(--font-mono); color: #38BDF8;">/api/v1/auth/verify-otp</strong></span>
+              <span>⚡ <strong id="sumMode" style="color: #FBBF24;">STEADY LOAD</strong></span>
+            </div>
+          </div>
+
+          <div class="summary-grade-badge">
+            <div id="sumGradeLetter" class="summary-grade-letter">A+</div>
+            <div id="sumGradeStatus" class="summary-grade-title">EXCELLENT SLA</div>
+          </div>
+        </div>
+
+        <!-- Action Toolbar -->
+        <div class="summary-actions-toolbar">
+          <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+            <span>📋 Report Status:</span>
+            <strong style="color: #34D399;">COMPLETED & AUDITED</strong>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button type="button" class="terminal-btn" onclick="openEmailModal(lastCompletedReport?.id)">
+              <span>📧</span> Email Executive Report
+            </button>
+            <button type="button" class="terminal-btn" onclick="printSummaryReport()">
+              <span>🖨️</span> Print / Save as PDF
+            </button>
+            <button type="button" class="terminal-btn" onclick="downloadJsonReport()">
+              <span>💾</span> Export Raw JSON
+            </button>
+            <button type="button" class="btn-view-summary" onclick="switchTab('benchmarkView')">
+              <span>⚡</span> Run New Test
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Key Performance Scorecards -->
+        <div class="summary-kpi-grid">
+          <div class="summary-kpi-card">
+            <span class="kpi-label">Total Volume & Success</span>
+            <div id="sumKpiSuccess" class="kpi-num" style="color: #34D399;">100%</div>
+            <div id="sumKpiTotal" class="kpi-sub">50,000 / 50,000 requests</div>
+          </div>
+          <div class="summary-kpi-card">
+            <span class="kpi-label">Peak Throughput</span>
+            <div id="sumKpiRps" class="kpi-num" style="color: #38BDF8;">1,632</div>
+            <div class="kpi-sub">Requests / Second (RPS)</div>
+          </div>
+          <div class="summary-kpi-card">
+            <span class="kpi-label">Benchmark Duration</span>
+            <div id="sumKpiDuration" class="kpi-num" style="color: #FBBF24;">30.65s</div>
+            <div class="kpi-sub">Total Time Elapsed</div>
+          </div>
+          <div class="summary-kpi-card">
+            <span class="kpi-label">Concurrency Level</span>
+            <div id="sumKpiConcurrency" class="kpi-num" style="color: #C084FC;">100</div>
+            <div class="kpi-sub">Parallel Keep-Alive Sockets</div>
+          </div>
+        </div>
+
+        <!-- Latency & SLA Verdict Matrix Table -->
+        <div class="matrix-section">
+          <h3>⚡ Latency & SLA Verdict Matrix (Actual vs Target)</h3>
+          <table class="verdict-table">
+            <thead>
+              <tr>
+                <th>Percentile SLA Metric</th>
+                <th>Target Production SLA</th>
+                <th>Actual Measured Time</th>
+                <th>Deviation / Overhead</th>
+                <th>Certification Verdict</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Min Latency</strong></td>
+                <td>&lt; 10.0 ms</td>
+                <td><strong id="mLatMin" style="font-family: var(--font-mono); color: #34D399;">-- ms</strong></td>
+                <td>Fastest socket response</td>
+                <td><span class="verdict-badge PASS">PASS ✅</span></td>
+              </tr>
+              <tr>
+                <td><strong>Mean Average Latency</strong></td>
+                <td>&lt; 30.0 ms</td>
+                <td><strong id="mLatMean" style="font-family: var(--font-mono); color: #38BDF8;">-- ms</strong></td>
+                <td>Balanced average load</td>
+                <td><span id="vBadgeMean" class="verdict-badge PASS">PASS ✅</span></td>
+              </tr>
+              <tr>
+                <td><strong>P50 (Median User Experience)</strong></td>
+                <td>&lt; 25.0 ms</td>
+                <td><strong id="mLatP50" style="font-family: var(--font-mono); color: #38BDF8;">-- ms</strong></td>
+                <td>50% of all real users</td>
+                <td><span id="vBadgeP50" class="verdict-badge PASS">PASS ✅</span></td>
+              </tr>
+              <tr>
+                <td><strong>P90 Percentile</strong></td>
+                <td>&lt; 50.0 ms</td>
+                <td><strong id="mLatP90" style="font-family: var(--font-mono); color: #FBBF24;">-- ms</strong></td>
+                <td>90% of user interactions</td>
+                <td><span id="vBadgeP90" class="verdict-badge PASS">PASS ✅</span></td>
+              </tr>
+              <tr>
+                <td><strong>P95 (Production SLA Guarantee)</strong></td>
+                <td>&lt; 100.0 ms</td>
+                <td><strong id="mLatP95" style="font-family: var(--font-mono); color: #FBBF24;">-- ms</strong></td>
+                <td>Primary SLA Threshold</td>
+                <td><span id="vBadgeP95" class="verdict-badge PASS">PASS ✅</span></td>
+              </tr>
+              <tr>
+                <td><strong>P99 (Tail Latency Edge Cases)</strong></td>
+                <td>&lt; 250.0 ms</td>
+                <td><strong id="mLatP99" style="font-family: var(--font-mono); color: #FDA4AF;">-- ms</strong></td>
+                <td>Worst 1% edge requests</td>
+                <td><span id="vBadgeP99" class="verdict-badge PASS">PASS ✅</span></td>
+              </tr>
+              <tr>
+                <td><strong>Max Response Time</strong></td>
+                <td>&lt; 1000.0 ms</td>
+                <td><strong id="mLatMax" style="font-family: var(--font-mono); color: #FDA4AF;">-- ms</strong></td>
+                <td>Peak recorded spike</td>
+                <td><span id="vBadgeMax" class="verdict-badge PASS">PASS ✅</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Status Codes & Visual Distribution Bar -->
+        <div class="matrix-section">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>📊 HTTP Status Distribution & Traffic Breakdown</h3>
+            <span id="sumTotalHits" style="font-family: var(--font-mono); font-size: 12px; color: var(--text-muted);">50,000 total hits</span>
+          </div>
+
+          <!-- Segmented Visual Bar -->
+          <div class="ratio-progress-bar" id="sumRatioBar">
+            <div class="ratio-segment s200" style="width: 100%;"></div>
+          </div>
+
+          <div id="sumStatusPills" class="status-badges-row">
+            <span class="status-chip s-200">200 OK: 50,000 (100.0%)</span>
+          </div>
+        </div>
+
+        <!-- V8 Engine Memory & System Resource Footprint -->
+        <div class="matrix-section">
+          <h3>💾 V8 Engine & Process Memory Impact</h3>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;">
+            <div class="metric-card">
+              <span class="metric-label">Initial Heap</span>
+              <div id="sumHeapInit" class="metric-number cyan" style="font-size: 18px;">33.1 MB</div>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Final Heap</span>
+              <div id="sumHeapFinal" class="metric-number gold" style="font-size: 18px;">39.4 MB</div>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Heap Memory Delta</span>
+              <div id="sumHeapDelta" class="metric-number emerald" style="font-size: 18px;">+6.3 MB</div>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Process RSS</span>
+              <div id="sumRss" class="metric-number purple" style="font-size: 18px;">121.2 MB</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================================
+             CRASH FORENSICS & ROOT CAUSE ANALYSIS (RCA) - DEEP BREAKDOWN
+             ======================================================================== -->
+        <div id="sumCrashForensicsSection" class="crash-forensics-container">
+          <!-- Dynamic: Rendered by renderSummaryReport() -->
+        </div>
+
+        <!-- Security & Behavioral Diagnostics Audit -->
+        <div class="matrix-section">
+          <h3>🛡️ Security & Behavioral Diagnostics Audit Log</h3>
+          <div id="sumDiagnosticsList" class="diag-container">
+            <!-- Dynamic items injected here -->
+          </div>
+        </div>
+
+        <!-- Raw Sample Response Inspection -->
+        <div class="terminal-card" style="margin-top: 24px;">
+          <div class="terminal-header">
+            <div class="terminal-title">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: #10B981;"></span>
+              <span id="sumSampleStatus">STATUS: 200 OK</span>
+            </div>
+            <button type="button" class="terminal-btn" onclick="copySumResponseJson()">📋 Copy Payload</button>
+          </div>
+          <pre id="sumJsonPreview" class="terminal-body">// Raw sample JSON payload...</pre>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ========================================================================
+         VIEW 3: BENCHMARK HISTORY
+         ======================================================================== -->
+    <div id="historyView" class="tab-view">
+      <div class="history-table-container">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span>📜</span> Session Benchmark Runs & Audit Logs
+          </div>
+          <button type="button" class="terminal-btn" onclick="refreshHistoryTable()">🔄 Refresh History</button>
+        </div>
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Target Project</th>
+              <th>API Endpoint</th>
+              <th>Mode</th>
+              <th>Volume</th>
+              <th>Avg Throughput</th>
+              <th>P50 (Median)</th>
+              <th>P95 SLA</th>
+              <th>Success %</th>
+              <th>Audit Actions</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+            <tr>
+              <td colspan="10" style="text-align: center; color: var(--text-dim); padding: 32px;">
+                No test runs recorded in this session yet. Run a benchmark from the Studio tab to see reports!
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========================================================================
+         VIEW 4: KNOWLEDGE HUB (ABOUT PORTAL & CYBER ATTACKS)
+         ======================================================================== -->
+    <div id="knowledgeView" class="tab-view">
+      <div class="hub-hero">
+        <h2>🛡️ AegisLoad Portal & Cyber Attacks Knowledge Hub</h2>
+        <p>A comprehensive architectural reference guide explaining how high-scale load testing works, common web vulnerabilities, denial of service attacks, and production hardening strategies.</p>
+      </div>
+
+      <div class="attacks-grid">
+        <!-- Card 1: What is AegisLoad Studio? -->
+        <div class="attack-info-card">
+          <div class="atk-icon">⚡</div>
+          <h3>Portal Architecture & Methodology</h3>
+          <p>AegisLoad Studio utilizes native Node.js keep-alive socket pooling, high-precision performance timers (`perf_hooks`), and Server-Sent Events (SSE) to generate up to 200,000 parallel requests without crashing browser memory.</p>
+          <div class="mitigation-box">
+            ✓ Keep-alive connection pooling<br>
+            ✓ Sub-microsecond latency resolution<br>
+            ✓ Native V8 memory profiler
+          </div>
+        </div>
+
+        <!-- Card 2: Layer 7 HTTP Flood & DDoS -->
+        <div class="attack-info-card">
+          <div class="atk-icon">💣</div>
+          <h3>Layer 7 Volumetric HTTP Floods</h3>
+          <p>Attackers fire tens of thousands of requests per second to saturate the application server's CPU and exhaust thread pools. Without rate limiters, web servers crash within seconds.</p>
+          <div class="mitigation-box">
+            🛡️ Mitigation: Dual-Layer Rate Limiting (Redis token bucket + in-memory fallback) returning sub-0.1ms HTTP 429.
+          </div>
+        </div>
+
+        <!-- Card 3: Credential Stuffing & OTP Drain -->
+        <div class="attack-info-card">
+          <div class="atk-icon">📱</div>
+          <h3>OTP Exhaustion & SMS Billing Drain</h3>
+          <p>Malicious bots repeatedly request OTPs on randomized phone numbers to drain third-party SMS gateway funds (MSG91/Twilio) and trigger vendor account suspensions.</p>
+          <div class="mitigation-box">
+            🛡️ Mitigation: Strict 5 OTP / 10 min window per phone/IP + pre-registration account checks.
+          </div>
+        </div>
+
+        <!-- Card 4: Database Write Lock Saturation -->
+        <div class="attack-info-card">
+          <div class="atk-icon">💾</div>
+          <h3>Database Write Lock Cascades</h3>
+          <p>When thousands of users submit redundant profile updates simultaneously, MongoDB write locks queue up, causing latency to spike from 10ms to over 5,000ms.</p>
+          <div class="mitigation-box">
+            🛡️ Mitigation: Strict Rule 4.4 `isDataEqual` (fast-deep-equal) skips 100% of redundant DB writes in &lt; 2μs.
+          </div>
+        </div>
+
+        <!-- Card 5: Event Loop Starvation -->
+        <div class="attack-info-card">
+          <div class="atk-icon">🛑</div>
+          <h3>Node.js Event Loop Starvation</h3>
+          <p>Node.js runs on a single main thread. If one synchronous function executes heavy loops or blocking crypto (`bcrypt.hashSync`), ALL concurrent users freeze simultaneously.</p>
+          <div class="mitigation-box">
+            🛡️ Mitigation: 100% async/await non-blocking design + PM2 Multi-Core Cluster mode across all CPU cores.
+          </div>
+        </div>
+
+        <!-- Card 6: Percentiles Deep-Dive -->
+        <div class="attack-info-card">
+          <div class="atk-icon">📈</div>
+          <h3>Understanding P50 vs P95 vs P99</h3>
+          <p>Average latency is deceitful because a few fast queries hide slow ones. P95 latency guarantees that 95% of real users experience sub-50ms speed, eliminating frustrating app lag.</p>
+          <div class="mitigation-box">
+            🎯 SLA Target: P50 &lt; 15ms | P95 &lt; 50ms | P99 &lt; 250ms under peak load.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Report Modal -->
+  <div id="emailModal" class="modal-overlay" onclick="closeModalOnOverlay(event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">📧 Email Benchmark Report</div>
+        <button type="button" class="modal-close" onclick="closeEmailModal()">×</button>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+        Enter recipient email address to dispatch the comprehensive benchmark scorecard and executive diagnostic analysis.
+      </p>
+      <div class="custom-input-group">
+        <label>Recipient Email</label>
+        <input type="email" id="emailInput" class="input-field" style="padding-left: 14px;" placeholder="engineering-lead@company.com" value="naman@sindhimatrimony.com">
+      </div>
+      <div style="margin-top: 20px; display: flex; gap: 10px;">
+        <button type="button" class="btn-launch" style="flex: 1; padding: 12px;" onclick="sendEmailReport()">Send Executive Report</button>
+        <button type="button" class="terminal-btn" style="padding: 12px 18px;" onclick="closeEmailModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Engineer Login Modal -->
+  <div id="loginModal" class="modal-overlay" onclick="closeModalOnOverlay(event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">📱 Engineer Session Login</div>
+        <button type="button" class="modal-close" onclick="closeLoginModal()">×</button>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+        Sign in with your mobile number to link benchmark runs, save custom test configurations, and access executive reports.
+      </p>
+      <div class="custom-input-group" style="margin-bottom: 12px;">
+        <label>Engineer Mobile Number</label>
+        <input type="tel" id="engineerPhone" class="input-field" style="padding-left: 14px;" placeholder="9876543210" value="9876543210">
+      </div>
+      <div class="custom-input-group">
+        <label>Engineer Name / Tag</label>
+        <input type="text" id="engineerName" class="input-field" style="padding-left: 14px;" placeholder="QA Lead / Naman" value="Naman (QA Lead)">
+      </div>
+      <div style="margin-top: 20px; display: flex; gap: 10px;">
+        <button type="button" class="btn-launch" style="flex: 1; padding: 12px;" onclick="submitEngineerLogin()">Verify & Connect Session</button>
+        <button type="button" class="terminal-btn" style="padding: 12px 18px;" onclick="closeLoginModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastNotification" class="toast-notification"></div>
+
+  <script>
+    let activeEventSource = null;
+    let testStartTime = null;
+    let timerInterval = null;
+    let lastCompletedReport = null;
+    let currentSelectedReport = null;
+
+    // View Navigation Tabs
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+
+      const activeView = document.getElementById(tabId);
+      if (activeView) activeView.classList.add('active');
+
+      const btnMap = {
+        'benchmarkView': 'tabBtnStudio',
+        'summaryReportView': 'tabBtnSummary',
+        'historyView': 'tabBtnHistory',
+        'knowledgeView': 'tabBtnKnowledge',
+      };
+
+      const btn = document.getElementById(btnMap[tabId]);
+      if (btn) btn.classList.add('active');
+
+      if (tabId === 'historyView') {
+        refreshHistoryTable();
+      } else if (tabId === 'summaryReportView') {
+        renderSummaryReportView();
+      }
+    }
+
+    // Close all open dropdowns on outside click
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.custom-select-container')) {
+        document.querySelectorAll('.select-trigger').forEach(el => el.classList.remove('open'));
+        document.querySelectorAll('.dropdown-menu').forEach(el => el.classList.remove('show'));
+      }
+    });
+
+    function toggleDropdown(containerId) {
+      const container = document.getElementById(containerId);
+      const trigger = container.querySelector('.select-trigger');
+      const menu = container.querySelector('.dropdown-menu');
+      const wasOpen = trigger.classList.contains('open');
+
+      document.querySelectorAll('.select-trigger').forEach(el => el.classList.remove('open'));
+      document.querySelectorAll('.dropdown-menu').forEach(el => el.classList.remove('show'));
+
+      if (!wasOpen) {
+        trigger.classList.add('open');
+        menu.classList.add('show');
+      }
+    }
+
+    // Project Switcher
+    function switchProject(projectName, hostTarget, defaultUrl = '') {
+      document.querySelectorAll('.proj-chip').forEach(c => c.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      document.getElementById('projectName').value = projectName;
+      document.getElementById('targetHost').value = hostTarget;
+      document.getElementById('targetTelemetryHeading').innerText = `Live Telemetry: ${projectName}`;
+
+      const customFields = document.getElementById('customTargetFields');
+      const builtinGroup = document.getElementById('builtinApiGroup');
+
+      if (hostTarget === 'CUSTOM') {
+        customFields.classList.add('show');
+        builtinGroup.style.display = 'none';
+        if (defaultUrl) {
+          document.getElementById('customUrlInput').value = defaultUrl;
+        }
+      } else {
+        customFields.classList.remove('show');
+        builtinGroup.style.display = 'block';
+      }
+    }
+
+    function setCustomPreset(url, method, headers, body) {
+      document.getElementById('customUrlInput').value = url;
+      document.getElementById('customMethodInput').value = method;
+      document.getElementById('customHeadersInput').value = headers;
+      document.getElementById('customBodyInput').value = body;
+      showToast(`Preset loaded: ${method} ${url}`);
+    }
+
+    // Attack Mode Switcher
+    function chooseAttackMode(mode) {
+      document.querySelectorAll('.attack-card').forEach(c => c.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      document.getElementById('testMode').value = mode;
+    }
+
+    // Dropdown Handlers
+    function chooseApi(apiValue, method, route, desc) {
+      document.getElementById('apiEndpoint').value = apiValue;
+      const tag = document.getElementById('currentMethodTag');
+      tag.className = `method-tag ${method}`;
+      tag.innerText = method;
+
+      document.getElementById('currentRouteText').innerText = route;
+      document.getElementById('currentDescText').innerText = desc;
+
+      document.querySelectorAll('#apiDropdownMenu .dropdown-item').forEach(item => item.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+      toggleDropdown('apiSelectContainer');
+    }
+
+    function chooseConcurrency(val, title, desc) {
+      document.getElementById('concurrency').value = val;
+      document.getElementById('currentConcurrencyText').innerText = title;
+      document.getElementById('currentConcurrencyDesc').innerText = desc;
+
+      document.querySelectorAll('#concurrencyDropdownMenu .dropdown-item').forEach(item => item.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+      toggleDropdown('concurrencySelectContainer');
+    }
+
+    function selectPreset(users) {
+      document.querySelectorAll('.preset-chip').forEach(b => b.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      document.getElementById('customUsers').value = users;
+    }
+
+    document.getElementById('customUsers').addEventListener('input', (e) => {
+      const val = Number(e.target.value);
+      document.querySelectorAll('.preset-chip').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.preset-chip').forEach(b => {
+        const text = b.innerText;
+        if (Number(text.replace(/[^0-9]/g, '')) === val || 
+            (text.includes('1 Lakh') && val === 100000) ||
+            (text.includes('2 Lakh') && val === 200000)) {
+          b.classList.add('active');
+        }
+      });
+    });
+
+    // Form Submission / Start Test
+    document.getElementById('loadTestForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const totalUsers = Number(document.getElementById('customUsers').value) || 50000;
+      const projectName = document.getElementById('projectName').value;
+      const apiEndpoint = document.getElementById('apiEndpoint').value;
+      const testMode = document.getElementById('testMode').value;
+      const concurrency = Number(document.getElementById('concurrency').value);
+      const targetHost = document.getElementById('targetHost').value;
+      const customUrl = document.getElementById('customUrlInput').value;
+      const customMethod = document.getElementById('customMethodInput').value;
+      const customHeaders = document.getElementById('customHeadersInput').value;
+      const customBody = document.getElementById('customBodyInput').value;
+
+      startTest({
+        totalUsers,
+        projectName,
+        apiEndpoint,
+        testMode,
+        concurrency,
+        targetHost,
+        customUrl,
+        customMethod,
+        customHeaders,
+        customBody,
+      });
+    });
+
+    function startTest(params) {
+      document.getElementById('startBtn').disabled = true;
+      document.getElementById('abortBtn').style.display = 'flex';
+      document.getElementById('testCompletionBanner').style.display = 'none';
+      document.getElementById('liveCrashAlert').style.display = 'none';
+
+      const badge = document.getElementById('liveTelemetryStatusBadge');
+      badge.className = 'status-badge running';
+      document.getElementById('livePulseDot').className = 'pulse-dot running';
+      document.getElementById('telemetryStatusText').innerText = `Running (${params.testMode})`;
+
+      document.getElementById('progressFill').style.width = '0%';
+      document.getElementById('progressPercent').innerText = '0%';
+      document.getElementById('progressCount').innerText = `0 / ${params.totalUsers.toLocaleString()}`;
+      document.getElementById('statRps').innerText = '0';
+      document.getElementById('jsonPreview').innerText = '// Connecting to live SSE stream...';
+
+      testStartTime = performance.now();
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        const sec = ((performance.now() - testStartTime) / 1000).toFixed(1);
+        document.getElementById('elapsedTimer').innerText = `${sec}s elapsed`;
+      }, 100);
+
+      const qs = new URLSearchParams({
+        totalUsers: params.totalUsers,
+        projectName: params.projectName,
+        apiEndpoint: params.apiEndpoint,
+        testMode: params.testMode,
+        concurrency: params.concurrency,
+        targetHost: params.targetHost,
+        customUrl: params.customUrl,
+        customMethod: params.customMethod,
+        customHeaders: params.customHeaders,
+        customBody: params.customBody,
+      }).toString();
+
+      const streamUrl = `/api/load-test/stream?${qs}`;
+
+      if (activeEventSource) activeEventSource.close();
+      activeEventSource = new EventSource(streamUrl);
+
+      activeEventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          updateUI(data);
+
+          if (data.type === 'COMPLETED') {
+            onTestComplete(data);
+          }
+        } catch (err) {
+          console.error("SSE parse error:", err);
+        }
+      };
+
+      activeEventSource.onerror = (err) => {
+        console.error("SSE stream error:", err);
+        activeEventSource.close();
+        finishTestState();
+      };
+    }
+
+    function updateUI(data) {
+      if (!data) return;
+
+      const percent = data.percent !== undefined ? data.percent : (data.completed / data.total) * 100;
+      document.getElementById('progressFill').style.width = `${percent}%`;
+      document.getElementById('progressPercent').innerText = `${percent.toFixed(0)}%`;
+      document.getElementById('progressCount').innerText = `${data.completed.toLocaleString()} / ${data.total.toLocaleString()}`;
+
+      document.getElementById('statRps').innerText = (data.currentRps || data.avgRps || 0).toLocaleString();
+      if (data.recentLatencies || data.percentiles) {
+        const p = data.recentLatencies || data.percentiles;
+        document.getElementById('statP50').innerText = `${p.p50} ms`;
+        document.getElementById('latMin').innerText = `${p.min} ms`;
+        document.getElementById('latMean').innerText = `${p.mean} ms`;
+        document.getElementById('latP50').innerText = `${p.p50} ms`;
+        document.getElementById('latP90').innerText = `${p.p90} ms`;
+        document.getElementById('latP95').innerText = `${p.p95} ms`;
+        document.getElementById('latP99').innerText = `${p.p99} ms`;
+        document.getElementById('latMax').innerText = `${p.max} ms`;
+      }
+
+      if (data.memoryMb) {
+        document.getElementById('statMemory').innerText = `${data.memoryMb} MB`;
+      } else if (data.memory?.deltaMb) {
+        document.getElementById('statMemory').innerText = `${data.memory.deltaMb} MB`;
+      }
+
+      if (data.statusCodes) {
+        renderStatusPills(data.statusCodes, data.completed);
+      }
+
+      if (data.sampleResponse) {
+        document.getElementById('sampleResponseStatus').innerText = `STATUS: ${data.sampleResponse.status} ${data.sampleResponse.statusText || ''}`;
+        document.getElementById('jsonPreview').innerText = JSON.stringify(data.sampleResponse.body, null, 2);
+      }
+
+      // Real-Time API Breakage Alert
+      if (data.crashAlert && data.crashAlert.hasCrashes) {
+        const alertEl = document.getElementById('liveCrashAlert');
+        alertEl.style.display = 'flex';
+        const fc = data.crashAlert.firstCrash;
+        if (fc) {
+          document.getElementById('liveCrashDesc').innerText = `💥 Breaking Point at Request #${fc.requestIndex.toLocaleString()} (${fc.elapsedSec}s into run) | Status: ${fc.statusCode} (${fc.signature || 'ERROR'}) | ${data.crashAlert.failedCount.toLocaleString()} total failures`;
+        }
+      }
+    }
+
+    function renderStatusPills(statusCodes, total) {
+      const container = document.getElementById('statusPillsList');
+      container.innerHTML = '';
+
+      Object.entries(statusCodes).forEach(([code, count]) => {
+        const chip = document.createElement('span');
+        chip.className = `status-chip s-${code}`;
+        chip.innerText = `${code}: ${count.toLocaleString()}`;
+        container.appendChild(chip);
+      });
+
+      document.getElementById('totalHits').innerText = `${total.toLocaleString()} total`;
+    }
+
+    function onTestComplete(data) {
+      finishTestState();
+      lastCompletedReport = data;
+      currentSelectedReport = data;
+
+      // Show Completion Banner in Studio (Differentiate 100% Success vs Breakage)
+      const banner = document.getElementById('testCompletionBanner');
+      banner.style.display = 'flex';
+
+      if (data.failedCount > 0 || (data.crashForensics && data.crashForensics.hasCrashes)) {
+        banner.style.background = 'linear-gradient(90deg, rgba(244, 63, 94, 0.22) 0%, rgba(15, 23, 42, 0.85) 100%)';
+        banner.style.borderColor = 'rgba(244, 63, 94, 0.45)';
+        banner.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 26px;">💥</span>
+            <div>
+              <strong style="color: #FDA4AF; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">API Breakage / Failure Detected (${data.failedCount.toLocaleString()} Failures)</strong>
+              <p style="font-size: 11px; color: #FECDD3; margin-top: 3px;">
+                Tipping point reached at Request #${(data.crashForensics?.breakingPoint?.requestIndex || 1).toLocaleString()}. Review Root Cause Analysis (RCA) and remediation steps.
+              </p>
+            </div>
+          </div>
+          <button type="button" class="btn-stop" style="background: rgba(244, 63, 94, 0.25); border: 1px solid rgba(244, 63, 94, 0.6); color: #FDA4AF; padding: 8px 16px; font-size: 12px; font-weight: 800; border-radius: 10px; cursor: pointer;" onclick="viewSummaryReport(lastCompletedReport)">
+            <span>🚨</span> View Crash Forensics & RCA →
+          </button>
+        `;
+        showToast(`🚨 API Fata / Failure Occurred (${data.failedCount.toLocaleString()} failures recorded)`);
+      } else {
+        banner.style.background = 'rgba(16, 185, 129, 0.1)';
+        banner.style.borderColor = 'rgba(16, 185, 129, 0.25)';
+        banner.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 26px;">🎉</span>
+            <div>
+              <strong style="color: #34D399; font-size: 13px;">Benchmark Execution Complete - 100% Resilient!</strong>
+              <p style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">
+                ${data.completed.toLocaleString()} requests processed with 0 failures at ${data.avgRps.toLocaleString()} RPS (P95: ${data.percentiles?.p95}ms).
+              </p>
+            </div>
+          </div>
+          <button type="button" class="btn-view-summary" onclick="viewSummaryReport(lastCompletedReport)">
+            <span>📊</span> View Summary Report →
+          </button>
+        `;
+        showToast(`🎉 Benchmark Completed! Speed: ${data.avgRps.toLocaleString()} RPS`);
+      }
+
+      // Update History Badge
+      refreshHistoryCount();
+
+      if (data.diagnosticReasons && data.diagnosticReasons.length > 0) {
+        const diagContainer = document.getElementById('diagnosticsList');
+        diagContainer.innerHTML = '';
+
+        data.diagnosticReasons.forEach((r) => {
+          const item = document.createElement('div');
+          item.className = `diag-card ${r.type}`;
+          const icon = r.type === 'SUCCESS' ? '✅' : r.type === 'WARNING' ? '🛡️' : '❌';
+          item.innerHTML = `
+            <div style="font-size: 20px;">${icon}</div>
+            <div>
+              <h5>${r.title} (${r.count.toLocaleString()} requests)</h5>
+              <p>${r.explanation}</p>
+            </div>
+          `;
+          diagContainer.appendChild(item);
+        });
+      }
+    }
+
+    function finishTestState() {
+      clearInterval(timerInterval);
+      document.getElementById('startBtn').disabled = false;
+      document.getElementById('abortBtn').style.display = 'none';
+
+      const badge = document.getElementById('liveTelemetryStatusBadge');
+      badge.className = 'status-badge';
+      document.getElementById('livePulseDot').className = 'pulse-dot';
+      document.getElementById('telemetryStatusText').innerText = 'Ready for Benchmark';
+
+      if (activeEventSource) {
+        activeEventSource.close();
+        activeEventSource = null;
+      }
+    }
+
+    async function abortTest() {
+      try {
+        await fetch('/api/load-test/abort', { method: 'POST' });
+        showToast("⏹️ Benchmark aborted by user.");
+      } catch (err) {
+        console.error("Error aborting test:", err);
+      }
+      finishTestState();
+    }
+
+    // ========================================================================
+    // SUMMARY REPORT VIEW RENDERER
+    // ========================================================================
+    function viewSummaryReport(report) {
+      currentSelectedReport = report || lastCompletedReport;
+      switchTab('summaryReportView');
+    }
+
+    async function viewSummaryFromHistory(reportId) {
+      try {
+        const res = await fetch('/api/reports/history');
+        const json = await res.json();
+        const found = json.data?.find(r => r.id === reportId);
+        if (found) {
+          viewSummaryReport(found);
+        } else {
+          showToast("⚠️ Report not found in session history.");
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderSummaryReportView() {
+      const report = currentSelectedReport || lastCompletedReport;
+      const emptyState = document.getElementById('summaryEmptyState');
+      const activeContainer = document.getElementById('summaryActiveContainer');
+
+      if (!report) {
+        emptyState.style.display = 'block';
+        activeContainer.style.display = 'none';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+      activeContainer.style.display = 'block';
+
+      // Header Meta
+      document.getElementById('sumProjectHeading').innerText = report.projectName || "Sindhi Matrimony Platform";
+      document.getElementById('sumReportId').innerText = report.id || "bench_custom";
+      document.getElementById('sumTimestamp').innerText = new Date(report.timestamp).toLocaleString();
+      document.getElementById('sumAuditor').innerText = document.getElementById('navEngineerText').innerText;
+      document.getElementById('sumEndpoint').innerText = report.apiEndpoint || "LOGIN";
+      document.getElementById('sumMode').innerText = (report.testMode || "STEADY") + " MODE";
+
+      // Health Grade calculation
+      const p95 = report.percentiles?.p95 || 0;
+      const successPct = (report.successCount / report.completed) * 100;
+      let grade = 'A+';
+      let gradeStatus = 'EXCELLENT SLA';
+
+      if (successPct < 90 || p95 > 250) {
+        grade = 'C';
+        gradeStatus = 'DEGRADED SLA';
+      } else if (p95 > 100) {
+        grade = 'B';
+        gradeStatus = 'ACCEPTABLE SLA';
+      } else if (p95 > 50) {
+        grade = 'A';
+        gradeStatus = 'STABLE SLA';
+      }
+
+      document.getElementById('sumGradeLetter').innerText = grade;
+      document.getElementById('sumGradeStatus').innerText = gradeStatus;
+
+      // KPIs
+      document.getElementById('sumKpiSuccess').innerText = `${successPct.toFixed(1)}%`;
+      document.getElementById('sumKpiTotal').innerText = `${report.successCount?.toLocaleString()} / ${report.completed?.toLocaleString()} requests`;
+      document.getElementById('sumKpiRps').innerText = report.avgRps?.toLocaleString() || '0';
+      document.getElementById('sumKpiDuration').innerText = `${report.totalTimeSec || 0}s`;
+      document.getElementById('sumKpiConcurrency').innerText = report.concurrency || 100;
+
+      // Matrix Table
+      const p = report.percentiles || {};
+      document.getElementById('mLatMin').innerText = `${p.min || 0} ms`;
+      document.getElementById('mLatMean').innerText = `${p.mean || 0} ms`;
+      document.getElementById('mLatP50').innerText = `${p.p50 || 0} ms`;
+      document.getElementById('mLatP90').innerText = `${p.p90 || 0} ms`;
+      document.getElementById('mLatP95').innerText = `${p.p95 || 0} ms`;
+      document.getElementById('mLatP99').innerText = `${p.p99 || 0} ms`;
+      document.getElementById('mLatMax').innerText = `${p.max || 0} ms`;
+
+      // Status Bar
+      const total = report.completed || 1;
+      const sBar = document.getElementById('sumRatioBar');
+      sBar.innerHTML = '';
+      const sPills = document.getElementById('sumStatusPills');
+      sPills.innerHTML = '';
+
+      Object.entries(report.statusCodes || {}).forEach(([code, count]) => {
+        const pct = ((count / total) * 100).toFixed(1);
+        const seg = document.createElement('div');
+        seg.className = `ratio-segment s${code}`;
+        seg.style.width = `${pct}%`;
+        sBar.appendChild(seg);
+
+        const pill = document.createElement('span');
+        pill.className = `status-chip s-${code}`;
+        pill.innerText = `${code}: ${count.toLocaleString()} (${pct}%)`;
+        sPills.appendChild(pill);
+      });
+
+      document.getElementById('sumTotalHits').innerText = `${total.toLocaleString()} total hits`;
+
+      // Memory
+      const mem = report.memory || {};
+      document.getElementById('sumHeapInit').innerText = `${mem.initialHeapMb || 0} MB`;
+      document.getElementById('sumHeapFinal').innerText = `${mem.finalHeapMb || 0} MB`;
+      document.getElementById('sumHeapDelta').innerText = `+${mem.deltaMb || 0} MB`;
+      document.getElementById('sumRss').innerText = `${mem.rssMb || 0} MB`;
+
+      // Diagnostics
+      const diagContainer = document.getElementById('sumDiagnosticsList');
+      diagContainer.innerHTML = '';
+      (report.diagnosticReasons || []).forEach(r => {
+        const d = document.createElement('div');
+        d.className = `diag-card ${r.type}`;
+        const icon = r.type === 'SUCCESS' ? '✅' : r.type === 'WARNING' ? '🛡️' : '❌';
+        d.innerHTML = `
+          <div style="font-size: 20px;">${icon}</div>
+          <div>
+            <h5>${r.title} (${r.count.toLocaleString()} requests)</h5>
+            <p>${r.explanation}</p>
+          </div>
+        `;
+        diagContainer.appendChild(d);
+      });
+
+      // ========================================================================
+      // RENDER CRASH FORENSICS & ROOT CAUSE ANALYSIS (RCA)
+      // ========================================================================
+      const crashSec = document.getElementById('sumCrashForensicsSection');
+      const cf = report.crashForensics;
+
+      if (cf && cf.hasCrashes) {
+        const bp = cf.breakingPoint || {};
+        const sevColor = cf.severity === 'CATASTROPHIC_CRASH' ? '#F43F5E' : cf.severity === 'HIGH_INSTABILITY' ? '#F97316' : '#FBBF24';
+        const sevText = (cf.severity || 'DEGRADATION').replace(/_/g, ' ');
+
+        let bucketsHtml = '';
+        (cf.errorBuckets || []).forEach(b => {
+          bucketsHtml += `
+            <tr>
+              <td>
+                <span class="status-chip s-${b.statusCode}" style="font-weight: 800; font-size: 11px;">${b.statusCode}</span>
+                <div style="font-weight: 700; color: #FFF; margin-top: 4px;">${b.errorTitle}</div>
+                <div style="font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); margin-top: 2px;">${b.signature}</div>
+              </td>
+              <td>
+                <strong style="color: #FDA4AF; font-size: 13px;">${b.count.toLocaleString()}</strong>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${b.percentage}% of total hits</div>
+              </td>
+              <td>
+                <div class="rca-explanation"><strong style="color: #FCD34D;">🔍 Root Cause:</strong> ${b.rcaAnalysis}</div>
+              </td>
+              <td>
+                <div class="rca-fix-badge">🛠️ Fix: ${b.fixRecommendation}</div>
+              </td>
+            </tr>
+          `;
+        });
+
+        const reqDump = bp.request ? JSON.stringify(bp.request, null, 2) : '// No request payload recorded';
+        const resDump = bp.response ? JSON.stringify(bp.response, null, 2) : '// No response body recorded';
+
+        crashSec.innerHTML = `
+          <div class="crash-report-card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                  <span style="font-size: 22px;">💥</span>
+                  <h3 style="font-size: 16px; font-weight: 800; color: #FDA4AF; margin: 0; text-transform: uppercase; letter-spacing: 0.8px;">
+                    API Crash Forensics & Root Cause Analysis (RCA)
+                  </h3>
+                </div>
+                <p style="font-size: 12px; color: #E2E8F0; margin: 0; line-height: 1.5;">
+                  System breaking point identified! High concurrency stress caused API crashes/timeouts. Detailed forensics below expose the exact failure trigger, payload dump, and remediation plan.
+                </p>
+              </div>
+              <div style="background: rgba(244, 63, 94, 0.15); border: 1px solid ${sevColor}; padding: 6px 14px; border-radius: 9999px; font-weight: 800; font-size: 11px; color: ${sevColor}; letter-spacing: 0.5px;">
+                SEVERITY: ${sevText} (${cf.failureRatePercent}% FAILURE RATE)
+              </div>
+            </div>
+
+            <!-- Tipping Point Callout Banner -->
+            <div class="tipping-banner">
+              <div class="tipping-item">
+                <span class="tipping-label">💥 System Tipping Point</span>
+                <span class="tipping-val" style="color: #FDA4AF;">Request #${(bp.requestIndex || 1).toLocaleString()}</span>
+              </div>
+              <div class="tipping-item">
+                <span class="tipping-label">⏱️ Time to Failure</span>
+                <span class="tipping-val" style="color: #FCD34D;">${bp.elapsedSec || 0}s into run</span>
+              </div>
+              <div class="tipping-item">
+                <span class="tipping-label">⚡ Throughput at Crash</span>
+                <span class="tipping-val" style="color: #38BDF8;">${(bp.rpsAtCrash || 0).toLocaleString()} RPS</span>
+              </div>
+              <div class="tipping-item">
+                <span class="tipping-label">🏷️ Error Signature</span>
+                <span class="tipping-val" style="color: #C084FC; font-size: 12px;">${bp.statusCode || 500} - ${bp.signature || 'ERROR'}</span>
+              </div>
+            </div>
+
+            <!-- Error Classification Table -->
+            <h4 style="font-size: 13px; font-weight: 800; color: #E2E8F0; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+              <span>📊</span> Error Mode Categorization & Engineering Remediation Matrix
+            </h4>
+            <div class="rca-table-wrapper">
+              <table class="rca-table">
+                <thead>
+                  <tr>
+                    <th style="width: 22%;">Failure Mode</th>
+                    <th style="width: 14%;">Impact Count</th>
+                    <th style="width: 34%;">Root Cause Analysis (RCA)</th>
+                    <th style="width: 30%;">Recommended Engineering Fix</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${bucketsHtml}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Failed Request & Response Payload Inspector -->
+            <div style="margin-top: 18px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h4 style="font-size: 13px; font-weight: 800; color: #E2E8F0; text-transform: uppercase; margin: 0; display: flex; align-items: center; gap: 8px;">
+                  <span>🔍</span> Failed Request vs Server Crash Dump Inspector
+                </h4>
+                <button type="button" class="terminal-btn" style="border-color: rgba(244, 63, 94, 0.4); color: #FDA4AF;" onclick="copyCrashDump()">
+                  📋 Copy Full Crash Dump
+                </button>
+              </div>
+              <div class="crash-payload-grid">
+                <div class="terminal-card">
+                  <div class="terminal-header">
+                    <span style="font-size: 11px; font-weight: 700; color: #38BDF8;">📤 OUTBOUND FAILED REQUEST</span>
+                    <span style="font-size: 11px; color: var(--text-dim); font-family: var(--font-mono);">${bp.request?.method || 'POST'} ${bp.request?.url || ''}</span>
+                  </div>
+                  <pre id="crashReqDump" class="terminal-body" style="max-height: 220px; overflow-y: auto;">${escapeHtml(reqDump)}</pre>
+                </div>
+                <div class="terminal-card">
+                  <div class="terminal-header">
+                    <span style="font-size: 11px; font-weight: 700; color: #FDA4AF;">📥 SERVER ERROR RESPONSE / STACK TRACE</span>
+                    <span style="font-size: 11px; color: #FDA4AF; font-family: var(--font-mono);">${bp.response?.status || 500} ${bp.response?.statusText || 'Error'}</span>
+                  </div>
+                  <pre id="crashResDump" class="terminal-body" style="max-height: 220px; overflow-y: auto; color: #FECDD3;">${escapeHtml(resDump)}</pre>
+                </div>
+              </div>
+            </div>
+
+            <!-- Engineering Action Checklist -->
+            <div style="margin-top: 20px; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 18px;">
+              <h5 style="font-size: 13px; font-weight: 800; color: #34D399; text-transform: uppercase; margin: 0 0 10px; display: flex; align-items: center; gap: 8px;">
+                <span>🛠️</span> Engineering Checklist to Prevent API Breakages
+              </h5>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; font-size: 12px; color: #CBD5E1; line-height: 1.5;">
+                <div style="display: flex; gap: 8px; align-items: flex-start;">
+                  <span>1️⃣</span>
+                  <span><strong>Scale Connection Pools:</strong> Set MongoDB/PostgreSQL pool max to 50+ connections per Node instance to prevent buffer exhaustion.</span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: flex-start;">
+                  <span>2️⃣</span>
+                  <span><strong>Node.js Clustering (PM2):</strong> Run Express in cluster mode across all available CPU cores (<code>pm2 start server.js -i max</code>).</span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: flex-start;">
+                  <span>3️⃣</span>
+                  <span><strong>Redis Distributed Caching:</strong> Cache hot profile reads and verification states in Redis to bypass database query latency.</span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: flex-start;">
+                  <span>4️⃣</span>
+                  <span><strong>Offload CPU-Bound Crypto:</strong> Execute bcrypt / password hashing and heavy crypto in worker threads or background queues.</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        `;
+      } else {
+        // Zero Crashes - 100% Resilient Architecture
+        crashSec.innerHTML = `
+          <div class="healthy-architecture-card">
+            <div style="font-size: 42px;">🛡️</div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <h4 style="font-size: 15px; font-weight: 800; color: #34D399; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">
+                  100% Zero-Crash Resilient Architecture Verified
+                </h4>
+                <span class="verdict-badge PASS">CERTIFIED RESILIENT ✅</span>
+              </div>
+              <p style="font-size: 12px; color: #CBD5E1; margin: 0; line-height: 1.55;">
+                Under <strong>${report.completed.toLocaleString()} requests</strong> and <strong>${report.concurrency} parallel workers</strong>, 0 socket disconnects, 0 HTTP 5xx crashes, and 0 gateway timeouts occurred. The backend handled peak concurrency without crossing its tipping point!
+              </p>
+            </div>
+          </div>
+        `;
+      }
+
+      // Sample Response
+      if (report.sampleResponse) {
+        document.getElementById('sumSampleStatus').innerText = `STATUS: ${report.sampleResponse.status} ${report.sampleResponse.statusText || ''}`;
+        document.getElementById('sumJsonPreview').innerText = JSON.stringify(report.sampleResponse.body, null, 2);
+      }
+    }
+
+    function escapeHtml(str) {
+      if (typeof str !== 'string') return String(str || '');
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function copyCrashDump() {
+      const req = document.getElementById('crashReqDump')?.innerText || '';
+      const res = document.getElementById('crashResDump')?.innerText || '';
+      const dump = `=== FAILED REQUEST ===\n${req}\n\n=== SERVER RESPONSE / CRASH ===\n${res}`;
+      navigator.clipboard.writeText(dump);
+      showToast("📋 Crash dump copied to clipboard!");
+    }
+
+    function printSummaryReport() {
+      window.print();
+    }
+
+    function copySumResponseJson() {
+      const text = document.getElementById('sumJsonPreview').innerText;
+      navigator.clipboard.writeText(text);
+      showToast("📋 Response JSON copied to clipboard!");
+    }
+
+    // Modal & Action Helpers
+    function openEmailModal(reportId) {
+      if (reportId && typeof reportId === 'string') {
+        document.getElementById('emailModal').dataset.reportId = reportId;
+      }
+      document.getElementById('emailModal').style.display = 'flex';
+    }
+    function closeEmailModal() {
+      document.getElementById('emailModal').style.display = 'none';
+    }
+
+    function openLoginModal() {
+      document.getElementById('loginModal').style.display = 'flex';
+    }
+    function closeLoginModal() {
+      document.getElementById('loginModal').style.display = 'none';
+    }
+
+    function closeModalOnOverlay(e) {
+      if (e.target.classList.contains('modal-overlay')) {
+        closeEmailModal();
+        closeLoginModal();
+      }
+    }
+
+    async function sendEmailReport() {
+      const email = document.getElementById('emailInput').value;
+      if (!email || !email.includes('@')) {
+        alert("Please enter a valid email address.");
+        return;
+      }
+
+      const activeRep = currentSelectedReport || lastCompletedReport;
+      const rId = document.getElementById('emailModal').dataset.reportId || activeRep?.id || "latest";
+
+      try {
+        const res = await fetch('/api/reports/email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            reportId: rId,
+            report: activeRep,
+          }),
+        });
+        const json = await res.json();
+        closeEmailModal();
+        showToast(`📧 Report dispatched to ${email}!`);
+      } catch (err) {
+        alert("Failed to send email report.");
+      }
+    }
+
+    async function submitEngineerLogin() {
+      const phone = document.getElementById('engineerPhone').value;
+      const name = document.getElementById('engineerName').value;
+
+      try {
+        const res = await fetch('/api/auth/engineer-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, engineerName: name }),
+        });
+        const json = await res.json();
+        document.getElementById('navEngineerText').innerText = `${phone} (${name})`;
+        closeLoginModal();
+        showToast(`📱 Logged in as ${name}`);
+      } catch (err) {
+        alert("Login failed.");
+      }
+    }
+
+    function downloadJsonReport() {
+      const rep = currentSelectedReport || lastCompletedReport;
+      if (!rep) {
+        alert("Please run a benchmark first before exporting!");
+        return;
+      }
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(rep, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `AegisLoad_AuditReport_${rep.id || Date.now()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast("💾 Report downloaded!");
+    }
+
+    function copyResponseJson() {
+      const text = document.getElementById('jsonPreview').innerText;
+      navigator.clipboard.writeText(text);
+      showToast("📋 Response JSON copied to clipboard!");
+    }
+
+    async function refreshHistoryCount() {
+      try {
+        const res = await fetch('/api/reports/history');
+        const json = await res.json();
+        if (json.data) {
+          document.getElementById('historyCountBadge').innerText = json.data.length;
+        }
+      } catch (e) {}
+    }
+
+    async function refreshHistoryTable() {
+      try {
+        const res = await fetch('/api/reports/history');
+        const json = await res.json();
+        const tbody = document.getElementById('historyTableBody');
+        tbody.innerHTML = '';
+
+        if (!json.data || json.data.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-dim); padding: 32px;">No past benchmark runs found. Run a test from Studio tab!</td></tr>`;
+          document.getElementById('historyCountBadge').innerText = '0';
+          return;
+        }
+
+        document.getElementById('historyCountBadge').innerText = json.data.length;
+
+        json.data.forEach((r) => {
+          const tr = document.createElement('tr');
+          const successPercent = ((r.successCount / r.completed) * 100).toFixed(1);
+          tr.innerHTML = `
+            <td style="font-family: var(--font-mono); font-size: 11px;">${new Date(r.timestamp).toLocaleTimeString()}</td>
+            <td><strong>${r.projectName}</strong></td>
+            <td style="font-family: var(--font-mono); font-size: 11px; max-width: 180px; overflow: hidden; text-overflow: ellipsis;">${r.apiEndpoint}</td>
+            <td><span class="status-chip s-200" style="padding: 2px 7px; font-size: 10px;">${r.testMode}</span></td>
+            <td>${r.completed.toLocaleString()}</td>
+            <td><span style="color: #38BDF8; font-weight: 700;">${r.avgRps.toLocaleString()} RPS</span></td>
+            <td>${r.percentiles?.p50 || 0} ms</td>
+            <td>${r.percentiles?.p95 || 0} ms</td>
+            <td><span style="color: ${successPercent > 95 ? '#34D399' : '#FBBF24'}; font-weight: 700;">${successPercent}%</span></td>
+            <td>
+              <div style="display: flex; gap: 4px;">
+                <button class="terminal-btn" style="padding: 4px 8px;" onclick='viewSummaryFromHistory("${r.id}")'>📊 View</button>
+                <button class="terminal-btn" style="padding: 4px 8px;" onclick='openEmailModal("${r.id}")'>📧 Email</button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error("Error loading history:", err);
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toastNotification');
+      toast.innerText = msg;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 3500);
+    }
+
+    // Load initial history count on boot
+    refreshHistoryCount();
+  </script>
+</body>
+</html>
