@@ -34,7 +34,7 @@ interface ValidateOTPScreenProps {
   };
 }
 
-const OTP_LENGTH = 6;
+const OTP_LENGTH = 4;
 const RESEND_DELAY = 30;
 
 const ValidateOTPScreen = ({ navigation, route }: ValidateOTPScreenProps) => {
@@ -155,7 +155,7 @@ const ValidateOTPScreen = ({ navigation, route }: ValidateOTPScreenProps) => {
         >
           <AuthImage />
           <Text style={styles.subtitle}>
-            Enter the 6-digit OTP sent to {dialCode} {maskedPhone}
+            Enter the 4-digit OTP sent to {dialCode} {maskedPhone}
           </Text>
 
           <Pressable
@@ -259,16 +259,20 @@ const styles = StyleSheet.create({
     opacity: 0.01,
     zIndex: 2,
   },
-  otpIndicators: { flexDirection: 'row', justifyContent: 'space-between' },
+  otpIndicators: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
+  },
   otpIndicator: {
     alignItems: 'center',
     backgroundColor: '#FAFAFA',
     borderColor: '#DDDDDD',
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 2,
-    height: 54,
+    height: 56,
     justifyContent: 'center',
-    width: 45,
+    width: 56,
   },
   otpIndicatorFilled: { borderColor: COLORS.themeColor },
   otpIndicatorError: { borderColor: '#FF3B30' },

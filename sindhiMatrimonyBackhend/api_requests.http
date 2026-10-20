@@ -6,7 +6,7 @@
 ### Quick Start Instructions:
 ### 1. Ensure backend is running: npm run dev (runs on http://localhost:5000)
 ### 2. Hit "Health Check" below to verify connectivity.
-### 3. Hit "Send OTP" or "Verify OTP / Login" with master OTP 123456.
+### 3. Hit "Send OTP" or "Verify OTP / Login" with master OTP 1234.
 ### 4. Copy the "token" from response and paste it into @authToken below.
 ### ============================================================================
 
@@ -47,13 +47,13 @@ Content-Type: application/json
 }
 
 ### 2.2 Complete Registration (Phone + OTP + Password + Profile Initialization)
-### Note: In development mode (NODE_ENV=development), Master OTP "123456" is always accepted!
+### Note: In development mode (NODE_ENV=development), Master OTP "1234" is always accepted!
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
   "phone": "9829012345",
-  "otp": "123456",
+  "otp": "1234",
   "password": "Password123@",
   "name": "Rohan Advani",
   "gender": "MALE",
@@ -107,7 +107,7 @@ Content-Type: application/json
 
 {
   "phone": "9829012345",
-  "otp": "123456",
+  "otp": "1234",
   "newPassword": "NewSecretPassword123@",
   "countryCode": "+91"
 }
@@ -213,7 +213,7 @@ Content-Type: application/json
 
 {
   "candidatePhone": "9829099999",
-  "otp": "123456"
+  "otp": "1234"
 }
 
 ### ============================================================================

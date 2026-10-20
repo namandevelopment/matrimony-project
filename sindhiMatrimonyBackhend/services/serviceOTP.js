@@ -15,7 +15,7 @@ export const serviceOTP = {
    */
   generateAndStoreOtp: async (identifier, purpose = "LOGIN") => {
     try {
-      const otp = generateOTP(6);
+      const otp = generateOTP(4);
       const redisKey = `otp:${purpose.toLowerCase()}:${identifier}`;
       await setKeyWithTime(redisKey, otp, OTP_TTL_SECONDS);
       logMessage(`[OTP Generated] Purpose: ${purpose} | For: ${identifier} | OTP: ${otp} (Dev preview)`, null, "info");
@@ -29,13 +29,13 @@ export const serviceOTP = {
   /**
    * Verify an OTP from Redis and invalidate on success
    * @param {string} identifier - Phone number or email
-   * @param {string} otp - The 6-digit OTP entered by user
+   * @param {string} otp - The 4-digit OTP entered by user
    * @param {string} purpose - 'LOGIN' | 'REGISTER' | 'RESET_PASSWORD'
    */
   verifyOtp: async (identifier, otp, purpose = "LOGIN") => {
     try {
-      // In development mode, allow test OTP '123456' for rapid developer testing
-      if (process.env.NODE_ENV !== "production" && otp === "123456") {
+      // In development mode, allow test master OTP '1234' (and '123456' for backward compat)
+      if (process.env.NODE_ENV !== "production" && (otp === "1234" || otp === "123456")) {
         return { isValid: true, message: "Development master OTP accepted." };
       }
 
@@ -62,12 +62,15 @@ export const serviceOTP = {
   /**
    * Verify an OTP against multiple allowable purposes (e.g. ['REGISTER', 'LOGIN'])
    * @param {string} identifier - Phone number or email
-   * @param {string} otp - The 6-digit OTP entered by user
+   * @param {string} otp - The 4-digit OTP entered by user
    * @param {Array<string>} purposes - List of allowable purposes
    */
   verifyOtpAnyPurpose: async (identifier, otp, purposes = ["REGISTER", "LOGIN"]) => {
     try {
-      if (process.env.NODE_ENV !== "production" && String(otp).trim() === "123456") {
+      if (
+        process.env.NODE_ENV !== "production" &&
+        (String(otp).trim() === "1234" || String(otp).trim() === "123456")
+      ) {
         return { isValid: true, message: "Development master OTP accepted." };
       }
 

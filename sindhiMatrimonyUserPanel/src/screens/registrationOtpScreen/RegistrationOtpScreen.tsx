@@ -34,8 +34,8 @@ const RegistrationOtpScreenComponent: React.FC = () => {
   const name = qName ?? "Sindhi Member";
   const profileFor = qFor ?? "Myself";
 
-  // OTP inputs state (6 digits matching backend OTP contract)
-  const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
+  // OTP inputs state (4 digits matching unified backend OTP contract)
+  const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", ""]);
   const [status, setStatus] = useState<VerificationStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -47,8 +47,8 @@ const RegistrationOtpScreenComponent: React.FC = () => {
   // Verification Handler
   const handleVerify = useCallback(() => {
     const enteredCode = otpDigits.join("");
-    if (enteredCode.length < 6) {
-      setErrorMessage("Please enter all 6 digits of the verification code.");
+    if (enteredCode.length < 4) {
+      setErrorMessage("Please enter all 4 digits of the verification code.");
       setStatus("error");
       return;
     }
@@ -85,7 +85,7 @@ const RegistrationOtpScreenComponent: React.FC = () => {
 
   // Resend Handler
   const handleResend = useCallback(async (channel: ResendChannel) => {
-    setOtpDigits(["", "", "", "", "", ""]);
+    setOtpDigits(["", "", "", ""]);
     setErrorMessage(null);
     setStatus("verifying");
 
@@ -127,7 +127,7 @@ const RegistrationOtpScreenComponent: React.FC = () => {
   const handleSavePhone = useCallback(async (newMobile: string, newCode: string) => {
     setOverrideMobile(newMobile);
     setOverrideCode(newCode);
-    setOtpDigits(["", "", "", "", "", ""]);
+    setOtpDigits(["", "", "", ""]);
     setErrorMessage(null);
     setStatus("idle");
 
@@ -162,12 +162,12 @@ const RegistrationOtpScreenComponent: React.FC = () => {
     setStatus("verifying");
     setErrorMessage(null);
     setTimeout(() => {
-      setOtpDigits(["1", "2", "3", "4", "5", "6"]);
+      setOtpDigits(["1", "2", "3", "4"]);
       if (typeof window !== "undefined") {
-        sessionStorage.setItem("sindhi_reg_otp", "123456");
+        sessionStorage.setItem("sindhi_reg_otp", "1234");
       }
       const params = new URLSearchParams(window.location.search);
-      params.set("otp", "123456");
+      params.set("otp", "1234");
       router.push(`/registration/basic-info?${params.toString()}`);
     }, 600);
   }, [router]);
@@ -189,7 +189,7 @@ const RegistrationOtpScreenComponent: React.FC = () => {
 
               {/* 2. Target Mobile Prompt */}
               <p className="text-sm sm:text-base text-stone-700 font-medium mb-6">
-                Please enter the 6-digit code sent to{" "}
+                Please enter the 4-digit code sent to{" "}
                 <span className="font-bold text-[#1A1A1A] tracking-wider">
                   {countryCode} {mobile}
                 </span>

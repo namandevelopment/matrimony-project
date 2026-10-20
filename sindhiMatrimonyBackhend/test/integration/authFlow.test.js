@@ -44,14 +44,14 @@ export async function runAuthFlowIntegrationTests() {
     suite.add("Scenario 3: OTP Generation & Master OTP Fallback in Development", async () => {
       const phone = "9876543210";
       const otp = await serviceOTP.generateAndStoreOtp(phone, "REGISTER");
-      assert.strictEqual(otp.length, 6, "OTP must be 6 digits");
+      assert.strictEqual(otp.length, 4, "OTP must be 4 digits");
 
-      // Verify OTP validation with master OTP '123456' in dev
-      const verifyDevMaster = await serviceOTP.verifyOtp(phone, "123456", "REGISTER");
-      assert.isTrue(verifyDevMaster.isValid, "Master OTP 123456 must pass verification in non-production");
+      // Verify OTP validation with master OTP '1234' in dev
+      const verifyDevMaster = await serviceOTP.verifyOtp(phone, "1234", "REGISTER");
+      assert.isTrue(verifyDevMaster.isValid, "Master OTP 1234 must pass verification in non-production");
 
       // Verify with wrong OTP
-      const verifyWrong = await serviceOTP.verifyOtp(phone, "000000", "REGISTER");
+      const verifyWrong = await serviceOTP.verifyOtp(phone, "0000", "REGISTER");
       assert.isFalse(verifyWrong.isValid, "Invalid OTP must fail verification");
     });
 

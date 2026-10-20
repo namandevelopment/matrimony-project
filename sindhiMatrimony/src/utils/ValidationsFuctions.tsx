@@ -433,7 +433,7 @@ export const validatePincode = (pincode: any) => {
 };
 
 export const validateOtp = (otp: any) => {
-  const otpRegex = /^\d{6}$/;
+  const otpRegex = /^\d{4}$/;
   if (!otp.trim()) {
     return 'OTP is required.';
   } else if (!isSafeInput(otp)) {

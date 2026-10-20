@@ -112,7 +112,7 @@ const RegistrationAdditionalInfoScreenComponent: React.FC = () => {
       let step1: any = {};
       let step2: any = {};
       let step3: any = {};
-      let savedOtp = "123456";
+      let savedOtp = "1234";
 
       if (typeof window !== "undefined") {
         try {
@@ -124,7 +124,7 @@ const RegistrationAdditionalInfoScreenComponent: React.FC = () => {
             sessionStorage.getItem("sindhi_reg_otp") ||
             searchParams.get("otp") ||
             draftQuick.otp ||
-            "123456";
+            "1234";
         } catch {
           // Fallback to empty objects
         }

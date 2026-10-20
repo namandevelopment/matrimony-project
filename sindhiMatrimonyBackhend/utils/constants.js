@@ -1,5 +1,5 @@
 export const VERIFICATION_TOKEN_LENGTH = 40;
-export const OTP_LENGTH = 6;
+export const OTP_LENGTH = 4;
 export const ERROR_TRUE = true;
 export const ERROR_FALSE = false;
 export const BOOLEAN_TRUE = true;
