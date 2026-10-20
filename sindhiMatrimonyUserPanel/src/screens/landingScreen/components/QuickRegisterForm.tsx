@@ -189,7 +189,7 @@ const ProfileForDropdown = memo<ProfileForDropdownProps>(({
         onClick={(e) => e.stopPropagation()}
         role="listbox"
       >
-        <div className="grid grid-cols-3 gap-x-2 gap-y-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-2 gap-y-2">
           {PROFILE_FOR_OPTIONS.map((opt) => {
             const isSelected = value === opt.value;
             return (
@@ -200,7 +200,7 @@ const ProfileForDropdown = memo<ProfileForDropdownProps>(({
                   onChange(opt.value);
                   setIsOpen(false);
                 }}
-                className={`text-center sm:text-left px-2 py-2 text-sm font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                className={`text-center sm:text-left px-2.5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   isSelected
                     ? "text-[#DB2F3C] font-bold bg-rose-50"
                     : "text-[#1A1A1A] hover:text-[#DB2F3C] hover:bg-stone-100/80"
@@ -544,7 +544,7 @@ const QuickRegisterFormComponent: React.FC<QuickRegisterFormProps> = ({
                 setFormData({ ...formData, name: e.target.value });
                 if (errors.name) setErrors({ ...errors, name: undefined });
               }}
-              className="w-full px-4 py-3.5 text-sm font-medium text-[#1A1A1A] placeholder:text-stone-400 focus:outline-hidden"
+              className="w-full px-4 py-3.5 text-base sm:text-sm font-medium text-[#1A1A1A] placeholder:text-stone-400 focus:outline-hidden"
             />
           </div>
           <p className="text-[11.5px] text-[#666666] mt-1 pl-1">
@@ -582,7 +582,7 @@ const QuickRegisterFormComponent: React.FC<QuickRegisterFormProps> = ({
                 setFormData({ ...formData, mobileNumber: val });
                 if (errors.mobile) setErrors({ ...errors, mobile: undefined });
               }}
-              className="w-full px-4 py-3.5 text-sm font-medium text-[#1A1A1A] placeholder:text-stone-400 focus:outline-hidden"
+              className="w-full px-4 py-3.5 text-base sm:text-sm font-medium text-[#1A1A1A] placeholder:text-stone-400 focus:outline-hidden"
             />
           </div>
           <p className="text-[11.5px] text-[#666666] mt-1 pl-1">

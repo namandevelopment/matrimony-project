@@ -104,6 +104,7 @@ export const ApiURL = {
   trackProfileView: `${BASE_URL}/api/v1/dashboard/profile-views/track`,
   successStoriesFeed: `${BASE_URL}/api/v1/dashboard/success-stories`,
   homeBanners: `${BASE_URL}/api/v1/dashboard/banners`,
+  saveBanner: `${BASE_URL}/api/v1/dashboard/banners`,
   supportInfo: `${BASE_URL}/api/v1/dashboard/support-info`,
   dashboardHoroscope: `${BASE_URL}/api/v1/dashboard/horoscope`,
   dailyHoroscope: `${BASE_URL}/api/v1/dashboard/horoscope`,

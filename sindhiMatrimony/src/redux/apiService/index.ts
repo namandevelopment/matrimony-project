@@ -789,4 +789,12 @@ export const apiPut = apiFetch.put;
 export const apiDelete = apiFetch.delete;
 export const apiPatch = apiFetch.patch;
 
+export const post = async <T = any>(url: string, params?: any, options?: any): Promise<ApiResponse<T>> => {
+  return await apiFetch.post<T>(url, params, options);
+};
+
+export const get = async <T = any>(url: string, params?: any, options?: any): Promise<ApiResponse<T>> => {
+  return await apiFetch.get<T>(url, params, options);
+};
+
 export default apiFetch;

@@ -1,5 +1,9 @@
 import React, { useEffect } from 'react';
 import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
+import { Provider } from 'react-redux';
+import { store } from './src/redux/Store/store';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './src/tanstackQuery';
 import {
   SafeAreaProvider,
   SafeAreaView,
@@ -36,11 +40,15 @@ function App() {
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <RootContent />
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <Provider store={store}>
+      <QueryClientProvider client={queryClient}>
+        <SafeAreaProvider>
+          <ThemeProvider>
+            <RootContent />
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </QueryClientProvider>
+    </Provider>
   );
 }
 

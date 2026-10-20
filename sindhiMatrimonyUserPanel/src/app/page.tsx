@@ -1,3 +1,4 @@
+import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import { LandingScreen } from "@/screens/landingScreen";
 import {
@@ -33,7 +34,9 @@ export default function Home() {
   return (
     <>
       <JsonLd data={[serviceSchema]} />
-      <LandingScreen />
+      <Suspense fallback={null}>
+        <LandingScreen />
+      </Suspense>
     </>
   );
 }

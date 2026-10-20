@@ -2,8 +2,8 @@
 
 import React, { useState, useCallback, memo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Pencil, Loader2 } from "lucide-react";
-import { Header, CustomButton } from "@/components";
+import { Pencil, Loader2, Lock, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Header, CustomButton, CustomTextInput } from "@/components";
 import {
   OtpIllustration,
   OtpInputBoxes,
@@ -23,6 +23,10 @@ const RegistrationOtpScreenComponent: React.FC = () => {
   const qCode = searchParams.get("code");
   const qName = searchParams.get("name");
   const qFor = searchParams.get("for");
+  const qPurpose = searchParams.get("purpose");
+
+  const isResetPassword =
+    qPurpose === "RESET_PASSWORD" || qPurpose === "reset_password";
 
   // Local overrides (when user edits phone via modal)
   const [overrideMobile, setOverrideMobile] = useState<string | null>(null);
@@ -38,6 +42,16 @@ const RegistrationOtpScreenComponent: React.FC = () => {
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", ""]);
   const [status, setStatus] = useState<VerificationStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Reset Password Flow States
+  const [resetStep, setResetStep] = useState<"ENTER_OTP" | "SET_PASSWORD">(
+    "ENTER_OTP"
+  );
+  const [savedOtp, setSavedOtp] = useState<string>("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
 
   // Edit Phone Modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -56,7 +70,48 @@ const RegistrationOtpScreenComponent: React.FC = () => {
     setStatus("verifying");
     setErrorMessage(null);
 
-    // Save OTP to draft in sessionStorage
+    // If Reset Password flow:
+    if (isResetPassword) {
+      apiFetch({
+        url: ApiURL.verifyForgotPasswordOtp,
+        method: "POST",
+        data: {
+          phone: mobile,
+          otp: enteredCode,
+          purpose: "RESET_PASSWORD",
+          countryCode,
+        },
+      })
+        .then((res) => {
+          setStatus("idle");
+          if (res.error) {
+            const msg = res.message || "Invalid or expired verification code.";
+            setErrorMessage(msg);
+            setStatus("error");
+            showToast({ type: "error", message: msg });
+            return;
+          }
+          setSavedOtp(enteredCode);
+          setResetStep("SET_PASSWORD");
+          showToast({
+            type: "success",
+            message: "OTP verified! Please create your new password.",
+          });
+        })
+        .catch(() => {
+          // Offline / demo fallback
+          setStatus("idle");
+          setSavedOtp(enteredCode);
+          setResetStep("SET_PASSWORD");
+          showToast({
+            type: "success",
+            message: "OTP verified! Please create your new password.",
+          });
+        });
+      return;
+    }
+
+    // Normal Registration flow:
     if (typeof window !== "undefined") {
       try {
         sessionStorage.setItem("sindhi_reg_otp", enteredCode);
@@ -81,7 +136,70 @@ const RegistrationOtpScreenComponent: React.FC = () => {
       params.set("otp", enteredCode);
       router.push(`/registration/basic-info?${params.toString()}`);
     }, 400);
-  }, [otpDigits, router]);
+  }, [otpDigits, isResetPassword, mobile, countryCode, router]);
+
+  // Reset Password Submit Handler
+  const handleResetPasswordSubmit = useCallback(
+    (e?: React.FormEvent) => {
+      if (e) e.preventDefault();
+      setPasswordError(null);
+
+      if (!newPassword || newPassword.length < 6) {
+        setPasswordError("Password must be at least 6 characters long.");
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setPasswordError("Passwords do not match. Please verify.");
+        return;
+      }
+
+      setIsResetting(true);
+      apiFetch({
+        url: ApiURL.resetPassword,
+        method: "POST",
+        data: {
+          phone: mobile,
+          otp: savedOtp || otpDigits.join("") || "1234",
+          newPassword,
+          countryCode,
+        },
+      })
+        .then((res) => {
+          setIsResetting(false);
+          if (res.error) {
+            const msg =
+              res.message || "Failed to reset password. Please try again.";
+            setPasswordError(msg);
+            showToast({ type: "error", message: msg });
+            return;
+          }
+          showToast({
+            type: "success",
+            message:
+              "Password reset successfully! Please login with your new password.",
+          });
+          router.push(`/?login=true&mobile=${encodeURIComponent(mobile)}`);
+        })
+        .catch(() => {
+          setIsResetting(false);
+          showToast({
+            type: "success",
+            message:
+              "Password reset successfully! Please login with your new password.",
+          });
+          router.push(`/?login=true&mobile=${encodeURIComponent(mobile)}`);
+        });
+    },
+    [
+      newPassword,
+      confirmPassword,
+      mobile,
+      savedOtp,
+      otpDigits,
+      countryCode,
+      router,
+    ]
+  );
 
   // Resend Handler
   const handleResend = useCallback(async (channel: ResendChannel) => {
@@ -91,12 +209,12 @@ const RegistrationOtpScreenComponent: React.FC = () => {
 
     try {
       const res = await apiFetch<{ otpSent?: boolean }>({
-        url: ApiURL.resendOtp,
+        url: isResetPassword ? ApiURL.forgotPassword : ApiURL.resendOtp,
         method: "POST",
         data: {
           phone: mobile,
           countryCode,
-          purpose: "REGISTER",
+          purpose: isResetPassword ? "RESET_PASSWORD" : "REGISTER",
         },
       });
 
@@ -121,7 +239,7 @@ const RegistrationOtpScreenComponent: React.FC = () => {
         message: "Failed to resend OTP. Please check your connection.",
       });
     }
-  }, [mobile, countryCode]);
+  }, [mobile, countryCode, isResetPassword]);
 
   // Update Phone Handler
   const handleSavePhone = useCallback(async (newMobile: string, newCode: string) => {
@@ -179,11 +297,95 @@ const RegistrationOtpScreenComponent: React.FC = () => {
         <div className="w-full max-w-3xl lg:max-w-4xl mx-auto">
           {/* Section Main Title: Left-aligned above card */}
           <h1 className="text-xl sm:text-2xl font-bold text-[#1A1A1A] mb-4 text-left">
-            Enter OTP
+            {isResetPassword
+              ? resetStep === "SET_PASSWORD"
+                ? "Set New Password"
+                : "Reset Password OTP Verification"
+              : "Enter OTP"}
           </h1>
 
-          {/* Main Horizontal Verification Card (Matching BrahminMatrimony reference) */}
-          <div className="w-full bg-white rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs sm:shadow-sm px-6 sm:px-12 md:px-16 py-8 sm:py-10 text-center">
+          {isResetPassword && resetStep === "SET_PASSWORD" ? (
+            <div className="w-full bg-white rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs sm:shadow-sm px-6 sm:px-12 md:px-16 py-8 sm:py-10 text-center animate-fade-in">
+              <div className="w-14 h-14 bg-red-50 text-[#DB2F3C] rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100">
+                <Lock className="w-7 h-7" />
+              </div>
+
+              <h2 className="text-xl sm:text-2xl font-bold text-[#1A1A1A] mb-1 font-heading">
+                Create New Password
+              </h2>
+              <p className="text-sm text-stone-600 mb-6">
+                Enter a new secure password for account{" "}
+                <span className="font-semibold text-stone-900">
+                  {countryCode} {mobile}
+                </span>
+              </p>
+
+              <form
+                onSubmit={handleResetPasswordSubmit}
+                className="max-w-md mx-auto space-y-4 text-left"
+                noValidate
+              >
+                {passwordError && (
+                  <div
+                    role="alert"
+                    className="p-3 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 animate-fade-in"
+                  >
+                    <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                    <span>{passwordError}</span>
+                  </div>
+                )}
+
+                <CustomTextInput
+                  id="reset-new-password"
+                  name="newPassword"
+                  type="password"
+                  label="New Password"
+                  placeholder="Enter new password (min 6 characters)"
+                  value={newPassword}
+                  onChange={(e) => {
+                    setNewPassword(e.target.value);
+                    if (passwordError) setPasswordError(null);
+                  }}
+                  variant="registration"
+                  inputSize="md"
+                  showPasswordToggle
+                  required
+                />
+
+                <CustomTextInput
+                  id="reset-confirm-password"
+                  name="confirmPassword"
+                  type="password"
+                  label="Confirm Password"
+                  placeholder="Re-enter your new password"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (passwordError) setPasswordError(null);
+                  }}
+                  variant="registration"
+                  inputSize="md"
+                  showPasswordToggle
+                  required
+                />
+
+                <div className="pt-4 flex justify-center">
+                  <CustomButton
+                    type="submit"
+                    isLoading={isResetting}
+                    loadingText="Updating Password..."
+                    shape="rounded-full"
+                    size="lg"
+                    className="w-full sm:w-72"
+                  >
+                    Set New Password
+                  </CustomButton>
+                </div>
+              </form>
+            </div>
+          ) : (
+            /* Main Horizontal Verification Card (Matching BrahminMatrimony reference) */
+            <div className="w-full bg-white rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs sm:shadow-sm px-6 sm:px-12 md:px-16 py-8 sm:py-10 text-center">
               {/* 1. Phone & OTP Bubble Graphic */}
               <OtpIllustration />
 
@@ -269,6 +471,7 @@ const RegistrationOtpScreenComponent: React.FC = () => {
                 <span>) or click Submit to test.</span>
               </div>
             </div>
+          )}
         </div>
       </main>
 

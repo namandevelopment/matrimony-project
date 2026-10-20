@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useCallback, memo } from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
+import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Header } from "./components/Header";
 import { HeroSection } from "./components/HeroSection";
@@ -16,7 +17,18 @@ const LoginModal = dynamic(
 );
 
 const LandingScreenComponent: React.FC = () => {
+  const searchParams = useSearchParams();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [loginMobile, setLoginMobile] = useState("");
+
+  useEffect(() => {
+    const shouldOpenLogin = searchParams.get("login") === "true";
+    const mobileParam = searchParams.get("mobile");
+    if (shouldOpenLogin) {
+      if (mobileParam) setLoginMobile(mobileParam);
+      setIsLoginModalOpen(true);
+    }
+  }, [searchParams]);
 
   const handleOpenLoginModal = useCallback(() => {
     setIsLoginModalOpen(true);
@@ -49,6 +61,7 @@ const LandingScreenComponent: React.FC = () => {
       {/* 6. Accessible Login Modal */}
       <LoginModal
         isOpen={isLoginModalOpen}
+        initialIdentifier={loginMobile}
         onClose={handleCloseLoginModal}
       />
 

@@ -7,9 +7,11 @@ import { MatrimonyHeartLogo } from "./Icons";
 import { CustomTextInput, CustomButton } from "@/components";
 import apiFetch, { apiPost, ApiURL, setToken, setRefreshToken, showToast } from "@/redux/apiService";
 import { Storage } from "@/storage/Storage";
+import { ForgotPasswordModal } from "./ForgotPasswordModal";
 
 interface LoginModalProps {
   isOpen: boolean;
+  initialIdentifier?: string;
   onClose: () => void;
   onSuccess?: () => void;
 }
@@ -36,7 +38,7 @@ interface FormTouched {
 const validateIdentifier = (value: string): string | undefined => {
   const trimmed = value.trim();
   if (!trimmed) {
-    return "Please enter your Mobile Number,";
+    return "Please enter your Mobile Number";
   }
 
   // Case 1: Email Address (contains '@')
@@ -101,6 +103,7 @@ const validatePassword = (value: string): string | undefined => {
 
 const LoginModalComponent: React.FC<LoginModalProps> = ({
   isOpen,
+  initialIdentifier = "",
   onClose,
   onSuccess,
 }) => {
@@ -108,15 +111,21 @@ const LoginModalComponent: React.FC<LoginModalProps> = ({
   const identifierInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<FormState>({
-    identifier: "",
+    identifier: initialIdentifier,
     password: "",
     rememberMe: true,
   });
 
+  useEffect(() => {
+    if (isOpen && initialIdentifier) {
+      setForm((prev) => ({ ...prev, identifier: initialIdentifier }));
+    }
+  }, [isOpen, initialIdentifier]);
+
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<FormTouched>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
-  const [forgotPasswordMsg, setForgotPasswordMsg] = useState<string | null>(null);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleClose = useCallback(() => {
@@ -124,7 +133,7 @@ const LoginModalComponent: React.FC<LoginModalProps> = ({
     setErrors({});
     setTouched({});
     setGeneralError(null);
-    setForgotPasswordMsg(null);
+    setIsForgotPasswordOpen(false);
     setIsLoading(false);
     onClose();
   }, [onClose]);
@@ -200,17 +209,8 @@ const LoginModalComponent: React.FC<LoginModalProps> = ({
 
   // Forgot password handler
   const handleForgotPassword = useCallback(() => {
-    const trimmedId = form.identifier.trim();
-    if (trimmedId) {
-      setForgotPasswordMsg(
-        `Password reset instructions have been sent to your registered contact (${trimmedId}).`
-      );
-    } else {
-      setForgotPasswordMsg(
-        "Please enter your Mobile Number above to receive reset instructions."
-      );
-    }
-  }, [form.identifier]);
+    setIsForgotPasswordOpen(true);
+  }, []);
 
   // Form Submit Handler
   const handleSubmit = (e: React.FormEvent) => {
@@ -300,6 +300,17 @@ const LoginModalComponent: React.FC<LoginModalProps> = ({
 
   if (!isOpen) return null;
 
+  if (isForgotPasswordOpen) {
+    return (
+      <ForgotPasswordModal
+        isOpen={isOpen}
+        initialIdentifier={form.identifier}
+        onClose={handleClose}
+        onBackToLogin={() => setIsForgotPasswordOpen(false)}
+      />
+    );
+  }
+
   return (
     <div
       role="dialog"
@@ -309,11 +320,11 @@ const LoginModalComponent: React.FC<LoginModalProps> = ({
       onClick={handleClose}
     >
       <div
-        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden"
+        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 bg-stone-50/70">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 bg-stone-50/70 sticky top-0 bg-white z-10">
           <div className="flex items-center gap-2.5">
             <MatrimonyHeartLogo size={32} className="w-8 h-8" color="#DB2F3C" />
             <h3 id="login-title" className="text-lg font-bold text-[#1A1A1A] font-heading">
@@ -343,24 +354,13 @@ const LoginModalComponent: React.FC<LoginModalProps> = ({
             </div>
           )}
 
-          {/* Forgot Password Notification */}
-          {forgotPasswordMsg && (
-            <div
-              role="status"
-              className="p-3 text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2 animate-fade-in"
-            >
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>{forgotPasswordMsg}</span>
-            </div>
-          )}
-
           {/* Identifier Field (Mobile Number / Matrimony ID / Email) */}
           <CustomTextInput
             ref={identifierInputRef}
             id="login-identifier"
             name="identifier"
             type="text"
-            label="Mobile Number "
+            label="Mobile Number"
             placeholder="Enter Mobile Number"
             value={form.identifier}
             onChange={handleIdentifierChange}
@@ -453,5 +453,6 @@ const LoginModalComponent: React.FC<LoginModalProps> = ({
 
 export const LoginModal = memo(LoginModalComponent);
 LoginModal.displayName = "LoginModal";
+export { ForgotPasswordModal } from "./ForgotPasswordModal";
 export default LoginModal;
 
