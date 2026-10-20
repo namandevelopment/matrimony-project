@@ -218,4 +218,17 @@ export const ApiURL = {
   // 17. DEV PROFILER & TELEMETRY
   // =========================================================================
   devDashboard: `${BASE_URL}/api/v1/dev/dashboard`,
+
+  // =========================================================================
+  // 18. UNIFIED DYNAMIC CONTENT (Policies, Support, Our Process)
+  // =========================================================================
+  content: `${BASE_URL}/api/v1/content`,
+  contentByType: (type: string) => `${BASE_URL}/api/v1/content/${type}`,
+  privacyPolicy: `${BASE_URL}/api/v1/content?type=privacy-policy`,
+  termsAndConditions: `${BASE_URL}/api/v1/content?type=terms-and-conditions`,
+  helpSupport: `${BASE_URL}/api/v1/content?type=help-support`,
+  ourProcess: `${BASE_URL}/api/v1/content?type=our-process`,
+  supportFaqs: `${BASE_URL}/api/v1/support/faqs`,
+  submitSupportTicket: `${BASE_URL}/api/v1/support/ticket`,
+  mySupportTickets: `${BASE_URL}/api/v1/support/tickets/my-tickets`,
 };

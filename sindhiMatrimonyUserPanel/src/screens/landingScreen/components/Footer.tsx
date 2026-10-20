@@ -11,6 +11,9 @@ const FooterComponent: React.FC = () => {
           <p>© {new Date().getFullYear()} Sindhimarriage.in. All rights reserved.</p>
         </div>
         <div className="flex flex-wrap justify-center gap-5 text-stone-300">
+          <Link href="/our-process" className="hover:text-white transition-colors">
+            Our Process
+          </Link>
           <Link href="/privacy-policy" className="hover:text-white transition-colors">
             Privacy Policy
           </Link>

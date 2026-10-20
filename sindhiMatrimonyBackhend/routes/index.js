@@ -15,6 +15,9 @@ import verificationRoutes from "./verifications/index.js";
 import plansRoutes from "./plans/index.js";
 import paymentRoutes from "./finance/payments.js";
 import notificationRoutes from "./notifications/index.js";
+import contentRoutes from "./common/content.js";
+import supportRoutes from "./support/index.js";
+import { getContent } from "../controllers/common/contentMasterController.js";
 import {
   getDashboardData,
   getRecommendedMatches,
@@ -83,7 +86,31 @@ router.use("/notifications", notificationRoutes);
 // 11. Master Data & Dropdown Configurations Router
 router.use("/master", masterDataRoutes);
 
-// 12. Dev API Tracker (under /api/v1/dev)
+// 12. Dynamic Content Gateway (Privacy Policy, Terms & Conditions, Our Process, Help & Support)
+router.use("/content", contentRoutes);
+
+// 13. Customer Support, Help Desk & FAQs Gateway
+router.use("/support", supportRoutes);
+
+// 🌐 Direct Root-Level Aliases for Content & Policies
+router.get("/privacy-policy", (req, res) => {
+  req.query.type = "privacy-policy";
+  return getContent(req, res);
+});
+router.get("/terms-and-conditions", (req, res) => {
+  req.query.type = "terms-and-conditions";
+  return getContent(req, res);
+});
+router.get("/help-support", (req, res) => {
+  req.query.type = "help-support";
+  return getContent(req, res);
+});
+router.get("/our-process", (req, res) => {
+  req.query.type = "our-process";
+  return getContent(req, res);
+});
+
+// 14. Dev API Tracker (under /api/v1/dev)
 if (process.env.NODE_ENV !== "production") {
   router.use("/dev", devApiTrackerRoutes);
 }

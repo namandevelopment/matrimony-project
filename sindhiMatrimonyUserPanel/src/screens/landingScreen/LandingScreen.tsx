@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { Header } from "./components/Header";
 import { HeroSection } from "./components/HeroSection";
 import { TrustBadges } from "./components/TrustBadges";
+import { OurProcessSection } from "./components/OurProcessSection";
 import { AboutSection } from "./components/AboutSection";
 import { Footer } from "./components/Footer";
 import { FloatingChatWidget } from "@/components";
@@ -51,7 +52,10 @@ const LandingScreenComponent: React.FC = () => {
         {/* 3. Trust & Credibility Badges (5 Trust Highlights) */}
         <TrustBadges communityName="Sindhis" />
 
-        {/* 4. SEO Descriptive Content Section */}
+        {/* 4. Our Process (4-Step Matrimonial Journey) */}
+        <OurProcessSection />
+
+        {/* 5. SEO Descriptive Content Section */}
         <AboutSection />
       </main>
 

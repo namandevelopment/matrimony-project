@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { HelpCategoryId } from "./types";
 import {
   HELP_CATEGORIES,
@@ -16,10 +16,32 @@ import { HelpFAQSection } from "./components/HelpFAQSection";
 import { HelpTicketForm } from "./components/HelpTicketForm";
 import { HelpOfficeDetails } from "./components/HelpOfficeDetails";
 import { HelpFooter } from "./components/HelpFooter";
+import { apiFetch } from "@/redux/apiService";
+import { ApiURL } from "@/redux/apiService/endpoint";
 
 export const HelpSupportScreen: React.FC = React.memo(() => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<HelpCategoryId>("all");
+  const [faqsList, setFaqsList] = useState([...HELP_FAQS]);
+
+  // Fetch dynamic FAQs and Help Desk updates from backend unified API
+  useEffect(() => {
+    let isMounted = true;
+    apiFetch.get<any>(ApiURL.helpSupport)
+      .then((res) => {
+        if (!isMounted || !res?.data) return;
+        if (Array.isArray(res.data.faqs) && res.data.faqs.length > 0) {
+          setFaqsList(res.data.faqs);
+        }
+      })
+      .catch(() => {
+        // Fallback silently to HELP_FAQS
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleQuickChip = useCallback((chip: string) => {
     setSearchQuery(chip);
@@ -64,14 +86,14 @@ export const HelpSupportScreen: React.FC = React.memo(() => {
   // Filtered FAQs based on search query
   const filteredFaqs = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return HELP_FAQS;
+    if (!q) return faqsList;
 
-    return HELP_FAQS.filter(
+    return faqsList.filter(
       (f) =>
         f.question.toLowerCase().includes(q) ||
         f.answer.toLowerCase().includes(q)
     );
-  }, [searchQuery]);
+  }, [searchQuery, faqsList]);
 
   return (
     <div className="min-h-screen flex flex-col bg-stone-50 text-[#1A1A1A] selection:bg-red-100 selection:text-red-900 font-sans">
