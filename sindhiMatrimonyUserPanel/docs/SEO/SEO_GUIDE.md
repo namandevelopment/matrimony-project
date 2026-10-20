@@ -1,6 +1,6 @@
 # Sindhi Matrimony – Comprehensive Technical SEO & Performance Optimization Guide
 
-This document is the authoritative engineering and optimization manual for **SindhiMatrimony** (`sindhimatrimony.com`). It covers technical architecture, metadata standards, JSON-LD structured data, crawler governance, Core Web Vitals optimization, and guidelines for fast, lightweight, and responsive rendering.
+This document is the authoritative engineering and optimization manual for **SindhiMatrimony** (`sindhimarriage.in`). It covers technical architecture, metadata standards, JSON-LD structured data, crawler governance, Core Web Vitals optimization, and guidelines for fast, lightweight, and responsive rendering.
 
 ---
 
@@ -88,7 +88,7 @@ Injected once across the entire application in the document `<head>`:
 ### 5.1 `src/app/robots.ts`
 * Disallows private paths (`/api/`, `/dashboard/`, `/messages/`, `/settings/`, `/billing/`, `/auth/`).
 * Allows public root `/` and static assets needed by Googlebot for page rendering.
-* Explicitly links to `https://sindhimatrimony.com/sitemap.xml`.
+* Explicitly links to `https://sindhimarriage.in/sitemap.xml`.
 
 ### 5.2 `src/app/sitemap.ts`
 * Contains **only implemented, publicly accessible 200-OK routes** (`/`, `/terms-and-conditions`, `/privacy-policy`).
@@ -158,13 +158,13 @@ As the user base expands, build high-intent programmatic landing pages:
 
 1. **Domain Verification:**
    * Go to [Google Search Console](https://search.google.com/search-console).
-   * Add Property using **Domain** verification: `sindhimatrimony.com`.
+   * Add Property using **Domain** verification: `sindhimarriage.in`.
    * Add the provided TXT record to your DNS provider (e.g. Cloudflare, GoDaddy).
 2. **Submit Sitemap:**
-   * Under **Indexing > Sitemaps**, enter: `https://sindhimatrimony.com/sitemap.xml`.
+   * Under **Indexing > Sitemaps**, enter: `https://sindhimarriage.in/sitemap.xml`.
    * Verify status changes to "Success" with 3 discovered URLs.
 3. **URL Inspection:**
-   * Run the root URL `https://sindhimatrimony.com/` in the URL Inspection tool.
+   * Run the root URL `https://sindhimarriage.in/` in the URL Inspection tool.
    * Click **Test Live URL** to confirm Googlebot renders the page and detects the `WebSite`, `Organization`, and `Service` structured data.
    * Click **Request Indexing**.
 4. **Core Web Vitals Monitoring:**

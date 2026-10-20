@@ -95,4 +95,4 @@ Please test it out and share your feedback!
 | :--- | :--- |
 | `npx vercel logs` | Live server & request logs dekhne ke liye |
 | `npx vercel inspect <deployment-url>` | Build errors ya deployment details inspect karne ke liye |
-| `npx vercel domains` | Custom domain attach karne ke liye (e.g. `admin.sindhimatrimony.com`) |
+| `npx vercel domains` | Custom domain attach karne ke liye (e.g. `admin.sindhimarriage.in`) |

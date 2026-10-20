@@ -8,7 +8,7 @@ import {
 } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "Partner Matches – Sindhi Brides & Grooms | SindhiMatrimony.com",
+  title: "Partner Matches – Sindhi Brides & Grooms | Sindhimarriage.in",
   description:
     "Explore 100% verified Sindhi matches based on your preferences. Shortlist, connect via Call and WhatsApp, and find your ideal life partner.",
   canonicalPath: "/matches",
@@ -42,7 +42,7 @@ function MatchesSkeleton() {
 
 export default function MatchesPage() {
   const webPageSchema = generateWebPageSchema({
-    title: "All Matches | SindhiMatrimony.com",
+    title: "All Matches | Sindhimarriage.in",
     description:
       "Explore 100% verified Sindhi matches based on your preferences. Shortlist, connect via Call and WhatsApp, and find your ideal life partner.",
     path: "/matches",

@@ -68,7 +68,7 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
   title = "Sindhi Matrimony Support",
   subtitle = "Typically replies in 1 minute • Online",
   whatsappNumber = "918769530667",
-  supportEmail = "support@sindhimatrimony.com",
+  supportEmail = "support@sindhimarriage.in",
   initialGreeting = "Namaste! 🙏 Welcome to Sindhi Matrimony. Looking for your perfect life partner or need help setting up your profile?",
   onOpen,
   onClose,

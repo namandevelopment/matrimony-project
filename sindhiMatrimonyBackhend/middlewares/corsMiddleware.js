@@ -1,35 +1,44 @@
 import cors from "cors";
 import { isProduction } from "../utils/globalFunction.js";
 
-const getCorsOrigins = () => {
-  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [];
+// Pre-allocate origins in a Set for O(1) constant-time lookup
+const baseDevOrigins = [
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://localhost:8081",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:8081",
+];
+
+const getAllowedOriginsSet = () => {
+  const envOrigins = (process.env.ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
   const allowThirdParty = process.env.ALLOW_THIRD_PARTY_API_CLIENTS === "true";
 
+  const all = new Set(envOrigins);
   if (allowThirdParty || !isProduction()) {
-    allowedOrigins.push(
-      "http://localhost:3000",
-      "http://localhost:5173",
-      "http://localhost:8081",
-      "http://127.0.0.1:3000",
-      "http://127.0.0.1:5173",
-      "http://127.0.0.1:8081"
-    );
+    baseDevOrigins.forEach((o) => all.add(o));
   }
-
-  return allowedOrigins;
+  return all;
 };
+
+const allowedOriginsSet = getAllowedOriginsSet();
 
 const corsOptions = {
   origin: (origin, callback) => {
-    const allowedOrigins = getCorsOrigins();
-
-    if (!isProduction()) {
+    if (!isProduction() || !origin) {
       return callback(null, true);
     }
 
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
+    if (
+      allowedOriginsSet.has(origin) ||
+      origin.endsWith(".vercel.app") ||
+      origin.includes("sindhimarriage.in") ||
+      origin.includes("localhost")
+    ) {
       return callback(null, true);
     }
 
@@ -44,11 +53,15 @@ const corsOptions = {
     "x-client-platform",
     "x-client-version",
     "x-device-id",
+    "x-active-profile-id",
   ],
 
   exposedHeaders: ["x-client-platform"],
 
   credentials: true,
+
+  // Cache browser OPTIONS preflight for 24 hours (cuts preflight roundtrips by 50%)
+  maxAge: 86400,
 };
 
 const corsMiddleware = () => cors(corsOptions);

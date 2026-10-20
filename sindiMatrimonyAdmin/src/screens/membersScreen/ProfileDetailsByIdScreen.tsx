@@ -353,7 +353,7 @@ export const ProfileDetailsByIdScreen: React.FC = () => {
       ...(txn.refundReason ? [`Refund Reason: ${txn.refundReason}`] : []),
       '----------------------------------------------------',
       'Thank you for trusting Sindhi Matrimony Services!',
-      'For support: support@sindhimatrimony.com / +91-9818022636',
+      'For support: support@sindhimarriage.in / +91-9818022636',
       '====================================================',
     ];
 

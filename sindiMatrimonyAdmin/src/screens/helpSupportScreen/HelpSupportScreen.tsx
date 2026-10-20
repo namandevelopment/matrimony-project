@@ -52,7 +52,7 @@ export const HelpSupportScreen: React.FC = memoWithDeepEqual(() => {
   usePerformanceTracker('HelpSupportScreen');
 
   const currentUser = useMemo(() => {
-    return getSimulatedUser() || getStoredUser() || { fullName: 'Admin User', email: 'admin@sindhimatrimony.com', mobile: '+91 9876543210' };
+    return getSimulatedUser() || getStoredUser() || { fullName: 'Admin User', email: 'admin@sindhimarriage.in', mobile: '+91 9876543210' };
   }, []);
 
   // Tickets state
@@ -140,7 +140,7 @@ export const HelpSupportScreen: React.FC = memoWithDeepEqual(() => {
       const newTicket = supportService.createTicket({
         userId: currentUser.id || 'emp_user',
         userName: currentUser.fullName || 'Admin User',
-        userEmail: currentUser.email || 'user@sindhimatrimony.com',
+        userEmail: currentUser.email || 'user@sindhimarriage.in',
         userPhone: currentUser.mobile || '+91 9876543210',
         category: ticketForm.category,
         priority: ticketForm.priority,

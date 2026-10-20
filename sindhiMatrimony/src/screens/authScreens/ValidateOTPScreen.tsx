@@ -22,6 +22,7 @@ import { clientPhoneNumber } from '../../utils/ClientData';
 import { validateOtp } from '../../utils/ValidationsFuctions';
 import { showToast } from '../../utils/CustomToast';
 import { displayLocalNotification, processPendingNotificationRedirect } from '../../firebase';
+import { Storage } from '../../storage/Storage';
 
 interface ValidateOTPScreenProps {
   navigation: any;
@@ -98,6 +99,10 @@ const ValidateOTPScreen = ({ navigation, route }: ValidateOTPScreenProps) => {
         body: 'You have logged in successfully to Sindhi Matrimony.',
         type: 'LOGIN_SUCCESS',
       });
+
+      // Save auth session to MMKV storage so user stays logged in
+      Storage.setItemSync('token', 'session_user_token');
+      Storage.setItemSync('user', { phone: phoneNumber || clientPhoneNumber, name: 'Mayank Tamhankar' });
 
       navigation.reset({
         index: 0,

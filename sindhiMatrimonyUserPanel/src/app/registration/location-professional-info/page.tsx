@@ -9,7 +9,7 @@ import {
 } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "Location and Professional Details (Step 3/4) | SindhiMatrimony.com",
+  title: "Location and Professional Details (Step 3/4) | Sindhimarriage.in",
   description:
     "Enter location, education, employment type, occupation, and annual income to complete Step 3 of your SindhiMatrimony registration.",
   canonicalPath: "/registration/location-professional-info",
@@ -49,7 +49,7 @@ function RegistrationLocationProfessionalSkeleton() {
 
 export default function RegistrationLocationProfessionalPage() {
   const webPageSchema = generateWebPageSchema({
-    title: "Location and Professional Details (Step 3/4) | SindhiMatrimony.com",
+    title: "Location and Professional Details (Step 3/4) | Sindhimarriage.in",
     description:
       "Enter location, education, employment type, occupation, and annual income to complete Step 3 of your SindhiMatrimony registration.",
     path: "/registration/location-professional-info",

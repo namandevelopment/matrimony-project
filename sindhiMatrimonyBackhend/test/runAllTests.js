@@ -1,3 +1,5 @@
+process.env.NODE_ENV = process.env.NODE_ENV || "test";
+
 import { runIsDataEqualUnitTests } from "./unit/isDataEqual.test.js";
 import { runValidatorsUnitTests } from "./unit/validators.test.js";
 import { runAuthFlowIntegrationTests } from "./integration/authFlow.test.js";
@@ -5,6 +7,7 @@ import { runProfileOnboardingIntegrationTests } from "./integration/profileOnboa
 import { runErrorBoundaryIntegrationTests } from "./integration/errorBoundary.test.js";
 import { runMultiProfileScenariosTests } from "./integration/multiProfileScenarios.test.js";
 import { runDevPerformanceTrackerIntegrationTests } from "./integration/devPerformanceTracker.test.js";
+import { runChatQuotaAndSystemTests } from "./unit/chatQuotaAndSystem.test.js";
 
 async function runMasterTestEngine() {
   const masterStart = Date.now();
@@ -37,6 +40,9 @@ async function runMasterTestEngine() {
 
     // 7. Dev API Performance Tracker & PII Redaction Tests (Phase 4 / Task 2)
     results.push(await runDevPerformanceTrackerIntegrationTests());
+
+    // 8. Chat System & Membership Plan Quota Tests
+    results.push(await runChatQuotaAndSystemTests());
 
     const totalPassed = results.reduce((acc, r) => acc + (r?.passed || 0), 0);
     const totalFailed = results.reduce((acc, r) => acc + (r?.failed || 0), 0);

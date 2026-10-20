@@ -9,7 +9,7 @@ import {
 } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "Complete Your Profile Onboarding | SindhiMatrimony.com",
+  title: "Complete Your Profile Onboarding | Sindhimarriage.in",
   description:
     "Add your horoscope, star, and lifestyle interests to find your most compatible Sindhi match.",
   canonicalPath: "/onboarding",
@@ -45,7 +45,7 @@ function OnboardingSkeleton() {
 
 export default function OnboardingPage() {
   const webPageSchema = generateWebPageSchema({
-    title: "Complete Your Profile Onboarding | SindhiMatrimony.com",
+    title: "Complete Your Profile Onboarding | Sindhimarriage.in",
     description:
       "Add your horoscope, star, and lifestyle interests to find your most compatible Sindhi match.",
     path: "/onboarding",

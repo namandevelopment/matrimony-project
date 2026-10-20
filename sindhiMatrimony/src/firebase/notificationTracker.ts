@@ -119,7 +119,7 @@ class NotificationTracker {
    */
   public logError(messageId: string, error: any, context?: string) {
     try {
-      console.error(`🚨 [NotificationTracker] Error in ${context || 'Notification'}:`, error);
+      console.warn(`🚨 [NotificationTracker] Error in ${context || 'Notification'}:`, error);
     } catch (e) {
       console.warn('⚠️ [NotificationTracker] Failed to log error:', e);
     }

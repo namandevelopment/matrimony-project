@@ -132,7 +132,7 @@ export const AdminConfigSection: React.FC = () => {
     {
       siteName: 'Sindhi Matrimony Official',
       supportPhone: '+91 98765 43210',
-      supportEmail: 'support@sindhimatrimony.com',
+      supportEmail: 'support@sindhimarriage.in',
       headquartersCity: 'Mumbai / Ahmedabad',
       enableOtpLogin: true,
       autoApproveProfiles: false,

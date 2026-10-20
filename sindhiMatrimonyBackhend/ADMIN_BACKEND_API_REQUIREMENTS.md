@@ -50,8 +50,8 @@
 ## 1. Global Architecture & API Conventions
 
 ### 1.1 Base URLs and Protocol
-- **API Base URL:** `https://api.sindhimatrimony.com/api/v1`
-- **WebSocket Gateway:** `wss://api.sindhimatrimony.com/socket.io`
+- **API Base URL:** `https://api.sindhimarriage.in/api/v1`
+- **WebSocket Gateway:** `wss://api.sindhimarriage.in/socket.io`
 - **Transport Security:** Strict TLS 1.3 only, HSTS preloaded (`max-age=31536000; includeSubDomains`).
 - **Data Encoding:** JSON (`application/json; charset=utf-8`) for standard payloads; `multipart/form-data` for file uploads (photos, KYC documents, ad banners).
 
@@ -420,7 +420,7 @@ Record visibility enforced at database query level:
 - **Shared API:** Yes (Role returned in payload differentiates Admin vs User).
 ```json
 {
-  "identifier": "rajesh.m@sindhimatrimony.com",
+  "identifier": "rajesh.m@sindhimarriage.in",
   "password": "StrongPassword123#",
   "platform": "ADMIN_PORTAL",
   "deviceId": "web-chrome-mac-uuid",
@@ -468,7 +468,7 @@ Record visibility enforced at database query level:
       "id": "emp_001",
       "employeeId": "EMP001",
       "fullName": "Rajesh Mulchandani",
-      "email": "rajesh.m@sindhimatrimony.com",
+      "email": "rajesh.m@sindhimarriage.in",
       "mobile": "+91 98200 11223",
       "role": "SUPER_ADMIN",
       "department": "Executive Management",
@@ -484,7 +484,7 @@ Record visibility enforced at database query level:
       },
       "allowedSections": ["dashboard", "leads", "members", "matchmaking", "finance", "employees", "settings"],
       "isChatEnabled": true,
-      "avatarUrl": "https://cdn.sindhimatrimony.com/avatars/emp_001.jpg"
+      "avatarUrl": "https://cdn.sindhimarriage.in/avatars/emp_001.jpg"
     }
   },
   "message": "Authentication successful.",
@@ -917,7 +917,7 @@ Record visibility enforced at database query level:
   "code": 200,
   "error": false,
   "data": {
-    "pdfUrl": "https://cdn.sindhimatrimony.com/biodatas/biodata-SIND001-blind.pdf",
+    "pdfUrl": "https://cdn.sindhimarriage.in/biodatas/biodata-SIND001-blind.pdf",
     "whatsappShareUrl": "https://api.whatsapp.com/send?phone=919820099887&text=Greetings%20from%20Sindhi%20Matrimony...",
     "privacyMode": "BLIND",
     "excludedFields": ["mobile", "email", "permanentAddress", "adminComment"],
@@ -1190,7 +1190,7 @@ Record visibility enforced at database query level:
         "profileId": "SIND001",
         "name": "Karan Advani",
         "subcaste": "Amil",
-        "mediaUrl": "https://secure-cdn.sindhimatrimony.com/kyc/aadhaar_901.jpg",
+        "mediaUrl": "https://secure-cdn.sindhimarriage.in/kyc/aadhaar_901.jpg",
         "documentType": "AADHAAR",
         "uploadedAt": "2026-10-15T10:45:00.000Z"
       }
@@ -1529,7 +1529,7 @@ Record visibility enforced at database query level:
 {
   "fullName": "Deepak Wadhwani",
   "employeeId": "EMP012",
-  "email": "deepak.w@sindhimatrimony.com",
+  "email": "deepak.w@sindhimarriage.in",
   "mobile": "+91 98111 22334",
   "role": "CRM_AGENT",
   "department": "Sales & CRM",
@@ -1692,7 +1692,7 @@ Record visibility enforced at database query level:
   "discountType": "PERCENTAGE",
   "discountValue": 60,
   "eligibleSegments": ["FREE_USERS", "EXPIRED_MEMBERS"],
-  "bannerUrl": "https://cdn.sindhimatrimony.com/banners/diwali_offer.jpg",
+  "bannerUrl": "https://cdn.sindhimarriage.in/banners/diwali_offer.jpg",
   "terms": ["Valid for first 500 subscriptions", "Cannot be combined with other coupons"],
   "planOverrides": [
     {
@@ -1731,7 +1731,7 @@ Record visibility enforced at database query level:
         "title": "🎆 Auspicious Diwali Vivah Offer",
         "subtitle": "Flat 60% OFF on Gold Membership",
         "message": "Unlock verified Sindhi family phone numbers and get free Kundli Milan.",
-        "bannerImageUrl": "https://cdn.sindhimatrimony.com/banners/diwali_popup.jpg",
+        "bannerImageUrl": "https://cdn.sindhimarriage.in/banners/diwali_popup.jpg",
         "ctaText": "Claim Offer Now",
         "ctaLink": "/membership",
         "ctaType": "MEMBERSHIP_PLANS",
@@ -1854,7 +1854,7 @@ Record visibility enforced at database query level:
   "groomId": "SIND001",
   "brideName": "Neha Vazirani",
   "brideId": "SIND004",
-  "couplePhoto": "https://cdn.sindhimatrimony.com/couples/rohan_neha.jpg",
+  "couplePhoto": "https://cdn.sindhimarriage.in/couples/rohan_neha.jpg",
   "weddingDate": "2026-02-14",
   "engagementDate": "2025-10-10",
   "city": "Mumbai",
@@ -2312,7 +2312,7 @@ Record visibility enforced at database query level:
             "subcaste": "Amil",
             "city": "Mumbai",
             "profession": "Chartered Accountant",
-            "avatarUrl": "https://cdn.sindhimatrimony.com/photos/simran.webp",
+            "avatarUrl": "https://cdn.sindhimarriage.in/photos/simran.webp",
             "isVerified": true,
             "updatedAt": 1734536100000
           }

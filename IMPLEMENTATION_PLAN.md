@@ -1061,7 +1061,7 @@ export const triggerSecurityAlert = async ({
     });
 
     await transporter.sendMail({
-      from: `"Sindhi Matrimony Security" <${process.env.SMTP_USER || "security@sindhimatrimony.com"}>`,
+      from: `"Sindhi Matrimony Security" <${process.env.SMTP_USER || "security@sindhimarriage.in"}>`,
       to: ALERT_RECIPIENT,
       subject: `🚨 [SECURITY ALERT - ${severity}] ${eventType} on ${endpoint}`,
       html: emailHtml,

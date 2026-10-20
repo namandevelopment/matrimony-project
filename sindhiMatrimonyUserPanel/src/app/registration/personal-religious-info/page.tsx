@@ -9,7 +9,7 @@ import {
 } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "Personal and Religious Details (Step 2/4) | SindhiMatrimony.com",
+  title: "Personal and Religious Details (Step 2/4) | Sindhimarriage.in",
   description:
     "Enter height, marital status, physical status, religion, and caste to complete Step 2 of your SindhiMatrimony registration.",
   canonicalPath: "/registration/personal-religious-info",
@@ -57,7 +57,7 @@ function RegistrationPersonalReligiousSkeleton() {
 
 export default function RegistrationPersonalReligiousPage() {
   const webPageSchema = generateWebPageSchema({
-    title: "Personal and Religious Details (Step 2/4) | SindhiMatrimony.com",
+    title: "Personal and Religious Details (Step 2/4) | Sindhimarriage.in",
     description:
       "Enter height, marital status, physical status, religion, and caste to complete Step 2 of your SindhiMatrimony registration.",
     path: "/registration/personal-religious-info",

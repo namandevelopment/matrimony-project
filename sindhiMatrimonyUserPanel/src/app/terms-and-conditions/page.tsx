@@ -8,9 +8,9 @@ import {
 } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "Terms & Conditions | SindhiMatrimony.com - User Agreement & Policies",
+  title: "Terms & Conditions | Sindhimarriage.in - User Agreement & Policies",
   description:
-    "Official Terms and Conditions, User Agreement, and Community Guidelines for SindhiMatrimony.com (Matrimony.com Group). Understand member eligibility, verification standards, refund policies, and grievance redressal.",
+    "Official Terms and Conditions, User Agreement, and Community Guidelines for Sindhimarriage.in (Matrimony.com Group). Understand member eligibility, verification standards, refund policies, and grievance redressal.",
   canonicalPath: "/terms-and-conditions",
   keywords: [
     "Sindhi Matrimony Terms and Conditions",
@@ -27,9 +27,9 @@ export const metadata: Metadata = createMetadata({
 
 export default function TermsAndConditionsPage() {
   const webPageSchema = generateWebPageSchema({
-    title: "Terms and Conditions & Service Agreement | SindhiMatrimony.com",
+    title: "Terms and Conditions & Service Agreement | Sindhimarriage.in",
     description:
-      "Read the official Terms and Conditions, Member Code of Conduct, and Grievance Redressal framework for SindhiMatrimony.com.",
+      "Read the official Terms and Conditions, Member Code of Conduct, and Grievance Redressal framework for Sindhimarriage.in.",
     path: "/terms-and-conditions",
     datePublished: "2026-01-01",
     dateModified: "2026-10-14",

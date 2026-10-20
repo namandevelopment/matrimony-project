@@ -11,11 +11,13 @@ import {
 } from "./middlewares/commonMiddleware.js";
 import checkDisableUser from "./middlewares/CheckDisableUserMiddleware.js";
 import { BOOLEAN_TRUE, DATA_NULL, NOT_FOUND } from "./utils/constants.js";
+import compression from "compression";
 import routes from "./routes/index.js";
 import corsMiddleware from "./middlewares/corsMiddleware.js";
 import devPerformanceTracker from "./middlewares/devPerformanceTracker.js";
 import devApiTrackerRoutes from "./routes/dev/apiTrackerRoutes.js";
 import attachMongooseProfiler from "./utils/mongooseProfilerPlugin.js";
+import connectDB from "./models/connection.js";
 
 // Attach Mongoose query latency profiler for development
 attachMongooseProfiler();
@@ -23,11 +25,40 @@ attachMongooseProfiler();
 const app = express();
 const API_END_POINT_V1 = process.env.API_END_POINT_V1 || "/api/v1/";
 
+// Ensure DB connection for serverless cold-starts on Vercel
+let dbPromise = null;
+app.use(async (req, res, next) => {
+  if (!dbPromise) {
+    dbPromise = connectDB().catch((err) => {
+      console.warn("MongoDB connection notice:", err?.message || err);
+    });
+  }
+  await dbPromise;
+  next();
+});
+
+// Root & Health Endpoint for Vercel / Cloud Gateways
+app.get(["/", "/health"], (req, res) => {
+  res.status(200).json({
+    message: "Sindhi Matrimony Unified Backend API Gateway is live on Vercel.",
+    status: "ONLINE",
+    version: "1.0.0",
+    environment: process.env.NODE_ENV || "production",
+    apiPrefix: "/api/v1",
+    timestamp: Date.now(),
+  });
+});
+
 // High-resolution dev performance profiler (zero overhead in production)
 app.use(devPerformanceTracker);
 
-// Security & Parsing Pipeline
+// Security, Compression & Parsing Pipeline
 app.use(corsMiddleware());
+app.use(
+  compression({
+    threshold: 1024, // Compress responses exceeding 1KB to save egress bandwidth & mobile latency
+  })
+);
 app.use(conditionalSkipper);
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));

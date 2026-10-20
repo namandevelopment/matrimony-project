@@ -13,8 +13,16 @@ Modern, high-performance web application and public portal for the **Sindhi Matr
 - **Framework Preset:** Next.js
 - **Status:** 🟢 200 OK (Live & Publicly Accessible)
 
-### Public Routes
-- **`/`** - Main Landing Screen (Hero Section, Trust Badges, About Section, Footer, Login & Registration Modal)
+### Active Routes
+- **`/`** - Main Landing Screen (Hero Section, Trust Badges, Quick Register, About Section, Footer, Member Login Modal)
+- **`/dashboard`** - User Dashboard (Prime/Classic views, match cards, horoscope highlights, happy stories)
+- **`/matches`** - Matches Screen (Filter, search, shortlist, and profile matching)
+- **`/interests`** - Interests Screen (Received, Sent, Accepted, Declined tabs with Mailbox search)
+- **`/messages`** - Real-time Chat & Conversation View
+- **`/notifications`** - Notifications Hub (Alerts, activity updates, and preferences)
+- **`/profile` & `/profile/edit`** - Profile overview and multi-section editor (Hobbies, Basics, Family, Religion)
+- **`/profile/horoscope`** - Detailed Vedic Horoscope Analysis & Kundali matching
+- **`/help`** - Help Center & Support Ticket submission
 - **`/terms-and-conditions`** - SEO-Friendly Terms & Conditions
 - **`/privacy-policy`** - Privacy Policy Page
 - **`/sitemap.xml`** - Auto-generated SEO Sitemap

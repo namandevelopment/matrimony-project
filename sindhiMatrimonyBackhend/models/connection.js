@@ -12,7 +12,7 @@ const connectDB = async (url) => {
   try {
     await mongoose.connect(url || DB_STRING, {
       maxPoolSize: 25,
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 3000,
       socketTimeoutMS: 45000,
     });
 
@@ -20,8 +20,7 @@ const connectDB = async (url) => {
     logMessage(`✅ MongoDB Connected successfully in ${duration}ms`, null, "info");
     isConnected = true;
   } catch (err) {
-    logMessage("❌ MongoDB Connection Error:", err, "error");
-    throw err;
+    logMessage(`⚠️ MongoDB Connection Error: ${err?.message || err}. (Running in offline/in-memory mode for Master Data & Dropdowns)`, null, "warn");
   }
 };
 

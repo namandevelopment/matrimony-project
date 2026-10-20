@@ -82,7 +82,7 @@ const initialMockEmployees: Employee[] = [
     id: 'emp_001',
     employeeId: 'EMP001',
     fullName: 'Rajesh Mulchandani',
-    email: 'rajesh.m@sindhimatrimony.com',
+    email: 'rajesh.m@sindhimarriage.in',
     mobile: '+91 98200 11223',
     role: 'SUPER_ADMIN',
     department: 'Executive Management',
@@ -101,7 +101,7 @@ const initialMockEmployees: Employee[] = [
     id: 'emp_002',
     employeeId: 'EMP002',
     fullName: 'Kavita Chhabria',
-    email: 'kavita.c@sindhimatrimony.com',
+    email: 'kavita.c@sindhimarriage.in',
     mobile: '+91 98211 44556',
     role: 'ADMIN',
     department: 'Operations',
@@ -121,7 +121,7 @@ const initialMockEmployees: Employee[] = [
     id: 'emp_003',
     employeeId: 'EMP003',
     fullName: 'Priya Sharma',
-    email: 'priya.s@sindhimatrimony.com',
+    email: 'priya.s@sindhimarriage.in',
     mobile: '+91 98333 77889',
     role: 'CRM_MANAGER',
     department: 'Sales & CRM',
@@ -141,7 +141,7 @@ const initialMockEmployees: Employee[] = [
     id: 'emp_004',
     employeeId: 'EMP004',
     fullName: 'Amit Bajaj',
-    email: 'amit.b@sindhimatrimony.com',
+    email: 'amit.b@sindhimarriage.in',
     mobile: '+91 98765 43210',
     role: 'CRM_AGENT',
     department: 'Sales & CRM',
@@ -161,7 +161,7 @@ const initialMockEmployees: Employee[] = [
     id: 'emp_005',
     employeeId: 'EMP005',
     fullName: 'Neha Lulla',
-    email: 'neha.l@sindhimatrimony.com',
+    email: 'neha.l@sindhimarriage.in',
     mobile: '+91 98450 99887',
     role: 'CRM_AGENT',
     department: 'Sales & CRM',
@@ -181,7 +181,7 @@ const initialMockEmployees: Employee[] = [
     id: 'emp_006',
     employeeId: 'EMP006',
     fullName: 'Sunil Wadhwani',
-    email: 'sunil.w@sindhimatrimony.com',
+    email: 'sunil.w@sindhimarriage.in',
     mobile: '+91 98111 22334',
     role: 'FINANCE_MANAGER',
     department: 'Accounts & Billing',
@@ -201,7 +201,7 @@ const initialMockEmployees: Employee[] = [
     id: 'emp_007',
     employeeId: 'EMP007',
     fullName: 'Meena Advani',
-    email: 'meena.a@sindhimatrimony.com',
+    email: 'meena.a@sindhimarriage.in',
     mobile: '+91 98999 55667',
     role: 'MODERATOR',
     department: 'Trust & Safety',
@@ -221,7 +221,7 @@ const initialMockEmployees: Employee[] = [
     id: 'emp_008',
     employeeId: 'EMP008',
     fullName: 'Vikram Talreja',
-    email: 'vikram.t@sindhimatrimony.com',
+    email: 'vikram.t@sindhimarriage.in',
     mobile: '+91 98777 88990',
     role: 'SUPPORT_AGENT',
     department: 'Member Care',
@@ -241,7 +241,7 @@ const initialMockEmployees: Employee[] = [
     id: 'emp_009',
     employeeId: 'EMP009',
     fullName: 'Ritu Jhangiani',
-    email: 'ritu.j@sindhimatrimony.com',
+    email: 'ritu.j@sindhimarriage.in',
     mobile: '+91 98666 11224',
     role: 'AD_MANAGER',
     department: 'Marketing',
@@ -261,7 +261,7 @@ const initialMockEmployees: Employee[] = [
     id: 'emp_010',
     employeeId: 'EMP010',
     fullName: 'Harish Makhija',
-    email: 'harish.m@sindhimatrimony.com',
+    email: 'harish.m@sindhimarriage.in',
     mobile: '+91 98555 33445',
     role: 'CRM_AGENT',
     department: 'Sales & CRM',
@@ -1051,7 +1051,7 @@ export const EmployeeScreen: React.FC = () => {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setEmployeeFieldValue('email', e.target.value)}
-                  placeholder="suresh.h@sindhimatrimony.com"
+                  placeholder="suresh.h@sindhimarriage.in"
                   error={(employeeSubmitAttempted || employeeTouched.email) ? employeeErrors.email : undefined}
                   size="sm"
                 />

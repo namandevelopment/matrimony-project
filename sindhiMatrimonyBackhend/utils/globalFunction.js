@@ -67,12 +67,104 @@ export const apiHTTPResponse = (
   code = CONSTANTS.SERVICE_UNAVAILABLE,
   error = CONSTANTS.ERROR_TRUE
 ) => {
-  return res.status(httpCode).json({
-    message: message || "error",
-    code: code,
+  const defaultMsg = httpCode >= 500
+    ? "An internal server error occurred. Please try again."
+    : (httpCode >= 400 ? "Request could not be processed. Please check your input." : "Success.");
+
+  const responsePayload = {
+    message: message || defaultMsg,
+    code: typeof code === "number" ? code : (Number(code) || httpCode),
     error: httpCode === CONSTANTS.HTTP_OK || httpCode === CONSTANTS.HTTP_CREATED ? CONSTANTS.ERROR_FALSE : error,
     data: data,
-  });
+  };
+
+  if (data && typeof data === "object" && data.errors) {
+    responsePayload.errors = data.errors;
+  }
+
+  return res.status(httpCode).json(responsePayload);
+};
+
+// Universal Entity/Document Sanitizer & Deduplicator:
+// 1. Strict single '_id' standard (removes redundant 'id' virtual).
+// 2. Removes internal/sensitive fields (__v, isDeleted, password, tokens, deduplication hashes).
+// 3. Ultra-compact, fast, recursion-safe for nested subdocuments and arrays.
+export const cleanEntity = (entity, options = {}) => {
+  if (entity === null || entity === undefined) return entity;
+  if (Array.isArray(entity)) {
+    return entity.map((item) => cleanEntity(item, options));
+  }
+  if (typeof entity !== "object") return entity;
+
+  // If Mongoose document instance, convert to plain object with virtuals disabled
+  let raw = entity;
+  if (typeof entity.toObject === "function") {
+    raw = entity.toObject({ virtuals: false });
+  } else if (entity._doc) {
+    raw = { ...entity._doc };
+  } else {
+    raw = { ...entity };
+  }
+
+  const clean = {};
+  for (const [key, value] of Object.entries(raw)) {
+    // 1. Exclude internal database metadata & credentials
+    if (
+      key === "__v" ||
+      key === "isDeleted" ||
+      key === "password" ||
+      key === "verificationToken" ||
+      key === "passwordResetToken" ||
+      key === "identityDeduplicationHash"
+    ) {
+      continue;
+    }
+
+    // 2. Eliminate duplicate Mongoose virtual 'id' if '_id' exists
+    if (key === "id" && raw._id !== undefined) {
+      continue;
+    }
+
+    // 3. Normalize _id to clean string representation
+    if (key === "_id") {
+      clean._id = value?.toString ? value.toString() : String(value);
+      continue;
+    }
+
+    // 4. Strip redundant userId when requested
+    if (options.stripUserId && key === "userId") {
+      continue;
+    }
+
+    // 5. Recursively clean nested objects and arrays
+    if (value && typeof value === "object") {
+      if (value instanceof Date) {
+        clean[key] = value.getTime();
+      } else if (Array.isArray(value)) {
+        clean[key] = value.map((sub) =>
+          sub && typeof sub === "object" ? cleanEntity(sub, options) : sub
+        );
+      } else if (
+        value._bsontype === "ObjectID" ||
+        value.constructor?.name === "ObjectId" ||
+        (typeof value.toHexString === "function")
+      ) {
+        clean[key] = value.toString();
+      } else {
+        clean[key] = cleanEntity(value, options);
+      }
+    } else {
+      clean[key] = value;
+    }
+  }
+
+  // Fallback: If only 'id' was present without '_id', standardize to '_id'
+  if (!clean._id && clean.id) {
+    clean._id = clean.id.toString();
+    delete clean.id;
+  }
+
+  return clean;
 };
 
 // Async Handler to eliminate try/catch in skinny controllers
@@ -169,11 +261,13 @@ export const joiValidatorFunction = async (schema, data) => {
     return null;
   } catch (error) {
     const errorMap = error?.details?.reduce((acc, detail) => {
-      const fieldName = detail.context.label || detail.path[0];
+      const fieldName = (detail.path && detail.path.length > 0)
+        ? detail.path.join(".")
+        : (detail.context?.label || detail.context?.key || "field");
       const errorMessage = detail.message.replace(/"/g, "");
       acc[fieldName] = errorMessage;
       return acc;
-    }, {});
+    }, {}) || {};
     return Object.values(errorMap).join(", ");
   }
 };

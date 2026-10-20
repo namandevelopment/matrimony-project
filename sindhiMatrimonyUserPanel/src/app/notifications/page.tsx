@@ -8,7 +8,7 @@ import {
 } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "Notifications & Activity Alerts | SindhiMatrimony.com",
+  title: "Notifications & Activity Alerts | Sindhimarriage.in",
   description:
     "Stay updated with real-time interest alerts, messages, profile views, Kundali requests, and daily partner matches on SindhiMatrimony.",
   canonicalPath: "/notifications",
@@ -49,7 +49,7 @@ function NotificationsSkeleton() {
 
 export default function NotificationsPage() {
   const webPageSchema = generateWebPageSchema({
-    title: "Notifications & Alerts | SindhiMatrimony.com",
+    title: "Notifications & Alerts | Sindhimarriage.in",
     description:
       "Stay updated with real-time interest alerts, messages, profile views, Kundali requests, and daily partner matches on SindhiMatrimony.",
     path: "/notifications",

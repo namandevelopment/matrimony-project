@@ -10,7 +10,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   return createMetadata({
-    title: `View Profile ${id} | SindhiMatrimony.com`,
+    title: `View Profile ${id} | Sindhimarriage.in`,
     description: `Explore full verified profile details for member ${id}.`,
     canonicalPath: `/profile/view/${id}`,
   });

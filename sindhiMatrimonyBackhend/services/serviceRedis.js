@@ -12,7 +12,13 @@ const redisOptions = {
   socket: {
     host: REDIS_HOST,
     port: Number(REDIS_PORT),
-    reconnectStrategy: (retries) => Math.min(retries * 200, 3000),
+    connectTimeout: 2000,
+    reconnectStrategy: (retries) => {
+      if (retries > 1) {
+        return false;
+      }
+      return 500;
+    },
   },
   ...(REDIS_PASSWORD ? { password: REDIS_PASSWORD } : {}),
 };

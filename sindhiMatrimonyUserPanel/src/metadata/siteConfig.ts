@@ -3,7 +3,7 @@ export const siteConfig = {
   shortName: "SindhiMatrimony",
   description:
     "Discover Sindhi matrimonial profiles and connect with compatible life partners from the Sindhi community. Explore meaningful matches with SindhiMatrimony.",
-  url: process.env.NEXT_PUBLIC_SITE_URL || "https://sindhimatrimony.com",
+  url: process.env.NEXT_PUBLIC_SITE_URL || "https://sindhimarriage.in",
   ogImage: "/images/og-default.jpg",
   logo: "/images/logo.webp",
   locale: "en_IN",
@@ -27,7 +27,7 @@ export const siteConfig = {
     twitter: "https://twitter.com/sindhimatrimony",
     facebook: "https://facebook.com/sindhimatrimony",
     instagram: "https://instagram.com/sindhimatrimony",
-    supportEmail: "support@sindhimatrimony.com",
+    supportEmail: "support@sindhimarriage.in",
   },
 } as const;
 

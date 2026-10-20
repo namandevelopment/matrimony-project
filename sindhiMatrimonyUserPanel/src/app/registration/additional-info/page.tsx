@@ -9,7 +9,7 @@ import {
 } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "Additional Details (Step 4/4) | SindhiMatrimony.com",
+  title: "Additional Details (Step 4/4) | Sindhimarriage.in",
   description:
     "Complete Step 4 of your SindhiMatrimony registration by selecting your family status and writing a few words about yourself.",
   canonicalPath: "/registration/additional-info",
@@ -50,7 +50,7 @@ function RegistrationAdditionalInfoSkeleton() {
 
 export default function RegistrationAdditionalInfoPage() {
   const webPageSchema = generateWebPageSchema({
-    title: "Additional Details (Step 4/4) | SindhiMatrimony.com",
+    title: "Additional Details (Step 4/4) | Sindhimarriage.in",
     description:
       "Complete Step 4 of your SindhiMatrimony registration by selecting your family status and writing a few words about yourself.",
     path: "/registration/additional-info",

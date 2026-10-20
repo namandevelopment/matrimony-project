@@ -1,6 +1,6 @@
 # SindhiMatrimony — Implementation Changelog & SEO Modifications Report
 
-Yeh document un sabhi changes aur updates ka complete record hai jo **SindhiMatrimony User Panel** (`sindhimatrimony.com`) me SEO, Performance, Core Web Vitals, aur Technical Compliance ke liye kiye gaye hain.
+Yeh document un sabhi changes aur updates ka complete record hai jo **SindhiMatrimony User Panel** (`sindhimarriage.in`) me SEO, Performance, Core Web Vitals, aur Technical Compliance ke liye kiye gaye hain.
 
 ---
 
@@ -79,9 +79,9 @@ Yeh document un sabhi changes aur updates ka complete record hai jo **SindhiMatr
   Pehle `sitemap.ts` me 15+ aisi URLs thi jo project me abhi bani hi nahi thi (jaise `/about-us`, `/faq`, `/sindhi-matrimony-mumbai`, etc.). Agar Googlebot sitemap se 404 pages fetch karta hai toh website ka crawl budget waste hota hai aur quality score drop hota hai.
 * **Kya change kiya?**
   * Sitemap me sirf wahi routes rakhe jo actually implemented hain aur 200-OK status return karte hain:
-    1. `https://sindhimatrimony.com` (Priority: 1.0)
-    2. `https://sindhimatrimony.com/terms-and-conditions` (Priority: 0.5)
-    3. `https://sindhimatrimony.com/privacy-policy` (Priority: 0.5)
+    1. `https://sindhimarriage.in` (Priority: 1.0)
+    2. `https://sindhimarriage.in/terms-and-conditions` (Priority: 0.5)
+    3. `https://sindhimarriage.in/privacy-policy` (Priority: 0.5)
   * Code me architectural comments add kiye taaki jab future me city pages ya about us banenge, unhe aasaani se add kiya ja sake.
 
 ---
@@ -111,7 +111,7 @@ Yeh document un sabhi changes aur updates ka complete record hai jo **SindhiMatr
 | `npx tsc --noEmit` | 0 TypeScript errors | Exit code 0, Clean output | **PASSED** |
 | `npm run build` | Static Page Generation | 8/8 routes compiled successfully | **PASSED** |
 | Compiled HTML Title Check | Single clean title | `<title>Sindhi Matrimony – Find Your Perfect Sindhi Life Partner</title>` | **PASSED** |
-| Compiled HTML Canonical Check | Production domain | `<link rel="canonical" href="https://sindhimatrimony.com"/>` | **PASSED** |
+| Compiled HTML Canonical Check | Production domain | `<link rel="canonical" href="https://sindhimarriage.in"/>` | **PASSED** |
 | Compiled HTML H1 Count Check | Exactly 1 H1 tag | H1 Count: 1 | **PASSED** |
 | Compiled HTML Schema Check | No duplicate schemas | Tag 1: Organization & WebSite, Tag 2: Service | **PASSED** |
 | Built `robots.txt` Check | Disallow private paths | Disallows `/api/`, `/dashboard/`, `/messages/`, etc. | **PASSED** |

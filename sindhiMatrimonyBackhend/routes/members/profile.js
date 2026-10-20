@@ -9,7 +9,10 @@ import {
   onboardingStepSchema,
 } from "../../validators/members/profile.js";
 import {
+  getProfile,
   getMyProfile,
+  editProfile,
+  updateProfile,
   updateProfileBasic,
   updateProfileEducationCareer,
   updateProfileFamily,
@@ -23,11 +26,34 @@ import {
 const router = express.Router();
 
 /**
- * @route   GET /api/v1/profile/me
- * @desc    Get complete candidate profile + user details + partner preferences
+ * @route   POST /api/v1/profile/getProfile
+ * @route   GET  /api/v1/profile/getProfile
+ * @route   GET  /api/v1/profile/me
+ * @route   POST /api/v1/profile/me
+ * @route   GET  /api/v1/profile
+ * @route   POST /api/v1/profile
+ * @desc    Get candidate profile (If 'id' provided in body/query -> views that candidate; If no 'id' -> views own profile)
  * @access  Private (Candidate JWT Required)
  */
-router.get("/me", getMyProfile);
+router.post("/getProfile", getProfile);
+router.get("/getProfile", getProfile);
+router.get("/me", getProfile);
+router.post("/me", getProfile);
+router.get("/", getProfile);
+router.post("/", getProfile);
+
+/**
+ * @route   POST /api/v1/profile/editProfile
+ * @route   PUT  /api/v1/profile/editProfile
+ * @route   POST /api/v1/profile/updateProfile
+ * @route   PUT  /api/v1/profile/updateProfile
+ * @desc    Unified Edit Profile API (update any/all profile sections in a single call)
+ * @access  Private (Candidate JWT Required)
+ */
+router.post("/editProfile", editProfile);
+router.put("/editProfile", editProfile);
+router.post("/updateProfile", editProfile);
+router.put("/updateProfile", editProfile);
 
 /**
  * @route   PUT /api/v1/profile/basic
@@ -96,5 +122,14 @@ router.post("/photos", uploadProfilePhoto);
  * @access  Private
  */
 router.delete("/photos/:photoId", deleteProfilePhoto);
+
+/**
+ * @route   GET /api/v1/profile/contact-credits
+ * @desc    Check remaining contact view credits
+ * @access  Private
+ */
+import { getContactCredits, viewContactDetails } from "../../controllers/chat/chatController.js";
+router.get("/contact-credits", getContactCredits);
+router.post("/view-contact/:candidateId", viewContactDetails);
 
 export default router;

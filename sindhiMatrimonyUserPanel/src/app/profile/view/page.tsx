@@ -4,7 +4,7 @@ import { createMetadata } from "@/metadata";
 import ProfileViewClient from "./ProfileViewClient";
 
 export const metadata: Metadata = createMetadata({
-  title: "View Profile | SindhiMatrimony.com",
+  title: "View Profile | Sindhimarriage.in",
   description:
     "View full member profile, personal details, education, occupation, horoscope, and partner preferences.",
   canonicalPath: "/profile/view",

@@ -269,7 +269,7 @@ export const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.7 },
   sectionTitleRow: {
-    alignItems: 'center',
+    alignItems: 'center', paddingHorizontal: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 12,

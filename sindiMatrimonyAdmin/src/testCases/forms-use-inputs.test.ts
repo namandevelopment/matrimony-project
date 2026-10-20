@@ -82,7 +82,7 @@ const validEmpErrors = validateEmployeeForm({
   ...employeeValues,
   fullName: 'Haresh Hingorani',
   employeeId: 'EMP042',
-  email: 'haresh.h@sindhimatrimony.com',
+  email: 'haresh.h@sindhimarriage.in',
   mobile: '9820011223',
 });
 assert.strictEqual(Object.keys(validEmpErrors).length, 0, 'Valid employee should produce 0 errors');

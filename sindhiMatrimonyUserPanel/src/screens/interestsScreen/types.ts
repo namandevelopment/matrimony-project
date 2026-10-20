@@ -6,19 +6,53 @@ export interface InterestFilter {
   status: InterestStatus;
 }
 
-export interface InterestProfile {
-  id: string;
-  matrimonyId: string;
+export interface InterestCandidateProfile {
+  _id: string;
+  matrimonyId?: string;
   name: string;
   age: number;
-  height: string;
-  city: string;
-  profession: string;
-  education: string;
-  photoUrl?: string;
-  isSilhouette?: boolean;
-  receivedAt: string;
-  message?: string;
+  height?: string;
+  subcaste?: string;
+  city?: string;
+  state?: string;
+  profession?: string;
+  companyName?: string;
+  education?: string;
+  avatar?: string;
+  verified?: boolean;
+}
+
+export interface InterestItem {
+  _id: string;
+  senderUserId?: string;
+  senderProfileId?: string;
+  receiverProfileId?: string;
+  direction?: "RECEIVED" | "SENT";
+  status: "PENDING" | "ACCEPTED" | "DECLINED";
+  personalizedNote?: string;
+  sentAt?: number;
+  respondedAt?: number;
+  remindedAt?: number;
+  senderProfile?: InterestCandidateProfile;
+  receiverProfile?: InterestCandidateProfile;
+}
+
+export interface InterestBadgeCounts {
+  received: {
+    all: number;
+    pending: number;
+    accepted: number;
+    declined: number;
+  };
+  sent: {
+    all: number;
+    pending: number;
+    accepted: number;
+    declined: number;
+  };
+  pendingCount?: number;
+  acceptedCount?: number;
+  totalUnread?: number;
 }
 
 export interface InterestsScreenProps {

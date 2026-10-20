@@ -131,7 +131,8 @@ export const authRateLimiter = createRateLimiter({
   maxRequests: 20,
   keyPrefix: "rate:auth",
   message: "Too many verification attempts. Please wait 15 minutes before retrying.",
-  keyGenerator: (req) => `${req.body?.phone || ""}_${req.ip || "unknown"}`,
+  keyGenerator: (req) =>
+    `${req.body?.phone || req.body?.mobileNumber || req.body?.mobile || req.body?.identifier || ""}_${req.ip || "unknown"}`,
 });
 
 export default {

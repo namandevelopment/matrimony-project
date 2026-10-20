@@ -18,7 +18,7 @@ import { showToast } from '../../utils/CustomToast';
 
 const HEADER_COLOR = '#EA4C59';
 const ICON_COLOR = '#5A6578';
-const SUPPORT_EMAIL = 'support@sindhimatrimony.com';
+const SUPPORT_EMAIL = 'support@sindhimarriage.in';
 
 interface HelpCenterItem {
   id: string;
@@ -155,15 +155,9 @@ const HelpCenter: React.FC = () => {
   ];
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <StatusBar backgroundColor={HEADER_COLOR} barStyle="light-content" />
 
-      {/* 
-        CustomHeader:
-        - Default internal navigation.goBack() works automatically ("ander se")
-        - Can also accept custom onPress / onBackPress prop ("bhr se")
-        - All styling customizable from inside (defaults) & outside (props)
-      */}
       <CustomHeader
         title="24x7 Help Center"
         backgroundColor={HEADER_COLOR}
@@ -202,7 +196,7 @@ const HelpCenter: React.FC = () => {
           ))}
         </ScrollView>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

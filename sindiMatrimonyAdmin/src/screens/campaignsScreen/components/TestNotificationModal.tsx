@@ -79,7 +79,7 @@ export const TestNotificationModal: React.FC<TestNotificationModalProps> = ({
             <input
               type="text"
               {...bind('recipient')}
-              placeholder="e.g. +91 98200 44551 or admin@sindhimatrimony.com"
+              placeholder="e.g. +91 98200 44551 or admin@sindhimarriage.in"
               className={`w-full px-3.5 py-2 text-xs rounded-xl border font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${
                 touched.recipient && errors.recipient ? 'border-red-500' : 'border-slate-200'
               }`}

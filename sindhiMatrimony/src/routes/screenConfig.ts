@@ -7,6 +7,9 @@ import BottomTab from './BottomTab';
 import EditProfile from '../screens/editProfile';
 import HelpCenter from '../screens/helpCenter';
 import VerifyYourProfile from '../screens/verifyYourProfile';
+import AddHoroscope from '../screens/addHoroscope';
+import HoroscopeView from '../screens/horoscopeView';
+import FamilyDetailsScreen from '../screens/familyDetails';
 
 export const screens = [
   {
@@ -52,5 +55,26 @@ export const screens = [
     name: 'VerifyYourProfile',
     component: VerifyYourProfile,
   },
-
+  {
+    name: 'AddHoroscope',
+    component: AddHoroscope,
+  },
+  {
+    name: 'Horoscope',
+    component: HoroscopeView,
+  },
+  {
+    name: 'HoroscopeView',
+    component: HoroscopeView,
+  },
+  {
+    name: 'FamilyDetails',
+    component: FamilyDetailsScreen,
+  },
+  {
+    name: 'EditFamilyDetails',
+    component: FamilyDetailsScreen,
+  },
 ];
+
+

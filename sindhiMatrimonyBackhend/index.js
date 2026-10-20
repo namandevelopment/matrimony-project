@@ -1,3 +1,4 @@
+import "dotenv/config";
 import dotenv from "dotenv";
 import http from "http";
 
@@ -24,11 +25,26 @@ const PORT = process.env.PORT || 5000;
     // 3. Initialize WebSockets (Socket.IO)
     initializeSocket(server);
 
-    // 4. Start HTTP Server
-    server.listen(PORT, () => {
-      logMessage(`🚀 Sindhi Matrimony Unified Backend running on port ${PORT} [${ENV}]`, null, "info");
-      logMessage(`📍 Health Check: http://localhost:${PORT}/api/v1/health`, null, "info");
+    // 4. Start HTTP Server with automatic port fallback
+    let currentPort = Number(PORT);
+    const startListening = (p) => {
+      server.listen(p, () => {
+        logMessage(`🚀 Sindhi Matrimony Unified Backend running on port ${p} [${ENV}]`, null, "info");
+        logMessage(`📍 Health Check: http://localhost:${p}/api/v1/health`, null, "info");
+      });
+    };
+
+    server.on("error", (err) => {
+      if (err.code === "EADDRINUSE") {
+        logMessage(`⚠️ Port ${currentPort} in use. Switching to port ${currentPort + 1}...`, null, "warn");
+        currentPort += 1;
+        startListening(currentPort);
+      } else {
+        logMessage("❌ Server error:", err, "error");
+      }
     });
+
+    startListening(currentPort);
   } catch (err) {
     logMessage("❌ Fatal Error during server bootstrap:", err, "error");
   }

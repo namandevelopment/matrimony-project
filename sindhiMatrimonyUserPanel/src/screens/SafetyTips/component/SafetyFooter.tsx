@@ -11,7 +11,7 @@ export const SafetyFooter: React.FC = React.memo(() => {
             <MatrimonyHeartLogo size={28} className="w-7 h-7" color="#FF4A57" />
             <div>
               <span className="text-base font-bold text-white font-heading">
-                Sindhi<span className="text-[#FF4A57]">Matrimony</span>.com
+                Sindhi<span className="text-[#FF4A57]">marriage</span>.in
               </span>
               <p className="text-[11px] text-stone-400">
                 © {new Date().getFullYear()} Matrimony.com Group. All rights reserved.
@@ -36,7 +36,7 @@ export const SafetyFooter: React.FC = React.memo(() => {
         </div>
 
         <div className="text-[11px] text-stone-500 leading-relaxed max-w-4xl">
-          SindhiMatrimony.com complies with the Information Technology Act, 2000, and operates under strict intermediary guidelines. We urge all members to never transfer money to prospective matches, verify references independently, and immediately report suspicious profiles to our Trust &amp; Safety Officers.
+          Sindhimarriage.in complies with the Information Technology Act, 2000, and operates under strict intermediary guidelines. We urge all members to never transfer money to prospective matches, verify references independently, and immediately report suspicious profiles to our Trust &amp; Safety Officers.
         </div>
       </div>
     </footer>

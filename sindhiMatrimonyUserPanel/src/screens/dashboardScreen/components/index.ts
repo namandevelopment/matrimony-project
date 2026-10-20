@@ -2,6 +2,7 @@ export * from "./DashboardHeader";
 export * from "./DashboardNav";
 export * from "./ProfileDropdown";
 export * from "./DashboardModeSwitcher";
+export * from "./DashboardSubHeader";
 export * from "./DashboardSidebar";
 export * from "./DashboardProfileCard";
 export * from "./ProfileCompletenessCard";

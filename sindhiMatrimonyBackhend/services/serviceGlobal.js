@@ -8,7 +8,8 @@ export const buildSearchQuery = (keyWord = "", searchFields = []) => {
   if (!keyWord || !Array.isArray(searchFields) || searchFields.length === 0) {
     return null;
   }
-  const regex = new RegExp(keyWord, "i");
+  const escapedKeyword = String(keyWord).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(escapedKeyword, "i");
   const orConditions = searchFields.map((field) => ({
     [field]: { $regex: regex },
   }));

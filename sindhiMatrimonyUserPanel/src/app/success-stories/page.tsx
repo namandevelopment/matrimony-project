@@ -6,9 +6,9 @@ import { HappyMarriagesSection } from "@/screens/dashboardScreen/components/Happ
 import { createMetadata } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "Success Stories | SindhiMatrimony.com",
+  title: "Success Stories | Sindhimarriage.in",
   description:
-    "Real marriage stories and testimonials from couples who found their soulmate through SindhiMatrimony.com.",
+    "Real marriage stories and testimonials from couples who found their soulmate through Sindhimarriage.in.",
   canonicalPath: "/success-stories",
 });
 
@@ -47,7 +47,7 @@ export default function SuccessStoriesPage() {
             Sindhi Matrimony Success Stories
           </h1>
           <p className="mt-2 text-stone-600 text-sm sm:text-base">
-            Read inspiring true love stories of couples who began their forever journey right here on SindhiMatrimony.com.
+            Read inspiring true love stories of couples who began their forever journey right here on Sindhimarriage.in.
           </p>
         </div>
 

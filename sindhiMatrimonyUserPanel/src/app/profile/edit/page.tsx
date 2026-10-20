@@ -8,7 +8,7 @@ import {
 } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "Edit Profile | SindhiMatrimony.com",
+  title: "Edit Profile | Sindhimarriage.in",
   description:
     "Update your Sindhi Matrimony profile details, upload photos, manage caste, gothra, education, lifestyle and horoscope preferences.",
   canonicalPath: "/profile/edit",
@@ -45,7 +45,7 @@ function EditProfileSkeleton() {
 
 export default function EditProfilePage() {
   const webPageSchema = generateWebPageSchema({
-    title: "Edit Profile | SindhiMatrimony.com",
+    title: "Edit Profile | Sindhimarriage.in",
     description:
       "Update your Sindhi Matrimony profile details, upload photos, manage caste, gothra, education, lifestyle and horoscope preferences.",
     path: "/profile/edit",
@@ -56,7 +56,9 @@ export default function EditProfilePage() {
   return (
     <>
       <JsonLd data={webPageSchema} />
-      <EditProfileScreen initialSection="basic_info" />
+      <Suspense fallback={<EditProfileSkeleton />}>
+        <EditProfileScreen initialSection="basic_info" />
+      </Suspense>
     </>
   );
 }

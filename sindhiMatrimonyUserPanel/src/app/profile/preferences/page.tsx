@@ -4,7 +4,7 @@ import { EditProfileScreen } from "@/screens/editProfileScreen";
 import { createMetadata } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "Partner Preferences | SindhiMatrimony.com",
+  title: "Partner Preferences | Sindhimarriage.in",
   description: "Set your partner preferences for age, height, education, caste, and location.",
   canonicalPath: "/profile/preferences",
 });

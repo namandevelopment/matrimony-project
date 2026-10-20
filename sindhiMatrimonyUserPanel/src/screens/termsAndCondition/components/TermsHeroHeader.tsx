@@ -21,7 +21,7 @@ export const TermsHeroHeader: React.FC<TermsHeroHeaderProps> = ({ meta }) => {
               Terms and Conditions &amp; Service Agreement
             </h1>
             <p className="mt-3 text-stone-600 text-sm sm:text-base leading-relaxed">
-              Please read this User Agreement carefully before registering on SindhiMatrimony.com. These terms govern your membership, code of conduct, privacy safeguards, and use of our matrimonial matchmaking platform.
+              Please read this User Agreement carefully before registering on Sindhimarriage.in. These terms govern your membership, code of conduct, privacy safeguards, and use of our matrimonial matchmaking platform.
             </p>
 
             {/* Meta details & Trust factors */}

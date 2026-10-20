@@ -8,7 +8,7 @@ import {
 } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "Messages & Chats – Connect with Matches | SindhiMatrimony.com",
+  title: "Messages & Chats – Connect with Matches | Sindhimarriage.in",
   description:
     "Communicate directly with compatible Sindhi prospects and Matrimony experts. Read messages, send responses, and find your life partner.",
   canonicalPath: "/messages",
@@ -36,7 +36,7 @@ function MessagesSkeleton() {
 
 export default function MessagesPage() {
   const webPageSchema = generateWebPageSchema({
-    title: "Messages | SindhiMatrimony.com",
+    title: "Messages | Sindhimarriage.in",
     description: "Communicate directly with prospective matches and matrimony counselors.",
     path: "/messages",
     datePublished: "2026-01-01",

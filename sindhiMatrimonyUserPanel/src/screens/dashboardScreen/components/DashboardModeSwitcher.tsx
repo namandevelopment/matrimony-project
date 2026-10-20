@@ -6,18 +6,22 @@ import type { DashboardMode } from "../types";
 export interface DashboardModeSwitcherProps {
   currentMode: DashboardMode;
   onModeChange: (mode: DashboardMode) => void;
+  hideLine?: boolean;
   className?: string;
 }
 
 const DashboardModeSwitcherComponent: React.FC<DashboardModeSwitcherProps> = ({
   currentMode,
   onModeChange,
+  hideLine = false,
   className = "",
 }) => {
   return (
-    <div className={`relative w-full py-4 flex items-center justify-center ${className}`}>
+    <div className={`relative w-full ${hideLine ? "py-1" : "py-4"} flex items-center justify-center ${className}`}>
       {/* Background horizontal line */}
-      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1px] bg-stone-200" />
+      {!hideLine && (
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1px] bg-stone-200" />
+      )}
 
       {/* Center Pill Switcher */}
       <div className="relative z-10 inline-flex items-center bg-white p-1 rounded-full border border-stone-200 shadow-xs">

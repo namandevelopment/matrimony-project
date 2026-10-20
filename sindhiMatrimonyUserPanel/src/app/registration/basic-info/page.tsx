@@ -9,7 +9,7 @@ import {
 } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "Basic Details (Step 1/4) | SindhiMatrimony.com",
+  title: "Basic Details (Step 1/4) | Sindhimarriage.in",
   description:
     "Enter your date of birth, mother tongue, email, and password to complete Step 1 of your SindhiMatrimony registration.",
   canonicalPath: "/registration/basic-info",
@@ -51,7 +51,7 @@ function RegistrationBasicInfoSkeleton() {
 
 export default function RegistrationBasicInfoPage() {
   const webPageSchema = generateWebPageSchema({
-    title: "Basic Details (Step 1/4) | SindhiMatrimony.com",
+    title: "Basic Details (Step 1/4) | Sindhimarriage.in",
     description:
       "Enter your date of birth, mother tongue, email, and password to complete Step 1 of your SindhiMatrimony registration.",
     path: "/registration/basic-info",

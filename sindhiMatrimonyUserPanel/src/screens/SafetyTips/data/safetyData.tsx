@@ -25,7 +25,7 @@ export const SAFETY_META: SafetyMetaInfo = {
   effectiveDate: "January 1, 2026",
   targetAudience: "Brides, Grooms, Parents & Guardians",
   helplineNumber: "1930 (National Cyber Crime) / 1800-419-6287",
-  trustEmail: "safety@sindhimatrimony.com",
+  trustEmail: "safety@sindhimarriage.in",
 };
 
 export const SAFETY_QUICK_RULES: readonly QuickRule[] = [
@@ -342,7 +342,7 @@ export const SAFETY_FAQS: readonly SafetyFAQ[] = [
   {
     question: "What should I do if a match asks me for money or financial help?",
     answer:
-      "Never send money under any circumstances, regardless of the emergency claimed (medical, customs clearance, travel fees, or business loss). Decline immediately, take screenshots of the conversation, block the profile, and report the member using our 'Report Profile' button or email safety@sindhimatrimony.com.",
+      "Never send money under any circumstances, regardless of the emergency claimed (medical, customs clearance, travel fees, or business loss). Decline immediately, take screenshots of the conversation, block the profile, and report the member using our 'Report Profile' button or email safety@sindhimarriage.in.",
   },
   {
     question: "How does SindhiMatrimony ensure the safety of member profiles?",
@@ -362,7 +362,7 @@ export const SAFETY_FAQS: readonly SafetyFAQ[] = [
   {
     question: "Where can I report matrimonial cyber fraud in India?",
     answer:
-      "You can file a formal complaint on the Government of India's National Cyber Crime Reporting Portal at cybercrime.gov.in or call the National Cyber Crime Toll-Free Helpline at 1930. You should also report the profile to safety@sindhimatrimony.com.",
+      "You can file a formal complaint on the Government of India's National Cyber Crime Reporting Portal at cybercrime.gov.in or call the National Cyber Crime Toll-Free Helpline at 1930. You should also report the profile to safety@sindhimarriage.in.",
   },
   {
     question: "How can I protect my photographs and contact number on the platform?",
@@ -382,10 +382,10 @@ export const EMERGENCY_CONTACTS: readonly EmergencyContact[] = [
   },
   {
     title: "SindhiMatrimony Trust & Safety",
-    numberOrEmail: "safety@sindhimatrimony.com",
+    numberOrEmail: "safety@sindhimarriage.in",
     description: "Dedicated escalation desk for immediate profile investigation and fraud prevention.",
     badge: "Official Team",
-    actionUrl: "mailto:safety@sindhimatrimony.com",
+    actionUrl: "mailto:safety@sindhimarriage.in",
     actionLabel: "Email Safety Team",
   },
   {

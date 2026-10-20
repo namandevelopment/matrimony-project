@@ -66,14 +66,14 @@ const OtpTrustFooterComponent: React.FC = () => {
             </Link>
             <span>•</span>
             <a
-              href="mailto:support@sindhimatrimony.com"
+              href="mailto:support@sindhimarriage.in"
               className="text-stone-600 hover:text-[#DB2F3C] hover:underline"
             >
-              support@sindhimatrimony.com
+              support@sindhimarriage.in
             </a>
           </p>
           <p className="text-[11px] text-stone-400">
-            © {new Date().getFullYear()} SindhiMatrimony.com. All rights reserved. Powered by NeelimaMarriage.com
+            © {new Date().getFullYear()} Sindhimarriage.in. All rights reserved. Powered by NeelimaMarriage.com
           </p>
         </div>
       </div>

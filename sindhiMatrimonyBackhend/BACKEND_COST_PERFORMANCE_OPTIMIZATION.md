@@ -705,9 +705,9 @@ sudo systemctl enable --now redis-server
 
 ### Production Nginx Reverse Proxy Config:
 ```nginx
-# /etc/nginx/sites-available/api.sindhimatrimony.com
+# /etc/nginx/sites-available/api.sindhimarriage.in
 server {
-    server_name api.sindhimatrimony.com;
+    server_name api.sindhimarriage.in;
 
     # Gzip settings for non-binary content
     gzip on;

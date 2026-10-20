@@ -4,7 +4,7 @@ import { HoroscopeScreen } from "@/screens/horoscopeScreen";
 import { createMetadata } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "View & Edit Horoscope | SindhiMatrimony.com",
+  title: "View & Edit Horoscope | Sindhimarriage.in",
   description: "View and edit your horoscope, birth details, Raasi, Nakshatra, and Kundali chart.",
   canonicalPath: "/profile/horoscope",
 });

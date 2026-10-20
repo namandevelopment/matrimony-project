@@ -13,6 +13,7 @@ export const optionalString = (min = 1, max = 255) =>
 // Email Validation
 export const emailValidation = () =>
   Joi.string().trim().email().required().messages({
+    "string.empty": "Email is required.",
     "string.email": INVALID_EMAIL,
     "any.required": "Email is required.",
   });
@@ -29,6 +30,7 @@ export const phoneValidation = () =>
     .pattern(INDIAN_PHONE_REGEX)
     .required()
     .messages({
+      "string.empty": "Phone number is required.",
       "string.pattern.base": INVALID_PHONE,
       "any.required": "Phone number is required.",
     });

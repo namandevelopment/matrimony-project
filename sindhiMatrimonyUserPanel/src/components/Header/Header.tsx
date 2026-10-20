@@ -102,7 +102,7 @@ const HeaderComponent: React.FC<HeaderProps> = ({
             </div>
             <div className="flex flex-col">
               <span className="text-lg sm:text-[22px] font-bold tracking-tight text-[#1A1A1A] leading-tight font-heading">
-                Sindhi<span className="text-[#DB2F3C]">Matrimony</span>.com
+                Sindhi<span className="text-[#DB2F3C]">marriage</span>.in
               </span>
               <span className="text-[10px] sm:text-[11px] text-[#666666] font-normal tracking-wide">
                 {subtitle}

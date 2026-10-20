@@ -8,7 +8,7 @@ const FooterComponent: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
         <div className="flex items-center gap-2">
           <MatrimonyHeartLogo size={24} className="w-6 h-6" color="#FF4A57" />
-          <p>© {new Date().getFullYear()} SindhiMatrimony.com. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Sindhimarriage.in. All rights reserved.</p>
         </div>
         <div className="flex flex-wrap justify-center gap-5 text-stone-300">
           <Link href="/privacy-policy" className="hover:text-white transition-colors">

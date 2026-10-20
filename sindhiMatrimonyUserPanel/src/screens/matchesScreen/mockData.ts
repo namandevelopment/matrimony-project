@@ -24,6 +24,8 @@ export const initialMatchesList: MatchDetailProfile[] = [
     whatsappNumber: "+91 77 8901 2345",
     isShortlisted: false,
     interestSent: false,
+    caste: "Brahmin - Kanyakubja",
+    motherTongue: "Hindi",
   },
   {
     id: "match-1",
@@ -47,6 +49,8 @@ export const initialMatchesList: MatchDetailProfile[] = [
     whatsappNumber: "+91 98765 43210",
     isShortlisted: false,
     interestSent: false,
+    caste: "Brahmin - Saraswat",
+    motherTongue: "Bengali / Hindi",
   },
   {
     id: "match-2",
@@ -70,6 +74,8 @@ export const initialMatchesList: MatchDetailProfile[] = [
     whatsappNumber: "+91 98234 56789",
     isShortlisted: false,
     interestSent: false,
+    caste: "Brahmin - Maithil",
+    motherTongue: "Hindi",
   },
   {
     id: "match-3",
@@ -93,6 +99,8 @@ export const initialMatchesList: MatchDetailProfile[] = [
     whatsappNumber: "+91 98111 22334",
     isShortlisted: false,
     interestSent: false,
+    caste: "Brahmin - Gaur",
+    motherTongue: "Bhojpuri / Hindi",
   },
   {
     id: "match-4",
@@ -116,6 +124,8 @@ export const initialMatchesList: MatchDetailProfile[] = [
     whatsappNumber: "+91 97654 32100",
     isShortlisted: false,
     interestSent: false,
+    caste: "Brahmin - Sakaldwipi",
+    motherTongue: "Hindi",
   },
   {
     id: "match-5",
@@ -125,7 +135,7 @@ export const initialMatchesList: MatchDetailProfile[] = [
     height: "4'6\"",
     education: "B.Arch",
     profession: "Executive",
-    city: "Karnataka",
+    city: "Bengaluru",
     state: "Karnataka",
     lastSeen: "Last seen few weeks ago",
     isNewlyJoined: false,
@@ -139,6 +149,8 @@ export const initialMatchesList: MatchDetailProfile[] = [
     whatsappNumber: "+91 99887 76655",
     isShortlisted: false,
     interestSent: false,
+    caste: "Brahmin - Hoysala Karnataka",
+    motherTongue: "Kannada / Hindi",
   },
   {
     id: "match-6",
@@ -162,6 +174,8 @@ export const initialMatchesList: MatchDetailProfile[] = [
     whatsappNumber: "+91 98450 12345",
     isShortlisted: false,
     interestSent: false,
+    caste: "Brahmin - Utkal",
+    motherTongue: "Odia / Hindi",
   },
   {
     id: "match-7",
@@ -186,6 +200,8 @@ export const initialMatchesList: MatchDetailProfile[] = [
     whatsappNumber: "+91 98200 11223",
     isShortlisted: true,
     interestSent: true,
+    caste: "Sindhi - Amil",
+    motherTongue: "Sindhi / Hindi",
   },
   {
     id: "match-8",
@@ -209,6 +225,8 @@ export const initialMatchesList: MatchDetailProfile[] = [
     whatsappNumber: "+91 97123 45678",
     isShortlisted: false,
     interestSent: false,
+    caste: "Sindhi - Bhaibhand",
+    motherTongue: "Sindhi / Gujarati",
   },
   {
     id: "match-9",
@@ -233,6 +251,8 @@ export const initialMatchesList: MatchDetailProfile[] = [
     whatsappNumber: "+91 98670 99887",
     isShortlisted: false,
     interestSent: false,
+    caste: "Sindhi - Sahiti",
+    motherTongue: "Sindhi / English",
   },
   {
     id: "match-10",
@@ -256,6 +276,8 @@ export const initialMatchesList: MatchDetailProfile[] = [
     whatsappNumber: "+91 98101 23456",
     isShortlisted: false,
     interestSent: false,
+    caste: "Sindhi - Larkana",
+    motherTongue: "Hindi / Sindhi",
   },
   {
     id: "match-11",
@@ -279,6 +301,8 @@ export const initialMatchesList: MatchDetailProfile[] = [
     whatsappNumber: "+91 99001 88776",
     isShortlisted: true,
     interestSent: false,
+    caste: "Sindhi - Amil",
+    motherTongue: "Sindhi / English",
   },
   {
     id: "match-12",
@@ -288,7 +312,7 @@ export const initialMatchesList: MatchDetailProfile[] = [
     height: "5'5\"",
     education: "M.S. Computer Science",
     profession: "Frontend Engineer",
-    city: "Varanasi / Kashi",
+    city: "Varanasi",
     state: "Uttar Pradesh",
     lastSeen: "Last seen few days ago",
     isNewlyJoined: true,
@@ -302,6 +326,8 @@ export const initialMatchesList: MatchDetailProfile[] = [
     whatsappNumber: "+91 98712 34567",
     isShortlisted: false,
     interestSent: false,
+    caste: "Brahmin - Kanyakubja",
+    motherTongue: "Hindi",
   },
 ];
 

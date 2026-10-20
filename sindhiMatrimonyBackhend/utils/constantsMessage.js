@@ -3,14 +3,20 @@ export const SUCCESS = "SUCCESS";
 export const SUCCESS_MSG = "Success.";
 export const FAILED = "FAILURE";
 export const FAILED_MSG =
-  "We're sorry for the inconvenience! There was an issue processing your request.";
+  "There was an issue processing your request. Please check your input and try again.";
 export const SERVER_ERROR =
-  "Oops! Something went wrong on our end. Please try again in a few moments.";
+  "An internal server error occurred while processing your request. Please try again.";
 export const TOO_MANY_ATTEMPTS = "Too many requests. Please try again after some time.";
 export const DATA_NOT_FOUND = "Requested data not found.";
+export const RECORD_FOUND = "Data retrieved successfully.";
+export const USER_NOT_FOUND = "User account not found with the provided details.";
+export const PROFILE_NOT_FOUND = "Candidate profile not found.";
 export const MISSING_FIELDS = "Missing required fields.";
 export const INVALID_SIGNATURE = "Invalid security signature.";
 export const UNAUTHORIZED_ACCESS = "You are not authorized to perform this action.";
+export const ACCESS_DENIED = "You do not have permission to access this resource.";
+export const DUPLICATE_CANDIDATE = "A candidate with identical details (Name, DOB, Gender, Subcaste) is already registered.";
+export const MAX_PROFILE_LIMIT_REACHED = "Maximum profile limit reached. You cannot create more profiles under this account.";
 export const MAINTENANCE_ACTIVE = "The system is currently undergoing scheduled maintenance. Please check back shortly.";
 
 // File & Media Messages
@@ -47,6 +53,7 @@ export const LEAD_CONVERTED = "Lead successfully converted to verified member.";
 // Matrimonial Profile & Onboarding Messages
 export const PROFILE_FETCH_SUCCESS = "Profile fetched successfully.";
 export const PROFILE_SAVED = "Profile details saved successfully.";
+export const PROFILE_UPDATED = "Profile updated successfully.";
 export const ONBOARDING_STEP_SAVED = "Onboarding step saved successfully.";
 export const PHOTO_UPLOADED = "Profile photo uploaded successfully.";
 export const PHOTO_DELETED = "Profile photo deleted successfully.";

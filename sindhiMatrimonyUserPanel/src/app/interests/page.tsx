@@ -8,7 +8,7 @@ import {
 } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "Pending Interests – Sindhi Matrimony Mailbox | SindhiMatrimony.com",
+  title: "Pending Interests – Sindhi Matrimony Mailbox | Sindhimarriage.in",
   description:
     "Manage your received and sent matrimony interest requests. Accept, reply, or decline prospective matches on SindhiMatrimony.",
   canonicalPath: "/interests",
@@ -36,7 +36,7 @@ function InterestsSkeleton() {
 
 export default function InterestsPage() {
   const webPageSchema = generateWebPageSchema({
-    title: "Interests Mailbox | SindhiMatrimony.com",
+    title: "Interests Mailbox | Sindhimarriage.in",
     description: "Manage your received and sent matrimony interest requests.",
     path: "/interests",
     datePublished: "2026-01-01",

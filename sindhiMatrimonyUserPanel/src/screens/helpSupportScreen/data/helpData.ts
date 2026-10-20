@@ -35,10 +35,10 @@ export const SUPPORT_CHANNELS: SupportChannel[] = [
     id: "email-desk",
     title: "Email Support Desk",
     subtitle: "Detailed account queries, billing receipts & document submission",
-    value: "support@sindhimatrimony.com",
-    displayValue: "support@sindhimatrimony.com",
+    value: "support@sindhimarriage.in",
+    displayValue: "support@sindhimarriage.in",
     actionLabel: "Send Email",
-    actionHref: "mailto:support@sindhimatrimony.com?subject=Support%20Request%20-%20SindhiMatrimony",
+    actionHref: "mailto:support@sindhimarriage.in?subject=Support%20Request%20-%20SindhiMatrimony",
     timing: "Guaranteed reply within 4 hours",
     badge: "Official Desk",
     iconType: "mail",
@@ -47,10 +47,10 @@ export const SUPPORT_CHANNELS: SupportChannel[] = [
     id: "grievance-desk",
     title: "Grievance & Trust Officer",
     subtitle: "Statutory escalation under IT Rules 2021 & DPDP Act 2023",
-    value: "grievance@sindhimatrimony.com",
-    displayValue: "grievance@sindhimatrimony.com",
+    value: "grievance@sindhimarriage.in",
+    displayValue: "grievance@sindhimarriage.in",
     actionLabel: "Contact Officer",
-    actionHref: "mailto:grievance@sindhimatrimony.com?subject=Grievance%20Escalation%20-%20SindhiMatrimony",
+    actionHref: "mailto:grievance@sindhimarriage.in?subject=Grievance%20Escalation%20-%20SindhiMatrimony",
     timing: "Resolution acknowledged within 24 hrs",
     badge: "Statutory",
     iconType: "shield",
@@ -315,7 +315,7 @@ export const HELP_GUIDELINES: HelpGuideline[] = [
         stepNumber: 4,
         title: "Report Suspicious Activity Immediately",
         description:
-          "Use the 'Report Profile' button on any profile or contact our Grievance Desk at support@sindhimatrimony.com. You can also dial the National Cyber Crime Helpline at 1930.",
+          "Use the 'Report Profile' button on any profile or contact our Grievance Desk at support@sindhimarriage.in. You can also dial the National Cyber Crime Helpline at 1930.",
       },
     ],
     tips: [
@@ -373,7 +373,7 @@ export const HELP_FAQS: HelpFAQ[] = [
     category: "safety-fraud",
     question: "What should I do if someone asks me for money or financial help?",
     answer:
-      "Never send money under any circumstances. Genuine matrimonial matches will never request financial transfers, crypto, or customs clearance fees. Immediately block the profile, take screenshots of the chat, and report it to us via the 'Report Profile' button or email support@sindhimatrimony.com.",
+      "Never send money under any circumstances. Genuine matrimonial matches will never request financial transfers, crypto, or customs clearance fees. Immediately block the profile, take screenshots of the chat, and report it to us via the 'Report Profile' button or email support@sindhimarriage.in.",
   },
   {
     id: "faq-8",
@@ -385,11 +385,11 @@ export const HELP_FAQS: HelpFAQ[] = [
 ];
 
 export const OFFICE_DETAILS = {
-  portalName: "SindhiMatrimony.com",
+  portalName: "Sindhimarriage.in",
   parentOrg: "Matrimony.com Group / NeelimaMarriage Network",
   tollFreeHelpline: "8144-77-88-66",
-  supportEmail: "support@sindhimatrimony.com",
-  grievanceEmail: "grievance@sindhimatrimony.com",
+  supportEmail: "support@sindhimarriage.in",
+  grievanceEmail: "grievance@sindhimarriage.in",
   operatingHours: "Monday to Sunday, 9:00 AM to 8:00 PM IST",
   grievanceOfficer: "Mr. Ramesh Advani (Chief Trust & Compliance Officer)",
   grievanceTimeline: "Acknowledgement within 24 hours; disposal within 15 days as per IT Rules 2021",

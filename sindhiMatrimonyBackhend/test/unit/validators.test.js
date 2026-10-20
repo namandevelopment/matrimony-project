@@ -1,4 +1,9 @@
-import { sendOtpSchema, registerUserSchema, checkPhoneSchema } from "../../validators/auth/users.js";
+import {
+  sendOtpSchema,
+  registerUserSchema,
+  checkPhoneSchema,
+  loginWithPasswordSchema,
+} from "../../validators/auth/users.js";
 import {
   basicProfileSchema,
   educationCareerSchema,
@@ -50,6 +55,7 @@ export async function runValidatorsUnitTests() {
     const payload = {
       phone: "9820123456",
       otp: "123456",
+      password: "Password123@",
       name: "Komal Motwani",
       gender: "female", // Lowercase input
       profileFor: "myself", // Lowercase input
@@ -190,6 +196,56 @@ export async function runValidatorsUnitTests() {
       throw new Error("Should have failed validation");
     } catch (err) {
       assert.includes(err.message, "step");
+    }
+  });
+
+  // 8. Candidate Login with Password Schema
+  suite.add("Valid Login Payload (phone + password) Passes & Normalizes Phone", async () => {
+    const payload = { phone: "9829012345", password: "Password123@" };
+    const validated = await loginWithPasswordSchema.validateAsync(payload);
+    assert.strictEqual(validated.phone, "9829012345");
+    assert.strictEqual(validated.password, "Password123@");
+  });
+
+  suite.add("Valid Login Payload with mobileNumber alias Passes", async () => {
+    const payload = { mobileNumber: "9829012345", password: "Password123@" };
+    const validated = await loginWithPasswordSchema.validateAsync(payload);
+    assert.strictEqual(validated.phone, "9829012345");
+  });
+
+  suite.add("Valid Login Payload with identifier alias and +91 formatted string Sanitizes to 10 digits", async () => {
+    const payload = { identifier: "+91 98290 12345", password: "Password123@" };
+    const validated = await loginWithPasswordSchema.validateAsync(payload);
+    assert.strictEqual(validated.phone, "9829012345");
+  });
+
+  suite.add("Login Payload with Missing Password Fails with Descriptive Error", async () => {
+    const payload = { phone: "9829012345" };
+    try {
+      await loginWithPasswordSchema.validateAsync(payload);
+      throw new Error("Should have failed validation");
+    } catch (err) {
+      assert.isTrue(err.message.includes("Password is required"), "Error must mention password required");
+    }
+  });
+
+  suite.add("Login Payload with Invalid Short Phone Fails with 10-digit Validation Error", async () => {
+    const payload = { phone: "98290", password: "Password123@" };
+    try {
+      await loginWithPasswordSchema.validateAsync(payload);
+      throw new Error("Should have failed validation");
+    } catch (err) {
+      assert.isTrue(err.message.includes("valid 10-digit mobile number"), "Error must mention 10-digit number");
+    }
+  });
+
+  suite.add("Login Payload with Missing Mobile Number Fails", async () => {
+    const payload = { password: "Password123@" };
+    try {
+      await loginWithPasswordSchema.validateAsync(payload);
+      throw new Error("Should have failed validation");
+    } catch (err) {
+      assert.isTrue(err.message.includes("Mobile number is required"), "Error must mention mobile number required");
     }
   });
 

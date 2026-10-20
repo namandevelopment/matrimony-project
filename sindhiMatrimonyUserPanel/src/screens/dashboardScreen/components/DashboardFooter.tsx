@@ -29,7 +29,7 @@ const DashboardFooterComponent: React.FC<DashboardFooterProps> = ({
               </h4>
             </div>
             <p className="text-xs text-[#555555] leading-relaxed pr-2">
-              SindhiMatrimony.com is part of CommunityMatrimony which has over 200+
+              Sindhimarriage.in is part of CommunityMatrimony which has over 200+
               Indian community portals offering online matrimony services. Register
               with us for FREE to find a partner from your own community. Take
               advantage of our user friendly search features to find a bride or groom

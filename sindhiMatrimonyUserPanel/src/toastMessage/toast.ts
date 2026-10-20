@@ -9,9 +9,18 @@
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 export interface ToastOptions {
+  type?: ToastType;
+  message?: string;
   duration?: number;
   title?: string;
+  position?: 'top' | 'bottom' | 'top-right' | 'bottom-right';
+  text1?: string;
+  text2?: string;
+  text?: string;
+  msg?: string;
+  error?: string;
   onClose?: () => void;
+  onPress?: () => void;
 }
 
 const ICONS: Record<ToastType, string> = {
@@ -24,8 +33,8 @@ const ICONS: Record<ToastType, string> = {
   error: `
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="10"></circle>
-      <line x1="15" y1="9" x2="9" y2="15"></line>
-      <line x1="9" y1="9" x2="15" y2="15"></line>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
     </svg>
   `,
   warning: `
@@ -72,7 +81,7 @@ const ACCENTS: Record<ToastType, { bg: string; border: string; bar: string; icon
 };
 
 const CLOSE_ICON = `
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
     <line x1="18" y1="6" x2="6" y2="18"></line>
     <line x1="6" y1="6" x2="18" y2="18"></line>
   </svg>
@@ -103,6 +112,24 @@ const getOrCreateContainer = (): HTMLElement | null => {
   return container;
 };
 
+let isToastActive = false;
+
+export const isAnyToastActive = (): boolean => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return false;
+  }
+  const container = document.getElementById('web-toast-container');
+  const hasVisibleDomToast = Boolean(container && container.children.length > 0);
+
+  if (!hasVisibleDomToast) {
+    (window as any).__IS_TOAST_ACTIVE__ = false;
+    isToastActive = false;
+    return false;
+  }
+
+  return Boolean((window as any).__IS_TOAST_ACTIVE__ || isToastActive || hasVisibleDomToast);
+};
+
 const showBrowserToast = (
   message: string,
   type: ToastType = 'info',
@@ -121,77 +148,130 @@ const showBrowserToast = (
   const container = getOrCreateContainer();
   if (!container) return;
 
+  // Single active toast guard: Do not allow another toast while one is already active
+  if (isAnyToastActive()) {
+    return;
+  }
+  isToastActive = true;
+  if (typeof window !== 'undefined') {
+    (window as any).__IS_TOAST_ACTIVE__ = true;
+  }
+
   const accent = ACCENTS[type] || ACCENTS.info;
   const iconSvg = ICONS[type] || ICONS.info;
 
   const toastCard = document.createElement('div');
   toastCard.style.cssText = `
-    position: relative;
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 14px 16px;
-    background: ${accent.bg};
-    border: 1px solid ${accent.border};
-    border-radius: 14px;
-    box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    pointer-events: auto;
-    cursor: pointer;
-    overflow: hidden;
-    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
-    transform: translateX(120%);
-    opacity: 0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    position: relative !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    padding: 14px 16px !important;
+    background: ${accent.bg} !important;
+    border: 1px solid ${accent.border} !important;
+    border-radius: 14px !important;
+    box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    overflow: hidden !important;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease !important;
+    transform: translateX(120%) !important;
+    opacity: 0 !important;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    box-sizing: border-box !important;
   `;
 
-  toastCard.innerHTML = `
-    <div style="
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      border-radius: 10px;
-      background: ${accent.iconBg};
-      flex-shrink: 0;
-      margin-top: 1px;
-    ">
-      ${iconSvg}
-    </div>
-    <div style="flex: 1; min-width: 0; padding-right: 4px;">
-      ${title ? `<div style="font-size: 13px; font-weight: 600; color: #1E293B; margin-bottom: 2px;">${title}</div>` : ''}
-      <div style="font-size: 13.5px; line-height: 1.45; font-weight: 500; color: #334155; word-break: break-word;">
-        ${message}
-      </div>
-    </div>
-    <button type="button" aria-label="Close" style="
-      background: transparent;
-      border: none;
-      padding: 4px;
-      margin: -2px -4px 0 0;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 6px;
-      transition: background 0.15s ease;
-    ">
-      ${CLOSE_ICON}
-    </button>
-    <div style="
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      height: 3px;
-      background: ${accent.bar};
-      width: 100%;
-      transform-origin: left;
-      transition: transform ${duration}ms linear;
-    "></div>
+  // Left Icon
+  const iconWrapper = document.createElement('div');
+  iconWrapper.style.cssText = `
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 10px !important;
+    background: ${accent.iconBg} !important;
+    flex-shrink: 0 !important;
+    margin-top: 1px !important;
+  `;
+  iconWrapper.innerHTML = iconSvg;
+
+  // Middle Text Content
+  const contentWrapper = document.createElement('div');
+  contentWrapper.style.cssText = `
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    padding-right: 8px !important;
+    display: flex !important;
+    flex-direction: column !important;
   `;
 
-  const closeBtn = toastCard.querySelector('button');
-  const progressBar = toastCard.querySelector('div:last-child') as HTMLElement;
+  if (title) {
+    const titleEl = document.createElement('div');
+    titleEl.style.cssText = `
+      font-size: 13px !important;
+      font-weight: 600 !important;
+      color: #0F172A !important;
+      margin-bottom: 2px !important;
+      line-height: 1.3 !important;
+    `;
+    titleEl.textContent = title;
+    contentWrapper.appendChild(titleEl);
+  }
+
+  const messageEl = document.createElement('div');
+  messageEl.style.cssText = `
+    font-size: 13.5px !important;
+    line-height: 1.45 !important;
+    font-weight: 500 !important;
+    color: #1E293B !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  `;
+  messageEl.textContent = message;
+  contentWrapper.appendChild(messageEl);
+
+  // Right Close Button
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.setAttribute('aria-label', 'Close');
+  closeBtn.style.cssText = `
+    background: transparent !important;
+    border: none !important;
+    padding: 6px !important;
+    margin-left: auto !important;
+    align-self: flex-start !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    color: #94A3B8 !important;
+    flex-shrink: 0 !important;
+    transition: background 0.15s ease, color 0.15s ease !important;
+  `;
+  closeBtn.innerHTML = CLOSE_ICON;
+
+  // Bottom Progress Bar
+  const progressBar = document.createElement('div');
+  progressBar.style.cssText = `
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    height: 3px !important;
+    background: ${accent.bar} !important;
+    width: 100% !important;
+    transform-origin: left !important;
+    transition: transform ${duration}ms linear !important;
+  `;
+
+  toastCard.appendChild(iconWrapper);
+  toastCard.appendChild(contentWrapper);
+  toastCard.appendChild(closeBtn);
+  toastCard.appendChild(progressBar);
 
   let isDismissed = false;
   let dismissTimeout: NodeJS.Timeout | null = null;
@@ -209,6 +289,10 @@ const showBrowserToast = (
       if (toastCard.parentNode) {
         toastCard.parentNode.removeChild(toastCard);
       }
+      isToastActive = false;
+      if (typeof window !== 'undefined') {
+        (window as any).__IS_TOAST_ACTIVE__ = false;
+      }
       if (onCloseCallback) {
         try {
           onCloseCallback();
@@ -225,9 +309,11 @@ const showBrowserToast = (
     });
     closeBtn.addEventListener('mouseenter', () => {
       closeBtn.style.background = '#F1F5F9';
+      closeBtn.style.color = '#1E293B';
     });
     closeBtn.addEventListener('mouseleave', () => {
       closeBtn.style.background = 'transparent';
+      closeBtn.style.color = '#94A3B8';
     });
   }
 
@@ -263,15 +349,119 @@ const showBrowserToast = (
   dismissTimeout = setTimeout(dismiss, duration);
 };
 
+export const hideToast = (): void => {
+  isToastActive = false;
+  if (typeof window !== 'undefined') {
+    (window as any).__IS_TOAST_ACTIVE__ = false;
+  }
+  if (typeof document === 'undefined') return;
+  const container = document.getElementById('web-toast-container');
+  if (container) {
+    container.innerHTML = '';
+  }
+};
+
+let lastToastKey = '';
+let lastToastTimestamp = 0;
+
+export const showToast = (
+  optionsOrMessage: ToastOptions | string,
+  typeFallback: ToastType = 'info'
+): void => {
+  // Single active toast guard: If another toast is already visible on screen, do not allow a new one
+  if (isAnyToastActive()) {
+    return;
+  }
+
+  let message = '';
+  let title = '';
+  let type: ToastType = typeFallback;
+  let duration: number | undefined;
+  let onClose: (() => void) | undefined;
+  let onPress: (() => void) | undefined;
+
+  if (typeof optionsOrMessage === 'string') {
+    message = optionsOrMessage.trim();
+    type = typeFallback;
+  } else if (optionsOrMessage && typeof optionsOrMessage === 'object') {
+    const opts = optionsOrMessage as any;
+    message = (
+      opts.message ||
+      opts.text2 ||
+      opts.text ||
+      opts.msg ||
+      (typeof opts.error === 'string' ? opts.error : '') ||
+      opts.text1 ||
+      ''
+    ).toString().trim();
+
+    title = (opts.title || (opts.text1 && opts.text2 ? opts.text1 : '') || '').toString().trim();
+    type = opts.type || typeFallback;
+    duration = opts.duration;
+    onClose = opts.onClose;
+    onPress = opts.onPress;
+  }
+
+  // Guarantee non-empty message for error toasts
+  if (!message) {
+    if (title) {
+      message = title;
+      title = '';
+    } else if (type === 'error') {
+      message = 'An unexpected error occurred. Please try again.';
+    } else {
+      return;
+    }
+  }
+
+  // Anti-duplicate spam prevention within 600ms
+  const now = Date.now();
+  const currentKey = `${type}:${message}:${title}`;
+  if (currentKey === lastToastKey && now - lastToastTimestamp < 600) {
+    return;
+  }
+  lastToastKey = currentKey;
+  lastToastTimestamp = now;
+
+  showBrowserToast(message, type, {
+    duration: duration || (type === 'error' ? 3500 : 2500),
+    title: title || undefined,
+    onClose,
+    onPress,
+  });
+};
+
 export const toast = {
-  error: (message: string, options?: ToastOptions | number): void =>
-    showBrowserToast(message, 'error', options),
-  success: (message: string, options?: ToastOptions | number): void =>
-    showBrowserToast(message, 'success', options),
-  info: (message: string, options?: ToastOptions | number): void =>
-    showBrowserToast(message, 'info', options),
-  warning: (message: string, options?: ToastOptions | number): void =>
-    showBrowserToast(message, 'warning', options),
+  show: (config: ToastOptions) => showToast(config),
+  error: (message: string, options?: Partial<ToastOptions> | number): void => {
+    if (typeof options === 'number') {
+      showToast({ message, type: 'error', duration: options });
+    } else {
+      showToast({ message, type: 'error', duration: 3500, ...options });
+    }
+  },
+  success: (message: string, options?: Partial<ToastOptions> | number): void => {
+    if (typeof options === 'number') {
+      showToast({ message, type: 'success', duration: options });
+    } else {
+      showToast({ message, type: 'success', duration: 2500, ...options });
+    }
+  },
+  info: (message: string, options?: Partial<ToastOptions> | number): void => {
+    if (typeof options === 'number') {
+      showToast({ message, type: 'info', duration: options });
+    } else {
+      showToast({ message, type: 'info', duration: 2500, ...options });
+    }
+  },
+  warning: (message: string, options?: Partial<ToastOptions> | number): void => {
+    if (typeof options === 'number') {
+      showToast({ message, type: 'warning', duration: options });
+    } else {
+      showToast({ message, type: 'warning', duration: 3000, ...options });
+    }
+  },
+  hide: hideToast,
 };
 
 export default toast;

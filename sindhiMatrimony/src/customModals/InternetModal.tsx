@@ -1,15 +1,22 @@
 import React, { memo } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Modal from 'react-native-modal';
 import COLORS from '../components/colors';
 import fontFamily from '../components/fontFamily';
 
 interface InternetModalProps {
   visible: boolean;
+  loading?: boolean;
   onRetry?: () => void;
+  onDismiss?: () => void;
 }
 
-const InternetModal: React.FC<InternetModalProps> = memo(({ visible, onRetry }) => {
+const InternetModal: React.FC<InternetModalProps> = memo(({
+  visible,
+  loading = false,
+  onRetry,
+  onDismiss,
+}) => {
   return (
     <Modal
       isVisible={visible}
@@ -20,8 +27,7 @@ const InternetModal: React.FC<InternetModalProps> = memo(({ visible, onRetry }) 
       useNativeDriver={true}
       hideModalContentWhileAnimating
       avoidKeyboard
-      statusBarTranslucent
-      onBackdropPress={() => undefined}
+      onBackdropPress={onDismiss ?? (() => undefined)}
       style={styles.modal}
     >
       <View style={styles.container}>
@@ -37,11 +43,29 @@ const InternetModal: React.FC<InternetModalProps> = memo(({ visible, onRetry }) 
 
         <TouchableOpacity
           activeOpacity={0.9}
-          style={styles.retryButton}
+          style={[styles.retryButton, loading && styles.retryButtonDisabled]}
           onPress={onRetry ?? (() => undefined)}
+          disabled={loading}
         >
-          <Text style={styles.retryText}>Retry</Text>
+          {loading ? (
+            <View style={styles.loadingRow}>
+              <ActivityIndicator size="small" color={COLORS.white} />
+              <Text style={styles.retryText}>Checking...</Text>
+            </View>
+          ) : (
+            <Text style={styles.retryText}>Retry</Text>
+          )}
         </TouchableOpacity>
+
+        {onDismiss && (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={styles.dismissButton}
+            onPress={onDismiss}
+          >
+            <Text style={styles.dismissText}>Dismiss</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </Modal>
   );
@@ -111,10 +135,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  retryButtonDisabled: {
+    opacity: 0.7,
+  },
+  loadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
   retryText: {
     color: COLORS.white,
     fontSize: 15,
     fontFamily: fontFamily.Inter18SemiBold,
+  },
+  dismissButton: {
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  dismissText: {
+    color: '#737373',
+    fontSize: 14,
+    fontFamily: fontFamily.Inter18Medium,
   },
 });
 

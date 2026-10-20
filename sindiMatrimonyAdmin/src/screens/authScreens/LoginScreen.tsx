@@ -37,7 +37,7 @@ export const LoginScreen: React.FC = () => {
     validateForm,
   } = useInputs<LoginFormValues>(
     {
-      email: 'admin@sindhimatrimony.com',
+      email: 'admin@sindhimarriage.in',
       password: 'Admin@1234',
       rememberMe: true,
       mfaCode: '',
@@ -208,7 +208,7 @@ export const LoginScreen: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setValues({
-                    email: 'admin@sindhimatrimony.com',
+                    email: 'admin@sindhimarriage.in',
                     password: 'Admin@1234',
                     isCaptchaVerified: true,
                     mfaStep: false,
@@ -225,7 +225,7 @@ export const LoginScreen: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setValues({
-                    email: 'amit.b@sindhimatrimony.com',
+                    email: 'amit.b@sindhimarriage.in',
                     password: 'Admin@1234',
                     isCaptchaVerified: true,
                     mfaStep: false,
@@ -242,7 +242,7 @@ export const LoginScreen: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setValues({
-                    email: 'priya.s@sindhimatrimony.com',
+                    email: 'priya.s@sindhimarriage.in',
                     password: 'Admin@1234',
                     isCaptchaVerified: true,
                     mfaStep: false,
@@ -259,7 +259,7 @@ export const LoginScreen: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setValues({
-                    email: 'meena.a@sindhimatrimony.com',
+                    email: 'meena.a@sindhimarriage.in',
                     password: 'Admin@1234',
                     isCaptchaVerified: true,
                     mfaStep: false,

@@ -22,6 +22,8 @@ import LoginHelp from '../../components/LoginHelp';
 import { clientPhoneNumber } from '../../utils/ClientData';
 import { displayLocalNotification, processPendingNotificationRedirect } from '../../firebase';
 import { Storage } from '../../storage/Storage';
+import { apiPost, ApiURL, setToken, setRefreshToken } from '../../redux/apiService';
+import { toast } from '../../toastMessage/toast';
 
 const LoginWithPassword = ({ navigation }: any) => {
   const [inputs, setInputs] = useState({
@@ -47,13 +49,14 @@ const LoginWithPassword = ({ navigation }: any) => {
     [errors],
   );
 
-  const handleLogin = useCallback(() => {
+  const handleLogin = useCallback(async () => {
     Keyboard.dismiss();
     let valid = true;
     const newErrors = { identifier: '', password: '' };
 
-    if (!inputs.identifier.trim()) {
-      newErrors.identifier = 'Please enter Mobile No / Email ID / Matri ID';
+    const trimmedIdentifier = inputs.identifier.trim();
+    if (!trimmedIdentifier) {
+      newErrors.identifier = 'Please enter Mobile No.';
       valid = false;
     }
     if (!inputs.password.trim()) {
@@ -65,23 +68,55 @@ const LoginWithPassword = ({ navigation }: any) => {
     if (!valid) return;
 
     setIsLoading(true);
-    setTimeout(() => {
+
+    try {
+      const response = await apiPost(ApiURL.login, {
+        phone: trimmedIdentifier,
+        password: inputs.password,
+        clientPlatform: 'MOBILE',
+      });
+
       setIsLoading(false);
+
+      if (response.error || !response.data) {
+        const errorMsg = response.message || 'Login failed. Please check your credentials.';
+        setErrors(prev => ({ ...prev, password: errorMsg }));
+        toast.error(errorMsg);
+        return;
+      }
+
+      const { token, refreshToken, user } = response.data;
+
+      // Save tokens & user context synchronously to high-performance MMKV storage
+      if (token) setToken(token);
+      if (refreshToken) setRefreshToken(refreshToken);
+      if (user) Storage.setItemSync('user', user);
+
+      // Display rich local welcome notification
       displayLocalNotification({
         title: '🎉 Welcome Back!',
-        body: `Hello ${inputs.identifier}, you have logged in successfully to Sindhi Matrimony.`,
+        body: `Hello ${user?.phone || trimmedIdentifier}, you have logged in successfully to Sindhi Matrimony.`,
         type: 'LOGIN_SUCCESS',
-        data: { identifier: inputs.identifier },
+        data: { identifier: trimmedIdentifier, profileId: user?.activeProfileId || user?.id },
       });
-      Storage.setItemSync('token', 'session_active');
+
+      toast.success(response.message || 'Logged in successfully!');
+
+      // Navigate smoothly to main tabs
       navigation.reset({
         index: 0,
         routes: [{ name: 'BottomTab' }],
       });
+
       setTimeout(() => {
         processPendingNotificationRedirect();
       }, 200);
-    }, 200);
+    } catch (err: any) {
+      setIsLoading(false);
+      const errMsg = err?.message || 'Network error. Please try again.';
+      setErrors(prev => ({ ...prev, password: errMsg }));
+      toast.error(errMsg);
+    }
   }, [inputs, navigation]);
 
   const handleLoginWithOTP = useCallback(() => {
@@ -121,8 +156,8 @@ const LoginWithPassword = ({ navigation }: any) => {
         >
           <CustomTextInput
             leftIcon="user"
-            label={`Mobile No./ Email-Id`}
-            placeholder="Mobile No / E-Mail ID / Matri Id"
+            label={`Mobile No.`}
+            placeholder="Enter Mobile No."
             value={inputs.identifier}
             onChangeText={text => handleInputChange('identifier', text)}
             error={errors.identifier}
@@ -173,7 +208,7 @@ const LoginWithPassword = ({ navigation }: any) => {
             </TouchableOpacity>
           </View>
         </ScrollView>
-        <LoginHelp  phoneNumber={clientPhoneNumber} />
+        <LoginHelp phoneNumber={clientPhoneNumber} />
       </View>
     </View>
   );

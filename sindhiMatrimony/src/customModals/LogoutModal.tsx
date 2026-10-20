@@ -69,7 +69,6 @@ export const LogoutModal: React.FC<LogoutModalProps> = memo(({
       backdropTransitionOutTiming={0}
       onBackdropPress={isLoading ? undefined : onClose}
       onBackButtonPress={isLoading ? undefined : onClose}
-      statusBarTranslucent
       useNativeDriver
       useNativeDriverForBackdrop
       style={styles.modal}

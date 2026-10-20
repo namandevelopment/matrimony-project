@@ -8,9 +8,9 @@ import {
 } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "Privacy Policy | SindhiMatrimony.com - Data Protection & Confidentiality",
+  title: "Privacy Policy | Sindhimarriage.in - Data Protection & Confidentiality",
   description:
-    "Learn how SindhiMatrimony.com (Matrimony.com Group) protects your personal data, photos, horoscope, and contact information under the DPDP Act 2023. Granular privacy controls and 256-bit encryption.",
+    "Learn how Sindhimarriage.in (Matrimony.com Group) protects your personal data, photos, horoscope, and contact information under the DPDP Act 2023. Granular privacy controls and 256-bit encryption.",
   canonicalPath: "/privacy-policy",
   keywords: [
     "Sindhi Matrimony Privacy Policy",
@@ -26,9 +26,9 @@ export const metadata: Metadata = createMetadata({
 
 export default function PrivacyPolicyPage() {
   const webPageSchema = generateWebPageSchema({
-    title: "Privacy Policy & Personal Data Protection | SindhiMatrimony.com",
+    title: "Privacy Policy & Personal Data Protection | Sindhimarriage.in",
     description:
-      "Official Privacy Policy and Data Protection guidelines for SindhiMatrimony.com, outlining user privacy controls, data retention, and DPDP Act 2023 adherence.",
+      "Official Privacy Policy and Data Protection guidelines for Sindhimarriage.in, outlining user privacy controls, data retention, and DPDP Act 2023 adherence.",
     path: "/privacy-policy",
     datePublished: "2026-01-01",
     dateModified: "2026-10-14",

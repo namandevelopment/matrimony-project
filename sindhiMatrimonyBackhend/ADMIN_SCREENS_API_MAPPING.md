@@ -1,8 +1,8 @@
 # 🛡️ Admin Portal — Screen-by-Screen API Mapping
 ## Har Screen Pe Konsi APIs Lagengi, Data Kaise Aayega, Kya Manage Hoga
 
-> **Admin URL Base:** `https://admin.sindhimatrimony.com`  
-> **API Base:** `https://api.sindhimatrimony.com/api/v1`  
+> **Admin URL Base:** `https://admin.sindhimarriage.in`  
+> **API Base:** `https://api.sindhimarriage.in/api/v1`  
 > **Auth Header:** `Authorization: Bearer <employeeAccessToken>`  
 > **Role Check:** Har API pe backend independently role + permission verify karta hai
 

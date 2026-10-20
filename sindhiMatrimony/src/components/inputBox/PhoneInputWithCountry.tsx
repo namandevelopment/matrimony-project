@@ -58,55 +58,56 @@ const PhoneInputWithCountry = forwardRef<TextInput, PhoneInputWithCountryProps>(
     useImperativeHandle(ref, () => textInputRef.current as TextInput);
 
     return (
-        <View style={styles.wrapper}>
-          <View
-            style={[
-              styles.inputContainer,
-              error
-                ? styles.inputContainerError
-                : isFocused
+      <View style={styles.wrapper}>
+        <View
+          style={[
+            styles.inputContainer,
+            error
+              ? styles.inputContainerError
+              : isFocused
                 ? styles.inputContainerFocused
                 : styles.inputContainerDefault,
-            ]}
+          ]}
+        >
+          <TouchableOpacity
+            disabled={true}
+            style={styles.countryCode}
+            // onPress={onCountryPress}
+            activeOpacity={0.6}
+            accessibilityLabel="Select country code"
           >
-            <TouchableOpacity
-              style={styles.countryCode}
-              onPress={onCountryPress}
-              activeOpacity={0.6}
-              accessibilityLabel="Select country code"
-            >
-              <Text style={styles.flagText}>{selectedCountry.flag}</Text>
-              <Text style={styles.codeText}>{selectedCountry.dialCode}</Text>
-              <CustomLucidIcons
-                name="chevron-down"
-                color={COLORS.black}
-                style={styles.dropdownIcon}
-              />
-            </TouchableOpacity>
-
-            <View style={styles.divider} />
-
-            <TextInput
-              ref={textInputRef}
-              style={styles.phoneInput}
-              placeholder={placeholder}
-              placeholderTextColor="#999"
-              keyboardType="phone-pad"
-              value={value}
-              onChangeText={onChangeText}
-              maxLength={maxLength}
-              returnKeyType={returnKeyType}
-              onSubmitEditing={onSubmitEditing}
-              editable={!disabled}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              accessibilityLabel="Mobile number input"
-              accessibilityHint="Enter your mobile number"
+            <Text style={styles.flagText}>{selectedCountry.flag}</Text>
+            <Text style={styles.codeText}>{selectedCountry.dialCode}</Text>
+            <CustomLucidIcons
+              name="chevron-down"
+              color={COLORS.black}
+              style={styles.dropdownIcon}
             />
-          </View>
+          </TouchableOpacity>
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          <View style={styles.divider} />
+
+          <TextInput
+            ref={textInputRef}
+            style={styles.phoneInput}
+            placeholder={placeholder}
+            placeholderTextColor="#999"
+            keyboardType="phone-pad"
+            value={value}
+            onChangeText={onChangeText}
+            maxLength={maxLength}
+            returnKeyType={returnKeyType}
+            onSubmitEditing={onSubmitEditing}
+            editable={!disabled}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            accessibilityLabel="Mobile number input"
+            accessibilityHint="Enter your mobile number"
+          />
         </View>
+
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      </View>
     );
   },
 );
@@ -160,7 +161,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
   },
   phoneInput: {
-    flex: 1,height:50,
+    flex: 1, height: 50,
     fontSize: 14,
     color: COLORS.black,
     fontFamily: fontFamily.Inter18Regular,

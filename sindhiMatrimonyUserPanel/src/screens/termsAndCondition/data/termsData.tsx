@@ -25,7 +25,7 @@ export const TERMS_SECTIONS: readonly TermsSection[] = [
     content: (
       <div className="space-y-4">
         <p className="text-stone-700 leading-relaxed">
-          Welcome to <strong>SindhiMatrimony.com</strong> (&quot;Platform&quot;, &quot;Website&quot;, &quot;App&quot;), an exclusive matrimonial matchmaking service owned and operated by <strong>Matrimony.com Group</strong> (&quot;Company&quot;, &quot;We&quot;, &quot;Us&quot;, &quot;Our&quot;).
+          Welcome to <strong>Sindhimarriage.in</strong> (&quot;Platform&quot;, &quot;Website&quot;, &quot;App&quot;), an exclusive matrimonial matchmaking service owned and operated by <strong>Matrimony.com Group</strong> (&quot;Company&quot;, &quot;We&quot;, &quot;Us&quot;, &quot;Our&quot;).
         </p>
         <p className="text-stone-700 leading-relaxed">
           By accessing, browsing, registering on, or using this Platform, you (&quot;User&quot;, &quot;Member&quot;, &quot;You&quot;) unconditionally agree to be bound by these <strong>Terms &amp; Conditions</strong>, together with our <strong>Privacy Policy</strong>, <strong>Safety Guidelines</strong>, and <strong>Community Standards</strong>. If you do not agree with any provision of this Agreement, you must immediately cease accessing or using our services.
@@ -104,7 +104,7 @@ export const TERMS_SECTIONS: readonly TermsSection[] = [
             <strong>3. Credential Confidentiality:</strong> You are strictly responsible for maintaining the confidentiality of your login credentials (password, mobile OTP). Any activity conducted through your authenticated account is presumed to be authorized by you.
           </p>
           <p>
-            <strong>4. Prompt Notification:</strong> You must immediately report any suspected unauthorized access, security breach, or compromised account to <code>security@sindhimatrimony.com</code>.
+            <strong>4. Prompt Notification:</strong> You must immediately report any suspected unauthorized access, security breach, or compromised account to <code>security@sindhimarriage.in</code>.
           </p>
         </div>
       </div>
@@ -274,7 +274,7 @@ export const TERMS_SECTIONS: readonly TermsSection[] = [
     content: (
       <div className="space-y-3 text-stone-700 text-sm">
         <p className="leading-relaxed">
-          All text, logos, trademarks, design assets, algorithms, database layouts, and audio-visual graphics on SindhiMatrimony.com are the exclusive intellectual property of Matrimony.com Group and are protected under Indian and International Copyright and Trademark Treaties.
+          All text, logos, trademarks, design assets, algorithms, database layouts, and audio-visual graphics on Sindhimarriage.in are the exclusive intellectual property of Matrimony.com Group and are protected under Indian and International Copyright and Trademark Treaties.
         </p>
         <p className="leading-relaxed">
           You are granted a limited, personal, non-exclusive, non-transferable license to access the portal solely for personal matchmaking. You shall not scrape, crawl, reverse engineer, index via automated bots, copy, or redistribute any member profile or platform content without prior written authorization.
@@ -297,14 +297,14 @@ export const TERMS_SECTIONS: readonly TermsSection[] = [
             <div className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Designated Officer</div>
             <div className="font-bold text-stone-900 text-base">Mr. Rajiv Advani</div>
             <div className="text-xs text-stone-600">Chief Grievance Officer &amp; Compliance Head</div>
-            <div className="text-xs text-stone-600">SindhiMatrimony.com / Matrimony.com Group</div>
+            <div className="text-xs text-stone-600">Sindhimarriage.in / Matrimony.com Group</div>
           </div>
           <div className="space-y-2">
             <div className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Contact Coordinates</div>
             <div className="flex items-center gap-2 text-stone-700 text-xs sm:text-sm">
               <Mail className="w-4 h-4 text-[#DB2F3C]" />
-              <a href="mailto:grievance@sindhimatrimony.com" className="text-[#DB2F3C] hover:underline font-medium">
-                grievance@sindhimatrimony.com
+              <a href="mailto:grievance@sindhimarriage.in" className="text-[#DB2F3C] hover:underline font-medium">
+                grievance@sindhimarriage.in
               </a>
             </div>
             <div className="flex items-center gap-2 text-stone-700 text-xs sm:text-sm">

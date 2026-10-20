@@ -23,18 +23,20 @@ export const validationMiddleware = (schema) => async (req, res, next) => {
       return next();
     } catch (error) {
       const errorMap = error?.details?.reduce((acc, detail) => {
-        const fieldName = detail.context.label || detail.path[0];
+        const fieldName = (detail.path && detail.path.length > 0)
+          ? detail.path.join(".")
+          : (detail.context?.label || detail.context?.key || "field");
         const errorMessage = detail.message.replace(/"/g, "");
         acc[fieldName] = errorMessage;
         return acc;
-      }, {});
-      const validationError = Object.values(errorMap).join(", ");
+      }, {}) || {};
+      const validationError = Object.values(errorMap).join(", ") || error.message || "Validation failed";
       return apiHTTPResponse(
         req,
         res,
         CONSTANTS.HTTP_UNPROCESSABLE_ENTITY,
         validationError,
-        CONSTANTS.DATA_NULL,
+        { errors: errorMap, details: error?.details },
         CONSTANTS.UNPROCESSABLE_ENTITY,
         CONSTANTS.ERROR_TRUE
       );

@@ -10,11 +10,18 @@
 ### 4. Copy the "token" from response and paste it into @authToken below.
 ### ============================================================================
 
-@baseUrl = http://localhost:5000/api/v1
-@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.your_token_here
-@profileId = 67b34a12c8e312a0f9000001
+### Base URLs:
+### 1. Local Development (Port 5001)
+@baseUrl = http://localhost:5001/api/v1
+### 2. Vercel Live Production
+### @baseUrl = https://sindhi-matrimony-backend.vercel.app/api/v1
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhZDVkOTM5MDBlYWRmZTEwMzljNDc3MiIsInVzZXJJZCI6IjZhZDVkOTM5MDBlYWRmZTEwMzljNDc3MiIsInBob25lIjoiOTgyOTAxMjM0NSIsInJvbGUiOjEsImFjdGl2ZVByb2ZpbGVJZCI6IjZhZDVkOTM5MDBlYWRmZTEwMzljNDc3MyIsImlhdCI6MTc5MjM5OTY3MywiZXhwIjoxNzkyNTcyNDczfQ.uqdroCRSqq0klUPfP55elbHIo4OKxId-xtVzomdCV1I
+@profileId = 6ad467f1c77f327e52a82dfc
 @grantId = 67b34a12c8e312a0f9000002
 @photoId = 67b34a12c8e312a0f9000003
+@candidateId = 67b34a12c8e312a0f9000004
+@interestId = 67b34a12c8e312a0f9000005
+@conversationId = 67b34a12c8e312a0f9000006
 
 ### ============================================================================
 ### 1. SYSTEM & HEALTH CHECK
@@ -28,17 +35,8 @@ Content-Type: application/json
 ### 2. AUTHENTICATION & REGISTRATION MODULE
 ### ============================================================================
 
-### 2.1 Send OTP (Login Purpose)
-POST {{baseUrl}}/auth/send-otp
-Content-Type: application/json
-
-{
-  "phone": "9876543210",
-  "countryCode": "+91",
-  "purpose": "LOGIN"
-}
-
-### 2.2 Send OTP (Register Purpose)
+### 2.1 Send OTP (Registration Only)
+### Note: OTP is sent strictly during registration. Login uses Mobile + Password!
 POST {{baseUrl}}/auth/send-otp
 Content-Type: application/json
 
@@ -48,25 +46,15 @@ Content-Type: application/json
   "purpose": "REGISTER"
 }
 
-### 2.3 Verify OTP & Login (Returns JWT Token & Active Profile Context)
-### Note: In development mode (NODE_ENV=development), OTP "123456" is always accepted!
-POST {{baseUrl}}/auth/verify-otp
-Content-Type: application/json
-
-{
-  "phone": "9876543210",
-  "otp": "123456",
-  "countryCode": "+91",
-  "clientPlatform": "WEB"
-}
-
-### 2.4 Quick Registration (New User + Profile + Partner Preference Creation)
+### 2.2 Complete Registration (Phone + OTP + Password + Profile Initialization)
+### Note: In development mode (NODE_ENV=development), Master OTP "123456" is always accepted!
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
   "phone": "9829012345",
   "otp": "123456",
+  "password": "Password123@",
   "name": "Rohan Advani",
   "gender": "MALE",
   "profileFor": "MYSELF",
@@ -84,26 +72,66 @@ Content-Type: application/json
   "nativePlace": "Ajmer"
 }
 
-### 2.5 Resend OTP
+### 2.3 Candidate Login (Mobile Number + Password)
+### Returns ultra-fast lightweight payload: JWT tokens (token + refreshToken) and user context (id, phone, role, status, activeProfileId).
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "phone": "9829012345",
+  "password": "Password123@"
+}
+
+### 2.3.1 Candidate Login with Mobile Alias & Formatted Phone Number (+91)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "identifier": "+91 98290 12345",
+  "password": "Password123@",
+  "clientPlatform": "MOBILE"
+}
+
+### 2.4 Forgot Password (Send OTP to Registered Mobile Number)
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "phone": "9829012345",
+  "countryCode": "+91"
+}
+
+### 2.5 Reset Password (Verify OTP & Set New Password)
+POST {{baseUrl}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "phone": "9829012345",
+  "otp": "123456",
+  "newPassword": "NewSecretPassword123@",
+  "countryCode": "+91"
+}
+
+### 2.6 Resend Registration OTP
 POST {{baseUrl}}/auth/resend-otp
 Content-Type: application/json
 
 {
-  "phone": "9876543210",
+  "phone": "9829012345",
   "countryCode": "+91",
-  "purpose": "LOGIN"
+  "purpose": "REGISTER"
 }
 
-### 2.6 Instant Phone Number Check (For typing check on register screen)
+### 2.7 Instant Phone Number Check (For typing check on register screen)
 POST {{baseUrl}}/auth/check-phone
 Content-Type: application/json
 
 {
-  "phone": "9876543210",
+  "phone": "9829012345",
   "countryCode": "+91"
 }
 
-### 2.7 Logout (Blacklists JWT Token in Redis)
+### 2.8 Logout (Blacklists JWT Token in Redis)
 POST {{baseUrl}}/auth/logout
 Authorization: Bearer {{authToken}}
 Content-Type: application/json
@@ -192,12 +220,81 @@ Content-Type: application/json
 ### 4. CANDIDATE PROFILE MANAGEMENT MODULE
 ### ============================================================================
 
-### 4.1 Get My Complete Candidate Profile
-GET {{baseUrl}}/profile/me
+### 4.1 Get Profile (Single Unified API)
+### Case A: Khud Ka Data dekhna (Empty body `{}` - bina id ke)
+POST {{baseUrl}}/profile/getProfile
 Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
-### 4.2 Update Basic & Cultural Details (Subcaste, Gotra, Location, Height)
+{}
+
+### Case B: Dusre Candidate Ki Profile dekhna (Payload me `"id"` bhej kar)
+POST {{baseUrl}}/profile/getProfile
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "id": "{{profileId}}"
+}
+
+### ============================================================================
+### 4.2 Edit Profile (Single Unified API)
+### Ek hi API call me profile ke sabhi/kisi bhi details update karne ke liye:
+### Basic details, Education, Profession, Location, Family, Partner Preferences
+### ============================================================================
+POST {{baseUrl}}/profile/editProfile
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Simran Vaswani",
+  "aboutMe": "Sindhi professional looking for an educated and caring life partner.",
+  "gender": "FEMALE",
+  "dateOfBirth": 866332800000,
+  "height": 165,
+  "maritalStatus": "NEVER_MARRIED",
+  "subcaste": "Bhaiband",
+  "gotra": "Vaswani",
+  "motherGotra": "Advani",
+  "manglik": "NON_MANGLIK",
+  "education": {
+    "degree": "MBA",
+    "field": "Marketing",
+    "college": "IIM Ahmedabad"
+  },
+  "profession": {
+    "occupation": "Senior Product Manager",
+    "companyName": "Tech Corp",
+    "annualIncome": 2100000,
+    "currency": "INR"
+  },
+  "location": {
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "country": "India",
+    "nativePlace": "Ajmer"
+  },
+  "family": {
+    "familyType": "NUCLEAR",
+    "fatherOccupation": "Businessman",
+    "motherOccupation": "Homemaker"
+  },
+  "partnerPreference": {
+    "ageRange": { "min": 26, "max": 32 },
+    "heightRange": { "min": 160, "max": 185 },
+    "maritalStatus": ["NEVER_MARRIED"],
+    "subcastes": ["Bhaiband", "Amil", "Sahiti"],
+    "manglik": "NON_MANGLIK",
+    "education": "Graduate & Above",
+    "occupation": "Professional"
+  }
+}
+
+### ============================================================================
+### 4.3 Section-Wise Micro-Updates (Optional - Specific Section Ke Liye)
+### ============================================================================
+
+### 4.3.1 Update Basic & Cultural Details (Subcaste, Gotra, Location, Height)
 PUT {{baseUrl}}/profile/basic
 Authorization: Bearer {{authToken}}
 Content-Type: application/json
@@ -331,7 +428,122 @@ Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 ### ============================================================================
-### 5. DEV PERFORMANCE TRACKER & METRICS (DEV MODE ONLY)
+### 5. USER PANEL DASHBOARD MODULE (ULTRA-FAST SINGLE FLIGHT < 10MS)
+### ============================================================================
+
+### 5.1 Get Consolidated Dashboard Feed (Single Flight for complete Dashboard)
+### Returns: User summary, Profile completeness score (42%), 3 Action items,
+### All Matches (23) carousel, Daily Horoscope with Leo forecast, Viewed profiles,
+### Happy marriages success stories, and Paid member 71% OFF banner.
+GET {{baseUrl}}/dashboard
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 5.2 Get Consolidated Dashboard with Specific Moon Sign (?rashi=aries)
+GET {{baseUrl}}/dashboard?rashi=aries
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 5.3 Frontend Direct Alias (Home Feed: /feed/home)
+GET {{baseUrl}}/feed/home
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 5.4 Matches Discovery Carousel Feed (Recommendations matching partner preference)
+GET {{baseUrl}}/matches/recommendations?page=1&limit=10
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 5.5 Daily Vedic Horoscope Forecast (All 12 Rashis / Specific Rashi)
+GET {{baseUrl}}/dashboard/horoscope?rashi=leo
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 5.6 Save Preferred Moon Sign (Rashi) to Profile
+POST {{baseUrl}}/dashboard/horoscope/save-rashi
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "rashi": "leo"
+}
+
+### ============================================================================
+### 5.7 MOBILE HOMESCREEN API SUITE (SUB-15MS, REDIS CACHED & CRASH-LESS)
+### ============================================================================
+
+### 5.7.1 Consolidated Mobile Home Feed (Single Flight for all 12 HomeScreen sections)
+### Returns: Profile tab, Celebrating banner, Completeness (84%), Daily Recommendations with
+### countdown timer, All Matches (497), Silver Plan Offer (₹990), New Matches (17),
+### Assisted Service, Who Viewed You (10), Profiles You Viewed (27), Limca Record banner,
+### Success Stories carousel, and Customer Care/Wedding support.
+GET {{baseUrl}}/dashboard/mobile-home
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 5.7.2 Alternative Consolidated Route Alias (/dashboard/home-feed)
+GET {{baseUrl}}/dashboard/home-feed
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 5.7.3 Daily Recommendations Carousel Feed (with dynamic midnight countdown)
+GET {{baseUrl}}/dashboard/daily-recommendations
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 5.7.4 All Matches Paginated Feed (All 497 matches)
+GET {{baseUrl}}/dashboard/all-matches?page=1&limit=10
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 5.7.5 All Matches Feed with Subcaste & Age Filters
+GET {{baseUrl}}/dashboard/all-matches?caste=Bhaiband&minAge=22&maxAge=28&city=Jaipur
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 5.7.6 New Matches Feed (Newly joined within last 30 days)
+GET {{baseUrl}}/dashboard/new-matches?page=1&limit=10&maxDays=30
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 5.7.7 Who Viewed You Feed (Candidates who viewed current user's profile)
+GET {{baseUrl}}/dashboard/who-viewed-you?page=1&limit=10
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 5.7.8 Profiles You Viewed Feed (Candidate profiles current user has viewed)
+GET {{baseUrl}}/dashboard/profiles-you-viewed?page=1&limit=10
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 5.7.9 Track Profile View (Real-time atomic increment & Redis cache invalidation)
+POST {{baseUrl}}/dashboard/profile-views/track
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "viewedProfileId": "67b34a12c8e312a0f9000010",
+  "viewedUserId": "67b34a12c8e312a0f9000020"
+}
+
+### 5.7.10 Verified Wedding Success Stories Carousel
+GET {{baseUrl}}/dashboard/success-stories?page=1&limit=10
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 5.7.11 Promotional & Trust Banners (Celebrating 26 Years, Silver Plan, Assisted, Limca)
+GET {{baseUrl}}/dashboard/banners
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 5.7.12 Customer Support & Wedding Planning Platform Directory
+GET {{baseUrl}}/dashboard/support-info
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+
+### ============================================================================
+### 6. DEV PERFORMANCE TRACKER & METRICS (DEV MODE ONLY)
 ### ============================================================================
 
 ### 5.1 Fetch API Performance Metrics JSON
@@ -341,3 +553,357 @@ Content-Type: application/json
 ### 5.2 Reset Performance Metrics
 DELETE {{baseUrl}}/dev/metrics
 Content-Type: application/json
+
+### ============================================================================
+### 6. DISCOVERY & MATCHMAKING MODULE (HIGH PERFORMANCE / SUB-25MS)
+### ============================================================================
+
+### 6.1 Daily Smart Matchmaking Feed (Personalized Recommendations)
+GET {{baseUrl}}/matchmaking/feed?page=1&limit=20
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 6.2 Advanced Multi-Criteria Candidate Search
+POST {{baseUrl}}/matchmaking/search
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "subcaste": ["Bhaiband", "Amil"],
+  "gotraNot": ["Advani"],
+  "ageMin": 24,
+  "ageMax": 29,
+  "heightMin": 160,
+  "heightMax": 185,
+  "maritalStatus": ["NEVER_MARRIED"],
+  "manglik": ["NON_MANGLIK", "ANSHIK_MANGLIK"],
+  "annualIncomeMin": 1000000,
+  "city": ["Mumbai", "Pune", "Jaipur", "Dubai"],
+  "photoOnly": true,
+  "cursor": null,
+  "limit": 20
+}
+
+### 6.3 Homepage Quick Search Strip (Fast Landing Filter)
+GET {{baseUrl}}/matchmaking/quick-search?subcaste=Bhaiband&ageMin=23&ageMax=28&photoOnly=true
+Content-Type: application/json
+
+### 6.4 Who Viewed My Profile (Profile Visitors)
+GET {{baseUrl}}/matchmaking/viewed-my-profile
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 6.5 Shortlist / Bookmark Candidate Profile
+POST {{baseUrl}}/matchmaking/shortlist/{{candidateId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "action": "ADD"
+}
+
+### 6.6 Get My Shortlisted Candidates List
+GET {{baseUrl}}/matchmaking/shortlist?page=1&limit=20
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 6.7 Mutual Matches (Two-Way Compatibility)
+GET {{baseUrl}}/matchmaking/mutual-matches
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### ============================================================================
+### 7. CONNECT REQUESTS & INTERESTS MODULE (SUB-15MS ACTIONS)
+### ============================================================================
+
+### 7.1 Send Interest / Express Rishta Connect
+POST {{baseUrl}}/matchmaking/interests/send
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "receiverProfileId": "{{candidateId}}",
+  "personalizedNote": "Namaste, we really liked your profile. Would love to connect and discuss further."
+}
+
+### 7.2 Accept Interest (Unlocks Contact Permission)
+PUT {{baseUrl}}/matchmaking/interests/{{interestId}}/accept
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 7.3 Decline Interest
+PUT {{baseUrl}}/matchmaking/interests/{{interestId}}/decline
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 7.4 Get Received Interests (Pending / Accepted / Declined Tabs)
+GET {{baseUrl}}/matchmaking/interests/received?status=PENDING&page=1&limit=20
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 7.5 Get Sent Interests List & Tracking
+GET {{baseUrl}}/matchmaking/interests/sent?status=ALL&page=1&limit=20
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 7.6 Interests Pending Badge Counter (Sub-5ms for Navbar)
+GET {{baseUrl}}/matchmaking/interests/badge-count
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### ============================================================================
+### 8. SINDHI MASTER DATA & DROPDOWNS MODULE (LIVE - SUB-2MS / ETAG CACHED)
+### ============================================================================
+
+### 8.1 Selective Dropdowns via Query Params (?select=...)
+### Returns only the requested dropdown arrays, slashing network payload to <0.5 KB!
+GET {{baseUrl}}/master/dropdowns?select=subcastes,maritalStatuses,heights
+Content-Type: application/json
+
+### 8.2 Selective Dropdowns for Form Step 1: Basic & Habits
+GET {{baseUrl}}/master/dropdowns?select=maritalStatuses,heights,diets,habits,sampradayas
+Content-Type: application/json
+
+### 8.3 Selective Dropdowns for Form Step 2: Education & Career
+GET {{baseUrl}}/master/dropdowns?select=educationCategories,employmentSectors,popularOccupations,incomeSlabs
+Content-Type: application/json
+
+### 8.4 Selective Dropdown with Dependent Gotras (?select=gotras&subcaste=...)
+GET {{baseUrl}}/master/dropdowns?select=gotras&subcaste=Bhaiband&q=baj
+Content-Type: application/json
+
+### 8.5 Complete Master Dropdowns Bundle (Single call on App launch)
+GET {{baseUrl}}/master/dropdowns
+Content-Type: application/json
+
+### 8.6 Unified Bootstrap with ETag (Returns 304 Not Modified if unchanged)
+GET {{baseUrl}}/master/bootstrap
+If-None-Match: "4c357e37591f8a5813cbf9efbf3521d7"
+Content-Type: application/json
+
+### 8.3 Get All Sindhi Subcastes with Cultural Descriptions
+GET {{baseUrl}}/master/subcastes
+Content-Type: application/json
+
+### 8.4 Get Gotras & Nukh List (Filterable by subcaste & prefix search)
+GET {{baseUrl}}/master/gotras?subcaste=Bhaiband&q=baj
+Content-Type: application/json
+
+### 8.5 Smart Surname Lookup (Auto-detects Gotra and Subcaste for Advani)
+GET {{baseUrl}}/master/surnames/lookup?surname=Advani
+Content-Type: application/json
+
+### 8.6 Get Educational Qualifications, Occupations & Income Slabs
+GET {{baseUrl}}/master/occupations
+Content-Type: application/json
+
+### 8.7 Get Countries with Prominent Sindhi Diaspora
+GET {{baseUrl}}/master/locations/countries
+Content-Type: application/json
+
+### 8.8 Search Major Sindhi Cities & Hubs
+GET {{baseUrl}}/master/locations/cities?country=India&state=Maharashtra&search=Ulhas
+Content-Type: application/json
+
+### 8.9 Get Horoscope & Astrology Reference (12 Raas, 27 Nakshatras, Manglik)
+GET {{baseUrl}}/master/horoscope
+Content-Type: application/json
+
+### ============================================================================
+### 9. REAL-TIME CHAT & CONTACT VIEW MODULE
+### ============================================================================
+
+### 9.1 View / Unlock Candidate Verified Phone & WhatsApp (Deducts 1 Credit)
+POST {{baseUrl}}/members/view-contact/{{candidateId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 9.2 Check Remaining Contact View Credits
+GET {{baseUrl}}/profile/contact-credits
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 9.3 Check User Chat Quota Status (5 Free Trial Messages vs Paid Unlimited Plan)
+GET {{baseUrl}}/chat/quota-status
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 9.4 Get Active Chat Conversations List
+GET {{baseUrl}}/chat/conversations
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 9.5 Start or Open 1-on-1 Conversation with Candidate
+POST {{baseUrl}}/chat/conversations
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "recipientProfileId": "67b34a12c8e312a0f9000004"
+}
+
+### 9.6 Get Message History in Conversation (Cursor Pagination)
+GET {{baseUrl}}/chat/messages/{{conversationId}}?limit=30
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 9.7 Send Chat Message (Validates Trial Quota: Free user = 5 msgs max, Paid = Unlimited direct chat)
+POST {{baseUrl}}/chat/messages
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "conversationId": "{{conversationId}}",
+  "recipientProfileId": "67b34a12c8e312a0f9000004",
+  "text": "Jai Jhulelal! Glad to connect with your profile on Sindhi Matrimony.",
+  "messageType": "TEXT"
+}
+
+### 9.8 Mark Messages in Conversation as Read
+PUT {{baseUrl}}/chat/messages/read
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "conversationId": "{{conversationId}}"
+}
+
+### 9.9 Activate Membership Plan (Instantly unlocks Unlimited Chat)
+POST {{baseUrl}}/payments/activate
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "planId": "PLAN_GOLD_3_MONTHS",
+  "paymentOrderId": "order_test_123",
+  "paymentId": "pay_test_gold_plan"
+}
+
+### ============================================================================
+### 10. HOROSCOPE & GUNA MILAN MATCHING MODULE
+### ============================================================================
+
+### 10.1 Calculate 36 Guna Milan & Manglik Compatibility Score
+POST {{baseUrl}}/horoscope/guna-milan
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "partnerProfileId": "{{candidateId}}"
+}
+
+### 10.2 Get Candidate Kundli Planetary Chart & Astrological Details
+GET {{baseUrl}}/horoscope/chart/{{candidateId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### ============================================================================
+### 11. TRUST, SAFETY & IDENTITY VERIFICATION MODULE
+### ============================================================================
+
+### 11.1 Upload Government ID Proof for Blue Verification Badge
+POST {{baseUrl}}/verifications/id-proof
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "docType": "AADHAAR",
+  "docUrl": "https://storage.sindhimatrimony.com/verifications/sample_id_masked.jpg",
+  "idNumberMasked": "XXXX-XXXX-4589"
+}
+
+### 11.2 Report Suspicious / Fake Profile
+POST {{baseUrl}}/safety/report
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "reportedProfileId": "{{candidateId}}",
+  "reason": "FAKE_PROFILE",
+  "description": "Photos appear taken from public internet without consent."
+}
+
+### 11.3 Block Candidate (Immediate exclusion from feed & search)
+POST {{baseUrl}}/safety/block
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "blockedProfileId": "{{candidateId}}"
+}
+
+### 11.4 Get Blocked Candidates List
+GET {{baseUrl}}/safety/blocked-list
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### ============================================================================
+### 12. SUBSCRIPTION PLANS & PAYMENTS MODULE
+### ============================================================================
+
+### 12.1 List All Membership Plans (Silver, Gold, Diamond, VIP Assisted)
+GET {{baseUrl}}/plans
+Content-Type: application/json
+
+### 12.2 Create Payment Order (Razorpay / Cashfree)
+POST {{baseUrl}}/payments/create-order
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "planId": "PLAN_GOLD_3_MONTHS",
+  "currency": "INR"
+}
+
+### 12.3 Payment Gateway Webhook Handler (Test simulation)
+POST {{baseUrl}}/payments/webhook
+Content-Type: application/json
+x-razorpay-signature: test_simulated_signature_hash
+
+{
+  "event": "payment.captured",
+  "payload": {
+    "payment": {
+      "entity": {
+        "id": "pay_test_123456",
+        "order_id": "order_test_987654",
+        "amount": 299900,
+        "status": "captured"
+      }
+    }
+  }
+}
+
+### ============================================================================
+### 13. NOTIFICATIONS & PUSH ALERTS MODULE
+### ============================================================================
+
+### 13.1 Get In-App Notifications Feed
+GET {{baseUrl}}/notifications?page=1&limit=20
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 13.2 Get Unread Notification Badge Count (Sub-5ms)
+GET {{baseUrl}}/notifications/unread-count
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### 13.3 Mark Notifications as Read
+PUT {{baseUrl}}/notifications/mark-read
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "notificationId": "ALL"
+}
+
+### 13.4 Register Mobile Device Token for FCM / APNs Push
+POST {{baseUrl}}/notifications/fcm-token
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "token": "fcm_test_device_token_xyz_987654321",
+  "platform": "ANDROID"
+}
+

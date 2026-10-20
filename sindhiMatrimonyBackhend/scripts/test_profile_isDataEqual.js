@@ -48,8 +48,8 @@ async function runComprehensiveIsDataEqualTests() {
       nativePlace: "Sukkur",
     },
     photos: [
-      { url: "https://cdn.sindhimatrimony.com/photo1.jpg", isMain: true },
-      { url: "https://cdn.sindhimatrimony.com/photo2.jpg", isMain: false },
+      { url: "https://cdn.sindhimarriage.in/photo1.jpg", isMain: true },
+      { url: "https://cdn.sindhimarriage.in/photo2.jpg", isMain: false },
     ],
     updatedAt: 1729000000000,
     createdAt: 1728000000000,

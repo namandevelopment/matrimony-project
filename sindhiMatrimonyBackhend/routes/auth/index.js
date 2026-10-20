@@ -11,15 +11,22 @@ import {
 import {
   sendOtpSchema,
   registerUserSchema,
+  loginWithPasswordSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
   verifyOtpSchema,
   resendOtpSchema,
   checkPhoneSchema,
   createSecondaryProfileSchema,
   switchProfileSchema,
+  refreshTokenSchema,
 } from "../../validators/auth/users.js";
 import {
   sendOtp,
   register,
+  loginWithPassword,
+  forgotPassword,
+  resetPassword,
   verifyLoginOtp,
   resendOtp,
   checkPhoneExists,
@@ -27,6 +34,7 @@ import {
   createSecondaryProfile,
   getMyProfiles,
   switchActiveProfile,
+  refreshTokenHandler,
 } from "../../controllers/auth/users.js";
 
 const router = express.Router();
@@ -34,16 +42,26 @@ const router = express.Router();
 // 1. Nested User Routes: /api/v1/auth/users/...
 router.use("/users", userRoutes);
 
-// 2. Shorthand Routes directly matching Mobile App (sindhiMatrimony/src/redux/apiService/endpoint.ts):
-// e.g. /api/v1/auth/send-otp, /api/v1/auth/register, /api/v1/auth/verify-otp
+// 2. Candidate Authentication Routes:
+// Mobile + Password Login
+router.post("/login", authRateLimiter, validationMiddleware(loginWithPasswordSchema), loginWithPassword);
+
+// Registration strictly with OTP + Password
 router.post("/send-otp", otpRateLimiter, validationMiddleware(sendOtpSchema), sendOtp);
 router.post("/sendOtp", otpRateLimiter, validationMiddleware(sendOtpSchema), sendOtp); // Legacy camelCase support
 router.post("/register", registerRateLimiter, validationMiddleware(registerUserSchema), register);
+
+// Password Reset Flow (Forgot Password & Reset)
+router.post("/forgot-password", otpRateLimiter, validationMiddleware(forgotPasswordSchema), forgotPassword);
+router.post("/reset-password", authRateLimiter, validationMiddleware(resetPasswordSchema), resetPassword);
+
+// OTP Verification (Fallback / Phone verification)
 router.post("/verify-otp", authRateLimiter, validationMiddleware(verifyOtpSchema), verifyLoginOtp);
-router.post("/login", authRateLimiter, validationMiddleware(verifyOtpSchema), verifyLoginOtp);
 router.post("/resend-otp", otpRateLimiter, validationMiddleware(resendOtpSchema), resendOtp);
 router.post("/reSendOtp", otpRateLimiter, validationMiddleware(resendOtpSchema), resendOtp); // Legacy camelCase support
 router.post("/check-phone", validationMiddleware(checkPhoneSchema), checkPhoneExists);
+router.post("/refresh-token", validationMiddleware(refreshTokenSchema), refreshTokenHandler);
+router.post("/refreshToken", validationMiddleware(refreshTokenSchema), refreshTokenHandler);
 router.post("/logout", logout);
 router.post("/userLogout", logout); // Legacy camelCase support
 

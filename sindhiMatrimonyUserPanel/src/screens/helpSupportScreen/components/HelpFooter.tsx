@@ -11,7 +11,7 @@ export const HelpFooter: React.FC = memo(() => {
             <MatrimonyHeartLogo size={28} className="w-7 h-7" color="#FF4A57" />
             <div>
               <span className="text-base font-bold text-white font-heading">
-                Sindhi<span className="text-[#FF4A57]">Matrimony</span>.com
+                Sindhi<span className="text-[#FF4A57]">marriage</span>.in
               </span>
               <p className="text-[11px] text-stone-400">
                 © {new Date().getFullYear()} Matrimony.com Group. All rights reserved.
@@ -36,7 +36,7 @@ export const HelpFooter: React.FC = memo(() => {
         </div>
 
         <div className="text-[11px] text-stone-500 leading-relaxed max-w-4xl">
-          SindhiMatrimony.com provides 100% verified matrimonial matchmaking assistance to the global Sindhi diaspora. For immediate telephone support, reach our member desk at 8144-77-88-66 (9 AM – 8 PM IST).
+          Sindhimarriage.in provides 100% verified matrimonial matchmaking assistance to the global Sindhi diaspora. For immediate telephone support, reach our member desk at 8144-77-88-66 (9 AM – 8 PM IST).
         </div>
       </div>
     </footer>

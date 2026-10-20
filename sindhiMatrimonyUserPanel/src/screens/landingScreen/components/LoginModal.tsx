@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { X, Lock, Phone, AlertCircle, CheckCircle2 } from "lucide-react";
 import { MatrimonyHeartLogo } from "./Icons";
 import { CustomTextInput, CustomButton } from "@/components";
+import apiFetch, { apiPost, ApiURL, setToken, setRefreshToken, showToast } from "@/redux/apiService";
+import { Storage } from "@/storage/Storage";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -34,7 +36,7 @@ interface FormTouched {
 const validateIdentifier = (value: string): string | undefined => {
   const trimmed = value.trim();
   if (!trimmed) {
-    return "Please enter your Mobile Number, Matrimony ID, or Email";
+    return "Please enter your Mobile Number,";
   }
 
   // Case 1: Email Address (contains '@')
@@ -205,7 +207,7 @@ const LoginModalComponent: React.FC<LoginModalProps> = ({
       );
     } else {
       setForgotPasswordMsg(
-        "Please enter your Mobile Number or Matrimony ID above to receive reset instructions."
+        "Please enter your Mobile Number above to receive reset instructions."
       );
     }
   }, [form.identifier]);
@@ -213,6 +215,9 @@ const LoginModalComponent: React.FC<LoginModalProps> = ({
   // Form Submit Handler
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Prevent duplicate submissions / rapid clicking jitter
+    if (isLoading) return;
 
     // Mark all as touched
     setTouched({ identifier: true, password: true });
@@ -233,22 +238,64 @@ const LoginModalComponent: React.FC<LoginModalProps> = ({
       return;
     }
 
-    // Clear any previous errors
+    // Clear any field errors but preserve generalError while request is in flight
+    // so modal height does not collapse and expand repeatedly (causing vertical jerk)
     setErrors({});
-    setGeneralError(null);
     setIsLoading(true);
+    apiFetch<{
+      token: string;
+      refreshToken: string;
+      user: any;
+    }>({
+      url: ApiURL.login,
+      method: "POST",
+      data: {
+        phone: form.identifier.trim(),
+        password: form.password,
+        clientPlatform: "WEB",
+      },
+    })
+      .then((response) => {
+        setIsLoading(false);
 
-    // Simulated login API request
-    setTimeout(() => {
-      setIsLoading(false);
-      handleClose();
+        if (response.error || !response.data) {
+          const errMsg = response.message || "Invalid mobile number or password.";
+          setGeneralError(errMsg);
+          showToast({
+            type: "error",
+            message: errMsg,
+          });
+          return;
+        }
 
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        router.push("/dashboard");
-      }
-    }, 800);
+        const { token, refreshToken, user } = response.data;
+
+        if (token) setToken(token);
+        if (refreshToken) setRefreshToken(refreshToken);
+        if (user) Storage.setItemSync("user", user);
+
+        showToast({
+          type: "success",
+          message: response.message || "Logged in successfully!",
+        });
+
+        handleClose();
+
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push("/dashboard");
+        }
+      })
+      .catch((err) => {
+        setIsLoading(false);
+        const errMsg = err?.message || "Failed to connect to authentication server. Please try again.";
+        setGeneralError(errMsg);
+        showToast({
+          type: "error",
+          message: errMsg,
+        });
+      });
   };
 
   if (!isOpen) return null;
@@ -258,11 +305,11 @@ const LoginModalComponent: React.FC<LoginModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="login-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
       onClick={handleClose}
     >
       <div
-        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden transform transition-all animate-scale-up"
+        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header bar */}
@@ -289,7 +336,7 @@ const LoginModalComponent: React.FC<LoginModalProps> = ({
           {generalError && (
             <div
               role="alert"
-              className="p-3 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 animate-fade-in"
+              className="p-3 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2"
             >
               <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
               <span>{generalError}</span>
@@ -313,8 +360,8 @@ const LoginModalComponent: React.FC<LoginModalProps> = ({
             id="login-identifier"
             name="identifier"
             type="text"
-            label="Mobile Number / Matrimony ID"
-            placeholder="Enter Mobile Number or Matrimony ID"
+            label="Mobile Number "
+            placeholder="Enter Mobile Number"
             value={form.identifier}
             onChange={handleIdentifierChange}
             onBlur={handleIdentifierBlur}

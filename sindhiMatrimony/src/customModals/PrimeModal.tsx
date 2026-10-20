@@ -34,7 +34,7 @@ const PrimeModal: React.FC<PrimeModalProps> = memo(({
         backdropTransitionOutTiming={0}
         onBackdropPress={onClose}
         onBackButtonPress={onClose}
-        statusBarTranslucent
+
         useNativeDriver
         useNativeDriverForBackdrop
         style={styles.modal}

@@ -1,6 +1,9 @@
 # 🚀 Sindhi Matrimony – Unified Backend Service (`sindhiMatrimonyBackhend`)
 
 > **Platform Core:** Unified Node.js, Express 5, ESM (`"type": "module"`), Mongoose 8, Redis, BullMQ, and Socket.io.  
+> **Production Live URL (Vercel):** [https://sindhi-matrimony-backend.vercel.app](https://sindhi-matrimony-backend.vercel.app)  
+> **Production Health Check:** [https://sindhi-matrimony-backend.vercel.app/api/v1/health](https://sindhi-matrimony-backend.vercel.app/api/v1/health)  
+> **Local Dev Base URL:** `http://localhost:5001` (`/api/v1`)  
 > **Clients Served:**
 > - 🛡️ **Admin Portal (`sindiMatrimonyAdmin`):** React + Vite CRM & Operations Dashboard
 > - 💻 **User Web Portal (`sindhiMatrimonyUserPanel`):** Next.js Responsive Web App

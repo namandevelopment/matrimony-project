@@ -21,7 +21,7 @@ export const PrivacyHeroHeader: React.FC<PrivacyHeroHeaderProps> = ({ meta }) =>
               Privacy Policy &amp; Personal Data Protection
             </h1>
             <p className="mt-3 text-stone-600 text-sm sm:text-base leading-relaxed">
-              Your trust is sacred. Discover how SindhiMatrimony.com safeguards your profile, horoscope data, photos, and personal contact details with bank-grade encryption and granular privacy controls.
+              Your trust is sacred. Discover how Sindhimarriage.in safeguards your profile, horoscope data, photos, and personal contact details with bank-grade encryption and granular privacy controls.
             </p>
 
             {/* Trust Highlights */}

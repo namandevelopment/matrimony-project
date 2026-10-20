@@ -26,7 +26,7 @@ export const createMockAdminToken = (overrides = {}) => {
   const adminId = overrides._id || overrides.id || new mongoose.Types.ObjectId().toString();
   const payload = {
     id: adminId,
-    email: overrides.email || "superadmin@sindhimatrimony.com",
+    email: overrides.email || "superadmin@sindhimarriage.in",
     role: overrides.role || "SUPER_ADMIN",
     status: "ACTIVE",
     ...overrides,
@@ -154,6 +154,9 @@ export const assert = {
   },
   isNotNull(val, msg = "") {
     if (val === null || val === undefined) throw new Error(`${msg} Expected non-null value.`);
+  },
+  isUndefined(val, msg = "") {
+    if (val !== undefined) throw new Error(`${msg} Expected undefined, but received ${JSON.stringify(val)}`);
   },
   includes(actualArrayOrString, item, msg = "") {
     if (!actualArrayOrString || !actualArrayOrString.includes(item)) {

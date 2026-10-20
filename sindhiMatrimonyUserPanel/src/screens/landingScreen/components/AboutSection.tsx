@@ -12,7 +12,7 @@ const AboutSectionComponent: React.FC = () => {
             India&apos;s Most Trusted Sindhi Matrimonial Network
           </h2>
           <p className="leading-relaxed mb-4 text-[#444444]">
-            SindhiMatrimony.com is the dedicated matchmaking portal from Matrimony.com Group, tailored exclusively for the global Sindhi community. Whether you belong to Bhaiband, Amil, Sahiti, Lohana, Larkana, or any other Sindhi sub-caste, our verified profiles, advanced horoscope matching, and strict privacy controls help you discover your compatible life partner with ease and dignity.
+            Sindhimarriage.in is the dedicated matchmaking portal from Matrimony.com Group, tailored exclusively for the global Sindhi community. Whether you belong to Bhaiband, Amil, Sahiti, Lohana, Larkana, or any other Sindhi sub-caste, our verified profiles, advanced horoscope matching, and strict privacy controls help you discover your compatible life partner with ease and dignity.
           </p>
           <div className="flex flex-wrap gap-2 pt-2">
             <span className="inline-block px-3 py-1 bg-white border border-stone-200 rounded-full text-xs font-medium text-stone-700">

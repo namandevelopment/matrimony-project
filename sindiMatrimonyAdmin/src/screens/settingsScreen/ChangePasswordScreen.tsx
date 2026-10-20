@@ -27,7 +27,7 @@ export interface ChangePasswordFormValues {
 export const ChangePasswordScreen: React.FC = () => {
   const storedUser = getStoredUser() || {
     fullName: 'Super Administrator',
-    email: 'admin@sindhimatrimony.com',
+    email: 'admin@sindhimarriage.in',
     role: 'SUPER_ADMIN',
   };
   const simulatedUser = getSimulatedUser();
@@ -173,7 +173,7 @@ export const ChangePasswordScreen: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              {currentUser.email || 'admin@sindhimatrimony.com'}
+              {currentUser.email || 'admin@sindhimarriage.in'}
             </p>
           </div>
         </div>

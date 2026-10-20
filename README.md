@@ -67,6 +67,24 @@ matrimony-project/
   npx vercel --prod
   ```
 
+### Backend API Gateway (Unified Express Serverless)
+- **Status:** 🟢 Live in Production
+- **Live URL:** [https://sindhi-matrimony-backend.vercel.app](https://sindhi-matrimony-backend.vercel.app)
+- **Platform:** Vercel (Hobby)
+- **Account:** `namandevelopment-9594` (`naman.development@gmail.com`)
+- **Project Name:** `sindhi-matrimony-backend`
+- **Framework:** Express 5 / Node.js Serverless Function
+- **Root Directory:** `sindhiMatrimonyBackhend`
+- **Public Endpoints:**
+  - `/` & `/health` - System Status & Liveness
+  - `/api/v1/health` - Unified Gateway Health Check
+  - `/api/v1/*` - Authentication, Members, Profiles, Interests, Matches, Dropdowns
+- **Deploy Command:**
+  ```bash
+  cd sindhiMatrimonyBackhend
+  npx vercel --prod
+  ```
+
 ---
 
 ## ⚙️ Initial Setup & Fixes Summary

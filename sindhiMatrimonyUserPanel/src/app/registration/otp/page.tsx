@@ -10,7 +10,7 @@ import {
 import { Loader2 } from "lucide-react";
 
 export const metadata: Metadata = createMetadata({
-  title: "Verify Mobile Number with OTP | SindhiMatrimony.com",
+  title: "Verify Mobile Number with OTP | Sindhimarriage.in",
   description:
     "Enter the 4-digit verification code (OTP) sent to your registered mobile phone to activate your free SindhiMatrimony account and connect with verified Sindhi brides and grooms.",
   canonicalPath: "/registration/otp",
@@ -47,7 +47,7 @@ function RegistrationOtpSkeleton() {
 
 export default function RegistrationOtpPage() {
   const webPageSchema = generateWebPageSchema({
-    title: "Verify Mobile Number with OTP | SindhiMatrimony.com",
+    title: "Verify Mobile Number with OTP | Sindhimarriage.in",
     description:
       "Enter the 4-digit verification code (OTP) sent to your registered mobile phone to activate your free SindhiMatrimony account.",
     path: "/registration/otp",

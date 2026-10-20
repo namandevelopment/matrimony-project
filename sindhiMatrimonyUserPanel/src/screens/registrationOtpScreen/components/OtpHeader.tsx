@@ -45,10 +45,10 @@ const OtpHeaderComponent: React.FC<OtpHeaderProps> = ({ onBackClick }) => {
             </div>
             <div className="flex flex-col">
               <span className="text-lg sm:text-[21px] font-bold tracking-tight text-[#1A1A1A] leading-tight font-heading">
-                Sindhi<span className="text-[#DB2F3C]">Matrimony</span>.com
+                Sindhi<span className="text-[#DB2F3C]">marriage</span>.in
               </span>
               <span className="text-[9.5px] sm:text-[10.5px] text-[#666666] font-normal tracking-wide">
-                From SindhiMatrimony Group • Powered by NeelimaMarriage.com
+                From Sindhimarriage.in • Powered by NeelimaMarriage.com
               </span>
             </div>
           </Link>

@@ -63,7 +63,16 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const reqUrl = (originalRequest?.url || '').toLowerCase();
+    const isAuthRoute =
+      reqUrl.includes('/login') ||
+      reqUrl.includes('/register') ||
+      reqUrl.includes('/forgot-password') ||
+      reqUrl.includes('/reset-password') ||
+      reqUrl.includes('/verify-otp') ||
+      reqUrl.includes('/refresh-token');
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -159,7 +168,217 @@ export interface ApiResponse<T = any> {
   code: number | string;
   status?: number;
   raw?: any;
+  errors?: Record<string, any> | any[];
 }
+
+export class ApiError extends Error {
+  status: number;
+  code: number | string;
+  data: any;
+  raw: any;
+  errors?: Record<string, any> | any[];
+
+  constructor(
+    message: string,
+    options?: {
+      status?: number;
+      code?: number | string;
+      data?: any;
+      raw?: any;
+      errors?: Record<string, any> | any[];
+    }
+  ) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = options?.status ?? 0;
+    this.code = options?.code ?? 'ERROR';
+    this.data = options?.data ?? null;
+    this.raw = options?.raw ?? null;
+    this.errors = options?.errors;
+
+    if (typeof (Error as any).captureStackTrace === 'function') {
+      (Error as any).captureStackTrace(this, ApiError);
+    }
+  }
+}
+
+/**
+ * Systematically extracts the real, actionable error message and field-level validation errors
+ * from any backend API response. Never drops backend details or masks them with generic strings.
+ */
+export const extractApiErrorMessage = (
+  error: any,
+  resData: any,
+  status?: number
+): { message: string; errors?: Record<string, any> | any[] } => {
+  let extractedMessage = '';
+  let fieldErrors: Record<string, any> | any[] | undefined = undefined;
+
+  // 1. Inspect response body payload if present
+  if (resData !== undefined && resData !== null) {
+    if (typeof resData === 'string') {
+      const trimmed = resData.trim();
+      if (trimmed.startsWith('<') || trimmed.includes('<!DOCTYPE') || trimmed.includes('<html')) {
+        const match =
+          trimmed.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i) ||
+          trimmed.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+        if (match && match[1] && !match[1].toLowerCase().includes('error')) {
+          extractedMessage = match[1].replace(/<[^>]+>/g, '').trim();
+        } else {
+          extractedMessage = status ? `Server error (${status}). Please try again later.` : 'Unexpected server response.';
+        }
+      } else {
+        extractedMessage = trimmed;
+      }
+    } else if (typeof resData === 'object') {
+      // 1.1 Extract field-level errors (resData.errors or resData.data?.errors)
+      const rawErrors = resData.errors || resData.data?.errors;
+      if (rawErrors) {
+        fieldErrors = rawErrors;
+        if (Array.isArray(rawErrors) && rawErrors.length > 0) {
+          const list = rawErrors
+            .map((item: any) => {
+              if (typeof item === 'string') return item;
+              if (item && typeof item === 'object') {
+                return item.message || item.msg || item.detail || item.errorMessage || JSON.stringify(item);
+              }
+              return String(item);
+            })
+            .filter(Boolean);
+          if (list.length > 0) {
+            extractedMessage = list.join(', ');
+          }
+        } else if (typeof rawErrors === 'object') {
+          const list = Object.entries(rawErrors)
+            .map(([field, val]) => {
+              if (typeof val === 'string') return val;
+              if (Array.isArray(val)) return val.filter((v) => typeof v === 'string').join(', ');
+              if (val && typeof val === 'object' && typeof (val as any).message === 'string') return (val as any).message;
+              return `${field}: ${String(val)}`;
+            })
+            .filter(Boolean);
+          if (list.length > 0) {
+            extractedMessage = list.join(', ');
+          }
+        }
+      }
+
+      // 1.2 Inspect resData.message
+      const candidateMsg = resData.message ?? resData.data?.message;
+      if (candidateMsg) {
+        let msgString = '';
+        if (typeof candidateMsg === 'string') {
+          msgString = candidateMsg.trim();
+        } else if (Array.isArray(candidateMsg)) {
+          msgString = candidateMsg.filter((m) => typeof m === 'string').join(', ').trim();
+        } else if (typeof candidateMsg === 'object') {
+          msgString = candidateMsg.message || candidateMsg.msg || candidateMsg.detail || '';
+        }
+
+        if (msgString) {
+          const isGenericTitle =
+            /^(validation\s*error|validation\s*failed|bad\s*request|unprocessable\s*entity|invalid\s*input|error|request\s*failed)$/i.test(
+              msgString
+            );
+          if (!isGenericTitle || !extractedMessage) {
+            extractedMessage = msgString;
+          }
+        }
+      }
+
+      // 1.3 Inspect resData.error
+      if (!extractedMessage && resData.error) {
+        if (typeof resData.error === 'string' && resData.error.trim().length > 0 && resData.error !== 'true') {
+          extractedMessage = resData.error.trim();
+        } else if (typeof resData.error === 'object') {
+          const errObj = resData.error;
+          extractedMessage = errObj.message || errObj.msg || errObj.description || errObj.detail || '';
+        }
+      }
+
+      // 1.4 Inspect resData.msg
+      if (!extractedMessage && typeof resData.msg === 'string' && resData.msg.trim()) {
+        extractedMessage = resData.msg.trim();
+      }
+
+      // 1.5 Inspect resData.detail (FastAPI / RFC 7807)
+      if (!extractedMessage && resData.detail) {
+        if (typeof resData.detail === 'string') {
+          extractedMessage = resData.detail.trim();
+        } else if (Array.isArray(resData.detail)) {
+          extractedMessage = resData.detail
+            .map((d: any) => (d.msg ? `${d.loc ? d.loc.join('.') + ': ' : ''}${d.msg}` : String(d)))
+            .join(', ');
+        }
+      }
+
+      // 1.6 Inspect OAuth2 error_description
+      if (!extractedMessage && typeof resData.error_description === 'string' && resData.error_description.trim()) {
+        extractedMessage = resData.error_description.trim();
+      }
+    }
+  }
+
+  // 2. Transport & Network fallback only if no message extracted from backend response
+  if (!extractedMessage) {
+    const isTimeout =
+      error?.code === 'ECONNABORTED' ||
+      error?.message?.toLowerCase().includes('timeout');
+    const isNetwork =
+      error?.message === 'Network Error' ||
+      error?.code === 'ERR_NETWORK' ||
+      error?.code === 'ENOTFOUND' ||
+      error?.code === 'ECONNREFUSED' ||
+      (!error?.response && Boolean(error?.request));
+    const isCanceled = axios.isCancel(error) || error?.name === 'CanceledError';
+
+    if (isTimeout) {
+      extractedMessage = 'Request timed out. Server is taking too long to respond.';
+    } else if (isNetwork) {
+      extractedMessage = 'Unable to connect to server. Please check your internet connection.';
+    } else if (isCanceled) {
+      extractedMessage = 'Request was cancelled.';
+    } else if (status) {
+      switch (status) {
+        case 400:
+          extractedMessage = 'Bad request. Please verify your input details.';
+          break;
+        case 401:
+          extractedMessage = 'Unauthorized. Please check your credentials or log in again.';
+          break;
+        case 403:
+          extractedMessage = 'Access forbidden. You do not have permission to perform this action.';
+          break;
+        case 404:
+          extractedMessage = 'Requested service or resource not found.';
+          break;
+        case 409:
+          extractedMessage = 'Conflict. The requested resource or entry already exists.';
+          break;
+        case 422:
+          extractedMessage = 'Validation failed. Please verify required fields.';
+          break;
+        case 429:
+          extractedMessage = 'Too many requests. Please slow down and try again.';
+          break;
+        case 500:
+        case 502:
+        case 503:
+        case 504:
+          extractedMessage = `Server error (${status}). Please try again shortly.`;
+          break;
+        default:
+          extractedMessage = `Request failed with status code ${status}.`;
+      }
+    } else if (error?.message && typeof error.message === 'string' && error.message.trim()) {
+      extractedMessage = error.message.trim();
+    } else {
+      extractedMessage = 'Something went wrong. Please check your connection and try again.';
+    }
+  }
+
+  return { message: extractedMessage, errors: fieldErrors };
+};
 
 // Helper to convert objects to FormData in web environments
 export const createFormData = (payload: any): FormData => {
@@ -218,7 +437,7 @@ export const apiFetch = async <T = any>(
       toast.error(offlineMsg);
     }
     if (throwOnError) {
-      throw new Error(offlineMsg);
+      throw new ApiError(offlineMsg, { status: 0, code: 'OFFLINE' });
     }
     return {
       error: true,
@@ -274,29 +493,35 @@ export const apiFetch = async <T = any>(
       Boolean(resData) &&
       (resData.error === true ||
         (typeof resData.error === 'string' && resData.error.trim().length > 0) ||
-        resData.success === false);
+        resData.success === false ||
+        (typeof resData.status === 'string' && resData.status.toLowerCase() === 'error'));
 
     if (hasPayloadError) {
-      const errMsg =
-        typeof resData.error === 'string' && resData.error.trim()
-          ? resData.error.trim()
-          : resData.message || 'Operation failed. Please try again.';
+      const extracted = extractApiErrorMessage(null, resData, 200);
+      const errMsg = extracted.message || 'Operation failed. Please try again.';
 
       if (showErrorToast && errMsg) {
         toast.error(errMsg);
       }
 
       if (throwOnError) {
-        throw new Error(errMsg);
+        throw new ApiError(errMsg, {
+          status: 200,
+          code: resData?.code || resData?.status || 'ERROR',
+          data: (resData?.data !== undefined ? resData.data : resData) as T,
+          raw: resData,
+          errors: extracted.errors,
+        });
       }
 
       return {
         error: true,
         message: errMsg,
         data: (resData?.data !== undefined ? resData.data : resData) as T,
-        code: resData?.status || 'ERROR',
-        status: resData?.status,
+        code: resData?.code || resData?.status || 'ERROR',
+        status: 200,
         raw: resData,
+        errors: extracted.errors,
       };
     }
 
@@ -318,47 +543,42 @@ export const apiFetch = async <T = any>(
     const status = error?.response?.status;
     const resData = error?.response?.data;
 
+    const extracted = extractApiErrorMessage(error, resData, status);
+    const message = extracted.message;
+    const fieldErrors = extracted.errors;
+
     const isTimeout =
       error?.code === 'ECONNABORTED' ||
       error?.message?.toLowerCase().includes('timeout');
     const isNetwork =
       error?.message === 'Network Error' ||
       error?.code === 'ERR_NETWORK' ||
-      !error?.response;
+      (!error?.response && Boolean(error?.request));
 
-    let message = 'Something went wrong. Please check your connection and try again.';
-
-    if (isTimeout) {
-      message = 'Request timed out. Server is taking too long to respond.';
-    } else if (isNetwork) {
-      message = 'Unable to connect to server. Please check your internet connection.';
-    } else if (resData) {
-      if (typeof resData === 'string') {
-        message = resData.startsWith('<') ? `Server error (${status || 500})` : resData;
-      } else if (typeof resData.message === 'string') {
-        message = resData.message;
-      } else if (typeof resData.error === 'string') {
-        message = resData.error;
-      }
-    } else if (status) {
-      message = `Request failed with status code ${status}.`;
-    }
+    const code = resData?.code || (isTimeout ? 'TIMEOUT' : isNetwork ? 'NETWORK_ERROR' : status || 'ERROR');
 
     if (showErrorToast && message) {
       toast.error(message);
     }
 
     if (throwOnError) {
-      throw new Error(message);
+      throw new ApiError(message, {
+        status: status || 0,
+        code,
+        data: resData ?? null,
+        raw: resData,
+        errors: fieldErrors,
+      });
     }
 
     return {
       error: true,
       message,
-      code: isTimeout ? 'TIMEOUT' : isNetwork ? 'NETWORK_ERROR' : status || 'ERROR',
+      code,
       status: status || 0,
       data: resData ?? null,
       raw: resData,
+      errors: fieldErrors,
     };
   }
 };
@@ -407,10 +627,34 @@ apiFetch.patch = <T = any>(
 };
 
 // ============================================================================
-// 6. Backward Compatible Exports
+// 6. Backward Compatible Exports & TanStack React Query Wrapper
 // ============================================================================
+export type ApiRequestOptions<TData = unknown> = ApiFetchOptions & {
+  data?: TData;
+};
+
+export const apiRequest = async <TResponse = any, TData = unknown>(
+  options: ApiRequestOptions<TData>
+): Promise<TResponse> => {
+  const res = await apiFetch<TResponse>({
+    ...options,
+    throwOnError: false,
+  });
+
+  if (res.error) {
+    throw new ApiError(res.message, {
+      status: res.status,
+      code: res.code,
+      data: res.data,
+      raw: res.raw,
+      errors: res.errors || (res.raw as any)?.errors || (res.data as any)?.errors,
+    });
+  }
+
+  return (res.data !== undefined && res.data !== null ? res.data : res.raw) as TResponse;
+};
+
 export const ApiFetch = apiFetch;
-export const apiRequest = apiFetch;
 
 export const apiGet = <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> =>
   apiClient.get(url, config) as unknown as Promise<T>;

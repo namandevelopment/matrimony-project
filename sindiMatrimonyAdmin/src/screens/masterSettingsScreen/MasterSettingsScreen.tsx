@@ -63,7 +63,7 @@ const DEFAULT_SETTINGS: MasterSettingsState = {
   portalName: 'Sindhi Matrimony Admin Portal',
   supportPhone: '+91 98765 43210',
   supportWhatsapp: '+91 98765 43210',
-  supportEmail: 'admin@sindhimatrimony.com',
+  supportEmail: 'admin@sindhimarriage.in',
   headOffice: 'Bandra West, Mumbai, Maharashtra 400050',
 
   maxAgeDifference: 5,

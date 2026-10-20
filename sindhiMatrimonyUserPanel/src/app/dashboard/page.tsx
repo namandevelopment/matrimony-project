@@ -8,7 +8,7 @@ import {
 } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "Dashboard – Matrimony Matches & Profile | SindhiMatrimony.com",
+  title: "Dashboard – Matrimony Matches & Profile | Sindhimarriage.in",
   description:
     "Explore compatible Sindhi matches, complete your profile, and connect with prospective brides and grooms on SindhiMatrimony.",
   canonicalPath: "/dashboard",
@@ -40,7 +40,7 @@ function DashboardSkeleton() {
 
 export default function DashboardPage() {
   const webPageSchema = generateWebPageSchema({
-    title: "Dashboard | SindhiMatrimony.com",
+    title: "Dashboard | Sindhimarriage.in",
     description:
       "Explore compatible Sindhi matches, complete your profile, and connect with prospective partners.",
     path: "/dashboard",

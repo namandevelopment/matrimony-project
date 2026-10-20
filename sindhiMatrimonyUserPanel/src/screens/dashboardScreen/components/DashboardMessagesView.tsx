@@ -8,6 +8,8 @@ import type { MessageTab, ConversationItem } from "@/screens/messagesScreen/type
 export interface DashboardMessagesViewProps {
   onUpgradeClick?: () => void;
   className?: string;
+  searchQuery?: string;
+  onSearchQueryChange?: (query: string) => void;
 }
 
 const defaultConversations: ConversationItem[] = [
@@ -37,9 +39,13 @@ const defaultConversations: ConversationItem[] = [
 const DashboardMessagesViewComponent: React.FC<DashboardMessagesViewProps> = ({
   onUpgradeClick,
   className = "",
+  searchQuery: externalSearchQuery,
+  onSearchQueryChange,
 }) => {
   const [tab, setTab] = useState<MessageTab>("received");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [internalSearchQuery, setInternalSearchQuery] = useState("");
+  const activeSearchQuery = externalSearchQuery !== undefined ? externalSearchQuery : internalSearchQuery;
+  const setActiveSearchQuery = onSearchQueryChange || setInternalSearchQuery;
   const [selectedId, setSelectedId] = useState<string>("conv-assisted");
 
   const handleTabChange = useCallback((newTab: MessageTab) => {
@@ -55,10 +61,12 @@ const DashboardMessagesViewComponent: React.FC<DashboardMessagesViewProps> = ({
 
   return (
     <div className={`w-full space-y-4 ${className}`}>
-      {/* Top row: Search in Mailbox on right */}
-      <div className="flex items-center justify-end pb-1">
-        <MailboxSearchInput value={searchQuery} onChange={setSearchQuery} />
-      </div>
+      {/* Top row: Search in Mailbox on right only if not provided from top SubHeader */}
+      {externalSearchQuery === undefined && (
+        <div className="flex items-center justify-end pb-1">
+          <MailboxSearchInput value={activeSearchQuery} onChange={setActiveSearchQuery} />
+        </div>
+      )}
 
       {/* Main 2-Column Chat Layout */}
       <div className="flex flex-col lg:flex-row items-stretch gap-6">

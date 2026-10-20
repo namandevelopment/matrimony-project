@@ -1,7 +1,10 @@
 import { Server } from "socket.io";
+import { createAdapter } from "@socket.io/redis-adapter";
 import socketAuthMiddleware from "../middlewares/socketAuthMiddleware.js";
 import { logMessage } from "../utils/globalFunction.js";
 import { ROLES } from "../utils/variables.js";
+import { publisher, subscriber } from "../services/serviceRedis.js";
+import { registerUserChatSocket } from "./userChatSocket.js";
 
 let io = null;
 
@@ -14,6 +17,16 @@ export const initializeSocket = (httpServer) => {
     pingTimeout: 60000,
   });
 
+  // Attach Redis Adapter for multi-worker PM2 cluster synchronization
+  try {
+    if (publisher.isReady && subscriber.isReady) {
+      io.adapter(createAdapter(publisher, subscriber));
+      logMessage("✅ Socket.IO Redis Cluster Adapter enabled.", null, "info");
+    }
+  } catch (adapterErr) {
+    logMessage("Socket.IO running in standalone in-memory adapter mode:", adapterErr?.message || adapterErr, "warn");
+  }
+
   // Attach JWT Authentication to Socket handshake
   io.use(socketAuthMiddleware);
 
@@ -25,6 +38,9 @@ export const initializeSocket = (httpServer) => {
     if (user?.userId) {
       socket.join(`user_${user.userId}`);
     }
+
+    // Attach candidate-to-candidate 1-on-1 real-time chat handlers
+    registerUserChatSocket(io, socket);
 
     // Staff auto-joins admin broadcast channel
     if (user?.role && user.role !== ROLES.USER) {

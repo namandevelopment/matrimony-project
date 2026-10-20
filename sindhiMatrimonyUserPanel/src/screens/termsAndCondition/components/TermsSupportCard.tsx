@@ -13,7 +13,7 @@ export const TermsSupportCard: React.FC = React.memo(() => {
       </p>
       <div className="pt-1">
         <a
-          href="mailto:support@sindhimatrimony.com"
+          href="mailto:support@sindhimarriage.in"
           className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white text-[#DB2F3C] hover:bg-red-50 rounded-lg text-xs font-semibold shadow-xs transition-colors"
         >
           <Mail className="w-3.5 h-3.5" />

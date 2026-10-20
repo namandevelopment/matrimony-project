@@ -6,8 +6,15 @@ import { fontFamily } from '../../../components/fontFamily'
 import { COLORS } from '../../../components/colors'
 import CustomLucidIcons from '../../../components/CustomLucidIcons'
 import { moderateScale, moderateVerticalScale } from '../../../utils/Responsive'
+import CelebratingBanner from './CelebratingBanner'
 
-const HomeProfileTab = ({ onPressPrime }: { onPressPrime?: () => void }) => {
+const HomeProfileTab = ({
+  onPressPrime,
+  onPressBanner,
+}: {
+  onPressPrime?: () => void
+  onPressBanner?: () => void
+}) => {
   const navigation = useNavigation<any>()
   return (
     <LinearGradient
@@ -16,77 +23,85 @@ const HomeProfileTab = ({ onPressPrime }: { onPressPrime?: () => void }) => {
       end={{ x: 1, y: 0.5 }}
       style={styles.profileHeader}>
 
-      {/* Regular / Prime */}
-      <View style={styles.planToggle}>
-        <View style={styles.regularTab}>
-          <Text style={styles.regularText}>Regular</Text>
-        </View>
-
-        <TouchableOpacity onPress={onPressPrime} style={styles.primeTab}>
-          <Text style={styles.primeText}>PRIME</Text>
-          <View style={styles.primeDot} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Profile */}
-      <View style={styles.profileInfo}>
-        <Pressable
-          style={styles.avatarWrapper}
-          onPress={() => navigation.navigate('ProfileScreen')}
-        >
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>M</Text>
+      <View style={styles.topSection}>
+        {/* Regular / Prime */}
+        <View style={styles.planToggle}>
+          <View style={styles.regularTab}>
+            <Text style={styles.regularText}>Regular</Text>
           </View>
 
-          <Pressable style={styles.cameraButton}>
-            <CustomLucidIcons
-              name="camera"
-              color={COLORS.black}
-              size={moderateScale(10)}
-            />
+          <TouchableOpacity onPress={onPressPrime} style={styles.primeTab}>
+            <Text style={styles.primeText}>PRIME</Text>
+            <View style={styles.primeDot} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Profile */}
+        <View style={styles.profileInfo}>
+          <Pressable
+            style={styles.avatarWrapper}
+            onPress={() => navigation.navigate('ProfileScreen')}
+          >
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>M</Text>
+            </View>
+
+            <Pressable style={styles.cameraButton}>
+              <CustomLucidIcons
+                name="camera"
+                color={COLORS.black}
+                size={moderateScale(10)}
+              />
+            </Pressable>
           </Pressable>
-        </Pressable>
 
-        <View style={styles.userInfo}>
-          <Pressable onPress={() => navigation.navigate('ProfileScreen')}>
-            <Text style={styles.userName} numberOfLines={1} ellipsizeMode="tail">
-              Mayank Tamhankar
-            </Text>
-          </Pressable>
+          <View style={styles.userInfo}>
+            <Pressable onPress={() => navigation.navigate('ProfileScreen')}>
+              <Text style={styles.userName} numberOfLines={1} ellipsizeMode="tail">
+                Mayank Tamhankar
+              </Text>
+            </Pressable>
 
-          <View style={styles.memberRow}>
-            <Text style={styles.memberText}>Free Member</Text>
+            <View style={styles.memberRow}>
+              <Text style={styles.memberText}>Free Member</Text>
 
-            <Pressable style={styles.upgradeButton}>
-              <LinearGradient
-                colors={['#F7D98D', '#B79555']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.upgradeGradient}>
-                <Text style={styles.upgradeText}>Upgrade</Text>
-              </LinearGradient>
+              <Pressable
+                style={styles.upgradeButton}
+                onPress={() => navigation.navigate('Upgrade')}
+              >
+                <LinearGradient
+                  colors={['#F7D98D', '#B79555']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.upgradeGradient}>
+                  <Text style={styles.upgradeText}>Upgrade</Text>
+                </LinearGradient>
+              </Pressable>
+            </View>
+          </View>
+          {/* Right Actions */}
+          <View style={styles.headerActions}>
+            <Pressable hitSlop={10} onPress={() => navigation.navigate('NotificationScreen')}>
+              <CustomLucidIcons
+                name="bell"
+                color={COLORS.black}
+                size={moderateScale(22)}
+              />
+            </Pressable>
+
+            <Pressable hitSlop={10} onPress={() => navigation.navigate('ProfileScreen')}>
+              <CustomLucidIcons
+                name="menu"
+                color={COLORS.black}
+                size={moderateScale(24)}
+              />
             </Pressable>
           </View>
         </View>
-        {/* Right Actions */}
-        <View style={styles.headerActions}>
-          <Pressable hitSlop={10} onPress={() => navigation.navigate('NotificationScreen')}>
-            <CustomLucidIcons
-              name="bell"
-              color={COLORS.black}
-              size={moderateScale(22)}
-            />
-          </Pressable>
-
-          <Pressable hitSlop={10} onPress={() => navigation.navigate('ProfileScreen')}>
-            <CustomLucidIcons
-              name="menu"
-              color={COLORS.black}
-              size={moderateScale(24)}
-            />
-          </Pressable>
-        </View>
       </View>
+
+      {/* Celebrating 26 Years of Matchmaking Banner */}
+      {/* <CelebratingBanner onPress={onPressBanner} /> */}
     </LinearGradient>
   )
 }
@@ -95,12 +110,14 @@ export default HomeProfileTab
 
 const styles = StyleSheet.create({
   profileHeader: {
-    minHeight: moderateVerticalScale(132),
     borderRadius: moderateScale(16),
-    marginBottom: moderateVerticalScale(14),
+    // marginBottom: moderateVerticalScale(14),
+    overflow: 'hidden',
+  },
+  topSection: {
     paddingHorizontal: moderateScale(14),
-    paddingTop: moderateVerticalScale(20),
-    paddingBottom: moderateVerticalScale(10),
+    paddingTop: moderateVerticalScale(16),
+    paddingBottom: moderateVerticalScale(6),
   },
 
   planToggle: {

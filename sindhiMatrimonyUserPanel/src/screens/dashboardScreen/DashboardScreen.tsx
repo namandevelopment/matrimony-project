@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect, memo } from "react";
 import { useRouter } from "next/navigation";
 import {
   DashboardHeader,
-  DashboardModeSwitcher,
+  DashboardSubHeader,
   DashboardHomeView,
   DashboardMatchesView,
   DashboardInterestsView,
@@ -12,6 +12,7 @@ import {
   DashboardSearchView,
   DashboardFooter,
 } from "./components";
+import { MailboxSearchInput } from "@/screens/interestsScreen/components";
 import { DashboardNavProvider } from "./context/DashboardNavContext";
 import { FloatingChatWidget } from "@/screens/matchesScreen/components";
 import { NotificationsScreen } from "@/screens/notificationsScreen";
@@ -44,6 +45,8 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
   const [user] = useState<UserProfile>(initialUser);
   const [activeTab, setActiveTab] = useState<DashboardNavTab["id"]>(initialTab);
   const [mode, setMode] = useState<DashboardMode>("regular");
+  const [interestsSearchQuery, setInterestsSearchQuery] = useState("");
+  const [messagesSearchQuery, setMessagesSearchQuery] = useState("");
 
   // Synchronize activeTab on browser back/forward buttons
   useEffect(() => {
@@ -110,15 +113,27 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
           onUpgradeClick={handleUpgrade}
         />
 
-        {/* 2. Sub-Header Mode Switcher (Regular vs PRIME*) for Home and Matches */}
-        {(activeTab === "home" || activeTab === "matches") && (
-          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-1">
-            <DashboardModeSwitcher
-              currentMode={mode}
-              onModeChange={handleModeChange}
-            />
-          </div>
-        )}
+        {/* 2. Unified Sub-Header across Dashboard tabs */}
+        <DashboardSubHeader
+          currentMode={mode}
+          onModeChange={handleModeChange}
+          showModeSwitcher={activeTab !== "notifications"}
+          rightContent={
+            activeTab === "interests" ? (
+              <MailboxSearchInput
+                value={interestsSearchQuery}
+                onChange={setInterestsSearchQuery}
+                placeholder="Search in Mailbox"
+              />
+            ) : activeTab === "messages" ? (
+              <MailboxSearchInput
+                value={messagesSearchQuery}
+                onChange={setMessagesSearchQuery}
+                placeholder="Search conversations"
+              />
+            ) : null
+          }
+        />
 
         {/* 3. Main Dashboard Body: Switches between all 5 screens with ZERO Header re-render */}
         <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -130,10 +145,14 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
             />
           ) : activeTab === "interests" ? (
             <DashboardInterestsView
+              searchQuery={interestsSearchQuery}
+              onSearchQueryChange={setInterestsSearchQuery}
               onUpgradeClick={handleUpgrade}
             />
           ) : activeTab === "messages" ? (
             <DashboardMessagesView
+              searchQuery={messagesSearchQuery}
+              onSearchQueryChange={setMessagesSearchQuery}
               onUpgradeClick={handleUpgrade}
             />
           ) : activeTab === "search" ? (

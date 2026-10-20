@@ -16,10 +16,17 @@ import {
   updateProfileStatusSchema,
   grantAccessSchema,
   transferProfileSchema,
+  loginWithPasswordSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  refreshTokenSchema,
 } from "../../validators/auth/users.js";
 import {
   sendOtp,
   register,
+  loginWithPassword,
+  forgotPassword,
+  resetPassword,
   verifyLoginOtp,
   resendOtp,
   checkPhoneExists,
@@ -32,27 +39,57 @@ import {
   listProfileGrants,
   revokeProfileGrant,
   transferProfileOwnership,
+  refreshTokenHandler,
 } from "../../controllers/auth/users.js";
 
 const router = express.Router();
 
 /**
+ * @route   POST /api/v1/auth/users/refresh-token
+ * @desc    Renew Access Token using valid Refresh Token
+ * @access  Public
+ */
+router.post("/refresh-token", validationMiddleware(refreshTokenSchema), refreshTokenHandler);
+router.post("/refreshToken", validationMiddleware(refreshTokenSchema), refreshTokenHandler);
+
+/**
+ * @route   POST /api/v1/auth/users/login
+ * @desc    Candidate Login with Mobile Number and Password
+ * @access  Public
+ */
+router.post("/login", authRateLimiter, validationMiddleware(loginWithPasswordSchema), loginWithPassword);
+
+/**
  * @route   POST /api/v1/auth/users/send-otp
- * @desc    Request OTP for Mobile App & Web (Login / Register)
+ * @desc    Request OTP strictly for Registration
  * @access  Public
  */
 router.post("/send-otp", otpRateLimiter, validationMiddleware(sendOtpSchema), sendOtp);
 
 /**
  * @route   POST /api/v1/auth/users/register
- * @desc    Complete Quick Registration & Multi-step Profile Initialization
+ * @desc    Complete Quick Registration with OTP & Password
  * @access  Public
  */
 router.post("/register", registerRateLimiter, validationMiddleware(registerUserSchema), register);
 
 /**
+ * @route   POST /api/v1/auth/users/forgot-password
+ * @desc    Send OTP to reset candidate password
+ * @access  Public
+ */
+router.post("/forgot-password", otpRateLimiter, validationMiddleware(forgotPasswordSchema), forgotPassword);
+
+/**
+ * @route   POST /api/v1/auth/users/reset-password
+ * @desc    Verify OTP and set new password
+ * @access  Public
+ */
+router.post("/reset-password", authRateLimiter, validationMiddleware(resetPasswordSchema), resetPassword);
+
+/**
  * @route   POST /api/v1/auth/users/verify-otp
- * @desc    Verify OTP for Existing User Login
+ * @desc    Verify OTP for Existing User Login (Optional Fallback)
  * @access  Public
  */
 router.post("/verify-otp", authRateLimiter, validationMiddleware(verifyOtpSchema), verifyLoginOtp);

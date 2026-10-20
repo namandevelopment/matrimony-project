@@ -21,8 +21,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       : "Privacy Settings";
 
   return createMetadata({
-    title: `${title} | SindhiMatrimony.com`,
-    description: `Manage your ${title.toLowerCase()} and profile preferences on SindhiMatrimony.com.`,
+    title: `${title} | Sindhimarriage.in`,
+    description: `Manage your ${title.toLowerCase()} and profile preferences on Sindhimarriage.in.`,
     canonicalPath: `/settings/${tab}`,
   });
 }

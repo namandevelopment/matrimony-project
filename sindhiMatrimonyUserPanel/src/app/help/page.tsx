@@ -9,9 +9,9 @@ import {
 } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "Help & Support Center | SindhiMatrimony.com - 24/7 Member Care & FAQs",
+  title: "Help & Support Center | Sindhimarriage.in - 24/7 Member Care & FAQs",
   description:
-    "Official Help & Support Center for SindhiMatrimony.com. Get step-by-step assistance with profile creation, Aadhaar ID verification, Kundali matching, photo & phone privacy shields, billing, and direct 24/7 member care helpline.",
+    "Official Help & Support Center for Sindhimarriage.in. Get step-by-step assistance with profile creation, Aadhaar ID verification, Kundali matching, photo & phone privacy shields, billing, and direct 24/7 member care helpline.",
   canonicalPath: "/help",
   keywords: [
     "Sindhi Matrimony Help",
@@ -30,9 +30,9 @@ export const metadata: Metadata = createMetadata({
 
 export default function HelpPage() {
   const contactPageSchema = generateContactPageSchema({
-    title: "Official Customer Support & Member Helpline | SindhiMatrimony.com",
+    title: "Official Customer Support & Member Helpline | Sindhimarriage.in",
     description:
-      "24/7 dedicated member helpline, live chat, email assistance, and step-by-step matchmaking guides for SindhiMatrimony.com.",
+      "24/7 dedicated member helpline, live chat, email assistance, and step-by-step matchmaking guides for Sindhimarriage.in.",
     path: "/help",
   });
 

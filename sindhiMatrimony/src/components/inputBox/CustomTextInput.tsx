@@ -6,40 +6,51 @@ import fontFamily from '../fontFamily';
 import { activeOpacity } from '../../utils/Responsive';
 
 interface CustomTextInputProps {
-  leftIcon: string;
+  leftIcon?: string;
   rightIcon?: string;
+  rightIconColor?: string;
+  rightIconSize?: number;
   onRightPress?: () => void;
+  onPress?: () => void;
   placeholder: string;
   value: string;
-  onChangeText: (text: string) => void;
+  onChangeText?: (text: string) => void;
   secureTextEntry?: boolean;
   label?: string;
+  floatingLabel?: boolean;
   error?: string;
   containerStyle?: any;
   inputStyle?: any;
+  inputContainerStyle?: any;
+  labelStyle?: any;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   autoCorrect?: boolean;
   returnKeyType?: 'done' | 'go' | 'next' | 'search' | 'send';
   onSubmitEditing?: () => void;
   editable?: boolean;
-  selectionColor?:any
-  onFocus?: () => void;   // 👈 new
-  onBlur?: () => void;    // 👈 new (optional)
+  selectionColor?: any;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }
 
 const CustomTextInput = forwardRef<TextInput, CustomTextInputProps>((props, ref) => {
   const {
     leftIcon,
     rightIcon,
+    rightIconColor = COLORS.themeColor,
+    rightIconSize = 20,
     onRightPress,
     placeholder,
     value,
     onChangeText,
     secureTextEntry = false,
     label,
+    floatingLabel = false,
     error,
     containerStyle,
     inputStyle,
+    inputContainerStyle,
+    labelStyle,
     autoCapitalize = 'none',
     autoCorrect = false,
     returnKeyType = 'done',
@@ -47,7 +58,7 @@ const CustomTextInput = forwardRef<TextInput, CustomTextInputProps>((props, ref)
     editable = true,
     onFocus,
     onBlur,
-    selectionColor=COLORS.themeColor,
+    selectionColor = COLORS.themeColor,
     ...rest
   } = props;
 
@@ -69,37 +80,64 @@ const CustomTextInput = forwardRef<TextInput, CustomTextInputProps>((props, ref)
     onBlur?.();
   };
 
+  const hasValue = !!value && value.toString().trim().length > 0;
+  const showFloatingLabel = floatingLabel && !!label && (hasValue || isFocused);
+
   return (
     <View style={containerStyle}>
-      {label && <Text style={styles.label}>{label}</Text>}
-      <View style={[styles.inputContainer, { borderColor }]}>
-        <View style={styles.iconWrapper}>
-          <CustomLucidIcons name={leftIcon} color={COLORS.themeColor} size={20} />
+      {!floatingLabel && label && <Text style={[styles.label, labelStyle]}>{label}</Text>}
+      <TouchableOpacity
+        activeOpacity={props.onPress ? activeOpacity : 1}
+        onPress={props.onPress}
+        disabled={!props.onPress}
+      >
+        <View style={[styles.inputContainer, { borderColor }, inputContainerStyle]}>
+          {showFloatingLabel && (
+            <View style={styles.floatingBadge} pointerEvents="none">
+              <Text style={[styles.floatingBadgeText, isFocused && { color: COLORS.themeColor }]}>
+                {label}
+              </Text>
+            </View>
+          )}
+
+          {leftIcon ? (
+            <View style={styles.iconWrapper}>
+              <CustomLucidIcons name={leftIcon} color={COLORS.themeColor} size={20} />
+            </View>
+          ) : null}
+
+          <TextInput
+            ref={ref}
+            selectionColor={selectionColor}
+            style={[styles.textInput, inputStyle]}
+            placeholder={floatingLabel && showFloatingLabel ? '' : placeholder}
+            placeholderTextColor="#999"
+            value={value}
+            onChangeText={onChangeText}
+            secureTextEntry={secureTextEntry}
+            autoCapitalize={autoCapitalize}
+            autoCorrect={autoCorrect}
+            returnKeyType={returnKeyType}
+            onSubmitEditing={onSubmitEditing}
+            editable={props.onPress ? false : editable}
+            pointerEvents={props.onPress ? 'none' : 'auto'}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            {...rest}
+          />
+
+          {rightIcon && (
+            <TouchableOpacity
+              activeOpacity={activeOpacity}
+              onPress={onRightPress || props.onPress}
+              style={styles.rightIconWrapper}
+              disabled={!onRightPress && !props.onPress}
+            >
+              <CustomLucidIcons name={rightIcon} color={rightIconColor} size={rightIconSize} />
+            </TouchableOpacity>
+          )}
         </View>
-        <TextInput
-          ref={ref}
-          selectionColor={selectionColor}
-          style={[styles.textInput, inputStyle]}
-          placeholder={placeholder}
-          placeholderTextColor="#999"
-          value={value}
-          onChangeText={onChangeText}
-          secureTextEntry={secureTextEntry}
-          autoCapitalize={autoCapitalize}
-          autoCorrect={autoCorrect}
-          returnKeyType={returnKeyType}
-          onSubmitEditing={onSubmitEditing}
-          editable={editable}
-          onFocus={handleFocus}   // 👈 use internal handler
-          onBlur={handleBlur}
-          {...rest}
-        />
-        {rightIcon && (
-          <TouchableOpacity activeOpacity={activeOpacity} onPress={onRightPress} style={styles.rightIconWrapper}>
-            <CustomLucidIcons name={rightIcon} color={COLORS.themeColor} size={20} />
-          </TouchableOpacity>
-        )}
-      </View>
+      </TouchableOpacity>
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
@@ -113,6 +151,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   inputContainer: {
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
@@ -120,6 +159,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
     paddingHorizontal: 12,
     height: 50,
+  },
+  floatingBadge: {
+    position: 'absolute',
+    top: -9,
+    left: 12,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 4,
+    zIndex: 10,
+  },
+  floatingBadgeText: {
+    fontSize: 11,
+    fontFamily: fontFamily.Inter18Medium,
+    color: '#6B7280',
   },
   iconWrapper: {
     marginRight: 10,

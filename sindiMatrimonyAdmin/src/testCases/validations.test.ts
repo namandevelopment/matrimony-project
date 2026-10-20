@@ -49,7 +49,7 @@ assert.strictEqual(validateName(''), 'Please enter a name.');
 assert.strictEqual(validateName('Jo'), 'Name must be at least 3 characters');
 assert.strictEqual(validateName('Rajesh Mulchandani'), '');
 
-assert.strictEqual(isValidEmail('admin@sindhimatrimony.com'), true);
+assert.strictEqual(isValidEmail('admin@sindhimarriage.in'), true);
 assert.strictEqual(isValidEmail('invalid-email'), false);
 assert.strictEqual(validateEmail('test@example.com'), '');
 assert.strictEqual(validateEmail('invalid'), 'Please enter a valid email.');

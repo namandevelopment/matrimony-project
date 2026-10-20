@@ -46,7 +46,7 @@ Help & Support screen portal staff aur relationship managers ke liye **direct op
 ### A. Direct Emergency Contact Cards
 - **Emergency Phone Hotline:** Number with copy-to-clipboard button (`+91 98200 99881`).
 - **Direct WhatsApp Executive Chat:** Clickable link opening WhatsApp chat (`+91 98200 99882`).
-- **Priority Email Support:** Copyable email (`helpdesk@sindhimatrimony.com`).
+- **Priority Email Support:** Copyable email (`helpdesk@sindhimarriage.in`).
 
 ### B. Ticket Raising Desk (`handleCreateTicket`)
 - **Category Selector Dropdown:**

@@ -41,7 +41,7 @@ const SAMPLE_SIMULATION_ALERTS = [
   },
   {
     title: 'Security Compliance Notice',
-    message: 'Portal TLS handshake renewed and verified for domain sindhimatrimony.com.',
+    message: 'Portal TLS handshake renewed and verified for domain sindhimarriage.in.',
     category: 'SECURITY' as const,
     priority: 'LOW' as const,
   },

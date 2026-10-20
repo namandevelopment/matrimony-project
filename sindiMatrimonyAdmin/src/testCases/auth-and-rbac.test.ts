@@ -28,7 +28,7 @@ const superAdmin: AuthEmployee = {
   id: 'emp_001',
   employeeId: 'EMP001',
   fullName: 'Super Administrator',
-  email: 'admin@sindhimatrimony.com',
+  email: 'admin@sindhimarriage.in',
   mobile: '+91 9876543210',
   role: 'SUPER_ADMIN',
   department: 'Operations',
@@ -47,7 +47,7 @@ const crmAgent: AuthEmployee = {
   id: 'emp_003',
   employeeId: 'EMP003',
   fullName: 'Priya Sharma',
-  email: 'priya@sindhimatrimony.com',
+  email: 'priya@sindhimarriage.in',
   mobile: '+91 9876543212',
   role: 'CRM_AGENT',
   department: 'Sales',
@@ -176,7 +176,7 @@ const testEmployee = {
   id: 'emp_test_user_99',
   employeeId: 'EMP099',
   fullName: 'Rohan Vazirani',
-  email: 'rohan.v@sindhimatrimony.com',
+  email: 'rohan.v@sindhimarriage.in',
   mobile: '+91 99887 76655',
   role: 'EMPLOYEE' as const,
   department: 'Sales & CRM',
@@ -193,7 +193,7 @@ const testEmployee = {
 };
 
 crmDataService.addEmployee(testEmployee);
-const retrievedEmp = crmDataService.getEmployeeByEmail('rohan.v@sindhimatrimony.com');
+const retrievedEmp = crmDataService.getEmployeeByEmail('rohan.v@sindhimarriage.in');
 assert.ok(retrievedEmp, 'Newly added employee can be retrieved by email');
 assert.strictEqual(retrievedEmp?.allowedSections?.length, 3, 'Employee retains 3 allowed sections');
 assert.deepStrictEqual(retrievedEmp?.allowedSections, ['leads', 'tasks', 'chat']);

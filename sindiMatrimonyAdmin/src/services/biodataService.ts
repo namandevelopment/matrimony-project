@@ -20,9 +20,9 @@ export const DEFAULT_BIODATA_SETTINGS: BiodataConfigSettings = {
   allowReligiousMotif: true,
   defaultMotif: 'GANESH_SHLOK',
   portalBrandingName: 'Sindhi Matrimony Official CRM',
-  portalWebsiteUrl: 'https://sindhimatrimony.com',
+  portalWebsiteUrl: 'https://sindhimarriage.in',
   supportPhone: '+91 98765 43210',
-  supportEmail: 'matchmaking@sindhimatrimony.com',
+  supportEmail: 'matchmaking@sindhimarriage.in',
   footerText: 'Strictly Confidential — For Family Matrimonial Review Only. Unauthorized reproduction is prohibited.',
   watermarkEnabled: false,
 };

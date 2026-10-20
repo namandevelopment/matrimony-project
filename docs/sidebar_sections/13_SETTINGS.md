@@ -64,7 +64,7 @@ Settings portal ka **operational configuration, security governance, business ca
 ### Tab 3: Admin Config (`AdminConfigSection.tsx`)
 - **Portal Communication Channels & General Policies:**
   - Official Support Helpline (`+91 98765 43210`).
-  - Helpdesk Email (`support@sindhimatrimony.com`).
+  - Helpdesk Email (`support@sindhimarriage.in`).
   - Headquarters City (`Mumbai / Ahmedabad`).
   - OTP Mobile Verification toggle.
   - Auto-Approve Candidate Profiles toggle.

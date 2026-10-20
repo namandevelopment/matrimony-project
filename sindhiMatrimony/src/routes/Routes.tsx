@@ -42,20 +42,20 @@ const Routes = () => {
           {
             screens?.length > 0 && (
               <>
-              {
-                screens.map((screen: any) => (
-                  <Stack.Screen
-                    key={screen.name}
-                    name={screen.name}
-                    component={screen.component}
-                    options={{
-                      lazy: true,
-                      ...defaultScreenOptions,
-                      ...screen.options,
-                    }}
-                  />
-                ))
-              }
+                {
+                  screens.map((screen: any) => (
+                    <Stack.Screen
+                      key={screen.name}
+                      name={screen.name}
+                      component={screen.component}
+                      options={{
+                        lazy: true,
+                        ...defaultScreenOptions,
+                        ...screen.options,
+                      }}
+                    />
+                  ))
+                }
               </>
 
             )}

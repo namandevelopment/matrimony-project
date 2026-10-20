@@ -1,8 +1,8 @@
 "use client";
 
-import React, { memo, useState, useCallback, useMemo } from "react";
+import React, { memo, useState, useCallback, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ExternalLink, CheckCircle2, ChevronRight } from "lucide-react";
 import { DashboardHeader } from "@/screens/dashboardScreen/components/DashboardHeader";
 import { DashboardFooter } from "@/screens/dashboardScreen/components/DashboardFooter";
@@ -30,6 +30,108 @@ import {
 import { INITIAL_EDIT_PROFILE_DATA } from "./staticData";
 import type { UserProfile } from "@/screens/dashboardScreen/types";
 
+const LOCAL_STORAGE_KEY = "sindhi_matrimony_edit_profile";
+
+// Helper to resolve section id from query param (e.g. ?tab=hobbies or ?section=hobbies)
+export const resolveSectionFromParam = (
+  param: string | null | undefined,
+  fallback: ProfileSectionId = "basic_info"
+): ProfileSectionId => {
+  if (!param) return fallback;
+  const tab = param.toLowerCase().trim();
+
+  if (
+    tab === "hobbies" ||
+    tab === "hobby" ||
+    tab === "hobbies_interest" ||
+    tab === "hobbies-interest" ||
+    tab === "hobbiesinterests" ||
+    tab === "add_hobbies" ||
+    tab === "add-hobbies" ||
+    tab === "interests"
+  ) {
+    return "hobbies_interest";
+  }
+
+  if (
+    tab === "basic" ||
+    tab === "basic_info" ||
+    tab === "basic-info" ||
+    tab === "basicinfo"
+  ) {
+    return "basic_info";
+  }
+
+  if (
+    tab === "education" ||
+    tab === "occupation" ||
+    tab === "education_occupation" ||
+    tab === "education-occupation" ||
+    tab === "edu"
+  ) {
+    return "education_occupation";
+  }
+
+  if (
+    tab === "family" ||
+    tab === "family_details" ||
+    tab === "family-details" ||
+    tab === "familydetails"
+  ) {
+    return "family_details";
+  }
+
+  if (
+    tab === "partner" ||
+    tab === "partner_preference" ||
+    tab === "partner-preference" ||
+    tab === "preference" ||
+    tab === "preferences"
+  ) {
+    return "partner_preference";
+  }
+
+  if (tab === "photos" || tab === "photo" || tab === "add_photo" || tab === "add-photo") {
+    return "photos";
+  }
+
+  if (tab === "horoscope" || tab === "kundali" || tab === "kundli") {
+    return "horoscope";
+  }
+
+  if (tab === "location" || tab === "address" || tab === "city") {
+    return "location";
+  }
+
+  if (tab === "email") {
+    return "email";
+  }
+
+  if (
+    tab === "contact" ||
+    tab === "contact_number" ||
+    tab === "contact-number" ||
+    tab === "phone" ||
+    tab === "mobile"
+  ) {
+    return "contact_number";
+  }
+
+  if (tab === "identity" || tab === "identity_badge" || tab === "identity-badge") {
+    return "identity_badge";
+  }
+
+  if (
+    tab === "professional" ||
+    tab === "professional_badge" ||
+    tab === "professional-badge"
+  ) {
+    return "professional_badge";
+  }
+
+  return fallback;
+};
+
 const EditProfileScreenComponent: React.FC<EditProfileScreenProps> = ({
   initialSection = "basic_info",
   onViewProfile,
@@ -37,12 +139,62 @@ const EditProfileScreenComponent: React.FC<EditProfileScreenProps> = ({
   className = "",
 }) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // Primary state for active section
-  const [activeSection, setActiveSection] = useState<ProfileSectionId>(initialSection);
+  // Read URL query parameter (?tab=... or ?section=...)
+  const tabParam = searchParams
+    ? searchParams.get("tab") || searchParams.get("section")
+    : null;
 
-  // Form State
-  const [profileData, setProfileData] = useState<EditProfileState>(INITIAL_EDIT_PROFILE_DATA);
+  // Primary state for active section - initialized immediately based on URL param
+  const [activeSection, setActiveSection] = useState<ProfileSectionId>(() =>
+    resolveSectionFromParam(tabParam, initialSection)
+  );
+
+  // Sync if URL query param changes dynamically
+  useEffect(() => {
+    if (tabParam) {
+      setActiveSection(resolveSectionFromParam(tabParam, initialSection));
+    }
+  }, [tabParam, initialSection]);
+
+  // Section switcher that also updates URL query param seamlessly
+  const handleSelectSection = useCallback((sec: ProfileSectionId) => {
+    setActiveSection(sec);
+    if (typeof window !== "undefined") {
+      try {
+        const url = new URL(window.location.href);
+        const tabName = sec === "hobbies_interest" ? "hobbies" : sec;
+        url.searchParams.set("tab", tabName);
+        window.history.replaceState({}, "", url.toString());
+      } catch (e) {
+        console.error("Error updating URL:", e);
+      }
+    }
+  }, []);
+
+  // Form State with localStorage persistence
+  const [profileData, setProfileData] = useState<EditProfileState>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          return {
+            ...INITIAL_EDIT_PROFILE_DATA,
+            ...parsed,
+            hobbiesInterests: {
+              ...INITIAL_EDIT_PROFILE_DATA.hobbiesInterests,
+              ...(parsed.hobbiesInterests || {}),
+            },
+          };
+        }
+      } catch (err) {
+        console.error("Error reading saved edit profile from localStorage:", err);
+      }
+    }
+    return INITIAL_EDIT_PROFILE_DATA;
+  });
 
   // Modal states
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
@@ -200,16 +352,23 @@ const EditProfileScreenComponent: React.FC<EditProfileScreenProps> = ({
     [showToast]
   );
 
-  // Generic Save Handler with simulated network delay
+  // Generic Save Handler with simulated network delay and localStorage persistence
   const handleSaveSection = useCallback(
     (sectionName: string) => {
       setIsSaving(true);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(profileData));
+        } catch (err) {
+          console.error("Error saving profile to localStorage:", err);
+        }
+      }
       setTimeout(() => {
         setIsSaving(false);
         showToast(`${sectionName} updated successfully!`);
-      }, 600);
+      }, 500);
     },
-    [showToast]
+    [profileData, showToast]
   );
 
   const handleViewProfileClick = useCallback(() => {
@@ -271,7 +430,7 @@ const EditProfileScreenComponent: React.FC<EditProfileScreenProps> = ({
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveSection(tab.id as ProfileSectionId)}
+              onClick={() => handleSelectSection(tab.id as ProfileSectionId)}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer border ${
                 activeSection === tab.id
                   ? "bg-[#DB2F3C] text-white border-[#DB2F3C] shadow-xs"
@@ -288,7 +447,7 @@ const EditProfileScreenComponent: React.FC<EditProfileScreenProps> = ({
           {/* Left Column: Sidebar with Photo Card and Accordion Navigation */}
           <EditProfileSidebar
             activeSection={activeSection}
-            onSelectSection={(sec) => setActiveSection(sec)}
+            onSelectSection={handleSelectSection}
             onOpenPhotoModal={() => setIsPhotoModalOpen(true)}
             photoCount={profileData.photos.length}
             avatarUrl={profileData.photos.find((p) => p.isPrimary)?.url}

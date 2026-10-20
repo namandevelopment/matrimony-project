@@ -341,7 +341,7 @@ export function getUnifiedUserProfile(identifier: string | null | undefined): Un
     uniqueId: idStr.startsWith('E') || idStr.startsWith('A') ? idStr : `E${idStr}`,
     fullName: idStr.toUpperCase(),
     mobile: '+91 98200 XXXXX',
-    email: `${idStr.toLowerCase()}@sindhimatrimony.com`,
+    email: `${idStr.toLowerCase()}@sindhimarriage.in`,
     gender: 'Male',
     age: 30,
     maritalStatus: 'Never Married',

@@ -31,7 +31,7 @@ export const PRIVACY_SECTIONS: readonly PolicySection[] = [
     content: (
       <div className="space-y-4">
         <p className="text-stone-700 leading-relaxed">
-          At <strong>SindhiMatrimony.com</strong> (&quot;Platform&quot;, &quot;Website&quot;, &quot;We&quot;, &quot;Us&quot;, &quot;Our&quot;), operated by <strong>Matrimony.com Group</strong>, we understand that searching for a life partner requires sharing sensitive personal, familial, and astrological information. Protecting your privacy and personal data is our foundational commitment.
+          At <strong>Sindhimarriage.in</strong> (&quot;Platform&quot;, &quot;Website&quot;, &quot;We&quot;, &quot;Us&quot;, &quot;Our&quot;), operated by <strong>Matrimony.com Group</strong>, we understand that searching for a life partner requires sharing sensitive personal, familial, and astrological information. Protecting your privacy and personal data is our foundational commitment.
         </p>
         <p className="text-stone-700 leading-relaxed">
           This <strong>Privacy Policy</strong> details how we collect, process, store, disclose, and protect your personal information in strict accordance with the <strong>Digital Personal Data Protection (DPDP) Act, 2023</strong>, the <strong>Information Technology Act, 2000</strong>, and international data security standards.
@@ -264,7 +264,7 @@ export const PRIVACY_SECTIONS: readonly PolicySection[] = [
             Account Deletion Process:
           </h4>
           <p className="text-stone-600 leading-relaxed">
-            When you find your match or choose to discontinue, you can permanently delete your account via <code>Settings &gt; Delete Profile</code> or by emailing <code>privacy@sindhimatrimony.com</code>.
+            When you find your match or choose to discontinue, you can permanently delete your account via <code>Settings &gt; Delete Profile</code> or by emailing <code>privacy@sindhimarriage.in</code>.
           </p>
           <p className="text-stone-600 leading-relaxed">
             Upon account deletion, your profile, photographs, and contact information are removed from search results immediately and purged from production databases within <strong>30 days</strong>, retaining only financial transaction logs required under Indian taxation and accounting statutes.
@@ -303,14 +303,14 @@ export const PRIVACY_SECTIONS: readonly PolicySection[] = [
             <div className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Designated Privacy Officer</div>
             <div className="font-bold text-stone-900 text-base">Mr. Rajiv Advani</div>
             <div className="text-xs text-stone-600">Data Protection Officer &amp; Compliance Head</div>
-            <div className="text-xs text-stone-600">SindhiMatrimony.com / Matrimony.com Group</div>
+            <div className="text-xs text-stone-600">Sindhimarriage.in / Matrimony.com Group</div>
           </div>
           <div className="space-y-2">
             <div className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Direct Coordinates</div>
             <div className="flex items-center gap-2 text-stone-700 text-xs sm:text-sm">
               <Mail className="w-4 h-4 text-[#DB2F3C]" />
-              <a href="mailto:privacy@sindhimatrimony.com" className="text-[#DB2F3C] hover:underline font-medium">
-                privacy@sindhimatrimony.com
+              <a href="mailto:privacy@sindhimarriage.in" className="text-[#DB2F3C] hover:underline font-medium">
+                privacy@sindhimarriage.in
               </a>
             </div>
             <div className="flex items-center gap-2 text-stone-700 text-xs sm:text-sm">

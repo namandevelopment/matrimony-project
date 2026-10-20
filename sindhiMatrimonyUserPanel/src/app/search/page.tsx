@@ -8,7 +8,7 @@ import {
 } from "@/metadata";
 
 export const metadata: Metadata = createMetadata({
-  title: "Search Profiles – Advanced Partner Search | SindhiMatrimony.com",
+  title: "Search Profiles – Advanced Partner Search | Sindhimarriage.in",
   description:
     "Find your dream life partner using advanced search filters by age, height, caste, education, occupation, and location on SindhiMatrimony.",
   canonicalPath: "/search",
@@ -35,7 +35,7 @@ function SearchSkeleton() {
 
 export default function SearchPage() {
   const webPageSchema = generateWebPageSchema({
-    title: "Search Profiles | SindhiMatrimony.com",
+    title: "Search Profiles | Sindhimarriage.in",
     description: "Search and filter compatible matches by personal, religious, and lifestyle criteria.",
     path: "/search",
     datePublished: "2026-01-01",

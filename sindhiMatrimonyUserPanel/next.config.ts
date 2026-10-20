@@ -41,6 +41,16 @@ const nextConfig: NextConfig = {
         destination: "/registration/location-professional-info",
         permanent: true,
       },
+      {
+        source: "/admin",
+        destination: "https://sindi-matrimony-admin.vercel.app",
+        permanent: false,
+      },
+      {
+        source: "/admin/:path*",
+        destination: "https://sindi-matrimony-admin.vercel.app/:path*",
+        permanent: false,
+      },
     ];
   },
 };

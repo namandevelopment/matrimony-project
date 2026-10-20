@@ -52,6 +52,12 @@ const userSchema = new Schema(
       default: 4,
       max: 6,
     },
+    // Free trial chat messages used (Max 5 for free users before requiring paid plan)
+    chatTrialMessagesUsed: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     isPhoneVerified: {
       type: Boolean,
       default: true,

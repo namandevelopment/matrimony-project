@@ -6,3 +6,7 @@ export type { InterestsEmptyStateProps } from "./InterestsEmptyState";
 
 export { MailboxSearchInput } from "./MailboxSearchInput";
 export type { MailboxSearchInputProps } from "./MailboxSearchInput";
+
+export { InterestCard } from "./InterestCard";
+export type { InterestCardProps } from "./InterestCard";
+

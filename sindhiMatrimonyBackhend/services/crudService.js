@@ -45,11 +45,14 @@ const handleFailure = (
 
 const handleError = (req, res, error, tag) => {
   logMessage(`Error in ${tag}:`, error, "error");
+  const msg = (error?.message && !error.message.includes("\n") && error.message.length < 150)
+    ? error.message
+    : CONSTANTS_MSG.SERVER_ERROR;
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_INTERNAL_SERVER_ERROR,
-    CONSTANTS_MSG.SERVER_ERROR,
+    msg,
     CONSTANTS.DATA_NULL,
     CONSTANTS.INTERNAL_SERVER_ERROR,
     CONSTANTS.ERROR_TRUE
