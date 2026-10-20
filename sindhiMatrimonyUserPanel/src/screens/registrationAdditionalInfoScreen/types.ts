@@ -11,4 +11,5 @@ export interface AdditionalInfoFormData {
 export interface FormErrors {
   familyStatus?: string;
   aboutMyself?: string;
+  general?: string;
 }

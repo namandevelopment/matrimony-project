@@ -2,6 +2,7 @@ export interface BasicInfoFormData {
   day: string;
   month: string;
   year: string;
+  gender?: string;
   motherTongue: string;
   email: string;
   password: string;
@@ -9,6 +10,7 @@ export interface BasicInfoFormData {
 
 export interface FormErrors {
   dob?: string;
+  gender?: string;
   motherTongue?: string;
   email?: string;
   password?: string;

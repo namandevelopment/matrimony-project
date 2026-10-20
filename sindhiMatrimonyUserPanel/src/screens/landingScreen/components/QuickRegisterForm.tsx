@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronDown, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { QuickRegisterFormData } from "../types";
+import apiFetch, { ApiURL, showToast } from "@/redux/apiService";
 
 interface QuickRegisterFormProps {
   variant: "desktop" | "mobile";
@@ -280,32 +281,70 @@ const QuickRegisterFormComponent: React.FC<QuickRegisterFormProps> = ({
     e.preventDefault();
     if (!validate()) return;
 
+    const cleanNumber = formData.mobileNumber.replace(/\D/g, "");
     setIsLoading(true);
 
-    const cleanNumber = formData.mobileNumber.replace(/\D/g, "");
+    apiFetch<{ otpSent?: boolean }>({
+      url: ApiURL.sendOtp,
+      method: "POST",
+      data: {
+        phone: cleanNumber,
+        countryCode: formData.countryCode || "+91",
+        purpose: "REGISTER",
+      },
+    })
+      .then((res) => {
+        setIsLoading(false);
 
-    // Persist registration draft in sessionStorage for reliability
-    if (typeof window !== "undefined") {
-      try {
-        sessionStorage.setItem("sindhi_reg_draft", JSON.stringify(formData));
-      } catch {
-        // Safe fallback
-      }
-    }
+        if (res.error) {
+          const errMsg = res.message || "Failed to send verification code. Please try again.";
+          showToast({
+            type: "error",
+            message: errMsg,
+          });
+          setErrors((prev) => ({ ...prev, mobile: errMsg }));
+          return;
+        }
 
-    if (onSuccess) onSuccess(formData);
+        showToast({
+          type: "success",
+          message: res.message || "Verification code sent to your mobile number!",
+        });
 
-    const params = new URLSearchParams({
-      mobile: cleanNumber,
-      code: formData.countryCode || "+91",
-      name: formData.name.trim(),
-      for: formData.profileFor || "Myself",
-    });
+        // Persist registration draft in sessionStorage for reliability
+        if (typeof window !== "undefined") {
+          try {
+            sessionStorage.setItem(
+              "sindhi_reg_draft",
+              JSON.stringify({
+                ...formData,
+                phone: cleanNumber,
+                countryCode: formData.countryCode || "+91",
+              })
+            );
+          } catch {
+            // Safe fallback
+          }
+        }
 
-    // Seamless navigation to registration OTP verification screen
-    setTimeout(() => {
-      router.push(`/registration/otp?${params.toString()}`);
-    }, 350);
+        if (onSuccess) onSuccess(formData);
+
+        const params = new URLSearchParams({
+          mobile: cleanNumber,
+          code: formData.countryCode || "+91",
+          name: formData.name.trim(),
+          for: formData.profileFor || "Myself",
+        });
+
+        router.push(`/registration/otp?${params.toString()}`);
+      })
+      .catch((err) => {
+        setIsLoading(false);
+        showToast({
+          type: "error",
+          message: "Unable to reach server. Please check your network connection.",
+        });
+      });
   };
 
   if (isSuccess) {

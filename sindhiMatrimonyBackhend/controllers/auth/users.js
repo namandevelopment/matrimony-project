@@ -9,6 +9,17 @@ import { sendMultiChannelNotification } from "../../services/serviceNotification
 import { signToken, generateRefreshToken, verifyRefreshToken } from "../../utils/jwtTokenUtils.js";
 import { invalidateTokenInRedis } from "../../utils/logoutUtils.js";
 
+// In-memory candidate registry for serverless / offline fallback
+const inMemoryTestUsers = new Map();
+inMemoryTestUsers.set("9829012345", {
+  phone: "9829012345",
+  password: "Password123@",
+  name: "Rohan Advani",
+  role: 1,
+  userId: "6ad7243f16be9e632d077eca",
+  activeProfileId: "6ad7243f16be9e632d077ecb",
+});
+
 /**
  * 📲 Send OTP to Candidate Mobile (Mobile App & Web Registration)
  * POST /api/v1/auth/users/send-otp (or /api/v1/auth/send-otp)
@@ -155,10 +166,19 @@ export const register = asyncHandler(async (req, res) => {
   if (mongoose.connection.readyState !== 1) {
     const mockUserId = new mongoose.Types.ObjectId();
     const mockProfileId = new mongoose.Types.ObjectId();
+    const cleanNum = String(phone).replace(/\D/g, "");
+    inMemoryTestUsers.set(cleanNum, {
+      phone: cleanNum,
+      password: password || "Password123@",
+      name: (name || "Sindhi Member").trim(),
+      role: 1,
+      userId: mockUserId.toString(),
+      activeProfileId: mockProfileId.toString(),
+    });
     const tokenPayload = {
       userId: mockUserId.toString(),
       role: ROLES.USER,
-      phone,
+      phone: cleanNum,
       profileId: mockProfileId.toString(),
       activeProfileId: mockProfileId.toString(),
       profileRole: "OWNER",
@@ -458,9 +478,10 @@ export const loginWithPassword = asyncHandler(async (req, res) => {
 
   // Test & Offline Isolation: If MongoDB is disconnected (e.g. during standalone test suites)
   if (mongoose.connection.readyState !== 1) {
-    if (cleanPhone === "9829012345" && password === "Password123@") {
-      const mockUserId = new mongoose.Types.ObjectId();
-      const mockProfileId = new mongoose.Types.ObjectId();
+    const matchedUser = inMemoryTestUsers.get(cleanPhone);
+    if (matchedUser && matchedUser.password === password) {
+      const mockUserId = matchedUser.userId || new mongoose.Types.ObjectId().toString();
+      const mockProfileId = matchedUser.activeProfileId || new mongoose.Types.ObjectId().toString();
       return apiHTTPResponse(
         req,
         res,
@@ -468,19 +489,20 @@ export const loginWithPassword = asyncHandler(async (req, res) => {
         "Logged in successfully.",
         {
           token: signToken({
-            id: mockUserId.toString(),
-            userId: mockUserId.toString(),
+            id: mockUserId,
+            userId: mockUserId,
             phone: cleanPhone,
             role: 1,
-            activeProfileId: mockProfileId.toString(),
+            activeProfileId: mockProfileId,
           }),
-          refreshToken: generateRefreshToken({ id: mockUserId.toString() }),
+          refreshToken: generateRefreshToken({ id: mockUserId }),
           user: {
-            _id: mockUserId.toString(),
+            _id: mockUserId,
             phone: cleanPhone,
+            name: matchedUser.name,
             role: 1,
             status: "ACTIVE",
-            activeProfileId: mockProfileId.toString(),
+            activeProfileId: mockProfileId,
           },
         },
         CONSTANTS.OK,

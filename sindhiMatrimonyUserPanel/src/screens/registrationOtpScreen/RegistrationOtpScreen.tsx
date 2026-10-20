@@ -12,6 +12,7 @@ import {
   OtpEditPhoneModal,
 } from "./components";
 import { VerificationStatus, ResendChannel } from "./types";
+import apiFetch, { ApiURL, showToast } from "@/redux/apiService";
 
 const RegistrationOtpScreenComponent: React.FC = () => {
   const searchParams = useSearchParams();
@@ -28,13 +29,13 @@ const RegistrationOtpScreenComponent: React.FC = () => {
   const [overrideCode, setOverrideCode] = useState<string | null>(null);
 
   // Derived state without cascading renders
-  const mobile = overrideMobile ?? qMobile ?? "9509531768";
+  const mobile = overrideMobile ?? qMobile ?? "9829012345";
   const countryCode = overrideCode ?? qCode ?? "+91";
   const name = qName ?? "Sindhi Member";
   const profileFor = qFor ?? "Myself";
 
-  // OTP inputs state (4 digits as shown in user reference design)
-  const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", ""]);
+  // OTP inputs state (6 digits matching backend OTP contract)
+  const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const [status, setStatus] = useState<VerificationStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -46,8 +47,8 @@ const RegistrationOtpScreenComponent: React.FC = () => {
   // Verification Handler
   const handleVerify = useCallback(() => {
     const enteredCode = otpDigits.join("");
-    if (enteredCode.length < 4) {
-      setErrorMessage("Please enter all 4 digits of the verification code.");
+    if (enteredCode.length < 6) {
+      setErrorMessage("Please enter all 6 digits of the verification code.");
       setStatus("error");
       return;
     }
@@ -55,29 +56,99 @@ const RegistrationOtpScreenComponent: React.FC = () => {
     setStatus("verifying");
     setErrorMessage(null);
 
-    // Simulate verification API request then route directly
+    // Save OTP to draft in sessionStorage
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem("sindhi_reg_otp", enteredCode);
+        const existing = sessionStorage.getItem("sindhi_reg_draft");
+        if (existing) {
+          const parsed = JSON.parse(existing);
+          parsed.otp = enteredCode;
+          sessionStorage.setItem("sindhi_reg_draft", JSON.stringify(parsed));
+        }
+      } catch {
+        // Safe fallback
+      }
+    }
+
+    showToast({
+      type: "success",
+      message: "Verification code confirmed! Next, fill basic details.",
+    });
+
     setTimeout(() => {
       const params = new URLSearchParams(window.location.search);
+      params.set("otp", enteredCode);
       router.push(`/registration/basic-info?${params.toString()}`);
-    }, 600);
+    }, 400);
   }, [otpDigits, router]);
 
   // Resend Handler
   const handleResend = useCallback(async (channel: ResendChannel) => {
-    setOtpDigits(["", "", "", ""]);
+    setOtpDigits(["", "", "", "", "", ""]);
     setErrorMessage(null);
-    setStatus("idle");
-    // Simulate API request to resend OTP via SMS / WhatsApp
-    await new Promise((resolve) => setTimeout(resolve, 600));
-  }, []);
+    setStatus("verifying");
+
+    try {
+      const res = await apiFetch<{ otpSent?: boolean }>({
+        url: ApiURL.resendOtp,
+        method: "POST",
+        data: {
+          phone: mobile,
+          countryCode,
+          purpose: "REGISTER",
+        },
+      });
+
+      setStatus("idle");
+      if (res.error) {
+        const msg = res.message || "Failed to resend verification code.";
+        setErrorMessage(msg);
+        showToast({
+          type: "error",
+          message: msg,
+        });
+      } else {
+        showToast({
+          type: "success",
+          message: res.message || "Verification code resent successfully!",
+        });
+      }
+    } catch {
+      setStatus("idle");
+      showToast({
+        type: "error",
+        message: "Failed to resend OTP. Please check your connection.",
+      });
+    }
+  }, [mobile, countryCode]);
 
   // Update Phone Handler
-  const handleSavePhone = useCallback((newMobile: string, newCode: string) => {
+  const handleSavePhone = useCallback(async (newMobile: string, newCode: string) => {
     setOverrideMobile(newMobile);
     setOverrideCode(newCode);
-    setOtpDigits(["", "", "", ""]);
+    setOtpDigits(["", "", "", "", "", ""]);
     setErrorMessage(null);
     setStatus("idle");
+
+    // Automatically send fresh OTP to updated phone
+    try {
+      await apiFetch({
+        url: ApiURL.sendOtp,
+        method: "POST",
+        data: {
+          phone: newMobile,
+          countryCode: newCode,
+          purpose: "REGISTER",
+        },
+      });
+      showToast({
+        type: "success",
+        message: `OTP sent to new mobile ${newCode} ${newMobile}`,
+      });
+    } catch {
+      // Ignore
+    }
 
     // Update URL query params without reloading
     const params = new URLSearchParams(window.location.search);
@@ -91,8 +162,12 @@ const RegistrationOtpScreenComponent: React.FC = () => {
     setStatus("verifying");
     setErrorMessage(null);
     setTimeout(() => {
-      setOtpDigits(["7", "4", "4", "9"]);
+      setOtpDigits(["1", "2", "3", "4", "5", "6"]);
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("sindhi_reg_otp", "123456");
+      }
       const params = new URLSearchParams(window.location.search);
+      params.set("otp", "123456");
       router.push(`/registration/basic-info?${params.toString()}`);
     }, 600);
   }, [router]);
@@ -114,7 +189,7 @@ const RegistrationOtpScreenComponent: React.FC = () => {
 
               {/* 2. Target Mobile Prompt */}
               <p className="text-sm sm:text-base text-stone-700 font-medium mb-6">
-                Please enter the 4-digit code sent to{" "}
+                Please enter the 6-digit code sent to{" "}
                 <span className="font-bold text-[#1A1A1A] tracking-wider">
                   {countryCode} {mobile}
                 </span>

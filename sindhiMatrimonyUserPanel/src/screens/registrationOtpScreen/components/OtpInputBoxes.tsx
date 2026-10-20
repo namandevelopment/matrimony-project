@@ -35,6 +35,8 @@ const OtpInputBoxesComponent: React.FC<OtpInputBoxesProps> = ({
     inputRefs.current[0]?.focus();
   }, []);
 
+  const otpLength = value.length || 6;
+
   // WebOTP API Integration (Standard Web Browser Feature)
   useEffect(() => {
     if (typeof window === "undefined" || !("OTPCredential" in window)) {
@@ -51,8 +53,8 @@ const OtpInputBoxesComponent: React.FC<OtpInputBoxesProps> = ({
         });
 
         if (content && content.code) {
-          const rawDigits = content.code.replace(/\D/g, "").slice(0, 4).split("");
-          if (rawDigits.length === 4) {
+          const rawDigits = content.code.replace(/\D/g, "").slice(0, otpLength).split("");
+          if (rawDigits.length === otpLength) {
             onChange(rawDigits);
             if (onSubmit) {
               setTimeout(onSubmit, 150);
@@ -71,7 +73,7 @@ const OtpInputBoxesComponent: React.FC<OtpInputBoxesProps> = ({
     return () => {
       abortController.abort();
     };
-  }, [onChange, onSubmit]);
+  }, [onChange, onSubmit, otpLength]);
 
   const handleChange = useCallback(
     (index: number, e: ChangeEvent<HTMLInputElement>) => {
@@ -90,7 +92,7 @@ const OtpInputBoxesComponent: React.FC<OtpInputBoxesProps> = ({
       onChange(next);
 
       // Auto-advance to next input
-      if (index < 3) {
+      if (index < otpLength - 1) {
         inputRefs.current[index + 1]?.focus();
       } else {
         if (next.every((d) => d.length === 1)) {
@@ -98,7 +100,7 @@ const OtpInputBoxesComponent: React.FC<OtpInputBoxesProps> = ({
         }
       }
     },
-    [value, onChange]
+    [value, onChange, otpLength]
   );
 
   const handleKeyDown = useCallback(
@@ -118,7 +120,7 @@ const OtpInputBoxesComponent: React.FC<OtpInputBoxesProps> = ({
       } else if (e.key === "ArrowLeft" && index > 0) {
         inputRefs.current[index - 1]?.focus();
         e.preventDefault();
-      } else if (e.key === "ArrowRight" && index < 3) {
+      } else if (e.key === "ArrowRight" && index < otpLength - 1) {
         inputRefs.current[index + 1]?.focus();
         e.preventDefault();
       } else if (e.key === "Enter") {
@@ -128,7 +130,7 @@ const OtpInputBoxesComponent: React.FC<OtpInputBoxesProps> = ({
         }
       }
     },
-    [value, onChange, onSubmit]
+    [value, onChange, onSubmit, otpLength]
   );
 
   const handlePaste = useCallback(
@@ -137,34 +139,33 @@ const OtpInputBoxesComponent: React.FC<OtpInputBoxesProps> = ({
       const pasted = e.clipboardData.getData("text/plain").replace(/\D/g, "");
       if (!pasted) return;
 
-      const digits = pasted.slice(0, 4).split("");
-      const next = ["", "", "", ""];
+      const digits = pasted.slice(0, otpLength).split("");
+      const next = new Array(otpLength).fill("");
       for (let i = 0; i < digits.length; i++) {
         next[i] = digits[i];
       }
       onChange(next);
 
-      const nextFocus = Math.min(digits.length, 3);
+      const nextFocus = Math.min(digits.length, otpLength - 1);
       inputRefs.current[nextFocus]?.focus();
 
-      if (digits.length === 4 && onSubmit) {
+      if (digits.length === otpLength && onSubmit) {
         setTimeout(onSubmit, 200);
       }
     },
-    [onChange, onSubmit]
+    [onChange, onSubmit, otpLength]
   );
 
   return (
     <div className="w-full flex flex-col items-center">
       <fieldset className="border-0 p-0 m-0">
-        <legend className="sr-only">Enter 4-digit verification code</legend>
+        <legend className="sr-only">Enter {otpLength}-digit verification code</legend>
         <div
-          className={`flex items-center justify-center gap-5 sm:gap-7 my-2 ${
+          className={`flex items-center justify-center gap-3 sm:gap-5 my-2 ${
             hasError ? "animate-[shake_0.4s_ease-in-out]" : ""
           }`}
         >
-          {[0, 1, 2, 3].map((idx) => {
-            const digit = value[idx] || "";
+          {value.map((digit, idx) => {
             const isFilled = digit.length > 0;
 
             return (
@@ -179,14 +180,14 @@ const OtpInputBoxesComponent: React.FC<OtpInputBoxesProps> = ({
                   pattern="[0-9]*"
                   maxLength={1}
                   autoComplete={idx === 0 ? "one-time-code" : "off"}
-                  aria-label={`Digit ${idx + 1} of 4`}
+                  aria-label={`Digit ${idx + 1} of ${otpLength}`}
                   value={digit}
                   disabled={disabled}
                   onChange={(e) => handleChange(idx, e)}
                   onKeyDown={(e) => handleKeyDown(idx, e)}
                   onPaste={handlePaste}
                   onFocus={(e) => e.target.select()}
-                  className={`w-11 sm:w-14 h-12 sm:h-14 text-center text-2xl sm:text-3xl font-extrabold tracking-wider font-sans bg-transparent border-b-2 transition-all duration-200 outline-none select-none ${
+                  className={`w-10 sm:w-12 h-12 sm:h-14 text-center text-xl sm:text-2xl font-extrabold tracking-wider font-sans bg-transparent border-b-2 transition-all duration-200 outline-none select-none ${
                     hasError
                       ? "border-red-500 text-red-600"
                       : isFilled

@@ -206,6 +206,13 @@ const RegistrationLocationProfessionalScreenComponent: React.FC = () => {
 
       setIsSubmitting(true);
       try {
+        if (typeof window !== "undefined") {
+          try {
+            sessionStorage.setItem("sindhi_reg_step3_draft", JSON.stringify(formData));
+          } catch {
+            // Ignore
+          }
+        }
         await new Promise((resolve) => setTimeout(resolve, 350));
         const params = new URLSearchParams(searchParams.toString());
         params.set("country", formData.residentCountry);

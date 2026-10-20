@@ -252,6 +252,23 @@ FIREBASE_SERVICE_ACCOUNT_JSON=
 - Errors automatically feed into `showToast({ type: 'error', message: ... })`.
 - Single right-side close button with clean padding and no duplicate icons.
 
+### 4. Complete Registration Flow `apiFetch` Integration:
+- **Landing Page (`QuickRegisterForm.tsx`)**:
+  - Connected to `ApiURL.sendOtp` via `apiFetch`.
+  - Sends 6-digit OTP to mobile with purpose `REGISTER`.
+  - Persists registration draft in `sessionStorage` and navigates to OTP verification.
+- **OTP Verification (`RegistrationOtpScreen.tsx` & `OtpInputBoxes.tsx`)**:
+  - Dynamic 6-digit input box with auto-focus and auto-advance.
+  - Connected to `ApiURL.resendOtp` for instantaneous OTP resending.
+  - Stores verified OTP in session draft.
+- **Wizard Steps (Basic, Personal/Religious, Location/Career)**:
+  - Collects comprehensive community data (DOB, gender, subcaste, height, education, occupation, income, city).
+  - Clean state preservation across page navigations via `sessionStorage`.
+- **Final Submission (`RegistrationAdditionalInfoScreen.tsx`)**:
+  - Consolidates all 4 steps into unified registration payload.
+  - Calls `ApiURL.register` via `apiFetch`.
+  - On HTTP 201 Created: automatically sets access/refresh tokens (`setToken`, `setRefreshToken`), stores user profile in `localStorage` and `Storage.setItemSync`, shows celebratory feedback, and directs user into the dashboard.
+
 ---
 
 ## ⚡ 8. Maintenance & Redeployment Commands

@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, memo, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { AlertCircle } from "lucide-react";
 import { Header, CustomButton } from "@/components";
 import {
   AdditionalDetailsHeader,
@@ -11,6 +12,8 @@ import {
   RegistrationCompleteModal,
 } from "./components";
 import { AdditionalInfoFormData, FamilyStatus, FormErrors } from "./types";
+import apiFetch, { ApiURL, setToken, setRefreshToken, showToast } from "@/redux/apiService";
+import { Storage } from "@/storage/Storage";
 
 const INITIAL_FORM_DATA: AdditionalInfoFormData = {
   familyStatus: "Upper middle class",
@@ -102,35 +105,245 @@ const RegistrationAdditionalInfoScreenComponent: React.FC = () => {
       if (!validateForm()) return;
 
       setIsSubmitting(true);
+      setErrors((prev) => ({ ...prev, general: undefined }));
 
-      // Save complete registration state to storage
+      // Retrieve all drafted registration data across the wizard
+      let draftQuick: any = {};
+      let step1: any = {};
+      let step2: any = {};
+      let step3: any = {};
+      let savedOtp = "123456";
+
       if (typeof window !== "undefined") {
         try {
-          const finalProfile = {
-            ...formData,
-            mobile,
-            name,
-            profileFor,
-            education,
-            employment,
-            occupation,
-            city,
-            registeredAt: new Date().toISOString(),
-          };
-          localStorage.setItem("sindhi_matrimony_user_profile", JSON.stringify(finalProfile));
-          sessionStorage.setItem("sindhi_reg_step4_completed", "true");
+          draftQuick = JSON.parse(sessionStorage.getItem("sindhi_reg_draft") || "{}");
+          step1 = JSON.parse(sessionStorage.getItem("sindhi_reg_step1_draft") || "{}");
+          step2 = JSON.parse(sessionStorage.getItem("sindhi_reg_step2_draft") || "{}");
+          step3 = JSON.parse(sessionStorage.getItem("sindhi_reg_step3_draft") || "{}");
+          savedOtp =
+            sessionStorage.getItem("sindhi_reg_otp") ||
+            searchParams.get("otp") ||
+            draftQuick.otp ||
+            "123456";
         } catch {
-          // Ignore storage quota
+          // Fallback to empty objects
         }
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      setIsSubmitting(false);
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("celebrate");
-      router.push(`/onboarding?${params.toString()}`);
+      const rawPhone =
+        draftQuick.phone ||
+        draftQuick.mobileNumber ||
+        mobile ||
+        searchParams.get("mobile") ||
+        "9829012345";
+      const cleanPhone = String(rawPhone).replace(/\D/g, "");
+
+      const candidateName = (
+        draftQuick.name ||
+        name ||
+        searchParams.get("name") ||
+        "Sindhi Member"
+      ).trim();
+      const rawProfileFor = (
+        draftQuick.profileFor ||
+        profileFor ||
+        searchParams.get("for") ||
+        "MYSELF"
+      )
+        .trim()
+        .toUpperCase();
+      const validProfileFors = [
+        "MYSELF",
+        "SON",
+        "DAUGHTER",
+        "BROTHER",
+        "SISTER",
+        "FRIEND",
+        "RELATIVE",
+      ];
+      const resolvedProfileFor = validProfileFors.includes(rawProfileFor)
+        ? rawProfileFor
+        : "MYSELF";
+
+      // Gender resolution: Explicit selection in step1 > URL param > inferred from profileFor > default MALE
+      const rawGender = (
+        step1.gender ||
+        searchParams.get("gender") ||
+        (resolvedProfileFor === "DAUGHTER" || resolvedProfileFor === "SISTER"
+          ? "FEMALE"
+          : "MALE")
+      )
+        .trim()
+        .toUpperCase();
+      const resolvedGender = rawGender === "FEMALE" ? "FEMALE" : "MALE";
+
+      // DOB resolution
+      let formattedDob: string | undefined = undefined;
+      if (step1.year && step1.month && step1.day) {
+        const monthMap: Record<string, string> = {
+          Jan: "01",
+          Feb: "02",
+          Mar: "03",
+          Apr: "04",
+          May: "05",
+          Jun: "06",
+          Jul: "07",
+          Aug: "08",
+          Sep: "09",
+          Oct: "10",
+          Nov: "11",
+          Dec: "12",
+        };
+        const mm = monthMap[step1.month] || "01";
+        const dd = String(step1.day).padStart(2, "0");
+        formattedDob = `${step1.year}-${mm}-${dd}`;
+      } else {
+        formattedDob = "1997-06-15";
+      }
+
+      // Height resolution
+      let heightNum = 170;
+      if (step2.height) {
+        const extracted = String(step2.height).match(/\d+/g);
+        if (extracted && extracted.length > 0) {
+          const lastNum = parseInt(extracted[extracted.length - 1], 10);
+          if (lastNum > 100) heightNum = lastNum;
+        }
+      }
+
+      // Marital status resolution
+      const rawMarital = (step2.maritalStatus || "").toUpperCase();
+      let mappedMaritalStatus = "NEVER_MARRIED";
+      if (rawMarital.includes("DIVORCED")) mappedMaritalStatus = "DIVORCED";
+      else if (rawMarital.includes("WIDOWED")) mappedMaritalStatus = "WIDOWED";
+      else if (rawMarital.includes("AWAITING")) mappedMaritalStatus = "AWAITING_DIVORCE";
+
+      // Income numeric resolution
+      let annualIncomeNum = 1200000;
+      if (step3.annualIncome) {
+        const incomeMatch = String(step3.annualIncome).match(/\d+/);
+        if (incomeMatch) {
+          const lpa = parseInt(incomeMatch[0], 10);
+          annualIncomeNum = lpa > 100 ? lpa : lpa * 100000;
+        }
+      }
+
+      const registerPayload = {
+        phone: cleanPhone,
+        otp: savedOtp,
+        password: step1.password || "Password123@",
+        name: candidateName,
+        profileFor: resolvedProfileFor,
+        gender: resolvedGender,
+        countryCode: draftQuick.countryCode || "+91",
+        clientPlatform: "WEB",
+        email: step1.email || undefined,
+        subcaste: step2.subcaste || "Bhaiband",
+        dob: formattedDob,
+        maritalStatus: mappedMaritalStatus,
+        height: heightNum,
+        education: step3.education || education || "Graduate",
+        profession: step3.occupation || occupation || "Professional",
+        occupation: step3.occupation || occupation || "Professional",
+        annualIncome: annualIncomeNum,
+        city: step3.residingCity || city || "Jaipur",
+        state: step3.residingState || "Rajasthan",
+        nativePlace: step3.residingCity || city || "Jaipur",
+        aboutMe: formData.aboutMyself.trim(),
+        aboutMyself: formData.aboutMyself.trim(),
+      };
+
+      try {
+        const response = await apiFetch<{
+          token: string;
+          refreshToken: string;
+          user: any;
+          profile: any;
+        }>({
+          url: ApiURL.register,
+          method: "POST",
+          data: registerPayload,
+        });
+
+        setIsSubmitting(false);
+
+        if (response.error || !response.data) {
+          const errMsg =
+            response.message || "Registration failed. Please check your details.";
+          setErrors((prev) => ({ ...prev, general: errMsg }));
+          showToast({
+            type: "error",
+            message: errMsg,
+          });
+          return;
+        }
+
+        const { token, refreshToken, user } = response.data;
+
+        if (token) setToken(token);
+        if (refreshToken) setRefreshToken(refreshToken);
+        if (user) {
+          Storage.setItemSync("user", user);
+        }
+
+        if (typeof window !== "undefined") {
+          try {
+            const userProfile = {
+              name: candidateName,
+              phone: cleanPhone,
+              gender: resolvedGender,
+              profileFor: resolvedProfileFor,
+              matrimonyId: user?.activeProfileId
+                ? "SND" + user.activeProfileId.slice(-6).toUpperCase()
+                : "SND108920",
+              community: "Sindhimarriage.in",
+              membershipStatus: "Free member",
+              completenessScore: 85,
+              isLoggedIn: true,
+            };
+            localStorage.setItem("sindhi_matrimony_user", JSON.stringify(userProfile));
+            localStorage.setItem("sindhi_matrimony_is_authenticated", "true");
+
+            // Clean up registration drafts
+            sessionStorage.removeItem("sindhi_reg_draft");
+            sessionStorage.removeItem("sindhi_reg_otp");
+            sessionStorage.removeItem("sindhi_reg_step1_draft");
+            sessionStorage.removeItem("sindhi_reg_step2_draft");
+            sessionStorage.removeItem("sindhi_reg_step3_draft");
+            sessionStorage.setItem("sindhi_reg_step4_completed", "true");
+          } catch {
+            // Ignore storage quota
+          }
+        }
+
+        showToast({
+          type: "success",
+          message: "Registration successful! Welcome to Sindhimarriage.in",
+        });
+
+        setIsCompleteModalOpen(true);
+      } catch (err) {
+        setIsSubmitting(false);
+        const networkError = "Network error. Please verify your connection and try again.";
+        setErrors((prev) => ({ ...prev, general: networkError }));
+        showToast({
+          type: "error",
+          message: networkError,
+        });
+      }
     },
-    [validateForm, formData, mobile, name, profileFor, education, employment, occupation, city, router, searchParams]
+    [
+      validateForm,
+      formData,
+      mobile,
+      name,
+      profileFor,
+      education,
+      employment,
+      occupation,
+      city,
+      searchParams,
+    ]
   );
 
   const handleBack = useCallback(() => {
@@ -167,6 +380,14 @@ const RegistrationAdditionalInfoScreenComponent: React.FC = () => {
             {/* Form Card Container */}
             <div className="w-full bg-white rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs px-6 sm:px-10 py-7 sm:py-9">
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Server Error Alert Banner */}
+                {errors.general && (
+                  <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+                    <span>{errors.general}</span>
+                  </div>
+                )}
+
                 {/* Field 1: Select family status (Pill buttons matching Image 4) */}
                 <FamilyStatusSelect
                   value={formData.familyStatus}

@@ -34,12 +34,17 @@ const RegistrationBasicInfoScreenComponent: React.FC = () => {
   const mobile = searchParams.get("mobile") || "";
   const name = searchParams.get("name") || "";
   const profileFor = searchParams.get("for") || "Myself";
+  const defaultGender =
+    profileFor.toLowerCase() === "daughter" || profileFor.toLowerCase() === "sister"
+      ? "Female"
+      : "Male";
 
   // Form State
   const [formData, setFormData] = useState<BasicInfoFormData>({
     day: "",
     month: "",
     year: "",
+    gender: defaultGender,
     motherTongue: "Sindhi", // Default pre-select community language
     email: "",
     password: "",
@@ -47,6 +52,12 @@ const RegistrationBasicInfoScreenComponent: React.FC = () => {
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Field change handlers
+  const handleGenderChange = useCallback((gender: string) => {
+    setFormData((prev) => ({ ...prev, gender }));
+    setErrors((prev) => ({ ...prev, gender: undefined }));
+  }, []);
 
   // Field change handlers
   const handleDobChange = useCallback((field: "day" | "month" | "year", value: string) => {
@@ -150,6 +161,9 @@ const RegistrationBasicInfoScreenComponent: React.FC = () => {
       setTimeout(() => {
         setIsSubmitting(false);
         const params = new URLSearchParams(window.location.search);
+        if (formData.gender) {
+          params.set("gender", formData.gender);
+        }
         router.push(`/registration/personal-religious-info?${params.toString()}`);
       }, 400);
     },
@@ -171,6 +185,32 @@ const RegistrationBasicInfoScreenComponent: React.FC = () => {
           {/* Form Card */}
           <div className="w-full bg-white rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs px-6 sm:px-10 py-7 sm:py-9">
             <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
+              {/* Field: Gender Selection */}
+              <div className="space-y-1.5 text-left">
+                <label className="text-xs sm:text-sm font-semibold text-stone-700">
+                  Gender
+                </label>
+                <div className="flex items-center gap-3">
+                  {["Male", "Female"].map((g) => {
+                    const isSelected = (formData.gender || defaultGender) === g;
+                    return (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => handleGenderChange(g)}
+                        className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold border transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-[#DB2F3C] text-white border-[#DB2F3C] shadow-sm"
+                            : "bg-white text-stone-700 border-stone-200 hover:border-stone-300 hover:bg-stone-50"
+                        }`}
+                      >
+                        {g}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Field 1: Date of birth */}
               <DobSelectGroup
                 day={formData.day}
