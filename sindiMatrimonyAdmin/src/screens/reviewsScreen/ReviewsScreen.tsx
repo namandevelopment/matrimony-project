@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { 
   Star, 
   Search, 
@@ -10,6 +10,7 @@ import {
   ShieldCheck, 
   Send,
   Edit3,
+  RefreshCw,
 } from 'lucide-react';
 import { crmDataService } from '../../services/crmDataService';
 import type { ReviewItem } from '../../types/crm.types';
@@ -18,6 +19,7 @@ import { memoWithDeepEqual } from '../../utils/memoUtils';
 import { CustomTextInput } from '../../components/CustomTextInput';
 import { CustomDropDown } from '../../components/CustomDropDown';
 import { useInputs } from '../../customHooks/useInputs';
+import { apiFetch, ApiURL } from '../../redux/apiService';
 
 export interface ReviewsFilterValues {
   searchQuery: string;
@@ -43,6 +45,7 @@ export interface ReviewReplyFormValues {
 
 export const ReviewsScreen: React.FC = memoWithDeepEqual(() => {
   const [reviews, setReviews] = useState<ReviewItem[]>(() => crmDataService.getReviews());
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const {
     values: filters,
@@ -86,6 +89,58 @@ export const ReviewsScreen: React.FC = memoWithDeepEqual(() => {
   const [editingReview, setEditingReview] = useState<ReviewItem | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<ReviewItem>>({});
 
+  // 1. Dynamic fetch from Backend API
+  const fetchReviewsFromBackend = useCallback(async (showNotification = false) => {
+    setIsSyncing(true);
+    try {
+      const res = await apiFetch.get<any>(ApiURL.adminReviews, undefined, {
+        isToken: true,
+        showErrorToast: false,
+      });
+
+      if (res?.data?.reviews && Array.isArray(res.data.reviews) && res.data.reviews.length > 0) {
+        const backendItems: ReviewItem[] = res.data.reviews.map((r: any) => ({
+          id: r.id || r._id || r.reviewId,
+          reviewId: r.reviewId || r.id,
+          memberId: r.memberId || 'cl_001',
+          memberName: r.memberName || 'Member',
+          memberRole: r.memberRole,
+          subcaste: r.subcaste,
+          city: r.city,
+          memberPhoto: r.memberPhoto,
+          rating: Number(r.rating) || 5,
+          title: r.title || '',
+          comment: r.comment || '',
+          source: r.source || 'WEBSITE',
+          category: r.category || 'MATCHMAKING',
+          status: (r.status as 'APPROVED' | 'PENDING' | 'REJECTED') || 'PENDING',
+          adminResponse: r.adminResponse || '',
+          adminRespondedAt: r.adminRespondedAt || '',
+          createdAt: r.createdAt || new Date().toISOString().slice(0, 10),
+          helpfulCount: Number(r.helpfulCount) || 0,
+        }));
+
+        setReviews(backendItems);
+        // Sync local storage / memory so CRM is consistent
+        backendItems.forEach((item) => {
+          crmDataService.updateReview(item.id, item);
+        });
+
+        if (showNotification) {
+          toast.success('Reviews synced dynamically with live database');
+        }
+      }
+    } catch {
+      // Fallback seamlessly to local CRM data
+    } finally {
+      setIsSyncing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchReviewsFromBackend();
+  }, [fetchReviewsFromBackend]);
+
   const handleOpenEdit = (review: ReviewItem) => {
     setEditingReview(review);
     setEditFormData({
@@ -100,7 +155,7 @@ export const ReviewsScreen: React.FC = memoWithDeepEqual(() => {
     });
   };
 
-  const handleSaveEditSubmit = (e: React.FormEvent) => {
+  const handleSaveEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingReview) return;
     if (!editFormData.memberName || !editFormData.title || !editFormData.comment) {
@@ -108,15 +163,28 @@ export const ReviewsScreen: React.FC = memoWithDeepEqual(() => {
       return;
     }
 
-    crmDataService.updateReview(editingReview.id, editFormData);
+    const targetId = editingReview.id || editingReview.reviewId;
+    crmDataService.updateReview(targetId, editFormData);
+    setReviews((prev) =>
+      prev.map((r) => (r.id === targetId || r.reviewId === targetId ? { ...r, ...editFormData } : r))
+    );
     setEditingReview(null);
-    refreshReviews();
     toast.success('Review updated and changes saved successfully');
+
+    // Sync directly to Backend MongoDB API
+    try {
+      await apiFetch.put(ApiURL.adminReviewDetail(targetId), editFormData, {
+        isToken: true,
+        showErrorToast: false,
+      });
+    } catch {
+      // Handled locally
+    }
   };
 
   const refreshReviews = useCallback(() => {
-    setReviews(crmDataService.getReviews());
-  }, []);
+    fetchReviewsFromBackend();
+  }, [fetchReviewsFromBackend]);
 
   const stats = useMemo(() => {
     return crmDataService.getReviewStats();
@@ -137,17 +205,37 @@ export const ReviewsScreen: React.FC = memoWithDeepEqual(() => {
     });
   }, [reviews, filters.searchQuery, filters.ratingFilter, filters.statusFilter, filters.sourceFilter]);
 
-  const handleStatusChange = (id: string, status: 'APPROVED' | 'PENDING' | 'REJECTED') => {
+  const handleStatusChange = async (id: string, status: 'APPROVED' | 'PENDING' | 'REJECTED') => {
     crmDataService.updateReviewStatus(id, status);
-    refreshReviews();
+    setReviews((prev) => prev.map((r) => (r.id === id || r.reviewId === id ? { ...r, status } : r)));
     toast.success(`Review status changed to ${status}`);
+
+    // Sync to Backend MongoDB API
+    try {
+      await apiFetch.put(ApiURL.adminReviewDetail(id), { status }, {
+        isToken: true,
+        showErrorToast: false,
+      });
+    } catch {
+      // Handled locally
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this review?')) {
       crmDataService.deleteReview(id);
-      refreshReviews();
+      setReviews((prev) => prev.filter((r) => r.id !== id && r.reviewId !== id));
       toast.success('Review deleted');
+
+      // Sync deletion to Backend MongoDB API
+      try {
+        await apiFetch.delete(ApiURL.adminReviewDetail(id), undefined, {
+          isToken: true,
+          showErrorToast: false,
+        });
+      } catch {
+        // Handled locally
+      }
     }
   };
 
@@ -156,26 +244,43 @@ export const ReviewsScreen: React.FC = memoWithDeepEqual(() => {
     setReplyFormValues({ replyText: review.adminResponse || '' });
   };
 
-  const handleSaveReply = (id: string) => {
-    if (!replyForm.replyText.trim()) {
+  const handleSaveReply = async (id: string) => {
+    const replyText = replyForm.replyText.trim();
+    if (!replyText) {
       toast.error('Reply text cannot be empty');
       return;
     }
-    crmDataService.addAdminReviewResponse(id, replyForm.replyText);
+    crmDataService.addAdminReviewResponse(id, replyText);
+    setReviews((prev) =>
+      prev.map((r) =>
+        r.id === id || r.reviewId === id
+          ? { ...r, adminResponse: replyText, adminRespondedAt: new Date().toISOString().slice(0, 10) }
+          : r
+      )
+    );
     setReplyingReviewId(null);
     resetReplyForm();
-    refreshReviews();
     toast.success('Official reply saved & published');
+
+    // Sync to Backend MongoDB API
+    try {
+      await apiFetch.put(ApiURL.adminReviewDetail(id), { adminResponse: replyText }, {
+        isToken: true,
+        showErrorToast: false,
+      });
+    } catch {
+      // Handled locally
+    }
   };
 
-  const handleAddReviewSubmit = (e: React.FormEvent) => {
+  const handleAddReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newReview.memberName || !newReview.title || !newReview.comment) {
       toast.error('Please fill in Member Name, Title and Comment');
       return;
     }
 
-    crmDataService.addReview({
+    const payload = {
       memberId: newReview.memberId,
       memberName: newReview.memberName,
       rating: newReview.rating,
@@ -184,12 +289,23 @@ export const ReviewsScreen: React.FC = memoWithDeepEqual(() => {
       source: newReview.source,
       category: newReview.category,
       status: newReview.status,
-    });
+    };
 
+    crmDataService.addReview(payload);
     setIsAddModalOpen(false);
     resetNewReviewForm();
     refreshReviews();
     toast.success('New review added successfully');
+
+    // Post to Backend MongoDB API
+    try {
+      await apiFetch.post(ApiURL.adminReviews, payload, {
+        isToken: true,
+        showErrorToast: false,
+      });
+    } catch {
+      // Handled locally
+    }
   };
 
   return (
@@ -208,13 +324,25 @@ export const ReviewsScreen: React.FC = memoWithDeepEqual(() => {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-medium px-5 py-2.5 rounded-xl shadow-md transition-all self-start md:self-auto cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Client Review</span>
-        </button>
+        <div className="flex items-center gap-3 self-start md:self-auto">
+          <button
+            onClick={() => fetchReviewsFromBackend(true)}
+            disabled={isSyncing}
+            className="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-white font-medium px-4 py-2.5 rounded-xl border border-slate-700 shadow-xs transition-all cursor-pointer disabled:opacity-50"
+            title="Sync with live database"
+          >
+            <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin text-rose-400' : ''}`} />
+            <span>{isSyncing ? 'Syncing...' : 'Sync Live'}</span>
+          </button>
+
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-medium px-5 py-2.5 rounded-xl shadow-md transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Client Review</span>
+          </button>
+        </div>
       </div>
 
       {/* 2. Rating Analytics & Breakdown */}

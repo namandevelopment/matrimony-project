@@ -158,6 +158,14 @@ export const ApiURL = {
   interestsSend: `${BASE_URL}/api/v1/matchmaking/interests/send`,
   conversationsList: `${BASE_URL}/api/v1/chat/conversations`,
   notificationsList: `${BASE_URL}/api/v1/notifications`,
+
+  // =========================================================================
+  // 15. REVIEWS & TESTIMONIALS MODERATION
+  // =========================================================================
+  adminReviews: `${BASE_URL}/api/v1/admin/reviews`,
+  adminReviewDetail: (id: string) => `${BASE_URL}/api/v1/admin/reviews/${id}`,
+  publicReviews: `${BASE_URL}/api/v1/reviews/public-list`,
+  submitReview: `${BASE_URL}/api/v1/reviews/submit`,
 };
 
 export default ApiURL;

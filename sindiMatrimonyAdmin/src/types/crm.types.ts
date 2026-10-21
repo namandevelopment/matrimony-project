@@ -528,6 +528,9 @@ export interface ReviewItem {
   source: 'GOOGLE' | 'IN_APP' | 'WEBSITE' | 'RELATIONSHIP_MANAGER';
   category: 'MATCHMAKING' | 'CUSTOMER_SUPPORT' | 'HOROSCOPE' | 'OVERALL';
   status: 'APPROVED' | 'PENDING' | 'REJECTED';
+  memberRole?: string;
+  subcaste?: string;
+  city?: string;
   adminResponse?: string;
   adminRespondedAt?: string;
   createdAt: string;
