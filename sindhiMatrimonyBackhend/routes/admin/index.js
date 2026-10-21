@@ -73,10 +73,23 @@ router.get("/finance/summary", getFinanceSummary);
 router.get("/finance/transactions", getTransactionsList);
 router.get("/plans", getPlansList);
 
+import {
+  getAdminSuccessStories,
+  createAdminSuccessStory,
+  updateAdminSuccessStory,
+  deleteAdminSuccessStory,
+} from "../../controllers/stories/successStoryController.js";
+
 // 7. Reviews Moderation Desk
 router.get("/reviews", getAdminReviews);
 router.put("/reviews/:id", updateAdminReview);
 router.post("/reviews/:id/moderation", moderateReviewStatus);
 router.delete("/reviews/:id", deleteAdminReview);
+
+// 8. Success Stories Registry & Moderation
+router.get("/success-stories", getAdminSuccessStories);
+router.post("/success-stories", createAdminSuccessStory);
+router.put("/success-stories/:id", updateAdminSuccessStory);
+router.delete("/success-stories/:id", deleteAdminSuccessStory);
 
 export default router;

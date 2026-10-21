@@ -13,6 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { MarriageSuccessStory } from "../types";
+import { apiFetch, ApiURL } from "@/redux/apiService";
 
 export interface ShareStoryModalProps {
   isOpen: boolean;
@@ -89,6 +90,28 @@ export const ShareStoryModal = memo<ShareStoryModalProps>(
               : storyText,
           fullStory: storyText,
         };
+
+        // Post to live Backend API for admin moderation
+        apiFetch({
+          url: ApiURL.shareSuccessStory,
+          method: "POST",
+          data: {
+            groomName: groomName.trim(),
+            groomId: groomId.trim(),
+            brideName: brideName.trim(),
+            brideId: brideId.trim(),
+            coupleNames: `${groomName.trim()} & ${brideName.trim()}`,
+            weddingDate,
+            location: location.trim(),
+            city: location.trim().split(",")?.[0]?.trim() || "Mumbai",
+            storySnippet: storyText.trim(),
+            fullStory: storyText.trim(),
+            photoUrl: uploadedImages[0] || "/images/dashboard/couple_1.jpg",
+            photoUrls: uploadedImages.length > 0 ? uploadedImages : ["/images/dashboard/couple_1.jpg"],
+          },
+          isToken: false,
+          showErrorToast: false,
+        }).catch(() => {});
 
         onSubmit(newStory);
         setIsSubmitted(true);

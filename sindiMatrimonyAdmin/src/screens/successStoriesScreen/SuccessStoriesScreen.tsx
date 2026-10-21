@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { 
   HeartHandshake, 
   Plus, 
@@ -12,7 +12,8 @@ import {
   EyeOff, 
   Star, 
   Trophy, 
-  Filter 
+  Filter,
+  RefreshCw,
 } from 'lucide-react';
 import { crmDataService } from '../../services/crmDataService';
 import type { SuccessStory } from '../../types/crm.types';
@@ -21,6 +22,7 @@ import { memoWithDeepEqual } from '../../utils/memoUtils';
 import { CustomTextInput } from '../../components/CustomTextInput';
 import { CustomDropDown } from '../../components/CustomDropDown';
 import { useInputs } from '../../customHooks/useInputs';
+import { apiFetch, ApiURL } from '../../redux/apiService';
 
 export interface SuccessStoryFilterValues {
   searchQuery: string;
@@ -65,6 +67,7 @@ const getInitialStoryValues = (): SuccessStoryFormValues => ({
 
 export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
   const [stories, setStories] = useState<SuccessStory[]>(() => crmDataService.getSuccessStories());
+  const [isSyncing, setIsSyncing] = useState(false);
   
   // Filter state via useInputs
   const { values: filters, setFieldValue: setFilterField } = useInputs<SuccessStoryFilterValues>({
@@ -93,9 +96,58 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
     validateOnBlur: true,
   });
 
-  const refreshStories = useCallback(() => {
-    setStories(crmDataService.getSuccessStories());
+  // Dynamic fetch from live Backend API
+  const fetchStoriesFromBackend = useCallback(async (showNotification = false) => {
+    setIsSyncing(true);
+    try {
+      const res = await apiFetch.get<any>(ApiURL.adminSuccessStories, undefined, {
+        isToken: true,
+        showErrorToast: false,
+      });
+
+      if (res?.data?.stories && Array.isArray(res.data.stories) && res.data.stories.length > 0) {
+        const loaded: SuccessStory[] = res.data.stories.map((s: any) => ({
+          id: s.id || s._id || `story_${Date.now()}`,
+          storyId: s.storyId || `STORY-${(s.id || '').slice(-4).toUpperCase()}`,
+          groomId: s.groomId || 'cl_001',
+          groomName: s.groomName || s.coupleName?.split('&')?.[0]?.trim() || 'Groom',
+          groomPhoto: s.groomPhoto,
+          brideId: s.brideId || 'cl_002',
+          brideName: s.brideName || s.coupleName?.split('&')?.[1]?.trim() || 'Bride',
+          bridePhoto: s.bridePhoto,
+          couplePhoto: s.couplePhoto || s.imageUrl || s.photoUrl || 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800&auto=format&fit=crop&q=80',
+          weddingDate: s.weddingDate || new Date().toISOString().slice(0, 10),
+          engagementDate: s.engagementDate || '',
+          storyTitle: s.storyTitle || s.badge || 'Verified Match',
+          storyDescription: s.storyDescription || s.storySnippet || s.testimonial || '',
+          city: s.city || 'Mumbai',
+          subcaste: s.subcaste || 'Sindhi',
+          attributedEmployeeName: s.attributedEmployeeName || 'Admin Desk',
+          status: (s.status as 'PUBLISHED' | 'DRAFT' | 'ARCHIVED') || (s.isActive ? 'PUBLISHED' : 'DRAFT'),
+          featuredOnHome: Boolean(s.featuredOnHome ?? s.isFeatured ?? true),
+          profilesArchived: Boolean(s.profilesArchived ?? false),
+          createdAt: s.createdAt || new Date().toISOString().slice(0, 10),
+        }));
+
+        setStories(loaded);
+        if (showNotification) {
+          toast.success('Success stories synced dynamically with live database');
+        }
+      }
+    } catch {
+      // Fallback seamlessly to local CRM data
+    } finally {
+      setIsSyncing(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchStoriesFromBackend();
+  }, [fetchStoriesFromBackend]);
+
+  const refreshStories = useCallback(() => {
+    fetchStoriesFromBackend();
+  }, [fetchStoriesFromBackend]);
 
   const filteredStories = useMemo(() => {
     return stories.filter((s) => {
@@ -118,19 +170,43 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
     return { total, published, featured, archived };
   }, [stories]);
 
-  const handleTogglePublish = (id: string, e: React.MouseEvent) => {
+  const handleTogglePublish = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     crmDataService.togglePublishSuccessStory(id);
-    refreshStories();
-    toast.success('Story status updated successfully');
+    const target = stories.find((s) => s.id === id || s.storyId === id);
+    const newStatus = target?.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED';
+    setStories((prev) =>
+      prev.map((s) => (s.id === id || s.storyId === id ? { ...s, status: newStatus } : s))
+    );
+    toast.success(`Story status changed to ${newStatus}`);
+
+    // Sync to Backend MongoDB API
+    try {
+      await apiFetch.put(ApiURL.adminSuccessStoryDetail(id), { status: newStatus }, {
+        isToken: true,
+        showErrorToast: false,
+      });
+    } catch {
+      // Handled locally
+    }
   };
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm('Are you sure you want to remove this success story?')) {
       crmDataService.deleteSuccessStory(id);
-      refreshStories();
+      setStories((prev) => prev.filter((s) => s.id !== id && s.storyId !== id));
       toast.success('Success story removed');
+
+      // Sync deletion to Backend MongoDB API
+      try {
+        await apiFetch.delete(ApiURL.adminSuccessStoryDetail(id), undefined, {
+          isToken: true,
+          showErrorToast: false,
+        });
+      } catch {
+        // Handled locally
+      }
     }
   };
 
@@ -155,7 +231,7 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateStoryForm()) return;
     if (!formData.groomName || !formData.brideName || !formData.storyTitle) {
@@ -163,7 +239,7 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
       return;
     }
 
-    crmDataService.addSuccessStory({
+    const payload = {
       groomId: formData.groomId || `SIND_${Date.now()}`,
       groomName: formData.groomName,
       brideId: formData.brideId || `SIND_${Date.now() + 1}`,
@@ -179,11 +255,22 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
       status: formData.status,
       featuredOnHome: formData.featuredOnHome,
       profilesArchived: formData.profilesArchived,
-    });
+    };
 
+    crmDataService.addSuccessStory(payload);
     setIsModalOpen(false);
     refreshStories();
     toast.success('💍 New Success Story added and published successfully!');
+
+    // Post to live Backend API
+    try {
+      await apiFetch.post(ApiURL.adminSuccessStories, payload, {
+        isToken: true,
+        showErrorToast: false,
+      });
+    } catch {
+      // Handled locally
+    }
   };
 
   return (
@@ -202,13 +289,25 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
           </p>
         </div>
 
-        <button
-          onClick={handleOpenAddModal}
-          className="flex items-center gap-2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-medium px-5 py-2.5 rounded-xl shadow-md transition-all self-start md:self-auto cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Success Story</span>
-        </button>
+        <div className="flex items-center gap-3 self-start md:self-auto">
+          <button
+            onClick={() => fetchStoriesFromBackend(true)}
+            disabled={isSyncing}
+            className="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-white font-medium px-4 py-2.5 rounded-xl border border-slate-700 shadow-xs transition-all cursor-pointer disabled:opacity-50"
+            title="Sync with live database"
+          >
+            <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin text-rose-400' : ''}`} />
+            <span>{isSyncing ? 'Syncing...' : 'Sync Live'}</span>
+          </button>
+
+          <button
+            onClick={handleOpenAddModal}
+            className="flex items-center gap-2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-medium px-5 py-2.5 rounded-xl shadow-md transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Success Story</span>
+          </button>
+        </div>
       </div>
 
       {/* 2. KPI Cards */}

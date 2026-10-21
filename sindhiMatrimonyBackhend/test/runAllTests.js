@@ -11,6 +11,7 @@ import { runChatQuotaAndSystemTests } from "./unit/chatQuotaAndSystem.test.js";
 import { runAdminAuthTests } from "./unit/adminAuth.test.js";
 import { runRealDataAndAdminTests } from "./unit/adminDataAndRealFlow.test.js";
 import { runReviewsModerationTests } from "./unit/reviewsModeration.test.js";
+import { runSuccessStoriesTests } from "./unit/successStories.test.js";
 
 async function runMasterTestEngine() {
   const masterStart = Date.now();
@@ -55,6 +56,9 @@ async function runMasterTestEngine() {
 
     // 11. Reviews Moderation & Public Testimonials Tests
     results.push(await runReviewsModerationTests());
+
+    // 12. Success Stories & Editorial Moderation Tests
+    results.push(await runSuccessStoriesTests());
 
     const totalPassed = results.reduce((acc, r) => acc + (r?.passed || 0), 0);
     const totalFailed = results.reduce((acc, r) => acc + (r?.failed || 0), 0);

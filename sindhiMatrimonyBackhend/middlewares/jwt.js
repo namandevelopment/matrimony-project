@@ -52,7 +52,8 @@ export const publicPaths = [
   /^\/api\/v1\/support(\/.*)?$/,
 
   // Mobile HomeScreen Resilient Endpoints (Sub-15ms Single Flight & Discovery)
-  /^\/api\/v1\/(dashboard\/)?(mobile-home|home-feed|banners|support-info|success-stories|daily-recommendations|all-matches|new-matches|who-viewed-you|profiles-you-viewed)$/,
+  /^\/api\/v1\/(dashboard\/)?(mobile-home|home-feed|banners|support-info|success-stories(\/share)?|daily-recommendations|all-matches|new-matches|who-viewed-you|profiles-you-viewed)$/,
+  /^\/api\/v1\/(common\/)?success-stories(\/share)?$/,
   /^\/api\/v1\/feed\/(home|mobile-home)$/,
 
 

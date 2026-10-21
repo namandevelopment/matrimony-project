@@ -166,6 +166,13 @@ export const ApiURL = {
   adminReviewDetail: (id: string) => `${BASE_URL}/api/v1/admin/reviews/${id}`,
   publicReviews: `${BASE_URL}/api/v1/reviews/public-list`,
   submitReview: `${BASE_URL}/api/v1/reviews/submit`,
+
+  // =========================================================================
+  // 16. SUCCESS STORIES & VIVAH REGISTRY
+  // =========================================================================
+  adminSuccessStories: `${BASE_URL}/api/v1/admin/success-stories`,
+  adminSuccessStoryDetail: (id: string) => `${BASE_URL}/api/v1/admin/success-stories/${id}`,
+  publicSuccessStories: `${BASE_URL}/api/v1/dashboard/success-stories`,
 };
 
 export default ApiURL;

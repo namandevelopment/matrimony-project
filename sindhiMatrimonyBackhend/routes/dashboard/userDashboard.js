@@ -101,12 +101,18 @@ router.get("/profiles-you-viewed", getProfilesYouViewedFeed);
  */
 router.post("/profile-views/track", trackProfileView);
 
+import {
+  getPublicSuccessStories,
+  submitUserSuccessStory,
+} from "../../controllers/stories/successStoryController.js";
+
 /**
  * @route   GET /api/v1/dashboard/success-stories
  * @desc    Get verified wedding success stories carousel (couples, quotes, photos)
  * @access  Public / Private
  */
-router.get("/success-stories", getSuccessStoriesFeed);
+router.get("/success-stories", getPublicSuccessStories);
+router.post("/success-stories/share", submitUserSuccessStory);
 
 /**
  * @route   GET /api/v1/dashboard/banners

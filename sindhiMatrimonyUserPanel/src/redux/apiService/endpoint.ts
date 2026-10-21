@@ -98,6 +98,7 @@ export const ApiURL = {
   profilesYouViewedFeed: `${BASE_URL}/api/v1/dashboard/profiles-you-viewed`,
   trackProfileView: `${BASE_URL}/api/v1/dashboard/profile-views/track`,
   successStoriesFeed: `${BASE_URL}/api/v1/dashboard/success-stories`,
+  shareSuccessStory: `${BASE_URL}/api/v1/dashboard/success-stories/share`,
   homeBanners: `${BASE_URL}/api/v1/dashboard/banners`,
   saveBanner: `${BASE_URL}/api/v1/dashboard/banners`,
   supportInfo: `${BASE_URL}/api/v1/dashboard/support-info`,

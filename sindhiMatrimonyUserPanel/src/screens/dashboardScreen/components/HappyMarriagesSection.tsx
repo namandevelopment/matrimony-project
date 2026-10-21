@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useState, useCallback, useMemo } from "react";
+import React, { memo, useState, useCallback, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   Heart,
@@ -20,6 +20,7 @@ import { SuccessStoryModal } from "./SuccessStoryModal";
 import { ShareStoryModal } from "./ShareStoryModal";
 import { defaultSuccessStoriesList } from "../data/successStoriesData";
 import type { MarriageSuccessStory } from "../types";
+import { apiFetch, ApiURL } from "@/redux/apiService";
 
 export interface HappyMarriagesSectionProps {
   stories?: MarriageSuccessStory[];
@@ -68,8 +69,8 @@ const SuccessStoryCard = memo<SuccessStoryCardProps>(
         ? story.likesCount + 1
         : story.likesCount
       : isLiked
-      ? 1
-      : 0;
+        ? 1
+        : 0;
 
     return (
       <div
@@ -114,16 +115,14 @@ const SuccessStoryCard = memo<SuccessStoryCardProps>(
             type="button"
             onClick={handleHeartClick}
             aria-label={isLiked ? "Unlike" : "Congratulate couple"}
-            className={`absolute bottom-2.5 right-2.5 z-10 px-2.5 py-1 rounded-full backdrop-blur-md shadow-xs flex items-center gap-1.5 text-xs font-semibold transition-all hover:scale-105 active:scale-95 cursor-pointer ${
-              isLiked
-                ? "bg-red-500 text-white"
-                : "bg-white/90 hover:bg-white text-stone-700 hover:text-[#DB2F3C]"
-            }`}
+            className={`absolute bottom-2.5 right-2.5 z-10 px-2.5 py-1 rounded-full backdrop-blur-md shadow-xs flex items-center gap-1.5 text-xs font-semibold transition-all hover:scale-105 active:scale-95 cursor-pointer ${isLiked
+              ? "bg-red-500 text-white"
+              : "bg-white/90 hover:bg-white text-stone-700 hover:text-[#DB2F3C]"
+              }`}
           >
             <Heart
-              className={`w-3.5 h-3.5 ${
-                isLiked ? "fill-white text-white" : "text-[#DB2F3C]"
-              }`}
+              className={`w-3.5 h-3.5 ${isLiked ? "fill-white text-white" : "text-[#DB2F3C]"
+                }`}
             />
             <span className="text-[11px] font-bold">{currentLikes}</span>
           </button>
@@ -163,9 +162,8 @@ const SuccessStoryCard = memo<SuccessStoryCardProps>(
             {story.testimonial && (
               <div className="mt-2.5">
                 <p
-                  className={`text-xs text-stone-600 leading-relaxed transition-all duration-200 ${
-                    isExpanded ? "" : "line-clamp-2"
-                  }`}
+                  className={`text-xs text-stone-600 leading-relaxed transition-all duration-200 ${isExpanded ? "" : "line-clamp-2"
+                    }`}
                 >
                   {story.testimonial}
                 </p>
@@ -215,6 +213,40 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
       ? propStories
       : defaultSuccessStoriesList;
   });
+
+  // Fetch live success stories from backend API with fallback
+  useEffect(() => {
+    let isMounted = true;
+    apiFetch.get<any>(ApiURL.successStoriesFeed, undefined, { isToken: false, showErrorToast: false })
+      .then((res) => {
+        if (isMounted && res?.data?.items && Array.isArray(res.data.items) && res.data.items.length > 0) {
+          const loaded: MarriageSuccessStory[] = res.data.items.map((s: any) => ({
+            id: s.id || s._id || `story_${Date.now()}`,
+            coupleNames: s.coupleNames || s.coupleName || "Sindhi Couple",
+            photoUrl: s.photoUrl || s.imageUrl || s.couplePhoto || "/images/dashboard/couple_1.jpg",
+            photoUrls: Array.isArray(s.photoUrls) && s.photoUrls.length > 0 ? s.photoUrls : [s.photoUrl || s.imageUrl || "/images/dashboard/couple_1.jpg"],
+            weddingDate: s.weddingDate || "14 Feb 2026",
+            postedDate: s.postedDate || s.postedOn || "Recently",
+            location: s.location || (s.city ? `${s.city}, India` : "India"),
+            groomMatrimonyId: s.groomMatrimonyId || s.groomId || "SND882914",
+            brideMatrimonyId: s.brideMatrimonyId || s.brideId || "SND772183",
+            isVerified: s.isVerified !== false,
+            verifiedBy: s.verifiedBy || "SindhiMatrimony Trust & Safety",
+            likesCount: Number(s.likesCount) || 120,
+            testimonial: s.testimonial || s.storySnippet || s.storyDescription || "A blessed journey together.",
+            fullStory: s.fullStory || s.storySnippet || s.storyDescription,
+          }));
+          setStoriesList(loaded);
+        }
+      })
+      .catch(() => {
+        // Fallback silently to defaultSuccessStoriesList
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Modal states
   const [selectedStory, setSelectedStory] = useState<MarriageSuccessStory | null>(null);
@@ -336,11 +368,10 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
               setCategoryFilter("all");
               setCurrentPage(0);
             }}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
-              categoryFilter === "all"
-                ? "bg-stone-900 text-white"
-                : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-            }`}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${categoryFilter === "all"
+              ? "bg-stone-900 text-white"
+              : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+              }`}
           >
             All Stories ({storiesList.length})
           </button>
@@ -351,11 +382,10 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
               setCategoryFilter("recent");
               setCurrentPage(0);
             }}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
-              categoryFilter === "recent"
-                ? "bg-stone-900 text-white"
-                : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-            }`}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${categoryFilter === "recent"
+              ? "bg-stone-900 text-white"
+              : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+              }`}
           >
             Recent 2026 Weddings
           </button>
@@ -366,11 +396,10 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
               setCategoryFilter("multi_photo");
               setCurrentPage(0);
             }}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
-              categoryFilter === "multi_photo"
-                ? "bg-stone-900 text-white"
-                : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-            }`}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${categoryFilter === "multi_photo"
+              ? "bg-stone-900 text-white"
+              : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+              }`}
           >
             📸 Multi-Photo Albums
           </button>
