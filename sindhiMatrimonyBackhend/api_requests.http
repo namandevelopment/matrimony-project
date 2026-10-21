@@ -676,6 +676,22 @@ Content-Type: application/json
 GET {{baseUrl}}/master/dropdowns
 Content-Type: application/json
 
+### 8.5.1 New Common Dropdowns (Gender, Castes, Religions, Languages, States)
+GET {{baseUrl}}/master/dropdowns?select=gender,castes,religions,motherTongues,physicalStatuses,states
+Content-Type: application/json
+
+### 8.5.2 Single Entity Dropdown (Gender)
+GET {{baseUrl}}/master/dropdowns/gender
+Content-Type: application/json
+
+### 8.5.3 Cascading Cities Dropdown (by State & Search)
+GET {{baseUrl}}/master/dropdowns/cities?state=Maharashtra&search=Mum
+Content-Type: application/json
+
+### 8.5.4 Degrees Dropdown (by Category)
+GET {{baseUrl}}/master/dropdowns/degrees?category=Engineering%20%26%20Technology
+Content-Type: application/json
+
 ### 8.6 Unified Bootstrap with ETag (Returns 304 Not Modified if unchanged)
 GET {{baseUrl}}/master/bootstrap
 If-None-Match: "4c357e37591f8a5813cbf9efbf3521d7"

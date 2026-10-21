@@ -772,27 +772,70 @@ Base Path: `/api/v1/master`
 Access: **Public (No JWT Token Required - Open for Registration & Landing Filters)**  
 Performance: **Sub-2ms (In-Memory Precomputed with MD5 ETag Conditional Caching)**
 
-### 8.0 Selective Dropdowns API via Query Parameters (`?select=...`)
-Form ke particular step ke liye sirf specific dropdowns fetch karne ke liye (e.g. `subcastes,maritalStatuses,heights`). Isse payload size **< 0.5 KB** ho jata hai aur parsing instantaneous hoti hai!
+### 8.0 Unified & Selective Dropdowns API via Query Parameters (`?select=...`)
+Form ke particular step ke liye sirf specific dropdowns fetch karne ke liye (e.g. `gender,heights,castes,subcastes,gotras,states`). Isse payload size **< 0.5 KB** ho jata hai aur parsing instantaneous hoti hai!
 
-- **Method & Route:** `GET /api/v1/master/dropdowns?select=subcastes,maritalStatuses,heights`
+- **Method & Route:** `GET /api/v1/master/dropdowns?select=gender,heights,castes,subcastes,gotras,states`
 - **Aliases:** `GET /api/v1/master/bootstrap?select=...`
 - **Access:** Public
 - **Supported Query Parameters:**
-  - `select`: Comma-separated keys (e.g. `subcastes,maritalStatuses,heights,diets,educationCategories,incomeSlabs,gotras,cities`)
-  - `subcaste`: When selecting `gotras`, filters gotras belonging to this subcaste (e.g. `?select=gotras&subcaste=Bhaiband`)
-  - `q` / `search`: Filters gotras or cities by prefix/search query (e.g. `?select=gotras&subcaste=Bhaiband&q=baj`)
+  - `select`: Comma-separated keys (e.g. `gender,subcastes,castes,religions,motherTongues,physicalStatuses,bodyTypes,complexions,bloodGroups,maritalStatuses,heights,diets,habits,educationCategories,degrees,employmentSectors,popularOccupations,incomeSlabs,states,diasporaCountries,quickCities,cities,currencies,horoscope,family,gotras`)
+  - `subcaste` / `caste`: When selecting `gotras`, filters gotras belonging to this subcaste (e.g. `?select=gotras&subcaste=Bhaiband`)
+  - `country`: Filters states or cities (e.g. `?select=cities&country=India`)
+  - `state`: Filters cities by state (e.g. `?select=cities&state=Maharashtra`)
+  - `category`: When selecting `degrees`, filters degrees belonging to that category (e.g. `?select=degrees&category=Engineering%20%26%20Technology`)
+  - `q` / `search`: Filters gotras, cities, or degrees by prefix/search query (e.g. `?select=cities&state=Maharashtra&search=Mum`)
 - **Success Response (200 OK):**
 ```json
 {
   "code": 1200,
   "message": "Requested dropdown options retrieved successfully.",
   "data": {
-    "subcastes": [ ... ],
-    "maritalStatuses": [ ... ],
-    "heights": [ ... ]
+    "gender": [ { "id": "MALE", "label": "Male" }, { "id": "FEMALE", "label": "Female" } ],
+    "castes": [ { "id": "SINDHI", "label": "Sindhi (General)" }, ... ],
+    "states": [ "Maharashtra", "Gujarat", "Rajasthan", ... ]
   },
   "error": false
+}
+```
+
+---
+
+### 8.0.1 Single Entity Dropdown API (`GET /api/v1/master/dropdowns/:entity`)
+Direct single-entity fetching for cascading selects (e.g., getting gender options, states, cities for a state, gotras for a subcaste).
+
+- **Method & Route:** `GET /api/v1/master/dropdowns/:entity`
+- **Examples:**
+  - `GET /api/v1/master/dropdowns/gender`
+  - `GET /api/v1/master/dropdowns/castes`
+  - `GET /api/v1/master/dropdowns/subcastes`
+  - `GET /api/v1/master/dropdowns/gotras?subcaste=Amil`
+  - `GET /api/v1/master/dropdowns/cities?state=Maharashtra&search=Mum`
+  - `GET /api/v1/master/dropdowns/degrees?category=Engineering%20%26%20Technology`
+- **Access:** Public
+- **Success Response (200 OK):**
+```json
+{
+  "code": 1200,
+  "message": "gender dropdown options retrieved successfully.",
+  "data": {
+    "entity": "gender",
+    "total": 2,
+    "items": [
+      { "id": "MALE", "label": "Male" },
+      { "id": "FEMALE", "label": "Female" }
+    ]
+  },
+  "error": false
+}
+```
+- **Error Response (404 Not Found if invalid entity requested):**
+```json
+{
+  "code": 1404,
+  "message": "Dropdown entity 'unknown' not found. Supported entities: bloodGroups, bodyTypes, castes, cities, complexions, currencies, degrees, diasporaCountries, documentTypes, educationCategories, employeeRoles, employmentSectors, family, gender, gotras, habits, haveChildren, heights, horoscope, incomeSlabs, leadSources, leadStatuses, maritalStatuses, motherTongues, physicalStatuses, popularOccupations, profileFor, quickCities, religions, sampradayas, states, subcastes, verificationStatuses, version",
+  "data": null,
+  "error": true
 }
 ```
 

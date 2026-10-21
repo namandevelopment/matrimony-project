@@ -19,27 +19,57 @@ import {
   MAJOR_SINDHI_CITIES,
   HOROSCOPE_REFERENCE,
   FAMILY_OPTIONS,
+  GENDER_OPTIONS,
+  RELIGION_OPTIONS,
+  CASTE_OPTIONS,
+  MOTHER_TONGUE_OPTIONS,
+  PHYSICAL_STATUS_OPTIONS,
+  BODY_TYPE_OPTIONS,
+  COMPLEXION_OPTIONS,
+  BLOOD_GROUP_OPTIONS,
+  INDIAN_STATES,
+  CURRENCY_OPTIONS,
+  LEAD_STATUS_OPTIONS,
+  LEAD_SOURCE_OPTIONS,
+  VERIFICATION_STATUS_OPTIONS,
+  DOCUMENT_TYPE_OPTIONS,
+  EMPLOYEE_ROLE_OPTIONS,
 } from "../../constants/masterData.constants.js";
 
 // Pre-compute static bootstrap bundle and hash for instant Sub-1ms serving
 const BOOTSTRAP_PAYLOAD = {
+  gender: GENDER_OPTIONS,
   subcastes: SINDHI_SUBCASTES,
+  castes: CASTE_OPTIONS,
+  religions: RELIGION_OPTIONS,
   sampradayas: SINDHI_SAMPRADAYAS,
+  motherTongues: MOTHER_TONGUE_OPTIONS,
   profileFor: PROFILE_FOR_OPTIONS,
   maritalStatuses: MARITAL_STATUS_OPTIONS,
   haveChildren: HAVE_CHILDREN_OPTIONS,
   heights: HEIGHT_OPTIONS,
   diets: DIET_OPTIONS,
   habits: HABIT_OPTIONS,
+  physicalStatuses: PHYSICAL_STATUS_OPTIONS,
+  bodyTypes: BODY_TYPE_OPTIONS,
+  complexions: COMPLEXION_OPTIONS,
+  bloodGroups: BLOOD_GROUP_OPTIONS,
   educationCategories: EDUCATION_CATEGORIES,
   employmentSectors: EMPLOYED_IN_SECTORS,
   popularOccupations: POPULAR_OCCUPATIONS,
   incomeSlabs: ANNUAL_INCOME_SLABS,
   diasporaCountries: SINDHI_DIASPORA_COUNTRIES,
+  states: INDIAN_STATES,
   quickCities: MAJOR_SINDHI_CITIES.slice(0, 20),
+  currencies: CURRENCY_OPTIONS,
   horoscope: HOROSCOPE_REFERENCE,
   family: FAMILY_OPTIONS,
-  version: "1.0.0",
+  leadStatuses: LEAD_STATUS_OPTIONS,
+  leadSources: LEAD_SOURCE_OPTIONS,
+  verificationStatuses: VERIFICATION_STATUS_OPTIONS,
+  documentTypes: DOCUMENT_TYPE_OPTIONS,
+  employeeRoles: EMPLOYEE_ROLE_OPTIONS,
+  version: "1.1.0",
 };
 
 const BOOTSTRAP_JSON_STRING = JSON.stringify(BOOTSTRAP_PAYLOAD);
@@ -68,9 +98,11 @@ function getFilteredGotrasList(subcaste, search) {
   filtered.forEach((item) => {
     if (!uniqueGotrasMap.has(item.gotra.toLowerCase())) {
       uniqueGotrasMap.set(item.gotra.toLowerCase(), {
+        id: item.gotra,
         gotra: item.gotra,
         subcaste: item.subcaste,
         exampleSurname: item.surname,
+        label: `${item.gotra} (${item.subcaste})`,
       });
     }
   });
@@ -78,15 +110,74 @@ function getFilteredGotrasList(subcaste, search) {
   return Array.from(uniqueGotrasMap.values());
 }
 
+// Helper for extracting filtered cities
+function getFilteredCitiesList(country, state, search) {
+  const searchTerm = (search || "").trim().toLowerCase();
+  let filtered = MAJOR_SINDHI_CITIES;
+
+  if (country) {
+    filtered = filtered.filter(
+      (c) => c.country.toLowerCase() === country.trim().toLowerCase()
+    );
+  }
+
+  if (state) {
+    filtered = filtered.filter(
+      (c) => c.state.toLowerCase() === state.trim().toLowerCase()
+    );
+  }
+
+  if (searchTerm) {
+    filtered = filtered.filter(
+      (c) =>
+        c.city.toLowerCase().includes(searchTerm) ||
+        c.state.toLowerCase().includes(searchTerm) ||
+        c.country.toLowerCase().includes(searchTerm)
+    );
+  }
+
+  return filtered.map((c) => ({
+    id: c.city,
+    city: c.city,
+    state: c.state,
+    country: c.country,
+    label: `${c.city}, ${c.state}`,
+  }));
+}
+
+// Helper for extracting filtered degrees by education category
+function getFilteredDegreesList(category, search) {
+  const searchTerm = (search || "").trim().toLowerCase();
+  let degrees = [];
+
+  if (category) {
+    const foundCat = EDUCATION_CATEGORIES.find(
+      (c) => c.category.toLowerCase() === category.trim().toLowerCase()
+    );
+    degrees = foundCat ? foundCat.degrees : [];
+  } else {
+    EDUCATION_CATEGORIES.forEach((c) => {
+      degrees.push(...c.degrees);
+    });
+  }
+
+  if (searchTerm) {
+    degrees = degrees.filter((d) => d.toLowerCase().includes(searchTerm));
+  }
+
+  return degrees.map((d) => ({ id: d, label: d }));
+}
+
 /**
  * ⚡ 0. GET /api/v1/master/dropdowns
  * Flexible, Sparse-Fieldset Dropdowns API.
- * Query: ?select=subcastes,maritalStatuses,heights
+ * Query: ?select=gender,heights,castes,subcastes,maritalStatuses
  * Or: ?select=gotras&subcaste=Bhaiband
+ * Or: ?select=cities&state=Maharashtra&search=Mum
  * If no ?select provided, returns complete dropdown bundle.
  */
 export const getDropdowns = asyncHandler(async (req, res) => {
-  const { select, subcaste, search, q } = req.query;
+  const { select, subcaste, caste, country, state, category, search, q } = req.query;
 
   // 1. If no select or select is 'all', return full bundle with ETag
   if (!select || select.trim() === "all" || select.trim() === "*") {
@@ -117,9 +208,13 @@ export const getDropdowns = asyncHandler(async (req, res) => {
 
   for (const key of requestedKeys) {
     if (key === "gotras") {
-      responseData.gotras = getFilteredGotrasList(subcaste, activeSearch);
-    } else if (key === "cities" || key === "quickCities") {
-      responseData[key] = BOOTSTRAP_PAYLOAD.quickCities;
+      responseData.gotras = getFilteredGotrasList(subcaste || caste, activeSearch);
+    } else if (key === "cities") {
+      responseData.cities = getFilteredCitiesList(country, state, activeSearch);
+    } else if (key === "quickCities") {
+      responseData.quickCities = BOOTSTRAP_PAYLOAD.quickCities;
+    } else if (key === "degrees") {
+      responseData.degrees = getFilteredDegreesList(category, activeSearch);
     } else if (BOOTSTRAP_PAYLOAD[key] !== undefined) {
       responseData[key] = BOOTSTRAP_PAYLOAD[key];
     }
@@ -132,6 +227,65 @@ export const getDropdowns = asyncHandler(async (req, res) => {
     CONSTANTS.HTTP_OK,
     "Requested dropdown options retrieved successfully.",
     responseData,
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+/**
+ * ⚡ 0.1 GET /api/v1/master/dropdowns/:entity
+ * Dynamic Single Entity Dropdown Handler.
+ * Example: GET /api/v1/master/dropdowns/gender
+ * Example: GET /api/v1/master/dropdowns/gotras?subcaste=Amil
+ * Example: GET /api/v1/master/dropdowns/cities?state=Maharashtra&search=Mum
+ */
+export const getEntityDropdown = asyncHandler(async (req, res) => {
+  const entity = (req.params.entity || "").trim();
+  const { subcaste, caste, country, state, category, search, q } = req.query;
+  const activeSearch = search || q || "";
+
+  let items = null;
+
+  if (entity === "gotras") {
+    items = getFilteredGotrasList(subcaste || caste, activeSearch);
+  } else if (entity === "cities") {
+    items = getFilteredCitiesList(country, state, activeSearch);
+  } else if (entity === "degrees") {
+    items = getFilteredDegreesList(category, activeSearch);
+  } else if (BOOTSTRAP_PAYLOAD[entity] !== undefined) {
+    items = BOOTSTRAP_PAYLOAD[entity];
+  }
+
+  if (items === null) {
+    const supportedEntities = [
+      ...Object.keys(BOOTSTRAP_PAYLOAD),
+      "gotras",
+      "cities",
+      "degrees",
+    ].sort();
+
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      `Dropdown entity '${entity}' not found. Supported entities: ${supportedEntities.join(", ")}`,
+      null,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    `${entity} dropdown options retrieved successfully.`,
+    {
+      entity,
+      total: Array.isArray(items) ? items.length : 1,
+      items,
+    },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );

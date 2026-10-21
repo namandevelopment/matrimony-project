@@ -1,6 +1,7 @@
 import express from "express";
 import {
   getDropdowns,
+  getEntityDropdown,
   getBootstrapConfig,
   getSubcastes,
   getGotras,
@@ -19,6 +20,13 @@ const router = express.Router();
  * @access  Public
  */
 router.get("/dropdowns", getDropdowns);
+
+/**
+ * @route   GET /api/v1/master/dropdowns/:entity
+ * @desc    Get single dropdown entity (e.g. gender, castes, gotras, cities, heights)
+ * @access  Public
+ */
+router.get("/dropdowns/:entity", getEntityDropdown);
 
 /**
  * @route   GET /api/v1/master/bootstrap

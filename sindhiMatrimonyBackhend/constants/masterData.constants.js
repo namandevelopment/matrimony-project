@@ -476,3 +476,153 @@ export const FAMILY_OPTIONS = {
     "Late / Deceased",
   ],
 };
+
+// 17. Gender Options
+export const GENDER_OPTIONS = [
+  { id: "MALE", label: "Male" },
+  { id: "FEMALE", label: "Female" },
+];
+
+// 18. Religion Options
+export const RELIGION_OPTIONS = [
+  { id: "HINDU", label: "Hindu" },
+  { id: "SIKH", label: "Sikh" },
+  { id: "JAIN", label: "Jain" },
+  { id: "OTHER", label: "Other" },
+];
+
+// 19. Caste / Community Options
+export const CASTE_OPTIONS = [
+  { id: "SINDHI", label: "Sindhi (General)" },
+  { id: "SINDHI_BHAIBAND", label: "Sindhi - Bhaiband" },
+  { id: "SINDHI_AMIL", label: "Sindhi - Amil" },
+  { id: "SINDHI_LOHANA", label: "Sindhi - Lohana" },
+  { id: "SINDHI_SAHITI", label: "Sindhi - Sahiti" },
+  { id: "SINDHI_LARKANA", label: "Sindhi - Larkana" },
+  { id: "SINDHI_SAKHAR", label: "Sindhi - Sakhar" },
+  { id: "SINDHI_DADU", label: "Sindhi - Dadu" },
+  { id: "SINDHI_SHIKARPURI", label: "Sindhi - Shikarpuri" },
+  { id: "SINDHI_THARI", label: "Sindhi - Thari" },
+  { id: "SINDHI_SEHWANI", label: "Sindhi - Sehwani" },
+  { id: "SINDHI_HYDERABADI", label: "Sindhi - Hyderabadi" },
+  { id: "SINDHI_BHATIA", label: "Sindhi - Bhatia" },
+  { id: "SINDHI_BRAHMINS", label: "Sindhi - Brahmins (Pokharna, Saraswat)" },
+  { id: "SINDHI_CHHAPRU", label: "Sindhi - Chhapru" },
+  { id: "CASTE_NO_BAR", label: "Caste No Bar" },
+  { id: "OTHER", label: "Other" },
+];
+
+// 20. Mother Tongue / Languages
+export const MOTHER_TONGUE_OPTIONS = [
+  { id: "SINDHI", label: "Sindhi" },
+  { id: "HINDI", label: "Hindi" },
+  { id: "ENGLISH", label: "English" },
+  { id: "GUJARATI", label: "Gujarati" },
+  { id: "MARATHI", label: "Marathi" },
+  { id: "PUNJABI", label: "Punjabi" },
+  { id: "BENGALI", label: "Bengali" },
+  { id: "OTHER", label: "Other" },
+];
+
+// 21. Physical Status & Body Types
+export const PHYSICAL_STATUS_OPTIONS = [
+  { id: "NORMAL", label: "Normal" },
+  { id: "PHYSICALLY_CHALLENGED", label: "Physically Challenged" },
+];
+
+export const BODY_TYPE_OPTIONS = [
+  { id: "SLIM", label: "Slim" },
+  { id: "ATHLETIC", label: "Athletic" },
+  { id: "AVERAGE", label: "Average" },
+  { id: "HEAVY", label: "Heavy" },
+];
+
+export const COMPLEXION_OPTIONS = [
+  { id: "VERY_FAIR", label: "Very Fair" },
+  { id: "FAIR", label: "Fair" },
+  { id: "WHEATISH", label: "Wheatish" },
+  { id: "DUSKY", label: "Dusky" },
+];
+
+export const BLOOD_GROUP_OPTIONS = [
+  { id: "A_POSITIVE", label: "A+" },
+  { id: "A_NEGATIVE", label: "A-" },
+  { id: "B_POSITIVE", label: "B+" },
+  { id: "B_NEGATIVE", label: "B-" },
+  { id: "O_POSITIVE", label: "O+" },
+  { id: "O_NEGATIVE", label: "O-" },
+  { id: "AB_POSITIVE", label: "AB+" },
+  { id: "AB_NEGATIVE", label: "AB-" },
+];
+
+// 22. Indian States and Union Territories
+export const INDIAN_STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+  "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+  "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+  "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
+];
+
+// 23. Currency Options
+export const CURRENCY_OPTIONS = [
+  { id: "INR", label: "INR - India (₹)", symbol: "₹" },
+  { id: "AED", label: "AED - UAE (AED)", symbol: "AED" },
+  { id: "USD", label: "USD - USA ($)", symbol: "$" },
+  { id: "GBP", label: "GBP - UK (£)", symbol: "£" },
+  { id: "EUR", label: "EUR - Europe (€)", symbol: "€" },
+  { id: "CAD", label: "CAD - Canada ($)", symbol: "CA$" },
+  { id: "SGD", label: "SGD - Singapore ($)", symbol: "SG$" },
+  { id: "AUD", label: "AUD - Australia ($)", symbol: "A$" },
+];
+
+// 24. Admin CRM Dropdowns
+export const LEAD_STATUS_OPTIONS = [
+  { id: "NEW", label: "New Lead" },
+  { id: "CONTACTED", label: "Contacted" },
+  { id: "INTERESTED", label: "Interested" },
+  { id: "DEMO_SCHEDULED", label: "Demo Scheduled" },
+  { id: "WON", label: "Won / Converted" },
+  { id: "LOST", label: "Lost" },
+  { id: "JUNK", label: "Junk" },
+];
+
+export const LEAD_SOURCE_OPTIONS = [
+  { id: "WEBSITE", label: "Website / Organic" },
+  { id: "REFERRAL", label: "Member Referral" },
+  { id: "FACEBOOK_ADS", label: "Meta / Facebook Ads" },
+  { id: "GOOGLE_ADS", label: "Google Ads" },
+  { id: "CAMPAIGN", label: "Marketing Campaign" },
+  { id: "WALK_IN", label: "Walk-in Center" },
+  { id: "OTHER", label: "Other" },
+];
+
+export const VERIFICATION_STATUS_OPTIONS = [
+  { id: "PENDING", label: "Pending Verification" },
+  { id: "VERIFIED", label: "Verified" },
+  { id: "REJECTED", label: "Rejected" },
+  { id: "NEEDS_REVIEW", label: "Needs Review" },
+];
+
+export const DOCUMENT_TYPE_OPTIONS = [
+  { id: "AADHAAR", label: "Aadhaar Card" },
+  { id: "PAN", label: "PAN Card" },
+  { id: "PASSPORT", label: "Passport" },
+  { id: "DRIVING_LICENSE", label: "Driving License" },
+  { id: "VOTER_ID", label: "Voter ID" },
+];
+
+export const EMPLOYEE_ROLE_OPTIONS = [
+  { id: "SUPER_ADMIN", label: "Super Admin" },
+  { id: "ADMIN", label: "Admin" },
+  { id: "CRM_MANAGER", label: "CRM Manager" },
+  { id: "CRM_AGENT", label: "CRM Agent / Telecaller" },
+  { id: "FINANCE_MANAGER", label: "Finance Manager" },
+  { id: "FINANCE_STAFF", label: "Finance Staff" },
+  { id: "MODERATOR", label: "Profile Moderator" },
+  { id: "SUPPORT_AGENT", label: "Support Agent" },
+  { id: "ANALYST", label: "Data Analyst" },
+];
+
