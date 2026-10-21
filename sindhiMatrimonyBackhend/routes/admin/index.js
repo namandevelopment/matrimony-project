@@ -61,9 +61,22 @@ router.get("/employees", getEmployeesList);
 router.get("/employees/:id", getEmployeeDetail);
 router.put("/employees/:id/permissions", updateEmployeePermissions);
 
+import {
+  getAdminReviews,
+  updateAdminReview,
+  moderateReviewStatus,
+  deleteAdminReview,
+} from "../../controllers/reviews/reviewController.js";
+
 // 6. Finance & Subscriptions
 router.get("/finance/summary", getFinanceSummary);
 router.get("/finance/transactions", getTransactionsList);
 router.get("/plans", getPlansList);
+
+// 7. Reviews Moderation Desk
+router.get("/reviews", getAdminReviews);
+router.put("/reviews/:id", updateAdminReview);
+router.post("/reviews/:id/moderation", moderateReviewStatus);
+router.delete("/reviews/:id", deleteAdminReview);
 
 export default router;

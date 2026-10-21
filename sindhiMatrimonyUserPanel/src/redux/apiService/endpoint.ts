@@ -231,4 +231,11 @@ export const ApiURL = {
   supportFaqs: `${BASE_URL}/api/v1/support/faqs`,
   submitSupportTicket: `${BASE_URL}/api/v1/support/ticket`,
   mySupportTickets: `${BASE_URL}/api/v1/support/tickets/my-tickets`,
+
+  // =========================================================================
+  // 19. MEMBER REVIEWS & TESTIMONIALS
+  // =========================================================================
+  reviews: `${BASE_URL}/api/v1/reviews`,
+  reviewsPublicList: `${BASE_URL}/api/v1/reviews/public-list`,
+  submitReview: `${BASE_URL}/api/v1/reviews/submit`,
 };

@@ -10,6 +10,7 @@ import { runDevPerformanceTrackerIntegrationTests } from "./integration/devPerfo
 import { runChatQuotaAndSystemTests } from "./unit/chatQuotaAndSystem.test.js";
 import { runAdminAuthTests } from "./unit/adminAuth.test.js";
 import { runRealDataAndAdminTests } from "./unit/adminDataAndRealFlow.test.js";
+import { runReviewsModerationTests } from "./unit/reviewsModeration.test.js";
 
 async function runMasterTestEngine() {
   const masterStart = Date.now();
@@ -51,6 +52,9 @@ async function runMasterTestEngine() {
 
     // 10. Real Data Flow & Admin CRM Endpoints Tests
     results.push(await runRealDataAndAdminTests());
+
+    // 11. Reviews Moderation & Public Testimonials Tests
+    results.push(await runReviewsModerationTests());
 
     const totalPassed = results.reduce((acc, r) => acc + (r?.passed || 0), 0);
     const totalFailed = results.reduce((acc, r) => acc + (r?.failed || 0), 0);

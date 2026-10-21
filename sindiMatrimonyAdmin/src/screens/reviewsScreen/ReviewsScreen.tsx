@@ -8,7 +8,8 @@ import {
   Trash2, 
   MessageCircle, 
   ShieldCheck, 
-  Send 
+  Send,
+  Edit3,
 } from 'lucide-react';
 import { crmDataService } from '../../services/crmDataService';
 import type { ReviewItem } from '../../types/crm.types';
@@ -80,6 +81,38 @@ export const ReviewsScreen: React.FC = memoWithDeepEqual(() => {
     category: 'MATCHMAKING',
     status: 'APPROVED',
   });
+
+  // Edit review modal state
+  const [editingReview, setEditingReview] = useState<ReviewItem | null>(null);
+  const [editFormData, setEditFormData] = useState<Partial<ReviewItem>>({});
+
+  const handleOpenEdit = (review: ReviewItem) => {
+    setEditingReview(review);
+    setEditFormData({
+      memberName: review.memberName,
+      rating: review.rating,
+      title: review.title,
+      comment: review.comment,
+      status: review.status,
+      source: review.source,
+      category: review.category,
+      adminResponse: review.adminResponse || '',
+    });
+  };
+
+  const handleSaveEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingReview) return;
+    if (!editFormData.memberName || !editFormData.title || !editFormData.comment) {
+      toast.error('Member name, title and comment cannot be empty');
+      return;
+    }
+
+    crmDataService.updateReview(editingReview.id, editFormData);
+    setEditingReview(null);
+    refreshReviews();
+    toast.success('Review updated and changes saved successfully');
+  };
 
   const refreshReviews = useCallback(() => {
     setReviews(crmDataService.getReviews());
@@ -398,6 +431,14 @@ export const ReviewsScreen: React.FC = memoWithDeepEqual(() => {
                   <MessageCircle className="w-3.5 h-3.5 text-rose-700" />
                   <span>{review.adminResponse ? 'Edit Response' : 'Reply to Member'}</span>
                 </button>
+
+                <button
+                  onClick={() => handleOpenEdit(review)}
+                  className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-blue-200 bg-blue-50/50 text-blue-700 hover:bg-blue-100/70 font-semibold transition-colors cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Edit Review</span>
+                </button>
               </div>
 
               <div className="flex items-center gap-2">
@@ -599,6 +640,157 @@ export const ReviewsScreen: React.FC = memoWithDeepEqual(() => {
                   className="px-5 py-2 bg-rose-900 hover:bg-rose-800 text-white rounded-lg text-sm font-semibold shadow cursor-pointer"
                 >
                   Save Review
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Edit Review Modal Dialog */}
+      {editingReview && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 my-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
+                  <Edit3 className="w-5 h-5 text-blue-600" />
+                  <span>Edit Member Review</span>
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Review ID: <strong className="text-slate-800">{editingReview.reviewId}</strong> • Member: {editingReview.memberName}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingReview(null)}
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditSubmit} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <CustomTextInput
+                  label="Member / Couple Name"
+                  value={editFormData.memberName || ''}
+                  onChange={(e) => setEditFormData((prev) => ({ ...prev, memberName: e.target.value }))}
+                  size="sm"
+                  required
+                />
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-slate-700">Star Rating (1 - 5)</label>
+                  <div className="flex items-center gap-2 pt-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        type="button"
+                        key={star}
+                        onClick={() => setEditFormData((prev) => ({ ...prev, rating: star }))}
+                        className="p-1 rounded-md hover:bg-amber-50 cursor-pointer transition-colors"
+                      >
+                        <Star
+                          className={`w-5 h-5 ${
+                            star <= (editFormData.rating || 5)
+                              ? 'text-amber-400 fill-amber-400'
+                              : 'text-slate-200 fill-slate-200'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                    <span className="text-xs font-bold text-slate-700 ml-1">
+                      {editFormData.rating || 5} Stars
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <CustomTextInput
+                label="Review Headline / Title"
+                value={editFormData.title || ''}
+                onChange={(e) => setEditFormData((prev) => ({ ...prev, title: e.target.value }))}
+                size="sm"
+                required
+              />
+
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-slate-700">Review Message / Feedback</label>
+                <textarea
+                  rows={4}
+                  value={editFormData.comment || ''}
+                  onChange={(e) => setEditFormData((prev) => ({ ...prev, comment: e.target.value }))}
+                  className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 bg-slate-50/50"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <CustomDropDown
+                  label="Moderation Status"
+                  value={editFormData.status || 'PENDING'}
+                  onChange={(val) => setEditFormData((prev) => ({ ...prev, status: val as any }))}
+                  size="sm"
+                  options={[
+                    { label: 'Approved (Visible on Web)', value: 'APPROVED' },
+                    { label: 'Pending Moderation', value: 'PENDING' },
+                    { label: 'Rejected / Hidden', value: 'REJECTED' },
+                  ]}
+                />
+
+                <CustomDropDown
+                  label="Channel / Source"
+                  value={editFormData.source || 'WEBSITE'}
+                  onChange={(val) => setEditFormData((prev) => ({ ...prev, source: val as any }))}
+                  size="sm"
+                  options={[
+                    { label: 'Website Form', value: 'WEBSITE' },
+                    { label: 'In-App Feedback', value: 'IN_APP' },
+                    { label: 'Google Review', value: 'GOOGLE' },
+                    { label: 'Relationship Manager', value: 'RELATIONSHIP_MANAGER' },
+                  ]}
+                />
+
+                <CustomDropDown
+                  label="Category"
+                  value={editFormData.category || 'MATCHMAKING'}
+                  onChange={(val) => setEditFormData((prev) => ({ ...prev, category: val as any }))}
+                  size="sm"
+                  options={[
+                    { label: 'Matchmaking', value: 'MATCHMAKING' },
+                    { label: 'Customer Support', value: 'CUSTOMER_SUPPORT' },
+                    { label: 'Horoscope / Kundli', value: 'HOROSCOPE' },
+                    { label: 'Overall Experience', value: 'OVERALL' },
+                  ]}
+                />
+              </div>
+
+              <div className="space-y-1 pt-2 border-t border-slate-100">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Official Administrator Response (Shown under review on website)
+                </label>
+                <textarea
+                  rows={2}
+                  value={editFormData.adminResponse || ''}
+                  onChange={(e) => setEditFormData((prev) => ({ ...prev, adminResponse: e.target.value }))}
+                  placeholder="Thank you for sharing your wonderful experience..."
+                  className="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 bg-white"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingReview(null)}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold shadow cursor-pointer"
+                >
+                  Save &amp; Update Review
                 </button>
               </div>
             </form>

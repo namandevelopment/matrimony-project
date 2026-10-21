@@ -18,6 +18,7 @@ import notificationRoutes from "./notifications/index.js";
 import contentRoutes from "./common/content.js";
 import supportRoutes from "./support/index.js";
 import adminRoutes from "./admin/index.js";
+import reviewsRoutes from "./reviews/index.js";
 import { getContent } from "../controllers/common/contentMasterController.js";
 import {
   getDashboardData,
@@ -95,6 +96,10 @@ router.use("/content", contentRoutes);
 
 // 13. Customer Support, Help Desk & FAQs Gateway
 router.use("/support", supportRoutes);
+
+// 14. Reviews & Testimonials Gateway (Public & Member Submissions)
+router.use("/reviews", reviewsRoutes);
+router.use("/common/reviews", reviewsRoutes);
 
 // 🌐 Direct Root-Level Aliases for Content & Policies
 router.get("/privacy-policy", (req, res) => {

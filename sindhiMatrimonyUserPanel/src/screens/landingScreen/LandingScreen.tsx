@@ -7,6 +7,7 @@ import { Header } from "./components/Header";
 import { HeroSection } from "./components/HeroSection";
 import { TrustBadges } from "./components/TrustBadges";
 import { OurProcessSection } from "./components/OurProcessSection";
+import { ReviewsSection } from "./components/ReviewsSection";
 import { AboutSection } from "./components/AboutSection";
 import { Footer } from "./components/Footer";
 import { FloatingChatWidget } from "@/components";
@@ -55,7 +56,10 @@ const LandingScreenComponent: React.FC = () => {
         {/* 4. Our Process (4-Step Matrimonial Journey) */}
         <OurProcessSection />
 
-        {/* 5. SEO Descriptive Content Section */}
+        {/* 5. Real Member Reviews & Stories (Admin Moderated) */}
+        <ReviewsSection />
+
+        {/* 6. SEO Descriptive Content Section */}
         <AboutSection />
       </main>
 

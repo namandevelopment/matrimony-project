@@ -4552,6 +4552,14 @@ class CRMDataService {
     return true;
   }
 
+  updateReview(id: string, updates: Partial<ReviewItem>): boolean {
+    const rev = this.reviews.find((r) => r.id === id || r.reviewId === id);
+    if (!rev) return false;
+    Object.assign(rev, updates);
+    this.saveState();
+    return true;
+  }
+
   addAdminReviewResponse(id: string, adminResponse: string): boolean {
     const rev = this.reviews.find((r) => r.id === id || r.reviewId === id);
     if (!rev) return false;
