@@ -14,6 +14,11 @@ export {
   useApiInfiniteQuery,
   useProfileQuery,
   useDashboardQuery,
+  useDashboardFeedQuery,
+  useDashboardMatchesQuery,
+  useSuccessStoriesQuery,
+  useReviewsQuery,
+  useHoroscopeQuery,
   useMasterDropdownsQuery,
   useCountriesQuery,
   useAllMatchesQuery,
@@ -24,6 +29,8 @@ export {
   useShortlistQuery,
   useInterestsReceivedQuery,
   useInterestsSentQuery,
+  useInterestsBadgeCountQuery,
+  useInterestsTabQuery,
   useConversationsQuery,
   useNotificationsQuery,
 } from './useQuery';
@@ -37,6 +44,9 @@ export {
   useAcceptInterestMutation,
   useDeclineInterestMutation,
   useBlockUserMutation,
+  useSaveRashiMutation,
+  useSubmitReviewMutation,
+  useShareSuccessStoryMutation,
 } from './useMutation';
 
 // 5. Optimistic & Cache Updaters (Equivalent to Redux Action/optimisticUpdate.ts)

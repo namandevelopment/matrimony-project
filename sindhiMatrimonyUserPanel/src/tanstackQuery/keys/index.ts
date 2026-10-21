@@ -10,8 +10,12 @@ export const QUERY_KEYS = {
 
   // 2. Dashboard & Home Feeds
   dashboard: ['dashboard', 'home'] as const,
+  dashboardFeed: (rashi?: string) => ['dashboard', 'feed', rashi || 'default'] as const,
+  dashboardMatches: ['dashboard', 'matches'] as const,
   dailyRecommendations: ['dashboard', 'recommendations'] as const,
-  successStories: ['dashboard', 'success-stories'] as const,
+  horoscope: (rashi?: string) => ['dashboard', 'horoscope', rashi || 'default'] as const,
+  successStories: (page = 1, limit = 12) => ['dashboard', 'success-stories', page, limit] as const,
+  reviews: ['reviews', 'public-list'] as const,
   banners: ['dashboard', 'banners'] as const,
 
   // 3. Matches & Discover (Paginated Feeds)
@@ -28,6 +32,8 @@ export const QUERY_KEYS = {
   interestsReceived: ['interests', 'received'] as const,
   interestsSent: ['interests', 'sent'] as const,
   interestsBadgeCount: ['interests', 'badge-count'] as const,
+  interestsList: (section: string, status: string, search = '') =>
+    ['interests', 'list', section, status, search] as const,
 
   // 5. Chat & Messaging
   conversations: ['chat', 'conversations'] as const,

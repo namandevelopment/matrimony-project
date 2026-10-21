@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, UseMutationOptions } from '@tanstack/react-query';
-import { apiRequest } from '../../redux/apiService';
+import { apiFetch, apiRequest } from '../../redux/apiService';
 import { ApiURL } from '../../redux/apiService/endpoint';
 import { QUERY_KEYS } from '../keys';
 import {
@@ -62,20 +62,27 @@ export const useApiMutation = <TResponse = any, TVariables extends MutationParam
   const queryClient = useQueryClient();
 
   return useMutation<TResponse, any, TVariables>({
-    mutationFn: ({
+    mutationFn: async ({
       url,
       method = 'POST',
       data = {},
       params = {},
       isToken = true,
-    }: TVariables) =>
-      apiRequest<TResponse>({
+    }: TVariables) => {
+      const res = await apiFetch<TResponse>({
         url,
         method: method as any,
         data,
         params,
         isToken,
-      }),
+        showErrorToast: false,
+        throwOnError: false,
+      });
+      if (res.error) {
+        throw new Error(res.message || 'Mutation failed');
+      }
+      return (res.data !== undefined && res.data !== null ? res.data : res) as TResponse;
+    },
 
     onMutate: async variables => {
       if (options?.onMutate) {
@@ -167,7 +174,7 @@ export const useUpdateProfileMutation = (onSuccessCallback?: (data: any) => void
  */
 export const useSendInterestMutation = (candidateId?: string) => {
   return useApiMutation({
-    invalidateQueries: [QUERY_KEYS.interestsSent, QUERY_KEYS.interestsBadgeCount],
+    invalidateQueries: [QUERY_KEYS.interestsSent, QUERY_KEYS.interestsBadgeCount, QUERY_KEYS.dashboardMatches],
     updateItem: candidateId
       ? {
           queryKey: QUERY_KEYS.allMatches(),
@@ -180,16 +187,18 @@ export const useSendInterestMutation = (candidateId?: string) => {
 
 /**
  * ⚡ 3. Shortlist Candidate Mutation
- * Toggles shortlist status on candidate card in all matches
+ * Toggles shortlist status on candidate card in all matches and dashboard matches
  */
-export const useShortlistMutation = (candidateId: string) => {
+export const useShortlistMutation = (candidateId?: string) => {
   return useApiMutation({
-    invalidateQueries: [QUERY_KEYS.shortlist],
-    updateItem: {
-      queryKey: QUERY_KEYS.allMatches(),
-      id: candidateId,
-      data: (vars) => ({ isShortlisted: vars.data?.shortlist ?? true }),
-    },
+    invalidateQueries: [QUERY_KEYS.shortlist, QUERY_KEYS.dashboardMatches],
+    updateItem: candidateId
+      ? {
+          queryKey: QUERY_KEYS.allMatches(),
+          id: candidateId,
+          data: (vars) => ({ isShortlisted: vars.data?.shortlist ?? true }),
+        }
+      : undefined,
   });
 };
 
@@ -231,5 +240,32 @@ export const useBlockUserMutation = (userId: string) => {
       queryKey: QUERY_KEYS.allMatches(),
       id: userId,
     },
+  });
+};
+
+/**
+ * ⚡ 7. Save Preferred Rashi Mutation
+ */
+export const useSaveRashiMutation = () => {
+  return useApiMutation({
+    invalidateQueries: [QUERY_KEYS.dashboard, QUERY_KEYS.horoscope()],
+  });
+};
+
+/**
+ * ⚡ 8. Submit User Review Mutation
+ */
+export const useSubmitReviewMutation = () => {
+  return useApiMutation({
+    invalidateQueries: [QUERY_KEYS.reviews],
+  });
+};
+
+/**
+ * ⚡ 9. Share Success Story Mutation
+ */
+export const useShareSuccessStoryMutation = () => {
+  return useApiMutation({
+    invalidateQueries: [QUERY_KEYS.successStories()],
   });
 };

@@ -1,5 +1,5 @@
 import { useQuery, useInfiniteQuery, UseQueryOptions, UseInfiniteQueryOptions } from '@tanstack/react-query';
-import { apiRequest } from '../../redux/apiService';
+import { apiFetch, apiRequest } from '../../redux/apiService';
 import { ApiURL } from '../../redux/apiService/endpoint';
 import { QUERY_KEYS } from '../keys';
 
@@ -24,7 +24,7 @@ export const useApiQuery = <T = any>({
   params = {},
   isToken = true,
   enabled = true,
-  staleTime,
+  staleTime = 1000 * 60 * 5, // 5 minutes default fresh cache
   select,
   options = {},
 }: UseApiQueryProps<T>) => {
@@ -34,13 +34,20 @@ export const useApiQuery = <T = any>({
     staleTime,
     select,
     ...options,
-    queryFn: () =>
-      apiRequest<T>({
+    queryFn: async () => {
+      const res = await apiFetch<T>({
         url,
         method: 'GET',
         params,
         isToken,
-      }),
+        showErrorToast: false,
+        throwOnError: false,
+      });
+      if (res.error) {
+        throw new Error(res.message || 'API request failed');
+      }
+      return (res.data !== undefined && res.data !== null ? res.data : res) as T;
+    },
   });
 };
 
@@ -69,7 +76,7 @@ export const useApiInfiniteQuery = <T = any>({
     staleTime,
     initialPageParam: 1,
     queryFn: async ({ pageParam = 1 }) => {
-      return await apiRequest({
+      const res = await apiFetch<any>({
         url,
         method: 'GET',
         params: {
@@ -78,7 +85,13 @@ export const useApiInfiniteQuery = <T = any>({
           page: pageParam,
         },
         isToken,
+        showErrorToast: false,
+        throwOnError: false,
       });
+      if (res.error) {
+        throw new Error(res.message || 'API request failed');
+      }
+      return res.data !== undefined && res.data !== null ? res.data : res;
     },
     getNextPageParam: (lastPage: any, allPages: any[]) => {
       const hasMore = lastPage?.hasMore;
@@ -106,7 +119,63 @@ export const useProfileQuery = (enabled = true) => {
   });
 };
 
-/** 2. Home Dashboard & Recommendations Feed */
+/** 2. Consolidated Web Dashboard Feed (sub-10ms single flight) */
+export const useDashboardFeedQuery = (rashi?: string, enabled = true) => {
+  return useApiQuery({
+    queryKey: QUERY_KEYS.dashboardFeed(rashi),
+    url: ApiURL.dashboard,
+    params: rashi ? { rashi } : undefined,
+    enabled,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+  });
+};
+
+/** 2.1 Dashboard Recommended Matches Feed */
+export const useDashboardMatchesQuery = (enabled = true) => {
+  return useApiQuery({
+    queryKey: QUERY_KEYS.dashboardMatches,
+    url: ApiURL.dashboardMatches,
+    enabled,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+  });
+};
+
+/** 2.2 Success Stories Feed (Public / User Panel) */
+export const useSuccessStoriesQuery = (page = 1, limit = 12, enabled = true) => {
+  return useApiQuery({
+    queryKey: QUERY_KEYS.successStories(page, limit),
+    url: ApiURL.successStoriesFeed,
+    params: { page, limit },
+    isToken: false,
+    enabled,
+    staleTime: 1000 * 60 * 10, // 10 minutes cache
+  });
+};
+
+/** 2.3 Public Approved Reviews & Testimonials */
+export const useReviewsQuery = (enabled = true) => {
+  return useApiQuery({
+    queryKey: QUERY_KEYS.reviews,
+    url: ApiURL.reviewsPublicList,
+    isToken: false,
+    enabled,
+    staleTime: 1000 * 60 * 10, // 10 minutes cache
+  });
+};
+
+/** 2.4 Daily Astrological Horoscope */
+export const useHoroscopeQuery = (rashi = "leo", enabled = true) => {
+  return useApiQuery({
+    queryKey: QUERY_KEYS.horoscope(rashi),
+    url: ApiURL.dashboardHoroscope,
+    params: { rashi },
+    isToken: false,
+    enabled,
+    staleTime: 1000 * 60 * 15, // 15 minutes cache
+  });
+};
+
+/** 2.5 Mobile HomeScreen Consolidated Feed */
 export const useDashboardQuery = (enabled = true) => {
   return useApiQuery({
     queryKey: QUERY_KEYS.dashboard,
@@ -253,6 +322,41 @@ export const useInterestsSentQuery = () => {
     ...query,
     requests,
   };
+};
+
+/** 12.1 Interests Sidebar Badge Counts */
+export const useInterestsBadgeCountQuery = (enabled = true) => {
+  return useApiQuery({
+    queryKey: QUERY_KEYS.interestsBadgeCount,
+    url: ApiURL.interestsBadgeCount,
+    enabled,
+    staleTime: 1000 * 60 * 3, // 3 minutes cache
+  });
+};
+
+/** 12.2 Dashboard Interests Tab Feed */
+export const useInterestsTabQuery = (
+  section: 'received' | 'sent',
+  filters: { status?: string; search?: string; page?: number; limit?: number } = {},
+  enabled = true,
+) => {
+  const isReceived = section === 'received';
+  const endpoint = isReceived ? ApiURL.interestsReceived : ApiURL.interestsSent;
+  const statusParam = filters.status === 'all' || !filters.status ? 'ALL' : filters.status.toUpperCase();
+  const searchParam = filters.search?.trim() || undefined;
+
+  return useApiQuery({
+    queryKey: QUERY_KEYS.interestsList(section, statusParam, searchParam),
+    url: endpoint,
+    params: {
+      status: statusParam,
+      search: searchParam,
+      page: filters.page || 1,
+      limit: filters.limit || 30,
+    },
+    enabled,
+    staleTime: 1000 * 60 * 3, // 3 minutes cache
+  });
 };
 
 /** 13. Chat Conversations List */

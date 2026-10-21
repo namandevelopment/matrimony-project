@@ -7,6 +7,7 @@ import {
   InterestCard,
 } from "@/screens/interestsScreen/components";
 import { apiFetch, ApiURL } from "@/redux/apiService";
+import { useInterestsBadgeCountQuery, useInterestsTabQuery } from "@/tanstackQuery";
 import { toast } from "@/toastMessage/toast";
 import type {
   InterestSection,
@@ -49,98 +50,62 @@ const DashboardInterestsViewComponent: React.FC<DashboardInterestsViewProps> = (
     return () => clearTimeout(timer);
   }, [activeSearchQuery]);
 
-  // Fetch badge counts for sidebar
-  const fetchBadgeCounts = useCallback(async () => {
-    try {
-      const res = await apiFetch<any>({
-        url: ApiURL.interestsBadgeCount,
-        method: "GET",
-        showErrorToast: false,
-      });
-      if (res && res.data) {
-        setBadgeCounts(res.data);
-      } else {
-        setBadgeCounts(mockBadgeCounts);
-      }
-    } catch {
-      setBadgeCounts(mockBadgeCounts);
-    }
-  }, []);
+  // 1. TanStack Query for Interests Badge Counts (3 mins cache, zero duplicate requests)
+  const { data: badgeData, refetch: refetchBadgeCounts } = useInterestsBadgeCountQuery();
 
-  // Fetch Interests List
-  const fetchInterests = useCallback(
-    async (showLoadingSpinner = true) => {
-      if (showLoadingSpinner) {
-        setIsLoading(true);
-      } else {
-        setIsRefreshing(true);
-      }
-      setError(null);
-
-      try {
-        const endpoint =
-          section === "received"
-            ? ApiURL.interestsReceived
-            : ApiURL.interestsSent;
-
-        const res = await apiFetch<any>({
-          url: endpoint,
-          method: "GET",
-          params: {
-            status: status === "all" ? "ALL" : status.toUpperCase(),
-            search: debouncedSearch.trim() || undefined,
-            page: 1,
-            limit: 30,
-          },
-          showErrorToast: false,
-        });
-
-        if (res && res.data && Array.isArray(res.data.interests)) {
-          setInterests(res.data.interests);
-        } else {
-          // Graceful fallback to mock data
-          const filtered = mockInterestsList.filter((item) => {
-            const matchesSection = item.direction?.toLowerCase() === section;
-            const matchesStatus =
-              status === "all" || item.status.toLowerCase() === status;
-            const profile = section === "received" ? item.senderProfile : item.receiverProfile;
-            const matchesSearch =
-              !debouncedSearch.trim() ||
-              profile?.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-              profile?.subcaste?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-              profile?.city?.toLowerCase().includes(debouncedSearch.toLowerCase());
-            return matchesSection && matchesStatus && matchesSearch;
-          });
-          setInterests(filtered);
-        }
-      } catch (err: any) {
-        console.warn("API unavailable, displaying fallback interests:", err);
-        const filtered = mockInterestsList.filter((item) => {
-          const matchesSection = item.direction?.toLowerCase() === section;
-          const matchesStatus =
-            status === "all" || item.status.toLowerCase() === status;
-          const profile = section === "received" ? item.senderProfile : item.receiverProfile;
-          const matchesSearch =
-            !debouncedSearch.trim() ||
-            profile?.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-            profile?.subcaste?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-            profile?.city?.toLowerCase().includes(debouncedSearch.toLowerCase());
-          return matchesSection && matchesStatus && matchesSearch;
-        });
-        setInterests(filtered);
-      } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
-      }
-    },
-    [section, status, debouncedSearch]
-  );
-
-  // Trigger initial & filter changes
   useEffect(() => {
-    fetchInterests();
-    fetchBadgeCounts();
-  }, [fetchInterests, fetchBadgeCounts]);
+    if (badgeData) {
+      const counts = (badgeData as any)?.data || badgeData;
+      setBadgeCounts(counts);
+    }
+  }, [badgeData]);
+
+  // 2. TanStack Query for Interests List (3 mins cache per section/filter, zero duplicate requests)
+  const {
+    data: interestsData,
+    isLoading: queryLoading,
+    refetch: refetchInterests,
+  } = useInterestsTabQuery(section, {
+    status,
+    search: debouncedSearch,
+    page: 1,
+    limit: 30,
+  });
+
+  useEffect(() => {
+    if (!interestsData) return;
+    setIsLoading(false);
+    const rawList =
+      (interestsData as any)?.interests ||
+      (interestsData as any)?.data?.interests ||
+      (Array.isArray(interestsData) ? interestsData : []);
+
+    if (Array.isArray(rawList) && rawList.length > 0) {
+      setInterests(rawList);
+    } else {
+      // Graceful fallback to mock data
+      const filtered = mockInterestsList.filter((item) => {
+        const matchesSection = item.direction?.toLowerCase() === section;
+        const matchesStatus =
+          status === "all" || item.status.toLowerCase() === status;
+        const profile = section === "received" ? item.senderProfile : item.receiverProfile;
+        const matchesSearch =
+          !debouncedSearch.trim() ||
+          profile?.name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+          profile?.subcaste?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+          profile?.city?.toLowerCase().includes(debouncedSearch.toLowerCase());
+        return matchesSection && matchesStatus && matchesSearch;
+      });
+      setInterests(filtered);
+    }
+  }, [interestsData, section, status, debouncedSearch]);
+
+  const handleRefresh = useCallback(() => {
+    setIsRefreshing(true);
+    Promise.all([refetchInterests(), refetchBadgeCounts()]).finally(() => {
+      setIsRefreshing(false);
+    });
+  }, [refetchInterests, refetchBadgeCounts]);
 
   const handleSelect = useCallback(
     (newSection: InterestSection, newStatus: InterestStatus) => {
@@ -169,7 +134,8 @@ const DashboardInterestsViewComponent: React.FC<DashboardInterestsViewProps> = (
               item._id === interestId ? { ...item, status: "ACCEPTED" } : item
             )
           );
-          fetchBadgeCounts();
+          refetchBadgeCounts();
+          refetchInterests();
         } else {
           toast.error(res.message || "Failed to accept interest.");
         }
@@ -177,7 +143,7 @@ const DashboardInterestsViewComponent: React.FC<DashboardInterestsViewProps> = (
         toast.error("Failed to accept interest. Please try again.");
       }
     },
-    [fetchBadgeCounts]
+    [refetchBadgeCounts, refetchInterests]
   );
 
   // Action: Decline Interest
@@ -197,7 +163,8 @@ const DashboardInterestsViewComponent: React.FC<DashboardInterestsViewProps> = (
               item._id === interestId ? { ...item, status: "DECLINED" } : item
             )
           );
-          fetchBadgeCounts();
+          refetchBadgeCounts();
+          refetchInterests();
         } else {
           toast.error(res.message || "Failed to decline interest.");
         }
@@ -205,7 +172,7 @@ const DashboardInterestsViewComponent: React.FC<DashboardInterestsViewProps> = (
         toast.error("Failed to decline interest. Please try again.");
       }
     },
-    [fetchBadgeCounts]
+    [refetchBadgeCounts, refetchInterests]
   );
 
   // Action: Remind Interest
@@ -248,7 +215,8 @@ const DashboardInterestsViewComponent: React.FC<DashboardInterestsViewProps> = (
         if (!res.error) {
           toast.info("Interest request withdrawn.");
           setInterests((prev) => prev.filter((item) => item._id !== interestId));
-          fetchBadgeCounts();
+          refetchBadgeCounts();
+          refetchInterests();
         } else {
           toast.error(res.message || "Failed to withdraw interest.");
         }
@@ -256,7 +224,7 @@ const DashboardInterestsViewComponent: React.FC<DashboardInterestsViewProps> = (
         toast.error("Failed to withdraw interest.");
       }
     },
-    [fetchBadgeCounts]
+    [refetchBadgeCounts, refetchInterests]
   );
 
   // Counts mapped for Sidebar
@@ -320,20 +288,20 @@ const DashboardInterestsViewComponent: React.FC<DashboardInterestsViewProps> = (
             </div>
             <button
               type="button"
-              onClick={() => fetchInterests(false)}
-              disabled={isLoading || isRefreshing}
+              onClick={handleRefresh}
+              disabled={isLoading || isRefreshing || queryLoading}
               className="p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors cursor-pointer"
               title="Refresh interests"
             >
               <RefreshCw
-                className={`w-4 h-4 ${isRefreshing ? "animate-spin text-[#DB2F3C]" : ""}`}
+                className={`w-4 h-4 ${isRefreshing || queryLoading ? "animate-spin text-[#DB2F3C]" : ""}`}
               />
             </button>
           </div>
 
           {/* Body Content */}
           <div>
-            {isLoading ? (
+            {isLoading || queryLoading ? (
               <div className="space-y-4 py-8 bg-white rounded-xl border border-stone-200/90 shadow-2xs p-6">
                 <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-stone-500 mb-4">
                   <Loader2 className="w-4 h-4 animate-spin text-[#DB2F3C]" />
@@ -351,7 +319,7 @@ const DashboardInterestsViewComponent: React.FC<DashboardInterestsViewProps> = (
                 <p className="text-sm text-rose-600 font-medium">{error}</p>
                 <button
                   type="button"
-                  onClick={() => fetchInterests(true)}
+                  onClick={handleRefresh}
                   className="px-4 py-1.5 text-xs font-semibold text-white bg-[#DB2F3C] rounded-lg shadow-2xs hover:bg-[#B71F2A] transition-colors cursor-pointer"
                 >
                   Retry

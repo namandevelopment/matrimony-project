@@ -3,6 +3,7 @@
 import React, { memo, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { apiFetch, ApiURL } from "@/redux/apiService";
+import { useSaveRashiMutation } from "@/tanstackQuery";
 import {
   Sparkles,
   Heart,
@@ -546,18 +547,25 @@ const DashboardHoroscopeSectionComponent: React.FC<DashboardHoroscopeSectionProp
     );
   }, [selectedRasiId]);
 
+  const saveRashiMutation = useSaveRashiMutation();
+
   // Handle setting as default
   const handleSetAsDefault = useCallback(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("preferred_user_rasi", currentRasi.id);
     }
-    // Sync preferred rashi to user profile in backend database
-    apiFetch.post(ApiURL.saveRashi, { rashi: currentRasi.id }, { isToken: true, showErrorToast: false }).catch(() => {});
+    // Sync preferred rashi to user profile in backend database via TanStack mutation
+    saveRashiMutation.mutate({
+      url: ApiURL.saveRashi,
+      method: "POST",
+      data: { rashi: currentRasi.id },
+      isToken: true,
+    });
     setIsSavedAsDefault(true);
     setTimeout(() => {
       setIsSavedAsDefault(false);
     }, 3000);
-  }, [currentRasi.id]);
+  }, [currentRasi.id, saveRashiMutation]);
 
   // Dynamic Today Date display
   const todayFormatted = useMemo(() => {

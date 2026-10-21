@@ -14,6 +14,11 @@ import {
 } from "@/screens/matchesScreen/components";
 import { initialMatchesList, defaultPreferences } from "@/screens/matchesScreen/mockData";
 import { apiFetch, ApiURL } from "@/redux/apiService";
+import {
+  useDashboardMatchesQuery,
+  useShortlistMutation,
+  useSendInterestMutation,
+} from "@/tanstackQuery";
 import type {
   MatchDetailProfile,
   MatchCategoryType,
@@ -41,49 +46,47 @@ const DashboardMatchesViewComponent: React.FC<DashboardMatchesViewProps> = ({
   const [currentSort, setCurrentSort] = useState<SortOption>("relevance");
   const [currentPage, setCurrentPage] = useState<number>(1);
 
-  // Fetch live candidate matches from backend API with fallback
-  React.useEffect(() => {
-    let isMounted = true;
-    apiFetch
-      .get<any>(ApiURL.dashboardMatches, undefined, { isToken: true, showErrorToast: false })
-      .then((res) => {
-        const items = res?.data?.items || (Array.isArray(res?.data) ? res.data : []);
-        if (isMounted && Array.isArray(items) && items.length > 0) {
-          const loaded: MatchDetailProfile[] = items.map((c: any, idx: number) => ({
-            id: c._id || c.id || `match_${idx}`,
-            matrimonyId: c.matrimonyId || `SND${882000 + idx}`,
-            name: c.name || "Sindhi Match",
-            age: Number(c.age) || 25,
-            height: c.heightFormatted || c.height || "5'4\"",
-            education: c.education?.degree || c.education || "Graduate",
-            profession: c.profession?.occupation || c.profession || "Professional",
-            city: c.location?.city || c.city || "Mumbai",
-            state: c.location?.state || c.state || "Maharashtra",
-            photoUrl: c.avatar || c.photoUrl || "",
-            lastSeen: "Active recently",
-            isNewlyJoined: idx < 3,
-            isSilhouette: !c.avatar && !c.photoUrl,
-            gender: c.gender || "female",
-            hasHoroscope: true,
-            isNotSeen: true,
-            phoneAvailable: true,
-            whatsappAvailable: true,
-            phoneNumber: "+91 98200 12345",
-            whatsappNumber: "+91 98200 12345",
-            isShortlisted: Boolean(c.isShortlisted),
-            interestSent: Boolean(c.interestSent),
-            caste: c.subcaste || c.caste || "Sindhi - Bhaiband",
-            motherTongue: "Sindhi",
-          }));
-          setProfilesList(loaded);
-        }
-      })
-      .catch(() => {});
+  // Fetch live candidate matches from TanStack Query (5 mins cache, zero duplicate calls)
+  const { data: matchesRes } = useDashboardMatchesQuery();
+  const shortlistMutation = useShortlistMutation();
+  const sendInterestMutation = useSendInterestMutation();
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  React.useEffect(() => {
+    if (!matchesRes) return;
+    const items =
+      (matchesRes as any)?.items ||
+      (Array.isArray(matchesRes) ? matchesRes : (matchesRes as any)?.data?.items || (matchesRes as any)?.data || []);
+
+    if (Array.isArray(items) && items.length > 0) {
+      const loaded: MatchDetailProfile[] = items.map((c: any, idx: number) => ({
+        id: c._id || c.id || `match_${idx}`,
+        matrimonyId: c.matrimonyId || `SND${882000 + idx}`,
+        name: c.name || "Sindhi Match",
+        age: Number(c.age) || 25,
+        height: c.heightFormatted || c.height || "5'4\"",
+        education: c.education?.degree || c.education || "Graduate",
+        profession: c.profession?.occupation || c.profession || "Professional",
+        city: c.location?.city || c.city || "Mumbai",
+        state: c.location?.state || c.state || "Maharashtra",
+        photoUrl: c.avatar || c.photoUrl || "",
+        lastSeen: "Active recently",
+        isNewlyJoined: idx < 3,
+        isSilhouette: !c.avatar && !c.photoUrl,
+        gender: c.gender || "female",
+        hasHoroscope: true,
+        isNotSeen: true,
+        phoneAvailable: true,
+        whatsappAvailable: true,
+        phoneNumber: "+91 98200 12345",
+        whatsappNumber: "+91 98200 12345",
+        isShortlisted: Boolean(c.isShortlisted),
+        interestSent: Boolean(c.interestSent),
+        caste: c.subcaste || c.caste || "Sindhi - Bhaiband",
+        motherTongue: "Sindhi",
+      }));
+      setProfilesList(loaded);
+    }
+  }, [matchesRes]);
 
   // User interactions state
   const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(() => {
@@ -140,29 +143,42 @@ const DashboardMatchesViewComponent: React.FC<DashboardMatchesViewProps> = ({
   }, []);
 
   // Card actions
-  const handleToggleShortlist = useCallback((id: string) => {
-    setShortlistedIds((prev) => {
-      const next = new Set(prev);
-      const isShortlisting = !next.has(id);
-      if (!isShortlisting) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-    apiFetch.post(ApiURL.shortlistCandidate(id), {}, { isToken: true, showErrorToast: false }).catch(() => {});
-  }, []);
+  const handleToggleShortlist = useCallback(
+    (id: string) => {
+      setShortlistedIds((prev) => {
+        const next = new Set(prev);
+        const isShortlisting = !next.has(id);
+        if (!isShortlisting) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+      shortlistMutation.mutate({
+        url: ApiURL.shortlistCandidate(id),
+        method: "POST",
+        isToken: true,
+      });
+    },
+    [shortlistMutation]
+  );
 
-  const handleSendInterest = useCallback((id: string) => {
-    setInterestedIds((prev) => {
-      const next = new Set(prev);
-      const isExpressing = !next.has(id);
-      if (!isExpressing) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-    apiFetch
-      .post(ApiURL.interestsSend, { receiverCandidateId: id, message: "Interested in your profile." }, { isToken: true, showErrorToast: false })
-      .catch(() => {});
-  }, []);
+  const handleSendInterest = useCallback(
+    (id: string) => {
+      setInterestedIds((prev) => {
+        const next = new Set(prev);
+        const isExpressing = !next.has(id);
+        if (!isExpressing) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+      sendInterestMutation.mutate({
+        url: ApiURL.interestsSend,
+        method: "POST",
+        data: { receiverCandidateId: id, message: "Interested in your profile." },
+        isToken: true,
+      });
+    },
+    [sendInterestMutation]
+  );
 
   const handleDontShow = useCallback((id: string) => {
     setHiddenIds((prev) => new Set(prev).add(id));

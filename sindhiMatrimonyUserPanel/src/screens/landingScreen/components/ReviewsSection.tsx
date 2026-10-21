@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/redux/apiService";
 import { ApiURL } from "@/redux/apiService/endpoint";
+import { useReviewsQuery } from "@/tanstackQuery";
 import { SubmitReviewModal } from "./SubmitReviewModal";
 
 export interface ReviewItem {
@@ -174,30 +175,22 @@ export const ReviewsSection: React.FC = memo(() => {
   const [helpfulMap, setHelpfulMap] = useState<Record<string, boolean>>({});
   const [helpfulCounts, setHelpfulCounts] = useState<Record<string, number>>({});
 
-  // Fetch approved reviews from backend API with automatic fallback
-  const fetchReviews = async () => {
-    try {
-      const res = await apiFetch<any>({
-        url: ApiURL.reviewsPublicList,
-        method: "GET",
-        isToken: false,
-        showErrorToast: false,
-      });
-
-      if (res?.data?.reviews && Array.isArray(res.data.reviews) && res.data.reviews.length > 0) {
-        setReviews(res.data.reviews);
-      }
-      if (res?.data?.stats) {
-        setStats(res.data.stats);
-      }
-    } catch {
-      // Fallback silently to pre-bundled FALLBACK_REVIEWS
-    }
-  };
+  // Fetch approved reviews via TanStack Query (10 mins cache, zero duplicate requests)
+  const { data: reviewsData, refetch: refetchReviews } = useReviewsQuery();
 
   useEffect(() => {
-    fetchReviews();
-  }, []);
+    if (!reviewsData) return;
+    const res = reviewsData as any;
+    const revList = res?.reviews || res?.data?.reviews || (Array.isArray(res) ? res : []);
+    const statData = res?.stats || res?.data?.stats;
+
+    if (Array.isArray(revList) && revList.length > 0) {
+      setReviews(revList);
+    }
+    if (statData) {
+      setStats(statData);
+    }
+  }, [reviewsData]);
 
   const handleToggleHelpful = (reviewId: string, currentCount: number) => {
     const isAlreadyHelpful = helpfulMap[reviewId];
@@ -498,7 +491,7 @@ export const ReviewsSection: React.FC = memo(() => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={() => {
-          fetchReviews();
+          refetchReviews();
         }}
       />
     </section>

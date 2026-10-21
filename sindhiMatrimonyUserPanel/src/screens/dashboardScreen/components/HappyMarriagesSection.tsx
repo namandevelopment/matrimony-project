@@ -21,6 +21,7 @@ import { ShareStoryModal } from "./ShareStoryModal";
 import { defaultSuccessStoriesList } from "../data/successStoriesData";
 import type { MarriageSuccessStory } from "../types";
 import { apiFetch, ApiURL } from "@/redux/apiService";
+import { useSuccessStoriesQuery } from "@/tanstackQuery";
 
 export interface HappyMarriagesSectionProps {
   stories?: MarriageSuccessStory[];
@@ -214,40 +215,36 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
       : defaultSuccessStoriesList;
   });
 
-  // Fetch live success stories from backend API with fallback
-  useEffect(() => {
-    let isMounted = true;
-    apiFetch.get<any>(ApiURL.successStoriesFeed, undefined, { isToken: false, showErrorToast: false })
-      .then((res) => {
-        const rawStories = res?.data?.stories || res?.data?.items || (Array.isArray(res?.data) ? res.data : []);
-        if (isMounted && Array.isArray(rawStories) && rawStories.length > 0) {
-          const loaded: MarriageSuccessStory[] = rawStories.map((s: any) => ({
-            id: s.id || s._id || `story_${Date.now()}`,
-            coupleNames: s.coupleNames || s.coupleName || "Sindhi Couple",
-            photoUrl: s.photoUrl || s.imageUrl || s.couplePhoto || "/images/dashboard/couple_1.jpg",
-            photoUrls: Array.isArray(s.photoUrls) && s.photoUrls.length > 0 ? s.photoUrls : [s.photoUrl || s.imageUrl || "/images/dashboard/couple_1.jpg"],
-            weddingDate: s.weddingDate || "14 Feb 2026",
-            postedDate: s.postedDate || s.postedOn || "Recently",
-            location: s.location || (s.city ? `${s.city}, India` : "India"),
-            groomMatrimonyId: s.groomMatrimonyId || s.groomId || "SND882914",
-            brideMatrimonyId: s.brideMatrimonyId || s.brideId || "SND772183",
-            isVerified: s.isVerified !== false,
-            verifiedBy: s.verifiedBy || "SindhiMatrimony Trust & Safety",
-            likesCount: Number(s.likesCount) || 120,
-            testimonial: s.testimonial || s.storySnippet || s.storyDescription || "A blessed journey together.",
-            fullStory: s.fullStory || s.storySnippet || s.storyDescription,
-          }));
-          setStoriesList(loaded);
-        }
-      })
-      .catch(() => {
-        // Fallback silently to defaultSuccessStoriesList
-      });
+  // Fetch live success stories from TanStack Query (10 mins fresh cache, zero duplicate requests)
+  const { data: storiesData } = useSuccessStoriesQuery(1, 12);
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  useEffect(() => {
+    if (!storiesData) return;
+    const rawStories =
+      (storiesData as any)?.stories ||
+      (storiesData as any)?.items ||
+      (Array.isArray(storiesData) ? storiesData : (storiesData as any)?.data?.stories || (storiesData as any)?.data || []);
+
+    if (Array.isArray(rawStories) && rawStories.length > 0) {
+      const loaded: MarriageSuccessStory[] = rawStories.map((s: any) => ({
+        id: s.id || s._id || `story_${Date.now()}`,
+        coupleNames: s.coupleNames || s.coupleName || "Sindhi Couple",
+        photoUrl: s.photoUrl || s.imageUrl || s.couplePhoto || "/images/dashboard/couple_1.jpg",
+        photoUrls: Array.isArray(s.photoUrls) && s.photoUrls.length > 0 ? s.photoUrls : [s.photoUrl || s.imageUrl || "/images/dashboard/couple_1.jpg"],
+        weddingDate: s.weddingDate || "14 Feb 2026",
+        postedDate: s.postedDate || s.postedOn || "Recently",
+        location: s.location || (s.city ? `${s.city}, India` : "India"),
+        groomMatrimonyId: s.groomMatrimonyId || s.groomId || "SND882914",
+        brideMatrimonyId: s.brideMatrimonyId || s.brideId || "SND772183",
+        isVerified: s.isVerified !== false,
+        verifiedBy: s.verifiedBy || "SindhiMatrimony Trust & Safety",
+        likesCount: Number(s.likesCount) || 120,
+        testimonial: s.testimonial || s.storySnippet || s.storyDescription || "A blessed journey together.",
+        fullStory: s.fullStory || s.storySnippet || s.storyDescription,
+      }));
+      setStoriesList(loaded);
+    }
+  }, [storiesData]);
 
   // Modal states
   const [selectedStory, setSelectedStory] = useState<MarriageSuccessStory | null>(null);

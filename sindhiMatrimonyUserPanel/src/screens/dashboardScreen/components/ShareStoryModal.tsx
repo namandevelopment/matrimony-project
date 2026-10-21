@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { MarriageSuccessStory } from "../types";
 import { apiFetch, ApiURL } from "@/redux/apiService";
+import { useShareSuccessStoryMutation } from "@/tanstackQuery";
 
 export interface ShareStoryModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export interface ShareStoryModalProps {
 
 export const ShareStoryModal = memo<ShareStoryModalProps>(
   ({ isOpen, onClose, onSubmit }) => {
+    const shareStoryMutation = useShareSuccessStoryMutation();
     const [groomName, setGroomName] = useState("");
     const [groomId, setGroomId] = useState("");
     const [brideName, setBrideName] = useState("");
@@ -91,8 +93,8 @@ export const ShareStoryModal = memo<ShareStoryModalProps>(
           fullStory: storyText,
         };
 
-        // Post to live Backend API for admin moderation
-        apiFetch({
+        // Post to live Backend API for admin moderation with TanStack cache invalidation
+        shareStoryMutation.mutate({
           url: ApiURL.shareSuccessStory,
           method: "POST",
           data: {
@@ -110,8 +112,7 @@ export const ShareStoryModal = memo<ShareStoryModalProps>(
             photoUrls: uploadedImages.length > 0 ? uploadedImages : ["/images/dashboard/couple_1.jpg"],
           },
           isToken: false,
-          showErrorToast: false,
-        }).catch(() => {});
+        });
 
         onSubmit(newStory);
         setIsSubmitted(true);
