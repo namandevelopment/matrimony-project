@@ -45,6 +45,11 @@ export const publicPaths = [
   /^\/api\/v1\/stories\/public-list$/,
   /^\/api\/v1\/reviews\/public-list$/,
 
+  // Public Dynamic Content, Policies & Support Gateway (Privacy Policy, Terms, Process, FAQs)
+  /^\/api\/v1\/content(\/.*)?$/,
+  /^\/api\/v1\/(privacy-policy|terms-and-conditions|help-support|our-process)$/,
+  /^\/api\/v1\/support(\/.*)?$/,
+
   // Mobile HomeScreen Resilient Endpoints (Sub-15ms Single Flight & Discovery)
   /^\/api\/v1\/(dashboard\/)?(mobile-home|home-feed|banners|support-info|success-stories|daily-recommendations|all-matches|new-matches|who-viewed-you|profiles-you-viewed)$/,
   /^\/api\/v1\/feed\/(home|mobile-home)$/,
