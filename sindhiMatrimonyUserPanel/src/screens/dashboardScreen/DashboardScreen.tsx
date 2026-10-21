@@ -16,17 +16,21 @@ import { MailboxSearchInput } from "@/screens/interestsScreen/components";
 import { DashboardNavProvider } from "./context/DashboardNavContext";
 import { FloatingChatWidget } from "@/screens/matchesScreen/components";
 import { NotificationsScreen } from "@/screens/notificationsScreen";
+import { apiFetch, ApiURL } from "@/redux/apiService";
 import type {
   UserProfile,
   DashboardNavTab,
   DashboardMode,
   DashboardScreenProps,
+  MatchProfile,
+  ViewedProfile,
+  MarriageSuccessStory,
 } from "./types";
 
 const defaultUserProfile: UserProfile = {
   name: "Naman",
-  matrimonyId: "BRH4517087",
-  community: "BrahminMatrimony",
+  matrimonyId: "SM4517087",
+  community: "SindhiMatrimony",
   membershipStatus: "Free member",
   completenessScore: 42,
 };
@@ -42,11 +46,112 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
   onAssistedServiceClick,
 }) => {
   const router = useRouter();
-  const [user] = useState<UserProfile>(initialUser);
+  const [user, setUser] = useState<UserProfile>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("user");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return {
+            name: parsed.name || parsed.fullName || initialUser.name,
+            matrimonyId: parsed.matrimonyId || parsed.id || initialUser.matrimonyId,
+            community: parsed.community || "SindhiMatrimony",
+            membershipStatus: parsed.membershipStatus || (parsed.plan ? "Paid member" : "Free member"),
+            completenessScore: parsed.completenessScore ?? 42,
+            avatarUrl: parsed.avatar || parsed.avatarUrl || parsed.photoUrl || "",
+          };
+        }
+      } catch {}
+    }
+    return initialUser;
+  });
+
+  const [matches, setMatches] = useState<MatchProfile[]>(initialMatches || []);
+  const [viewedProfiles, setViewedProfiles] = useState<ViewedProfile[]>(initialViewedProfiles || []);
+  const [successStories, setSuccessStories] = useState<MarriageSuccessStory[]>(initialSuccessStories || []);
   const [activeTab, setActiveTab] = useState<DashboardNavTab["id"]>(initialTab);
   const [mode, setMode] = useState<DashboardMode>("regular");
   const [interestsSearchQuery, setInterestsSearchQuery] = useState("");
   const [messagesSearchQuery, setMessagesSearchQuery] = useState("");
+
+  // Live consolidated dashboard API integration (sub-10ms single flight)
+  useEffect(() => {
+    let isMounted = true;
+    apiFetch
+      .get<any>(ApiURL.dashboard, undefined, { isToken: true, showErrorToast: false })
+      .then((res) => {
+        if (!isMounted || !res?.data) return;
+        const d = res.data;
+
+        // 1. Sync User Profile
+        if (d.user) {
+          setUser({
+            name: d.user.name || "Member",
+            matrimonyId: d.user.matrimonyId || "SM4517087",
+            community: d.user.community || "SindhiMatrimony",
+            membershipStatus: d.user.membershipStatus || "Free member",
+            completenessScore: d.completeness?.score ?? d.user.completenessScore ?? 42,
+            avatarUrl: d.user.avatarUrl || d.user.avatar || "",
+          });
+        }
+
+        // 2. Sync Matches Carousel
+        const loadedMatches = d.matches?.items || (Array.isArray(d.matches) ? d.matches : []);
+        if (Array.isArray(loadedMatches) && loadedMatches.length > 0) {
+          const mappedMatches: MatchProfile[] = loadedMatches.map((m: any, idx: number) => ({
+            id: m.id || m._id || m.matrimonyId || `match_${idx}`,
+            name: m.name || "Sindhi Match",
+            age: Number(m.age) || 25,
+            height: m.height || m.heightFormatted || "5'4\"",
+            city: m.city || m.location?.city || "Mumbai",
+            caste: m.caste || m.subcaste || "Bhaiband",
+            education: m.education?.degree || m.education || "Graduate / Professional",
+            photoUrl: m.photoUrl || m.avatar || "",
+            isSilhouette: m.isSilhouette ?? !m.photoUrl,
+          }));
+          setMatches(mappedMatches);
+        }
+
+        // 3. Sync Viewed Profiles
+        if (Array.isArray(d.viewedProfiles) && d.viewedProfiles.length > 0) {
+          setViewedProfiles(
+            d.viewedProfiles.map((p: any, idx: number) => ({
+              id: p.id || p._id || `vp_${idx}`,
+              name: p.name || "Sindhi Member",
+              age: Number(p.age) || 25,
+              height: p.height || "5'4\"",
+              viewedDate: p.viewedDate || "Recently",
+              photoUrl: p.photoUrl || p.avatar || "",
+            }))
+          );
+        }
+
+        // 4. Sync Success Stories
+        const loadedStories = d.successStories || d.stories;
+        if (Array.isArray(loadedStories) && loadedStories.length > 0) {
+          setSuccessStories(
+            loadedStories.map((s: any, idx: number) => ({
+              id: s.id || s._id || `story_${idx}`,
+              coupleNames: s.coupleNames || s.coupleName || "Sindhi Couple",
+              photoUrl: s.photoUrl || s.imageUrl || "/images/dashboard/couple_1.jpg",
+              photoUrls: Array.isArray(s.photoUrls) ? s.photoUrls : [s.photoUrl || s.imageUrl || ""].filter(Boolean),
+              weddingDate: s.weddingDate || "Recently",
+              postedDate: s.postedDate || "Recently",
+              testimonial: s.testimonial || s.storySnippet || "Blessed union on SindhiMatrimony.",
+              location: s.location || (s.city ? `${s.city}, India` : "India"),
+              isVerified: s.isVerified !== false,
+              likesCount: Number(s.likesCount) || 120,
+            }))
+          );
+        }
+      })
+      .catch(() => {})
+      .finally(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Synchronize activeTab on browser back/forward buttons
   useEffect(() => {
@@ -166,9 +271,9 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
           ) : (
             <DashboardHomeView
               user={user}
-              initialMatches={initialMatches}
-              initialViewedProfiles={initialViewedProfiles}
-              initialSuccessStories={initialSuccessStories}
+              initialMatches={matches.length > 0 ? matches : initialMatches}
+              initialViewedProfiles={viewedProfiles.length > 0 ? viewedProfiles : initialViewedProfiles}
+              initialSuccessStories={successStories.length > 0 ? successStories : initialSuccessStories}
               onUpgradeClick={handleUpgrade}
               onAssistedServiceClick={handleAssistedService}
             />

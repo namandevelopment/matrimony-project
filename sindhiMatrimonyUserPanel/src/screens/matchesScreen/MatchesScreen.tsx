@@ -32,9 +32,9 @@ import {
 } from "./types";
 
 const defaultUser: UserProfile = {
-  name: "Naman",
-  matrimonyId: "BRH4517087",
-  community: "BrahminMatrimony",
+  name: "Member",
+  matrimonyId: "SM4517087",
+  community: "SindhiMatrimony",
   membershipStatus: "Free member",
   completenessScore: 42,
 };

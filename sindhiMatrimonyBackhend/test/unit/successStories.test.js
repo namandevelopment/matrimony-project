@@ -87,9 +87,19 @@ export async function runSuccessStoriesTests() {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
     assert.strictEqual(res5.status, 200, "Admin delete should return 200");
-    console.log("  ✅ [5/5] TC-SS5: DELETE /api/v1/admin/success-stories/:id allows story deletion");
+    console.log("  ✅ [5/6] TC-SS5: DELETE /api/v1/admin/success-stories/:id allows story deletion");
 
-    return { passed: 5, failed: 0, total: 5 };
+    // 7. Resilient GET /api/v1/dashboard (Unauthenticated Dashboard Feed)
+    const res6 = await fetch(`${baseUrl}/api/v1/dashboard`);
+    assert.strictEqual(res6.status, 200, "Dashboard feed should be accessible resiliently");
+    const json6 = await res6.json();
+    assert.strictEqual(json6.error, false, "Should return error=false");
+    assert.ok(json6.data.user, "Should return user object");
+    assert.ok(json6.data.matches, "Should return matches");
+    assert.ok(json6.data.horoscope, "Should return horoscope");
+    console.log("  ✅ [6/6] TC-SS6: GET /api/v1/dashboard returns resilient consolidated feed");
+
+    return { passed: 6, failed: 0, total: 6 };
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }

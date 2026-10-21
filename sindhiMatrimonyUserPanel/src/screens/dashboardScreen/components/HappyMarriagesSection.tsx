@@ -219,8 +219,9 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
     let isMounted = true;
     apiFetch.get<any>(ApiURL.successStoriesFeed, undefined, { isToken: false, showErrorToast: false })
       .then((res) => {
-        if (isMounted && res?.data?.items && Array.isArray(res.data.items) && res.data.items.length > 0) {
-          const loaded: MarriageSuccessStory[] = res.data.items.map((s: any) => ({
+        const rawStories = res?.data?.stories || res?.data?.items || (Array.isArray(res?.data) ? res.data : []);
+        if (isMounted && Array.isArray(rawStories) && rawStories.length > 0) {
+          const loaded: MarriageSuccessStory[] = rawStories.map((s: any) => ({
             id: s.id || s._id || `story_${Date.now()}`,
             coupleNames: s.coupleNames || s.coupleName || "Sindhi Couple",
             photoUrl: s.photoUrl || s.imageUrl || s.couplePhoto || "/images/dashboard/couple_1.jpg",

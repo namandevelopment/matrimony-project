@@ -13,6 +13,7 @@ import {
   ContactDetailsModal,
 } from "@/screens/matchesScreen/components";
 import { initialMatchesList, defaultPreferences } from "@/screens/matchesScreen/mockData";
+import { apiFetch, ApiURL } from "@/redux/apiService";
 import type {
   MatchDetailProfile,
   MatchCategoryType,
@@ -34,10 +35,55 @@ const DashboardMatchesViewComponent: React.FC<DashboardMatchesViewProps> = ({
   onUpgradeClick,
   onAssistedServiceClick,
 }) => {
+  const [profilesList, setProfilesList] = useState<MatchDetailProfile[]>(initialMatchesList);
   const [activeCategory, setActiveCategory] = useState<MatchCategoryType>("your_matches");
   const [activeFilterChips, setActiveFilterChips] = useState<FilterChipId[]>([]);
   const [currentSort, setCurrentSort] = useState<SortOption>("relevance");
   const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Fetch live candidate matches from backend API with fallback
+  React.useEffect(() => {
+    let isMounted = true;
+    apiFetch
+      .get<any>(ApiURL.dashboardMatches, undefined, { isToken: true, showErrorToast: false })
+      .then((res) => {
+        const items = res?.data?.items || (Array.isArray(res?.data) ? res.data : []);
+        if (isMounted && Array.isArray(items) && items.length > 0) {
+          const loaded: MatchDetailProfile[] = items.map((c: any, idx: number) => ({
+            id: c._id || c.id || `match_${idx}`,
+            matrimonyId: c.matrimonyId || `SND${882000 + idx}`,
+            name: c.name || "Sindhi Match",
+            age: Number(c.age) || 25,
+            height: c.heightFormatted || c.height || "5'4\"",
+            education: c.education?.degree || c.education || "Graduate",
+            profession: c.profession?.occupation || c.profession || "Professional",
+            city: c.location?.city || c.city || "Mumbai",
+            state: c.location?.state || c.state || "Maharashtra",
+            photoUrl: c.avatar || c.photoUrl || "",
+            lastSeen: "Active recently",
+            isNewlyJoined: idx < 3,
+            isSilhouette: !c.avatar && !c.photoUrl,
+            gender: c.gender || "female",
+            hasHoroscope: true,
+            isNotSeen: true,
+            phoneAvailable: true,
+            whatsappAvailable: true,
+            phoneNumber: "+91 98200 12345",
+            whatsappNumber: "+91 98200 12345",
+            isShortlisted: Boolean(c.isShortlisted),
+            interestSent: Boolean(c.interestSent),
+            caste: c.subcaste || c.caste || "Sindhi - Bhaiband",
+            motherTongue: "Sindhi",
+          }));
+          setProfilesList(loaded);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // User interactions state
   const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(() => {
@@ -97,19 +143,25 @@ const DashboardMatchesViewComponent: React.FC<DashboardMatchesViewProps> = ({
   const handleToggleShortlist = useCallback((id: string) => {
     setShortlistedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
+      const isShortlisting = !next.has(id);
+      if (!isShortlisting) next.delete(id);
       else next.add(id);
       return next;
     });
+    apiFetch.post(ApiURL.shortlistCandidate(id), {}, { isToken: true, showErrorToast: false }).catch(() => {});
   }, []);
 
   const handleSendInterest = useCallback((id: string) => {
     setInterestedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
+      const isExpressing = !next.has(id);
+      if (!isExpressing) next.delete(id);
       else next.add(id);
       return next;
     });
+    apiFetch
+      .post(ApiURL.interestsSend, { receiverCandidateId: id, message: "Interested in your profile." }, { isToken: true, showErrorToast: false })
+      .catch(() => {});
   }, []);
 
   const handleDontShow = useCallback((id: string) => {
@@ -117,9 +169,9 @@ const DashboardMatchesViewComponent: React.FC<DashboardMatchesViewProps> = ({
   }, []);
 
   const handleRequestPhoto = useCallback((id: string) => {
-    const profile = initialMatchesList.find((p) => p.id === id);
+    const profile = profilesList.find((p) => p.id === id);
     if (profile) setSelectedProfileForPhoto(profile);
-  }, []);
+  }, [profilesList]);
 
   const handleConfirmPhotoRequest = useCallback((id: string) => {
     setRequestedPhotoIds((prev) => new Set(prev).add(id));
@@ -147,21 +199,21 @@ const DashboardMatchesViewComponent: React.FC<DashboardMatchesViewProps> = ({
   // Counts
   const categoryCounts = useMemo<Partial<Record<MatchCategoryType, number>>>(() => {
     return {
-      your_matches: initialMatchesList.filter((p) => !hiddenIds.has(p.id)).length,
+      your_matches: profilesList.filter((p) => !hiddenIds.has(p.id)).length,
       shortlisted_by_you: shortlistedIds.size,
       viewed_you: 4,
       shortlisted_you: 2,
       viewed_by_you: 6,
-      newly_joined: initialMatchesList.filter(
+      newly_joined: profilesList.filter(
         (p) => p.isNewlyJoined && !hiddenIds.has(p.id)
       ).length,
       nearby_matches: 8,
     };
-  }, [hiddenIds, shortlistedIds]);
+  }, [profilesList, hiddenIds, shortlistedIds]);
 
   // Filtered & Sorted
   const filteredProfiles = useMemo(() => {
-    let result = initialMatchesList.filter((p) => !hiddenIds.has(p.id));
+    let result = profilesList.filter((p) => !hiddenIds.has(p.id));
 
     if (activeCategory === "shortlisted_by_you") {
       result = result.filter((p) => shortlistedIds.has(p.id));

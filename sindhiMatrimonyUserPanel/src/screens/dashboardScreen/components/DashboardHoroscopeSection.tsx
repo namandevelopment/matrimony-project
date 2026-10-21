@@ -2,6 +2,7 @@
 
 import React, { memo, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { apiFetch, ApiURL } from "@/redux/apiService";
 import {
   Sparkles,
   Heart,
@@ -550,6 +551,8 @@ const DashboardHoroscopeSectionComponent: React.FC<DashboardHoroscopeSectionProp
     if (typeof window !== "undefined") {
       localStorage.setItem("preferred_user_rasi", currentRasi.id);
     }
+    // Sync preferred rashi to user profile in backend database
+    apiFetch.post(ApiURL.saveRashi, { rashi: currentRasi.id }, { isToken: true, showErrorToast: false }).catch(() => {});
     setIsSavedAsDefault(true);
     setTimeout(() => {
       setIsSavedAsDefault(false);

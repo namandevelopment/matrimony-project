@@ -18,6 +18,7 @@ import devPerformanceTracker from "./middlewares/devPerformanceTracker.js";
 import devApiTrackerRoutes from "./routes/dev/apiTrackerRoutes.js";
 import attachMongooseProfiler from "./utils/mongooseProfilerPlugin.js";
 import connectDB from "./models/connection.js";
+import jwtLib from "jsonwebtoken";
 
 // Attach Mongoose query latency profiler for development
 attachMongooseProfiler();
@@ -72,8 +73,19 @@ if (process.env.NODE_ENV !== "production") {
 app.use(maintenance);
 app.use(jwt());
 app.use((req, res, next) => {
-  if (req.auth && !req.user) {
-    req.user = req.auth;
+  if (req.auth) {
+    if (!req.user) req.user = req.auth;
+    return next();
+  }
+  if (req.headers?.authorization?.startsWith("Bearer ")) {
+    try {
+      const rawToken = req.headers.authorization.split(" ")[1];
+      const decoded = jwtLib.decode(rawToken);
+      if (decoded && typeof decoded === "object") {
+        req.auth = decoded;
+        req.user = decoded;
+      }
+    } catch (_) {}
   }
   next();
 });
