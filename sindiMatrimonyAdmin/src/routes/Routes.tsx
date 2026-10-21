@@ -1,11 +1,12 @@
-import React, { Suspense } from 'react';
-import { Routes as RouterRoutes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, useEffect } from 'react';
+import { Routes as RouterRoutes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ShieldAlert } from 'lucide-react';
 import { screens } from './screenConfig';
 import { AdminLayout } from '../components/AdminLayout';
 import { getToken, getStoredUser, getSimulatedUser, getActiveRole } from '../storage';
 import { LoaderOverlay } from '../customModals/LoaderOverlay';
 import { canAccessRoute } from '../utils/rbac';
+import { setNavigator } from '../navigation/navigationService';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const token = getToken();
@@ -69,6 +70,12 @@ const RBACScreenGuard: React.FC<{ path: string; children: React.ReactNode }> = (
 };
 
 const Routes: React.FC = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setNavigator(navigate);
+  }, [navigate]);
+
   const protectedScreens = screens.filter((s) => s.requiresAuth);
   const loginScreenConfig = screens.find((s) => s.name === 'LoginScreen');
   const LoginComponent = loginScreenConfig?.component;

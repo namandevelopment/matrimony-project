@@ -70,8 +70,9 @@ assert.strictEqual(validateIfscCode('INVALID_IFSC'), 'Enter a valid IFSC code (e
 assert.strictEqual(validateAccountNumber('123456789012'), '');
 assert.strictEqual(validateAccountNumber('1234'), 'Account number must be between 9 and 18 digits');
 
-assert.strictEqual(validateOtp('123456'), '');
-assert.strictEqual(validateOtp('123'), 'Please enter valid OTP.');
+assert.strictEqual(validateOtp('1234'), '');
+assert.strictEqual(validateOtp('123'), 'Please enter a valid 4-digit OTP.');
+assert.strictEqual(validateOtp('12345'), 'Please enter a valid 4-digit OTP.');
 
 assert.strictEqual(validatePincode('400001'), '');
 assert.strictEqual(validatePincode('40'), 'Pincode no. must be 4 to 10 digits.');

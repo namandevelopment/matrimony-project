@@ -481,7 +481,7 @@ export const AdminConfigSection: React.FC = () => {
                 <div>
                   <span className="text-xs font-bold text-slate-900 block">OTP Mobile Verification</span>
                   <span className="text-[11px] text-slate-500">
-                    Require 6-digit SMS OTP on candidate phone numbers during signup
+                    Require 4-digit SMS OTP on candidate phone numbers during signup
                   </span>
                 </div>
                 <input

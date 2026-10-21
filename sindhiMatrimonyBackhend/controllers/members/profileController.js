@@ -4,6 +4,7 @@ import * as CONSTANTS from "../../utils/constants.js";
 import * as CONSTANTS_MSG from "../../utils/constantsMessage.js";
 import { User, Profile, PartnerPreference } from "../../models/index.js";
 import { updateDocumentByQueryAndData } from "../../services/serviceGlobal.js";
+import { findProfileByIdInMemory } from "../../services/realDataService.js";
 
 const getUserId = (req) => req.user?.id || req.auth?.id || req.user?._id || req.auth?._id || req.user?.userId || req.auth?.userId;
 
@@ -48,7 +49,10 @@ export const getProfile = asyncHandler(async (req, res) => {
 
   // Test & Offline Isolation: If MongoDB is disconnected (standalone test suites or local dev without Mongo)
   if (mongoose.connection.readyState !== 1) {
+    const foundSelf = findProfileByIdInMemory(myActiveProfileId) || findProfileByIdInMemory(myUserId);
     if (isSelf) {
+      const userPhone = req.auth?.phone || req.user?.phone || foundSelf?.phone || "9829012345";
+      const userName = foundSelf?.name || req.auth?.name || req.user?.name || "Simran Vaswani";
       return apiHTTPResponse(
         req,
         res,
@@ -57,21 +61,21 @@ export const getProfile = asyncHandler(async (req, res) => {
         {
           isSelf: true,
           user: {
-            _id: (myUserId || "6ad3c0ff51bbaafbad99f39b").toString(),
-            phone: req.auth?.phone || req.user?.phone || "9829012345",
+            _id: (myUserId || foundSelf?.userId || "6ad3c0ff51bbaafbad99f39b").toString(),
+            phone: userPhone,
             countryCode: "+91",
-            email: "candidate@sindhimarriage.in",
+            email: foundSelf?.email || "candidate@sindhimarriage.in",
             role: req.auth?.role || req.user?.role || 1,
             status: "ACTIVE",
             isPhoneVerified: true,
             isEmailVerified: true,
-            isKycVerified: true,
+            isKycVerified: Boolean(foundSelf?.isVerified ?? true),
             onboardingStep: 7,
             isOnboardingComplete: true,
           },
-          profile: {
+          profile: foundSelf || {
             _id: (myActiveProfileId || "6ad3c0ff51bbaafbad99f39c").toString(),
-            name: "Simran Vaswani",
+            name: userName,
             profileFor: "MYSELF",
             gender: "FEMALE",
             dateOfBirth: 866332800000,
@@ -111,6 +115,7 @@ export const getProfile = asyncHandler(async (req, res) => {
       );
     } else {
       // Offline mode viewing another candidate
+      const targetCandidate = findProfileByIdInMemory(targetId);
       return apiHTTPResponse(
         req,
         res,
@@ -119,14 +124,14 @@ export const getProfile = asyncHandler(async (req, res) => {
         {
           isSelf: false,
           user: {
-            _id: targetId,
+            _id: (targetCandidate?.userId || targetId).toString(),
             countryCode: "+91",
             role: 1,
             status: "ACTIVE",
             isPhoneVerified: true,
-            isKycVerified: true,
+            isKycVerified: Boolean(targetCandidate?.isVerified ?? true),
           },
-          profile: {
+          profile: targetCandidate || {
             _id: targetId,
             name: "Rohan Advani",
             profileFor: "MYSELF",

@@ -31,11 +31,18 @@ import {
   LeadDetailModal,
 } from './component';
 import { useInputs } from '../../customHooks/useInputs';
+import { useLeadsQuery } from '../../tanstackQuery';
 
 const FALLBACK_USER = Object.freeze({ fullName: 'Rajesh Mulchandani', role: 'SUPER_ADMIN', id: 'emp_001' });
 
 export const LeadsScreen: React.FC = memoWithDeepEqual(() => {
   usePerformanceTracker('LeadsScreen');
+
+  // TanStack Query: Cached for 5 minutes, 0 repeated API hits on navigation
+  const { leads: apiLeads, isLoading: isLeadsLoading } = useLeadsQuery();
+
+  // Fallback dummy leads preserved per project guidelines
+  // const initialFallbackLeads = crmDataService.getLeads();
 
   // Timer ref for auto-clearing success banners safely without leaks
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -100,6 +107,13 @@ export const LeadsScreen: React.FC = memoWithDeepEqual(() => {
     });
     return unsubscribe;
   }, [updateState]);
+
+  // Sync live API leads into state when available (5 minutes TanStack cache)
+  useEffect(() => {
+    if (apiLeads && apiLeads.length > 0) {
+      updateState({ leads: apiLeads as any });
+    }
+  }, [apiLeads, updateState]);
 
   // Clean up auto-dismiss timer on unmount
   useEffect(() => {
@@ -739,6 +753,14 @@ export const LeadsScreen: React.FC = memoWithDeepEqual(() => {
         onSelectAllOnCurrentPage={handleSelectAllOnCurrentPage}
         onSelectFirst20Unassigned={handleSelectFirst20Unassigned}
       />
+
+      {/* Initial load indicator: shows only once when starting with zero data */}
+      {isLeadsLoading && state.leads.length === 0 && (
+        <div className="flex items-center justify-center p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold gap-2 animate-pulse mb-3">
+          <div className="w-3.5 h-3.5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" />
+          Loading real CRM leads from server...
+        </div>
+      )}
 
       {/* 7. Dedicated Memoized Leads Table Section (managed via fast-deep-equal) */}
       <LeadsTableSection

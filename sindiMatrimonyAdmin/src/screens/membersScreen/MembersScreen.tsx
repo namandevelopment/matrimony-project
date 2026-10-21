@@ -21,6 +21,7 @@ import { subcasteGotraService } from '../../services/subcasteGotraService';
 import { toast } from '../../toastMessage/toast';
 import { useGlobalModal } from '../../customModals/ModalContext';
 import { useInputs } from '../../customHooks/useInputs';
+import { useMembersQuery } from '../../tanstackQuery';
 
 export interface MembersScreenState {
   members: MatrimonialMember[];
@@ -34,12 +35,49 @@ export const MembersScreen: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
+  // TanStack Query: Cached for 5 minutes, 0 repeated API hits on navigation
+  const { members: apiMembers, isLoading } = useMembersQuery();
+
+  // Fallback dummy members preserved per project guidelines
+  // const initialFallbackMembers = memberDataService.getMembers();
+
   const { values, setFieldValue, bind } = useInputs<MembersScreenState>(() => ({
     members: memberDataService.getMembers(),
     search: '',
     selectedSubcaste: 'ALL',
     selectedPlan: 'ALL',
   }));
+
+  // Sync live API members into state when available
+  useEffect(() => {
+    if (apiMembers && apiMembers.length > 0) {
+      const mapped: MatrimonialMember[] = apiMembers.map((m: any, idx: number) => ({
+        id: String(m._id || m.id || idx + 101000),
+        uniqueId: m.profileId || m.uniqueId || `S${idx + 1000}`,
+        fullName: m.fullName || m.name || 'Sindhi Candidate',
+        mobile: m.mobile || m.phone || '—',
+        gender: m.gender === 'Female' ? 'Female' : 'Male',
+        age: Number(m.age) || 27,
+        subcaste: m.subcaste || 'Amil',
+        city: m.city || 'Mumbai',
+        state: m.state || 'Maharashtra',
+        plan: (m.membershipTier || m.plan || 'FREE').toUpperCase() as any,
+        status: (m.status || 'ACTIVE').toUpperCase() as any,
+        isVerified: Boolean(m.isVerified ?? m.isProfileVerified),
+        created: m.createdAt
+          ? new Date(m.createdAt).toLocaleDateString('en-IN', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            })
+          : '10 Oct 2026',
+        createdAtTimestamp: m.createdAt ? new Date(m.createdAt).getTime() : Date.now(),
+        gotra: m.gotra,
+        maritalStatus: m.maritalStatus || 'Never Married',
+      }));
+      setFieldValue('members', mapped);
+    }
+  }, [apiMembers, setFieldValue]);
 
   const genderQuery = searchParams.get('gender')?.toLowerCase();
 
@@ -335,6 +373,14 @@ export const MembersScreen: React.FC = () => {
           </>
         }
       />
+
+      {/* Initial loading indicator: shows only once when starting with zero data */}
+      {isLoading && values.members.length === 0 && (
+        <div className="flex items-center justify-center p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold gap-2 animate-pulse mb-4">
+          <div className="w-3.5 h-3.5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" />
+          Loading member directory from server...
+        </div>
+      )}
 
       <DataTable columns={columns} data={filtered} totalRecords={filtered.length} />
     </div>

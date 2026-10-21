@@ -1,164 +1,63 @@
-import axios from 'axios';
-import type { AxiosInstance, AxiosRequestConfig, Method } from 'axios';
+import axios, { type AxiosInstance, type Method } from 'axios';
+import { Storage } from '../../storage/Storage';
+import { toast, showToast, hideToast, type ToastOptions, type ToastType } from '../../toastMessage/toast';
+import { reset } from '../../navigation/navigationService';
 import { BASE_URL, ApiURL } from './endpoint';
-import { getToken, getRefreshToken, setToken, clearTokens } from '../../storage';
-import { perfMonitor } from '../../utils/perfMonitor';
-import { toast } from '../../toastMessage/toast';
-import { networkService } from '../../network/networkService';
 
-export { BASE_URL, ApiURL };
+export { BASE_URL, ApiURL, toast, showToast, hideToast, type ToastOptions, type ToastType };
 export const API_BASE = BASE_URL;
 
-// ============================================================================
-// 1. Silent Refresh Queue Management
-// ============================================================================
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (token: string | null) => void;
-  reject: (error: any) => void;
-}> = [];
-
-const processQueue = (error: any, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) prom.reject(error);
-    else prom.resolve(token);
-  });
-  failedQueue = [];
-};
+const isDev = Boolean(import.meta.env?.DEV);
 
 // ============================================================================
-// 2. Base Axios Client with Request & Response Interceptors
+// 1. Interfaces & Types
 // ============================================================================
-export const apiClient: AxiosInstance = axios.create({
-  baseURL: BASE_URL,
-  timeout: 15000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+export type HttpMethod = Method | 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
-// Request Interceptor: Attach Bearer Token and Perf Start Time
-apiClient.interceptors.request.use(
-  (config) => {
-    (config as any)._startTime = performance.now();
-    const token = getToken();
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Response Interceptor: 401 Silent Refresh Queue and Perf Recording
-apiClient.interceptors.response.use(
-  (response) => {
-    const config = response.config as any;
-    if (config?._startTime) {
-      const duration = performance.now() - config._startTime;
-      perfMonitor.recordApi(config.url || 'unknown', config.method || 'GET', duration, response.status || 200);
-    }
-    return response.data;
-  },
-  async (error) => {
-    const originalRequest = error.config;
-
-    const reqUrl = (originalRequest?.url || '').toLowerCase();
-    const isAuthRoute =
-      reqUrl.includes('/login') ||
-      reqUrl.includes('/register') ||
-      reqUrl.includes('/forgot-password') ||
-      reqUrl.includes('/reset-password') ||
-      reqUrl.includes('/verify-otp') ||
-      reqUrl.includes('/refresh-token');
-
-    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            return apiClient(originalRequest);
-          })
-          .catch((err) => Promise.reject(err));
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      const refreshToken = getRefreshToken();
-      if (!refreshToken) {
-        clearTokens();
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
-        return Promise.reject(error);
-      }
-
-      try {
-        const res: any = await axios.post(ApiURL.refreshToken, { refreshToken });
-        const newToken = res.data?.accessToken;
-        setToken(newToken);
-        processQueue(null, newToken);
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
-        return apiClient(originalRequest);
-      } catch (refreshErr) {
-        processQueue(refreshErr, null);
-        clearTokens();
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
-        return Promise.reject(refreshErr);
-      } finally {
-        isRefreshing = false;
-      }
-    }
-
-    const errConfig = error.config as any;
-    if (errConfig?._startTime) {
-      const duration = performance.now() - errConfig._startTime;
-      perfMonitor.recordApi(errConfig.url || 'unknown', errConfig.method || 'GET', duration, error.response?.status || 'ERR');
-    }
-
-    return Promise.reject(error);
-  }
-);
-
-// ============================================================================
-// 3. Types & Interfaces for apiFetch
-// ============================================================================
-export type HttpMethod = Method | 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | string;
-
-export interface ApiFetchOptions {
-  /** Target API URL or Endpoint constant */
+export interface ApiFetchOptions<TBody = any> {
   url: string;
-  /** Request body / payload (e.g. { email, password }, form data, etc.) */
-  payload?: any;
-  /** Alias for payload */
-  data?: any;
-  /** HTTP Method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' (defaults to POST if payload exists, else GET) */
-  method?: HttpMethod;
-  /** Attach Authorization Bearer token (defaults to true) */
-  isToken?: boolean;
-  /** Explicit query parameters (or falls back to payload for GET requests) */
+  payload?: TBody;
+  data?: TBody;
+  method?: HttpMethod | string;
   params?: any;
-  /** Automatically format as FormData for file uploads */
+  isToken?: boolean;
   isMultipart?: boolean;
-  /** Request timeout in ms (default: 15000) */
   timeout?: number;
-  /** Automatically display error toast on failure (default: true) */
   showErrorToast?: boolean;
-  /** Automatically display success toast on success (default: false) */
   showSuccessToast?: boolean;
-  /** Custom success toast message */
   successMessage?: string;
-  /** Custom request headers */
   headers?: Record<string, string>;
-  /** AbortSignal for request cancellation */
   signal?: AbortSignal;
-  /** Throw Error instead of returning error result */
   throwOnError?: boolean;
+}
+
+export interface ApiFetchFunction {
+  <T = any, TBody = any>(options: ApiFetchOptions<TBody>): Promise<ApiResponse<T>>;
+  get: <T = any>(
+    url: string,
+    params?: any,
+    options?: Omit<ApiFetchOptions, 'url' | 'method' | 'params'>
+  ) => Promise<ApiResponse<T>>;
+  post: <T = any, TBody = any>(
+    url: string,
+    data?: TBody,
+    options?: Omit<ApiFetchOptions<TBody>, 'url' | 'method' | 'data'>
+  ) => Promise<ApiResponse<T>>;
+  put: <T = any, TBody = any>(
+    url: string,
+    data?: TBody,
+    options?: Omit<ApiFetchOptions<TBody>, 'url' | 'method' | 'data'>
+  ) => Promise<ApiResponse<T>>;
+  delete: <T = any>(
+    url: string,
+    params?: any,
+    options?: Omit<ApiFetchOptions, 'url' | 'method' | 'params'>
+  ) => Promise<ApiResponse<T>>;
+  patch: <T = any, TBody = any>(
+    url: string,
+    data?: TBody,
+    options?: Omit<ApiFetchOptions<TBody>, 'url' | 'method' | 'data'>
+  ) => Promise<ApiResponse<T>>;
 }
 
 export interface ApiResponse<T = any> {
@@ -202,10 +101,85 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * Systematically extracts the real, actionable error message and field-level validation errors
- * from any backend API response. Never drops backend details or masks them with generic strings.
- */
+export type ApiRequestOptions<TData = unknown> = ApiFetchOptions & {
+  data?: TData;
+};
+
+// ============================================================================
+// 2. Token Helpers (Synchronous & Zero-Delay via Storage)
+// Supporting both admin keys ('admin_auth_token') and standard keys ('token')
+// ============================================================================
+export const getToken = (): string | null =>
+  Storage.getItemSync<string>('admin_auth_token') || Storage.getItemSync<string>('token');
+
+export const getRefreshToken = (): string | null =>
+  Storage.getItemSync<string>('admin_refresh_token') || Storage.getItemSync<string>('refreshToken');
+
+export const setToken = (token: string): boolean => {
+  Storage.setItemSync('admin_auth_token', token);
+  return Storage.setItemSync('token', token);
+};
+
+export const setRefreshToken = (token: string): boolean => {
+  Storage.setItemSync('admin_refresh_token', token);
+  return Storage.setItemSync('refreshToken', token);
+};
+
+export const clearTokens = (): void => {
+  Storage.removeItemSync('admin_auth_token');
+  Storage.removeItemSync('admin_refresh_token');
+  Storage.removeItemSync('admin_auth_user');
+  Storage.removeItemSync('token');
+  Storage.removeItemSync('refreshToken');
+  Storage.removeItemSync('user');
+};
+
+// ============================================================================
+// 2.1 Silent Refresh Queue Management
+// ============================================================================
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string | null) => void;
+  reject: (error: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) prom.reject(error);
+    else prom.resolve(token);
+  });
+  failedQueue = [];
+};
+
+// ============================================================================
+// 3. Shared Axios Instance
+// ============================================================================
+export const apiClient: AxiosInstance = axios.create({
+  baseURL: BASE_URL,
+  timeout: 15000,
+  headers: {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  },
+});
+
+// ============================================================================
+// 4. Real-time Network Connectivity Tracking (Web Native & SSR-Safe)
+// ============================================================================
+let isNetworkConnected = typeof navigator !== 'undefined' ? navigator.onLine : true;
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    isNetworkConnected = true;
+  });
+  window.addEventListener('offline', () => {
+    isNetworkConnected = false;
+  });
+}
+
+// ============================================================================
+// 5. Universal Backend Error Extractor
+// ============================================================================
 export const extractApiErrorMessage = (
   error: any,
   resData: any,
@@ -380,27 +354,138 @@ export const extractApiErrorMessage = (
   return { message: extractedMessage, errors: fieldErrors };
 };
 
-// Helper to convert objects to FormData in web environments
+// ============================================================================
+// 6. Session Expiry & Auto-Logout Handler
+// ============================================================================
+export const isSessionExpired = (
+  status?: number,
+  data?: any,
+  url?: string,
+  options?: ApiFetchOptions
+): boolean => {
+  const cleanUrl = (url || '').toLowerCase();
+  const isAuthRoute =
+    cleanUrl.includes('/auth/login') ||
+    cleanUrl.includes('/auth/admin/login') ||
+    cleanUrl.includes('/auth/register') ||
+    cleanUrl.includes('/auth/send-otp') ||
+    cleanUrl.includes('/auth/sendotp') ||
+    cleanUrl.includes('/auth/verify-otp') ||
+    cleanUrl.includes('/auth/forgot-password') ||
+    cleanUrl.includes('/auth/reset-password') ||
+    cleanUrl.includes('/auth/check-phone');
+
+  if (isAuthRoute) {
+    return false;
+  }
+
+  if (options && options.isToken === false) {
+    return false;
+  }
+
+  const code = data?.code;
+  if (status !== 401 && code !== 401 && code !== 1401) {
+    return false;
+  }
+
+  const msg = typeof data?.message === 'string'
+    ? data.message.toLowerCase()
+    : typeof data?.error === 'string'
+      ? data.error.toLowerCase()
+      : '';
+
+  if (
+    msg.includes('password') ||
+    msg.includes('credentials') ||
+    msg.includes('otp') ||
+    msg.includes('mobile') ||
+    msg.includes('phone')
+  ) {
+    return false;
+  }
+
+  return (
+    code === 1401 ||
+    msg.includes('jwt expired') ||
+    msg.includes('token expired') ||
+    msg.includes('session expired') ||
+    msg.includes('session has expired') ||
+    msg.includes('session has been terminated') ||
+    msg.includes('invalid or expired authentication token') ||
+    msg.includes('send valid token') ||
+    msg.includes('invalid session') ||
+    msg.includes('jwt malformed') ||
+    msg.includes('no token provided') ||
+    msg === '' ||
+    msg === 'unauthorized' ||
+    msg === 'unauthorized.'
+  );
+};
+
+let isLoggingOut = false;
+export const handleSessionExpired = <T = any>(serverMessage?: string): ApiResponse<T> => {
+  const displayMsg = serverMessage || 'Session expired. Please login again.';
+  if (!isLoggingOut) {
+    isLoggingOut = true;
+    try {
+      clearTokens();
+    } catch { }
+
+    showToast({
+      type: 'error',
+      message: displayMsg,
+    });
+    reset('/login');
+
+    setTimeout(() => {
+      isLoggingOut = false;
+    }, 2500);
+  }
+  return {
+    error: true,
+    message: displayMsg,
+    code: 401,
+    status: 401,
+    data: null,
+  };
+};
+
+// ============================================================================
+// 6. Web Multipart FormData Creator
+// ============================================================================
 export const createFormData = (payload: any): FormData => {
-  if (payload instanceof FormData) return payload;
+  if (typeof FormData !== 'undefined' && payload instanceof FormData) {
+    return payload;
+  }
   const formData = new FormData();
   if (payload && typeof payload === 'object') {
     Object.entries(payload).forEach(([key, val]: [string, any]) => {
       if (val == null) return;
-      if (val instanceof File || val instanceof Blob) {
-        formData.append(key, val);
-      } else if (Array.isArray(val)) {
+      if (Array.isArray(val)) {
         val.forEach((item, index) => {
-          if (item instanceof File || item instanceof Blob) {
+          if (item == null) return;
+          if (typeof Blob !== 'undefined' && (item instanceof Blob || (typeof File !== 'undefined' && item instanceof File))) {
             formData.append(`${key}[${index}]`, item);
+          } else if (typeof item === 'object' && (item.uri || item.path)) {
+            if (item.file instanceof Blob) {
+              formData.append(`${key}[${index}]`, item.file, item.name || `${key}_${index}`);
+            } else {
+              formData.append(`${key}[${index}]`, JSON.stringify(item));
+            }
           } else {
             formData.append(`${key}[]`, typeof item === 'object' ? JSON.stringify(item) : String(item));
           }
         });
-      } else if (typeof val === 'object') {
-        formData.append(key, JSON.stringify(val));
+      } else if (typeof Blob !== 'undefined' && (val instanceof Blob || (typeof File !== 'undefined' && val instanceof File))) {
+        formData.append(key, val);
+      } else if (typeof val === 'object' && (val.uri || val.path)) {
+        if (val.file instanceof Blob) {
+          formData.append(key, val.file, val.name || key);
+        } else {
+          formData.append(key, JSON.stringify(val));
+        }
       } else {
-        formData.append(key, String(val));
+        formData.append(key, typeof val === 'object' ? JSON.stringify(val) : String(val));
       }
     });
   }
@@ -408,10 +493,10 @@ export const createFormData = (payload: any): FormData => {
 };
 
 // ============================================================================
-// 4. Universal, Fully-Optimized apiFetch (Zero Re-render)
+// 7. Universal, Fully-Optimized apiFetch (Zero Re-render)
 // ============================================================================
-export const apiFetch = async <T = any>(
-  options: ApiFetchOptions
+export const apiFetch = (async <T = any, TBody = any>(
+  options: ApiFetchOptions<TBody>
 ): Promise<ApiResponse<T>> => {
   const {
     url,
@@ -430,14 +515,18 @@ export const apiFetch = async <T = any>(
     throwOnError = false,
   } = options;
 
-  // 1. Instant Offline Fast-Fail (Guarantees zero UI lag when network drops)
-  if (!networkService.isOnline()) {
-    const offlineMsg = 'No internet connection. Please verify your connection.';
+  // 1. Instant Offline Guard
+  const isOnline = isNetworkConnected && (typeof navigator === 'undefined' || navigator.onLine);
+  if (!isOnline) {
+    const offlineMsg = 'No internet connection. Please check your network and try again.';
     if (showErrorToast) {
-      toast.error(offlineMsg);
+      showToast({
+        type: 'error',
+        message: offlineMsg,
+      });
     }
     if (throwOnError) {
-      throw new ApiError(offlineMsg, { status: 0, code: 'OFFLINE' });
+      throw new Error(offlineMsg);
     }
     return {
       error: true,
@@ -448,7 +537,6 @@ export const apiFetch = async <T = any>(
     };
   }
 
-  // Resolve payload / data and determine default method
   const requestPayload = payload !== undefined ? payload : data;
   const inferredMethod = method || (requestPayload && typeof requestPayload === 'object' && Object.keys(requestPayload).length > 0 ? 'POST' : 'GET');
   const normalizedMethod = inferredMethod.toString().toUpperCase() as Method;
@@ -463,23 +551,24 @@ export const apiFetch = async <T = any>(
     normalizedUrl = '/' + normalizedUrl;
   }
 
-  // 3. Headers Assembly
+  // 3. Synchronous Token & Headers Assembly (Zero Re-render)
   const token = isToken ? getToken() : null;
   const reqHeaders: Record<string, string> = {
     Accept: 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(!isGet && !isMultipart ? { 'Content-Type': 'application/json' } : {}),
-    ...(isMultipart ? { 'Content-Type': 'multipart/form-data' } : {}),
     ...headers,
   };
 
+  if (isMultipart && headers['Content-Type']) {
+    reqHeaders['Content-Type'] = headers['Content-Type'];
+  }
+
   const queryParams = params || (isGet ? requestPayload : undefined);
-  const bodyData = !isGet && requestPayload !== undefined && requestPayload !== null
-    ? (isMultipart ? createFormData(requestPayload) : requestPayload)
-    : undefined;
+  const bodyData = !isGet && requestPayload ? (isMultipart ? createFormData(requestPayload) : requestPayload) : undefined;
 
   try {
-    const resData: any = await apiClient.request({
+    const res = await apiClient.request({
       url: normalizedUrl,
       method: normalizedMethod,
       headers: reqHeaders,
@@ -489,6 +578,13 @@ export const apiFetch = async <T = any>(
       data: bodyData,
     });
 
+    const resData = res?.data;
+
+    if (isToken && isSessionExpired(res.status, resData, normalizedUrl, options)) {
+      const extracted = extractApiErrorMessage(null, resData, res.status);
+      return handleSessionExpired(extracted.message);
+    }
+
     const hasPayloadError =
       Boolean(resData) &&
       (resData.error === true ||
@@ -497,17 +593,24 @@ export const apiFetch = async <T = any>(
         (typeof resData.status === 'string' && resData.status.toLowerCase() === 'error'));
 
     if (hasPayloadError) {
-      const extracted = extractApiErrorMessage(null, resData, 200);
+      const extracted = extractApiErrorMessage(null, resData, res.status);
       const errMsg = extracted.message || 'Operation failed. Please try again.';
 
+      if (isDev) {
+        console.warn(`[apiFetch ERROR] ${normalizedMethod} ${normalizedUrl}:`, resData);
+      }
+
       if (showErrorToast && errMsg) {
-        toast.error(errMsg);
+        showToast({
+          type: 'error',
+          message: errMsg,
+        });
       }
 
       if (throwOnError) {
         throw new ApiError(errMsg, {
-          status: 200,
-          code: resData?.code || resData?.status || 'ERROR',
+          status: res.status,
+          code: resData?.code || res.status || 'ERROR',
           data: (resData?.data !== undefined ? resData.data : resData) as T,
           raw: resData,
           errors: extracted.errors,
@@ -518,15 +621,19 @@ export const apiFetch = async <T = any>(
         error: true,
         message: errMsg,
         data: (resData?.data !== undefined ? resData.data : resData) as T,
-        code: resData?.code || resData?.status || 'ERROR',
-        status: 200,
+        code: resData?.code || res.status || 'ERROR',
+        status: res.status,
         raw: resData,
         errors: extracted.errors,
       };
     }
 
     if (showSuccessToast) {
-      toast.success(successMessage || resData?.message || 'Action completed successfully');
+      const msg = successMessage || resData?.message || 'Success';
+      showToast({
+        type: 'success',
+        message: msg,
+      });
     }
 
     const finalData = (resData?.data !== undefined ? resData.data : resData) as T;
@@ -535,30 +642,113 @@ export const apiFetch = async <T = any>(
       error: false,
       message: resData?.message || 'Success',
       data: finalData,
-      code: 200,
-      status: 200,
+      code: res.status,
+      status: res.status,
       raw: resData,
     };
   } catch (error: any) {
     const status = error?.response?.status;
     const resData = error?.response?.data;
 
+    if (isToken && isSessionExpired(status, resData, normalizedUrl, options)) {
+      const isRetry = Boolean((options as any)._retry);
+      const currentRefreshToken = getRefreshToken();
+
+      if (!isRetry && currentRefreshToken && !normalizedUrl.includes('/auth/refresh-token')) {
+        if (isRefreshing) {
+          return new Promise<string | null>((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          })
+            .then((newToken) => {
+              return apiFetch<T>({
+                ...options,
+                headers: {
+                  ...headers,
+                  Authorization: `Bearer ${newToken}`,
+                },
+                _retry: true,
+              } as any);
+            })
+            .catch(() => {
+              const extracted = extractApiErrorMessage(error, resData, status);
+              return handleSessionExpired(extracted.message);
+            });
+        }
+
+        isRefreshing = true;
+
+        try {
+          const refreshResponse = await axios.post(
+            ApiURL.refreshToken,
+            { refreshToken: currentRefreshToken },
+            { timeout: 10000, headers: { 'Content-Type': 'application/json' } }
+          );
+
+          const resBody = refreshResponse.data;
+          const newToken = resBody?.data?.token || resBody?.data?.accessToken || resBody?.token || resBody?.accessToken;
+          const newRefreshToken = resBody?.data?.refreshToken || resBody?.refreshToken;
+
+          if (newToken) {
+            setToken(newToken);
+            if (newRefreshToken) {
+              setRefreshToken(newRefreshToken);
+            }
+            processQueue(null, newToken);
+
+            return apiFetch<T>({
+              ...options,
+              headers: {
+                ...headers,
+                Authorization: `Bearer ${newToken}`,
+              },
+              _retry: true,
+            } as any);
+          } else {
+            throw new Error('No new token in refresh response');
+          }
+        } catch (refreshErr) {
+          processQueue(refreshErr, null);
+          const extracted = extractApiErrorMessage(error, resData, status);
+          return handleSessionExpired(extracted.message);
+        } finally {
+          isRefreshing = false;
+        }
+      }
+
+      const extracted = extractApiErrorMessage(error, resData, status);
+      return handleSessionExpired(extracted.message);
+    }
+
     const extracted = extractApiErrorMessage(error, resData, status);
     const message = extracted.message;
     const fieldErrors = extracted.errors;
-
     const isTimeout =
       error?.code === 'ECONNABORTED' ||
       error?.message?.toLowerCase().includes('timeout');
     const isNetwork =
       error?.message === 'Network Error' ||
       error?.code === 'ERR_NETWORK' ||
+      error?.code === 'ENOTFOUND' ||
+      error?.code === 'ECONNREFUSED' ||
       (!error?.response && Boolean(error?.request));
 
     const code = resData?.code || (isTimeout ? 'TIMEOUT' : isNetwork ? 'NETWORK_ERROR' : status || 'ERROR');
 
+    if (isDev) {
+      console.warn(`[apiFetch CATCH] ${normalizedMethod} ${normalizedUrl}:`, {
+        code,
+        status,
+        message,
+        errors: fieldErrors,
+        resData,
+      });
+    }
+
     if (showErrorToast && message) {
-      toast.error(message);
+      showToast({
+        type: 'error',
+        message,
+      });
     }
 
     if (throwOnError) {
@@ -581,58 +771,54 @@ export const apiFetch = async <T = any>(
       errors: fieldErrors,
     };
   }
-};
+}) as unknown as ApiFetchFunction;
 
 // ============================================================================
-// 5. Static Shorthands on apiFetch
+// 8. Static Shorthands on apiFetch
 // ============================================================================
 apiFetch.get = <T = any>(
   url: string,
-  paramsOrPayload?: any,
-  options?: Omit<ApiFetchOptions, 'url' | 'method' | 'params' | 'payload' | 'data'>
+  params?: any,
+  options?: Omit<ApiFetchOptions, 'url' | 'method' | 'params'>
 ): Promise<ApiResponse<T>> => {
-  return apiFetch<T>({ url, method: 'GET', payload: paramsOrPayload, ...options });
+  return apiFetch<T>({ url, method: 'GET', params, ...options });
 };
 
-apiFetch.post = <T = any>(
+apiFetch.post = <T = any, TBody = any>(
   url: string,
-  payload?: any,
-  options?: Omit<ApiFetchOptions, 'url' | 'method' | 'payload' | 'data'>
+  data?: TBody,
+  options?: Omit<ApiFetchOptions<TBody>, 'url' | 'method' | 'data'>
 ): Promise<ApiResponse<T>> => {
-  return apiFetch<T>({ url, method: 'POST', payload, ...options });
+  return apiFetch<T, TBody>({ url, method: 'POST', data, ...options });
 };
 
-apiFetch.put = <T = any>(
+apiFetch.put = <T = any, TBody = any>(
   url: string,
-  payload?: any,
-  options?: Omit<ApiFetchOptions, 'url' | 'method' | 'payload' | 'data'>
+  data?: TBody,
+  options?: Omit<ApiFetchOptions<TBody>, 'url' | 'method' | 'data'>
 ): Promise<ApiResponse<T>> => {
-  return apiFetch<T>({ url, method: 'PUT', payload, ...options });
+  return apiFetch<T, TBody>({ url, method: 'PUT', data, ...options });
 };
 
 apiFetch.delete = <T = any>(
   url: string,
-  payload?: any,
-  options?: Omit<ApiFetchOptions, 'url' | 'method' | 'payload' | 'data'>
+  params?: any,
+  options?: Omit<ApiFetchOptions, 'url' | 'method' | 'params'>
 ): Promise<ApiResponse<T>> => {
-  return apiFetch<T>({ url, method: 'DELETE', payload, ...options });
+  return apiFetch<T>({ url, method: 'DELETE', params, ...options });
 };
 
-apiFetch.patch = <T = any>(
+apiFetch.patch = <T = any, TBody = any>(
   url: string,
-  payload?: any,
-  options?: Omit<ApiFetchOptions, 'url' | 'method' | 'payload' | 'data'>
+  data?: TBody,
+  options?: Omit<ApiFetchOptions<TBody>, 'url' | 'method' | 'data'>
 ): Promise<ApiResponse<T>> => {
-  return apiFetch<T>({ url, method: 'PATCH', payload, ...options });
+  return apiFetch<T, TBody>({ url, method: 'PATCH', data, ...options });
 };
 
 // ============================================================================
-// 6. Backward Compatible Exports & TanStack React Query Wrapper
+// 9. Backward Compatibility: apiRequest & Aliases for TanStack React Query
 // ============================================================================
-export type ApiRequestOptions<TData = unknown> = ApiFetchOptions & {
-  data?: TData;
-};
-
 export const apiRequest = async <TResponse = any, TData = unknown>(
   options: ApiRequestOptions<TData>
 ): Promise<TResponse> => {
@@ -655,17 +841,10 @@ export const apiRequest = async <TResponse = any, TData = unknown>(
 };
 
 export const ApiFetch = apiFetch;
-
-export const apiGet = <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> =>
-  apiClient.get(url, config) as unknown as Promise<T>;
-
-export const apiPost = <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> =>
-  apiClient.post(url, data, config) as unknown as Promise<T>;
-
-export const apiPut = <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> =>
-  apiClient.put(url, data, config) as unknown as Promise<T>;
-
-export const apiDelete = <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> =>
-  apiClient.delete(url, config) as unknown as Promise<T>;
+export const apiGet = apiFetch.get;
+export const apiPost = apiFetch.post;
+export const apiPut = apiFetch.put;
+export const apiDelete = apiFetch.delete;
+export const apiPatch = apiFetch.patch;
 
 export default apiFetch;

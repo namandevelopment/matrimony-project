@@ -35,7 +35,7 @@ const OtpInputBoxesComponent: React.FC<OtpInputBoxesProps> = ({
     inputRefs.current[0]?.focus();
   }, []);
 
-  const otpLength = value.length || 6;
+  const otpLength = value.length || 4;
 
   // WebOTP API Integration (Standard Web Browser Feature)
   useEffect(() => {

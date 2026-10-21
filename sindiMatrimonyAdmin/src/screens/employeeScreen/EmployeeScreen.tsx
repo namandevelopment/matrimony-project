@@ -44,6 +44,7 @@ import { setSimulatedUser } from '../../storage';
 import { toast } from '../../toastMessage/toast';
 import { validateName, validateEmail, validateMobileNumber } from '../../utils/ValidationsFuctions';
 import { useInputs } from '../../customHooks/useInputs';
+import { useEmployeesQuery } from '../../tanstackQuery';
 
 export interface EmployeeFormValues {
   fullName: string;
@@ -281,6 +282,13 @@ const initialMockEmployees: Employee[] = [
 
 export const EmployeeScreen: React.FC = () => {
   const navigate = useNavigate();
+
+  // TanStack Query: Cached for 5 minutes, 0 repeated API hits on navigation
+  const { data: apiEmployees, isLoading } = useEmployeesQuery();
+
+  // Fallback dummy staff accounts preserved per project guidelines
+  // const initialFallbackEmployees = initialMockEmployees;
+
   const [employees, setEmployees] = useState<Employee[]>(
     () => (crmDataService.getEmployees().length > 0 ? crmDataService.getEmployees() : initialMockEmployees)
   );
@@ -288,6 +296,13 @@ export const EmployeeScreen: React.FC = () => {
   const [search, setSearch] = useState<string>('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+
+  // Sync live API employees into state when available (5 minutes cache)
+  useEffect(() => {
+    if (apiEmployees && Array.isArray(apiEmployees) && apiEmployees.length > 0) {
+      setEmployees(apiEmployees as any);
+    }
+  }, [apiEmployees]);
 
   useEffect(() => {
     setEmployees(crmDataService.getEmployees());
@@ -998,6 +1013,14 @@ export const EmployeeScreen: React.FC = () => {
           </div>
         }
       />
+
+      {/* Initial load indicator (only when starting with zero data) */}
+      {isLoading && employees.length === 0 && (
+        <div className="flex items-center justify-center p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold gap-2 animate-pulse mb-3">
+          <div className="w-3.5 h-3.5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" />
+          Loading organization staff directory from server...
+        </div>
+      )}
 
       {/* Staff Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">

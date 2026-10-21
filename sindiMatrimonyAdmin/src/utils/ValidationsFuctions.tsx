@@ -398,13 +398,13 @@ export const validatePincode = (pincode: any) => {
 
 export const validateOtp = (otp: any) => {
   const str = String(otp || '');
-  const otpRegex = /^\d{6}$/;
+  const otpRegex = /^\d{4}$/;
   if (!str.trim()) {
     return 'OTP is required.';
   } else if (!isSafeInput(str)) {
     return 'Input contains invalid characters.';
   } else if (!otpRegex.test(str.trim())) {
-    return 'Please enter valid OTP.';
+    return 'Please enter a valid 4-digit OTP.';
   } else {
     return '';
   }

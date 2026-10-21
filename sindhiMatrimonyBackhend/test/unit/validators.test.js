@@ -54,7 +54,7 @@ export async function runValidatorsUnitTests() {
   suite.add("Valid Quick Register Payload Passes & Auto-Normalizes Case", async () => {
     const payload = {
       phone: "9820123456",
-      otp: "123456",
+      otp: "1234",
       password: "Password123@",
       name: "Komal Motwani",
       gender: "female", // Lowercase input

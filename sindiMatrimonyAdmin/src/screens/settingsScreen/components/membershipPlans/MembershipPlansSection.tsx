@@ -14,6 +14,7 @@ import type {
 import { toast } from '../../../../toastMessage/toast';
 import { storage } from '../../../../storage';
 import { useInputs } from '../../../../customHooks/useInputs';
+import { usePlansQuery } from '../../../../tanstackQuery/useQuery';
 
 interface MembershipPlansFilterValues {
   activeCategory: PlanCategory;
@@ -23,7 +24,12 @@ interface MembershipPlansFilterValues {
 const STORAGE_PLANS_KEY = 'sindhi_admin_membership_plans';
 
 export const MembershipPlansSection: React.FC = () => {
+  // TanStack Query for Membership Plans (caching + instantaneous load)
+  const { data: apiPlansData, isLoading: isPlansLoading } = usePlansQuery();
+
   // Load plans from storage or fallback to INITIAL_MEMBERSHIP_PLANS
+  // Fallback initial plans preserved:
+  // const fallbackPlans = INITIAL_MEMBERSHIP_PLANS;
   const [plans, setPlans] = useState<MembershipPlan[]>(() => {
     const saved = storage.getString(STORAGE_PLANS_KEY);
     if (saved) {
@@ -38,6 +44,27 @@ export const MembershipPlansSection: React.FC = () => {
     }
     return INITIAL_MEMBERSHIP_PLANS;
   });
+
+  // Synchronize live API plans into state when query resolves
+  useEffect(() => {
+    const rawPlans = apiPlansData?.plans || apiPlansData?.data || (Array.isArray(apiPlansData) ? apiPlansData : null);
+    if (Array.isArray(rawPlans) && rawPlans.length > 0) {
+      const mapped: MembershipPlan[] = rawPlans.map((p: any) => ({
+        id: p.id || p._id || `plan_${Math.random().toString(36).substring(2, 7)}`,
+        title: p.name || p.title || 'Membership Plan',
+        subtitle: p.tagline || p.subtitle || '',
+        price: Number(p.originalPriceINR ?? p.price ?? 0),
+        offerPrice: Number(p.priceINR ?? p.offerPrice ?? p.price ?? 0),
+        duration: p.durationDays ? `${p.durationDays} Days` : (p.duration || '30 Days'),
+        category: p.tier?.includes('ASSIST') ? 'ASSIST_PLAN' : (p.category || 'SELF_SERVICE'),
+        features: Array.isArray(p.features) ? p.features : [],
+        highlighted: Boolean(p.isPopular || p.highlighted),
+        badge: p.badge || (p.isPopular ? 'POPULAR' : undefined),
+        active: p.active !== false,
+      }));
+      setPlans(mapped);
+    }
+  }, [apiPlansData]);
 
   const {
     values: filterValues,
@@ -269,7 +296,13 @@ export const MembershipPlansSection: React.FC = () => {
       </div>
 
       {/* 3. Responsive Grid of Plan Cards matching Screenshot 1 & 2 */}
-      {filteredPlans.length > 0 ? (
+      {isPlansLoading && plans.length === 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pt-2">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="h-64 rounded-3xl bg-slate-100 animate-pulse border border-slate-200" />
+          ))}
+        </div>
+      ) : filteredPlans.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pt-2">
           {filteredPlans.map((plan) => (
             <PlanCard

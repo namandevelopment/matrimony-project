@@ -12,6 +12,7 @@ import {
 import { ROLE_DEFINITIONS } from '../utils/rbac';
 import type { Role } from '../types/auth.types';
 import { toast } from '../toastMessage/toast';
+import { apiFetch, ApiURL } from '../redux/apiService';
 
 export interface LogoutModalProps {
   isOpen: boolean;
@@ -72,6 +73,15 @@ export const LogoutModal: React.FC<LogoutModalProps> = memoWithDeepEqual(({
       if (onConfirm) {
         await onConfirm();
       } else {
+        // Call backend logout API
+        try {
+          await apiFetch({
+            url: ApiURL.adminLogout,
+            method: 'POST',
+            showErrorToast: false,
+          });
+        } catch (_) {}
+
         // Default standard secure logout routine
         clearTokens();
         toast.info('You have been logged out securely.');

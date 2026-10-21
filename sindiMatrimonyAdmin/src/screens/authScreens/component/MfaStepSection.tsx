@@ -19,19 +19,19 @@ export const MfaStepSection: React.FC<MfaStepSectionProps> = ({
         Two-Factor Authentication (2FA)
       </div>
       <p className="text-xs text-slate-600">
-        Enter the 6-digit TOTP code from Google Authenticator to verify privileged access.
+        Enter the 4-digit verification code to verify privileged access.
       </p>
       <CustomTextInput
         type="text"
         autoFocus
-        maxLength={6}
+        maxLength={4}
         {...bindMfa}
-        placeholder="123456"
+        placeholder="1234"
         error={error}
         errorClassName="justify-center"
         size="lg"
         variant="outline"
-        inputClassName="text-center tracking-widest text-xl font-mono font-bold focus:border-rose-600 focus:ring-rose-500/20"
+        inputClassName="text-center tracking-widest text-2xl font-mono font-bold focus:border-rose-600 focus:ring-rose-500/20"
       />
     </div>
   );

@@ -435,10 +435,10 @@ Record visibility enforced at database query level:
 ```json
 {
   "tempToken": "eyJh...temp_session_token",
-  "totpCode": "582910"
+  "totpCode": "1234"
 }
 ```
-*Validation:* `tempToken` required JWT string; `totpCode` required 6-digit numeric string.
+*Validation:* `tempToken` required JWT string; `totpCode` required 4-digit numeric string.
 
 #### 3.3 `PUT /api/v1/auth/change-password`
 - **Type:** JSON
@@ -502,7 +502,7 @@ Record visibility enforced at database query level:
     "requiresMFA": true,
     "tempToken": "eyJh...temp_handshake_jwt",
     "mfaType": "TOTP_AUTHENTICATOR",
-    "message": "Enter the 6-digit verification code from your authenticator app."
+    "message": "Enter the 4-digit verification code from your authenticator app."
   },
   "meta": { "requestId": "req_02", "timestamp": "2026-10-15T12:00:00Z" }
 }
@@ -2366,7 +2366,7 @@ This matrix directly aligns every screen discovered in `sindhiMatrimony/src/scre
 | React Native Screen (`src/screens/`) | Feature & Flow | HTTP Method & Route Path | Request Payload / Query Params | Response Data Shape |
 |:---|:---|:---:|:---|:---|
 | **`LoginScreen`** | Send Mobile OTP | `POST /api/v1/auth/send-otp` | `{ mobile: "9876543210", dialCode: "+91" }` | `{ otpSent: true, expiresIn: 600 }` |
-| **`ValidateOTPScreen`** | Verify 6-Digit OTP | `POST /api/v1/auth/verify-otp` | `{ mobile, dialCode, otp: "123456", fcmToken }` | `{ token, refreshToken, user, isNewUser }` |
+| **`ValidateOTPScreen`** | Verify 4-Digit OTP | `POST /api/v1/auth/verify-otp` | `{ mobile, dialCode, otp: "1234", fcmToken }` | `{ token, refreshToken, user, isNewUser }` |
 | **`LoginWithPassword`** | Password Fallback Login | `POST /api/v1/auth/login` | `{ identifier: "9876543210", password: "..." }` | `{ token, refreshToken, user }` |
 | **`ResetPassword`** | Forgot Password Recovery | `POST /api/v1/auth/forgot-password/send-otp`<br>`POST /api/v1/auth/forgot-password/verify-otp`<br>`POST /api/v1/auth/forgot-password/reset` | `{ mobile }`<br>`{ mobile, otp }`<br>`{ resetToken, newPassword }` | Standard success envelope |
 | **`RegisterScreen`** | Multi-Step Candidate Onboarding | `POST /api/v1/auth/register` | `{ fullName, gender, dob, subcaste, gotra, city, mobile, password }` | `{ token, user, profileId }` |

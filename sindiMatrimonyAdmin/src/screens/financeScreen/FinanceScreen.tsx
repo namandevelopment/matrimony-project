@@ -29,6 +29,7 @@ import {
 import type { Column } from '../../components/DataTable';
 import { toast } from '../../toastMessage/toast';
 import { useInputs } from '../../customHooks/useInputs';
+import { useFinanceSummaryQuery } from '../../tanstackQuery';
 
 export interface FinanceFilterValues {
   datePreset: DateRangePreset;
@@ -42,6 +43,12 @@ export interface FinanceFilterValues {
 
 export const FinanceScreen: React.FC = () => {
   const { openUserProfile } = useGlobalModal();
+
+  // TanStack Query: Cached for 5 minutes, 0 repeated API hits on navigation
+  const { data: apiFinanceSummary, isLoading } = useFinanceSummaryQuery();
+
+  // Fallback dummy financial transactions preserved per project guidelines
+  // const initialFallbackTransactions = paymentDataService.getTransactions();
 
   const [activeTab, setActiveTab] = useState('LEDGER');
   const {
@@ -287,6 +294,14 @@ export const FinanceScreen: React.FC = () => {
           </div>
         }
       />
+
+      {/* Initial load indicator (only when starting with zero data) */}
+      {isLoading && !apiFinanceSummary && (
+        <div className="flex items-center justify-center p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold gap-2 animate-pulse">
+          <div className="w-3.5 h-3.5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" />
+          Loading financial ledger from server...
+        </div>
+      )}
 
       {/* Dynamic KPI Cards updated live by the selected time period & filters */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">

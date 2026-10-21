@@ -34,7 +34,7 @@ export const publicPaths = [
   /^\/api\/v1\/auth\/(users\/)?(send-otp|sendOtp|verify-otp|login|register|resend-otp|reSendOtp|check-phone|forgot-password|reset-password|refresh-token|refreshToken)$/,
 
   // Admin Auth
-  /^\/api\/v1\/auth\/admin\/(login|forgot-password|reset-password)$/,
+  /^\/api\/v1\/auth\/admin\/(login|verify-mfa|forgot-password|reset-password)$/,
 
   // Single Consolidated Public Dropdowns Bundle (Zero-Token Master Data)
   /^\/api\/v1\/common\/dropdowns$/,

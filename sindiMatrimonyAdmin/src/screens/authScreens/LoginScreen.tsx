@@ -1,20 +1,24 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { setToken, setStoredUser, clearSimulatedUser } from '../../storage';
+import { setToken, setRefreshToken, setStoredUser, clearSimulatedUser } from '../../storage';
 import { toast } from '../../toastMessage/toast';
 import { useInputs } from '../../customHooks/useInputs';
 import { CustomTextInput } from '../../components/CustomTextInput';
 import { emailPattern, isSafeInput } from '../../utils/ValidationsFuctions';
 import { LoginBrandHero, CaptchaBox, MfaStepSection } from './component';
-import { crmDataService } from '../../services/crmDataService';
-import { getDefaultAllowedSectionsForRole } from '../../utils/rbac';
+import { apiFetch, ApiURL } from '../../redux/apiService';
+
+// [COMMENTED OUT DUMMY IMPORTS - PRESERVED AS PER USER INSTRUCTION]
+// import { crmDataService } from '../../services/crmDataService';
+// import { getDefaultAllowedSectionsForRole } from '../../utils/rbac';
 
 export interface LoginFormValues {
   email: string;
   password: string;
   rememberMe: boolean;
   mfaCode: string;
+  tempToken?: string;
   isCaptchaVerified: boolean;
   captchaLoading: boolean;
   loading: boolean;
@@ -41,6 +45,7 @@ export const LoginScreen: React.FC = () => {
       password: 'Admin@1234',
       rememberMe: true,
       mfaCode: '',
+      tempToken: '',
       isCaptchaVerified: false,
       captchaLoading: false,
       loading: false,
@@ -69,9 +74,9 @@ export const LoginScreen: React.FC = () => {
         if (v.mfaStep) {
           const trimmedMfa = v.mfaCode.trim();
           if (!trimmedMfa) {
-            errs.mfaCode = 'Please enter the 6-digit TOTP code.';
-          } else if (trimmedMfa.length !== 6 || !/^\d{6}$/.test(trimmedMfa)) {
-            errs.mfaCode = 'Verification code must be exactly 6 numeric digits.';
+            errs.mfaCode = 'Please enter the 4-digit verification code.';
+          } else if (trimmedMfa.length !== 4 || !/^\d{4}$/.test(trimmedMfa)) {
+            errs.mfaCode = 'Verification code must be exactly 4 numeric digits.';
           }
         }
 
@@ -99,7 +104,7 @@ export const LoginScreen: React.FC = () => {
     }, 600);
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setFieldValue('submitted', true);
 
@@ -116,69 +121,169 @@ export const LoginScreen: React.FC = () => {
       toast.warning('Please verify that you are not a robot.');
       return;
     }
+
     setValues({
       errorMessage: '',
       loading: true,
     });
 
-    setTimeout(() => {
-      setFieldValue('loading', false);
-      const cleanEmail = values.email.trim();
-      const matchedEmployee = crmDataService.getEmployeeByEmail(cleanEmail);
+    const cleanEmail = values.email.trim();
 
-      // If Super Admin role, require 2FA/MFA security step
-      if (!values.mfaStep && (cleanEmail.includes('admin') || matchedEmployee?.role === 'SUPER_ADMIN')) {
-        setValues({
-          mfaStep: true,
-          submitted: false,
+    try {
+      // 1. If currently on 2FA/MFA verification step
+      if (values.mfaStep) {
+        const mfaRes = await apiFetch({
+          url: ApiURL.verifyMfa,
+          method: 'POST',
+          data: {
+            tempToken: values.tempToken,
+            totpCode: values.mfaCode.trim(),
+          },
         });
-        toast.info('Super Admin MFA verification code required');
-      } else {
-        clearSimulatedUser();
 
-        let loggedInUser: any;
-        if (matchedEmployee) {
-          loggedInUser = {
-            id: matchedEmployee.id,
-            employeeId: matchedEmployee.employeeId,
-            fullName: matchedEmployee.fullName,
-            email: matchedEmployee.email,
-            mobile: matchedEmployee.mobile,
-            role: matchedEmployee.role,
-            department: matchedEmployee.department,
-            recordScope: matchedEmployee.recordScope,
-            permissions: matchedEmployee.permissions,
-            allowedSections: matchedEmployee.allowedSections || getDefaultAllowedSectionsForRole(matchedEmployee.role),
-            isChatEnabled: matchedEmployee.isChatEnabled,
-          };
-          toast.success(`Login successful! Welcome ${matchedEmployee.fullName} (${loggedInUser.allowedSections.length} sidebar sections accessible).`);
-        } else {
-          const isSuper = cleanEmail.includes('admin');
-          const defaultRole = isSuper ? 'SUPER_ADMIN' : 'EMPLOYEE';
-          loggedInUser = {
-            id: `emp_${Date.now()}`,
-            employeeId: isSuper ? 'EMP001' : 'EMP_USER',
-            fullName: isSuper ? 'Super Administrator' : 'Office Employee',
-            email: cleanEmail,
-            role: defaultRole,
-            department: isSuper ? 'Executive Management' : 'Sales & CRM',
-            recordScope: isSuper ? 'ALL' : 'OWN',
-            isChatEnabled: true,
-            allowedSections: getDefaultAllowedSectionsForRole(defaultRole as any),
-            permissions: {
-              leads: { view: true, edit: true, call: true },
-              members: { view: true },
-              chat: { receive: true, initiate: true },
-            },
-          };
-          toast.success(`Login successful! Logged in as ${loggedInUser.fullName}.`);
+        if (mfaRes.error) {
+          setFieldValue('loading', false);
+          setFieldValue('errorMessage', mfaRes.message || 'Invalid verification code');
+          toast.error(mfaRes.message || 'Invalid verification code');
+          return;
         }
 
-        setToken(`mock_jwt_${loggedInUser.employeeId}_token_2026`);
-        setStoredUser(loggedInUser);
+        const data: any = mfaRes.data;
+        const accessToken = data?.accessToken || data?.token;
+        const refreshToken = data?.refreshToken;
+        const employee = data?.employee || data?.user;
+
+        if (accessToken) {
+          setToken(accessToken);
+        }
+        if (refreshToken) {
+          setRefreshToken(refreshToken);
+        }
+        if (employee) {
+          setStoredUser(employee);
+        }
+        clearSimulatedUser();
+        setFieldValue('loading', false);
+        toast.success(`Verification successful! Welcome ${employee?.fullName || 'Super Administrator'}.`);
         navigate('/');
+        return;
       }
-    }, 600);
+
+      // 2. Direct Admin Login via Backend API
+      const res = await apiFetch({
+        url: ApiURL.adminLogin,
+        method: 'POST',
+        data: {
+          email: cleanEmail,
+          password: values.password,
+        },
+      });
+
+      if (res.error) {
+        setFieldValue('loading', false);
+        setFieldValue('errorMessage', res.message || 'Invalid administrative credentials');
+        toast.error(res.message || 'Invalid administrative credentials');
+        return;
+      }
+
+      const resData: any = res.data;
+
+      // If backend reports MFA required (e.g. for SUPER_ADMIN or FINANCE_MANAGER)
+      if (resData?.requiresMFA) {
+        setValues({
+          loading: false,
+          mfaStep: true,
+          tempToken: resData.tempToken || '',
+          submitted: false,
+        });
+        toast.info(resData.message || 'Super Admin MFA verification code required');
+        return;
+      }
+
+      // Direct Login Success
+      const accessToken = resData?.accessToken || resData?.token;
+      const refreshToken = resData?.refreshToken;
+      const employee = resData?.employee || resData?.user;
+
+      if (accessToken) {
+        setToken(accessToken);
+      }
+      if (refreshToken) {
+        setRefreshToken(refreshToken);
+      }
+      if (employee) {
+        setStoredUser(employee);
+      }
+      clearSimulatedUser();
+      setFieldValue('loading', false);
+      toast.success(res.message || `Login successful! Welcome ${employee?.fullName || 'Super Administrator'}.`);
+      navigate('/');
+    } catch (apiErr: any) {
+      setFieldValue('loading', false);
+      const errMsg = apiErr?.message || 'Login failed. Please check your credentials or server connection.';
+      setFieldValue('errorMessage', errMsg);
+      toast.error(errMsg);
+
+      /* =========================================================================
+       * DUMMY DATA / OFFLINE SIMULATION FALLBACK (PRESERVED AS REQUESTED)
+       * [DO NOT REMOVE - COMMENTED OUT AS FALLBACK PER USER SPECIFICATION]
+       * =========================================================================
+       * const matchedEmployee = crmDataService.getEmployeeByEmail(cleanEmail);
+       *
+       * // If Super Admin role, require 2FA/MFA security step
+       * if (!values.mfaStep && (cleanEmail.includes('admin') || matchedEmployee?.role === 'SUPER_ADMIN')) {
+       *   setValues({
+       *     mfaStep: true,
+       *     submitted: false,
+       *   });
+       *   toast.info('Super Admin MFA verification code required');
+       * } else {
+       *   clearSimulatedUser();
+       *
+       *   let loggedInUser: any;
+       *   if (matchedEmployee) {
+       *     loggedInUser = {
+       *       id: matchedEmployee.id,
+       *       employeeId: matchedEmployee.employeeId,
+       *       fullName: matchedEmployee.fullName,
+       *       email: matchedEmployee.email,
+       *       mobile: matchedEmployee.mobile,
+       *       role: matchedEmployee.role,
+       *       department: matchedEmployee.department,
+       *       recordScope: matchedEmployee.recordScope,
+       *       permissions: matchedEmployee.permissions,
+       *       allowedSections: matchedEmployee.allowedSections || getDefaultAllowedSectionsForRole(matchedEmployee.role),
+       *       isChatEnabled: matchedEmployee.isChatEnabled,
+       *     };
+       *     toast.success(`Login successful! Welcome ${matchedEmployee.fullName} (${loggedInUser.allowedSections.length} sidebar sections accessible).`);
+       *   } else {
+       *     const isSuper = cleanEmail.includes('admin');
+       *     const defaultRole = isSuper ? 'SUPER_ADMIN' : 'EMPLOYEE';
+       *     loggedInUser = {
+       *       id: `emp_${Date.now()}`,
+       *       employeeId: isSuper ? 'EMP001' : 'EMP_USER',
+       *       fullName: isSuper ? 'Super Administrator' : 'Office Employee',
+       *       email: cleanEmail,
+       *       role: defaultRole,
+       *       department: isSuper ? 'Executive Management' : 'Sales & CRM',
+       *       recordScope: isSuper ? 'ALL' : 'OWN',
+       *       isChatEnabled: true,
+       *       allowedSections: getDefaultAllowedSectionsForRole(defaultRole as any),
+       *       permissions: {
+       *         leads: { view: true, edit: true, call: true },
+       *         members: { view: true },
+       *         chat: { receive: true, initiate: true },
+       *       },
+       *     };
+       *     toast.success(`Login successful! Logged in as ${loggedInUser.fullName}.`);
+       *   }
+       *
+       *   setToken(`mock_jwt_${loggedInUser.employeeId}_token_2026`);
+       *   setStoredUser(loggedInUser);
+       *   navigate('/');
+       * }
+       * ========================================================================= */
+    }
   };
 
   return (

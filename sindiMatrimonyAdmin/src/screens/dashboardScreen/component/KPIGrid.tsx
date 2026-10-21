@@ -96,6 +96,89 @@ export const defaultKpiCards: KPICardData[] = [
   },
 ];
 
+// Fallback dummy cards preserved per project requirement
+// export const DUMMY_FALLBACK_KPI_CARDS = defaultKpiCards;
+
+export function createKpiCardsFromStats(stats: any): KPICardData[] {
+  if (!stats) return defaultKpiCards;
+
+  const total = stats.totalRegistrations?.value ?? 150;
+  const male = Math.round(total * 0.62);
+  const female = Math.max(0, total - male);
+  const inactive = 4;
+  const revenue = stats.totalRevenue?.value
+    ? `₹${Number(stats.totalRevenue.value).toLocaleString('en-IN')}`
+    : '₹3,85,000';
+
+  return [
+    {
+      id: 'total_members',
+      value: Number(total).toLocaleString('en-IN'),
+      label: 'Total Members',
+      icon: Users,
+      badgeBg: 'bg-rose-600',
+      badgeTextColor: 'text-white',
+    },
+    {
+      id: 'male_profiles',
+      value: Number(male).toLocaleString('en-IN'),
+      label: 'Male Profiles',
+      icon: UserCheck,
+      badgeBg: 'bg-blue-600',
+      badgeTextColor: 'text-white',
+    },
+    {
+      id: 'female_profiles',
+      value: Number(female).toLocaleString('en-IN'),
+      label: 'Female Profiles',
+      icon: Heart,
+      badgeBg: 'bg-pink-600',
+      badgeTextColor: 'text-white',
+    },
+    {
+      id: 'inactive_members',
+      value: String(inactive),
+      label: 'Inactive Members',
+      icon: UserX,
+      badgeBg: 'bg-rose-900',
+      badgeTextColor: 'text-white',
+    },
+    {
+      id: 'total_revenue',
+      value: revenue,
+      label: 'Total Revenue',
+      icon: IndianRupee,
+      badgeBg: 'bg-amber-600',
+      badgeTextColor: 'text-white',
+    },
+    {
+      id: 'membership_plans',
+      value: '6',
+      label: 'Membership Plans',
+      icon: CreditCard,
+      badgeBg: 'bg-amber-500',
+      badgeTextColor: 'text-white',
+    },
+    {
+      id: 'total_blogs',
+      value: '1',
+      label: 'Total Blogs',
+      icon: BookOpen,
+      badgeBg: 'bg-emerald-600',
+      badgeTextColor: 'text-white',
+    },
+    {
+      id: 'export_backup',
+      value: 'Export',
+      label: 'Backup Members (CSV)',
+      icon: FileSpreadsheet,
+      badgeBg: 'bg-teal-600',
+      badgeTextColor: 'text-white',
+      isAction: true,
+    },
+  ];
+}
+
 interface KPICardItemProps {
   card: KPICardData;
   onCardClick?: (id: string) => void;

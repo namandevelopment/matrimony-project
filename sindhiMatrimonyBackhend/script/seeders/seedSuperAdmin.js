@@ -1,8 +1,8 @@
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
-import { User } from "../../models/index.js";
+import { User, Employee } from "../../models/index.js";
 import { ROLES, ACCOUNT_STATUS } from "../../utils/variables.js";
-import { logMessage } from "../../utils/globalFunction.js";
+import { logMessage, hashPassword } from "../../utils/globalFunction.js";
 
 /**
  * 👑 Seed Default Super Admin Account
@@ -31,10 +31,32 @@ export async function seedSuperAdmin() {
     });
 
     await adminUser.save();
-    logMessage(`✅ Super Admin created with mobile: ${adminPhone}`, null, "info");
+    logMessage(`✅ Super Admin user created with mobile: ${adminPhone}`, null, "info");
   } else {
-    logMessage("ℹ️ Super Admin account already exists.", null, "info");
+    logMessage("ℹ️ Super Admin user account already exists.", null, "info");
   }
-}
+
+  // Seed Employee account for Admin CRM Panel
+  const existingEmployee = await Employee.findOne({ email: "admin@sindhimarriage.in" });
+  if (!existingEmployee) {
+    const hashedEmpPassword = await hashPassword("Admin@1234");
+    await Employee.create({
+      employeeId: "EMP001",
+      fullName: "Super Administrator",
+      email: "admin@sindhimarriage.in",
+      mobile: "+91 98200 11223",
+      phone: "+91 98200 11223",
+      password: hashedEmpPassword,
+      role: "SUPER_ADMIN",
+      roleCode: ROLES.SUPER_ADMIN,
+      department: "Executive Management",
+      designation: "Managing Director & Super Admin",
+      team: "Executive Leadership",
+      recordScope: "ALL",
+      isActive: true,
+      isChatEnabled: true,
+    });
+    logMessage("✅ Super Admin employee account created: admin@sindhimarriage.in", null, "info");
+  }
 
 export default seedSuperAdmin;

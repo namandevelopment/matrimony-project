@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import type { UseQueryOptions } from '@tanstack/react-query';
-import { apiGet } from '../redux/apiService';
+import { apiFetch } from '../redux/apiService';
 
 interface ApiQueryParams {
   queryKey: any[];
@@ -20,7 +20,12 @@ export const useApiQuery = ({
   return useQuery({
     queryKey,
     enabled,
-    queryFn: () => apiGet(url, { params }),
+    queryFn: () =>
+      apiFetch({
+        url,
+        method: 'GET',
+        params,
+      }),
     ...options,
   });
 };

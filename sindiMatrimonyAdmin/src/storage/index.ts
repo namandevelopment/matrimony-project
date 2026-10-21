@@ -2,6 +2,8 @@ const TOKEN_KEY = 'admin_auth_token';
 const REFRESH_TOKEN_KEY = 'admin_refresh_token';
 const USER_KEY = 'admin_auth_user';
 
+export { Storage } from './Storage';
+
 const memoryStore = new Map<string, string>();
 
 export const storage = {

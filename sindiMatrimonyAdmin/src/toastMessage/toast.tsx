@@ -140,8 +140,10 @@ export const toastConfig = Object.freeze({
 // 🚀 HIGH PERFORMANCE SHOW FUNCTION
 // requestAnimationFrame prevents UI thread hitching & frame drops
 // ======================================================
+export type ToastType = 'success' | 'error' | 'warning' | 'info';
+
 export interface ToastOptions {
-  type?: 'success' | 'error' | 'warning' | 'info';
+  type?: ToastType;
   message: string;
   position?: 'top' | 'bottom';
   duration?: number;

@@ -32,7 +32,7 @@ export function generateKey(length = CONSTANTS.VERIFICATION_TOKEN_LENGTH) {
   return key;
 }
 
-// 6-Digit OTP generator
+// 4-Digit OTP generator
 export function generateOTP(length = CONSTANTS.OTP_LENGTH) {
   let key = "";
   const possible = "0123456789";

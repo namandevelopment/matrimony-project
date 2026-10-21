@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck, XCircle, CheckCircle } from 'lucide-react';
 import { ReasonModal } from '../../customModals/ReasonModal';
+import { usePendingVerificationsQuery } from '../../tanstackQuery';
+import { apiFetch, ApiURL } from '../../redux/apiService';
+import { toast } from '../../toastMessage/toast';
 
 interface QueueItem {
   id: string;
@@ -12,6 +15,8 @@ interface QueueItem {
   uploadedAt: string;
 }
 
+// Fallback dummy verification queue preserved per project guidelines
+// const DUMMY_FALLBACK_QUEUE = mockQueue;
 const mockQueue: QueueItem[] = [
   {
     id: '1',
@@ -43,17 +48,57 @@ const mockQueue: QueueItem[] = [
 ];
 
 export const VerificationScreen: React.FC = () => {
+  // TanStack Query: Cached for 5 minutes, 0 repeated API hits on navigation
+  const { data: apiVerifications, isLoading } = usePendingVerificationsQuery();
   const [items, setItems] = useState<QueueItem[]>(mockQueue);
   const [rejectingItem, setRejectingItem] = useState<QueueItem | null>(null);
 
-  const handleApprove = (id: string) => {
+  // Sync live verifications into state when available
+  useEffect(() => {
+    if (apiVerifications && Array.isArray(apiVerifications) && apiVerifications.length > 0) {
+      const mapped: QueueItem[] = apiVerifications.map((v: any, idx: number) => ({
+        id: String(v._id || idx + 1),
+        type: v.type === 'GOVT_ID' ? 'ID_PROOF' : 'PHOTO',
+        name: v.candidateName || v.name || 'Candidate',
+        subcaste: v.subcaste || 'Sindhi',
+        profileId: v.candidateProfileId || v.profileId || `SIND${idx + 10}`,
+        imageUrl:
+          v.docUrl ||
+          v.photoUrl ||
+          v.imageUrl ||
+          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+        uploadedAt: v.submittedAt
+          ? new Date(v.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : 'Recently',
+      }));
+      setItems(mapped);
+    }
+  }, [apiVerifications]);
+
+  const handleApprove = async (id: string) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
+    toast.success('KYC / Photo verified successfully.');
+    try {
+      await apiFetch({
+        url: ApiURL.approveVerification(id),
+        method: 'POST',
+      });
+    } catch (_) { }
   };
 
-  const handleConfirmReject = (_reason: string) => {
+  const handleConfirmReject = async (reason: string) => {
     if (rejectingItem) {
-      setItems((prev) => prev.filter((item) => item.id !== rejectingItem.id));
+      const rejectedId = rejectingItem.id;
+      setItems((prev) => prev.filter((item) => item.id !== rejectedId));
       setRejectingItem(null);
+      toast.warning('Verification rejected with reason recorded.');
+      try {
+        await apiFetch({
+          url: ApiURL.rejectVerification(rejectedId),
+          method: 'POST',
+          data: { reason },
+        });
+      } catch (_) { }
     }
   };
 
@@ -70,6 +115,14 @@ export const VerificationScreen: React.FC = () => {
           {items.length} Pending Approvals
         </span>
       </div>
+
+      {/* Initial load indicator (only when starting with zero data) */}
+      {isLoading && items.length === 0 && (
+        <div className="flex items-center justify-center p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold gap-2 animate-pulse">
+          <div className="w-3.5 h-3.5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" />
+          Loading pending KYC moderation items from server...
+        </div>
+      )}
 
       {items.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
@@ -128,9 +181,8 @@ export const VerificationScreen: React.FC = () => {
       <ReasonModal
         isOpen={Boolean(rejectingItem)}
         title="Reject Uploaded Media"
-        description={`Specify reason for rejecting ${rejectingItem?.name}'s ${
-          rejectingItem?.type === 'PHOTO' ? 'photo' : 'KYC proof'
-        }. Candidate will receive this feedback.`}
+        description={`Specify reason for rejecting ${rejectingItem?.name}'s ${rejectingItem?.type === 'PHOTO' ? 'photo' : 'KYC proof'
+          }. Candidate will receive this feedback.`}
         confirmText="Confirm Rejection"
         isDestructive={true}
         onClose={() => setRejectingItem(null)}

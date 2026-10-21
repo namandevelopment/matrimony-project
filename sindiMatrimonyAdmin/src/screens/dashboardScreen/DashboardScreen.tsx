@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardHeroBanner } from './component/DashboardHeroBanner';
-import { KPIGrid } from './component/KPIGrid';
+import { KPIGrid, createKpiCardsFromStats } from './component/KPIGrid';
 import { AdminActionQueues } from './component/AdminActionQueues';
 import { DashboardChartsSection } from './component/DashboardChartsSection';
 import { RecentRegistrationsTable } from './component/RecentRegistrationsTable';
@@ -9,8 +9,10 @@ import { ExportNoticeBanner } from './component/ExportNoticeBanner';
 import { memoWithDeepEqual } from '../../utils/memoUtils';
 import { toast } from '../../toastMessage/toast';
 import { usePerformanceTracker } from '../../customHooks/usePerformanceTracker';
+import { useDashboardStatsQuery } from '../../tanstackQuery';
 
 // Static CSV export payload hoisted outside component to prevent recurring memory allocation
+// Fallback dummy records preserved per project guidelines
 const CSV_EXPORT_DATA = [
   'S.No,Name,Profession,Email,JoinedOn,Status',
   '1,JITAMITRA DHARMADHIKARY,Software Architect,jitamitra@example.com,10 Oct 2026,Active',
@@ -64,6 +66,24 @@ export const DashboardScreen: React.FC = memoWithDeepEqual(() => {
     }, 800);
   }, []);
 
+  // TanStack Query: Cached for 5 minutes, 0 repeated API hits on navigation
+  const { data: statsData, isLoading } = useDashboardStatsQuery();
+
+  // Dynamic KPI cards mapped from live backend API, with fallback to default cards
+  const kpiCards = useMemo(() => {
+    /* Fallback static mock cards kept commented out per requirement:
+     * return defaultKpiCards;
+     */
+    return createKpiCardsFromStats(statsData);
+  }, [statsData]);
+
+  const totalMembersCount = statsData?.totalRegistrations?.value
+    ? Number(statsData.totalRegistrations.value).toLocaleString('en-IN')
+    : '150';
+
+  // Loader shows ONLY ONCE when data is not in cache yet
+  const isInitialLoading = isLoading && !statsData;
+
   // Stable callback: KPI card interaction router
   const handleCardClick = useCallback((id: string) => {
     if (id === 'export_backup') {
@@ -77,10 +97,18 @@ export const DashboardScreen: React.FC = memoWithDeepEqual(() => {
 
   return (
     <div className="space-y-6 pb-8">
+      {/* Initial load indicator (only when starting with zero cache) */}
+      {isInitialLoading && (
+        <div className="flex items-center justify-center p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold gap-2 animate-pulse">
+          <div className="w-3.5 h-3.5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" />
+          Loading real-time admin metrics...
+        </div>
+      )}
+
       {/* 1. Royal Ruby Red Hero Welcome Banner */}
       <DashboardHeroBanner
         adminName="Admin"
-        totalMembers="39,434"
+        totalMembers={totalMembersCount}
         onAddMember={handleAddMember}
         onExportCsv={handleExportCsv}
       />
@@ -89,7 +117,7 @@ export const DashboardScreen: React.FC = memoWithDeepEqual(() => {
       {exportNotice && <ExportNoticeBanner notice={exportNotice} />}
 
       {/* 2. 8 KPI Stat Cards Grid (Total Members, Male, Female, Inactive, Revenue, Plans, Blogs, Backup) */}
-      <KPIGrid onCardClick={handleCardClick} />
+      <KPIGrid cards={kpiCards} onCardClick={handleCardClick} />
 
       {/* 3. Operational Action Queues (Verification, Exceptions, Abuse, Marriage Offboarding) */}
       <AdminActionQueues />

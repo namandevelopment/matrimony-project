@@ -1,5 +1,6 @@
 import express from "express";
 import userRoutes from "./users.js";
+import adminRoutes from "./admin.js";
 
 // Shorthand imports from controllers and validators for direct /auth/... endpoints
 import validationMiddleware from "../../middlewares/validationMiddleware.js";
@@ -39,7 +40,8 @@ import {
 
 const router = express.Router();
 
-// 1. Nested User Routes: /api/v1/auth/users/...
+// 1. Nested Staff/Admin & User Routes: /api/v1/auth/admin/... & /api/v1/auth/users/...
+router.use("/admin", adminRoutes);
 router.use("/users", userRoutes);
 
 // 2. Candidate Authentication Routes:

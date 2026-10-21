@@ -1,10 +1,10 @@
 import { useMutation } from '@tanstack/react-query';
 import type { UseMutationOptions } from '@tanstack/react-query';
-import { apiPost, apiPut, apiDelete } from '../redux/apiService';
+import { apiFetch } from '../redux/apiService';
 
 interface ApiMutationParams {
   url: string;
-  method?: 'POST' | 'PUT' | 'DELETE';
+  method?: 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   options?: Partial<UseMutationOptions<any, any, any, any>>;
 }
 
@@ -15,9 +15,11 @@ export const useApiMutation = ({
 }: ApiMutationParams) => {
   return useMutation({
     mutationFn: (data: any) => {
-      if (method === 'PUT') return apiPut(url, data);
-      if (method === 'DELETE') return apiDelete(url, { data });
-      return apiPost(url, data);
+      return apiFetch({
+        url,
+        method,
+        data,
+      });
     },
     ...options,
   });

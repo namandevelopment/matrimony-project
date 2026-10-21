@@ -8,6 +8,8 @@ import { runErrorBoundaryIntegrationTests } from "./integration/errorBoundary.te
 import { runMultiProfileScenariosTests } from "./integration/multiProfileScenarios.test.js";
 import { runDevPerformanceTrackerIntegrationTests } from "./integration/devPerformanceTracker.test.js";
 import { runChatQuotaAndSystemTests } from "./unit/chatQuotaAndSystem.test.js";
+import { runAdminAuthTests } from "./unit/adminAuth.test.js";
+import { runRealDataAndAdminTests } from "./unit/adminDataAndRealFlow.test.js";
 
 async function runMasterTestEngine() {
   const masterStart = Date.now();
@@ -43,6 +45,12 @@ async function runMasterTestEngine() {
 
     // 8. Chat System & Membership Plan Quota Tests
     results.push(await runChatQuotaAndSystemTests());
+
+    // 9. Staff & Super Admin Authentication Tests
+    results.push(await runAdminAuthTests());
+
+    // 10. Real Data Flow & Admin CRM Endpoints Tests
+    results.push(await runRealDataAndAdminTests());
 
     const totalPassed = results.reduce((acc, r) => acc + (r?.passed || 0), 0);
     const totalFailed = results.reduce((acc, r) => acc + (r?.failed || 0), 0);

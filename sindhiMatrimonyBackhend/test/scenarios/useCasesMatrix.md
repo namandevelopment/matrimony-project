@@ -25,7 +25,7 @@ This document provides a comprehensive specification of all business use cases, 
 - **Headers:** `x-client-platform: mobile` | `Content-Type: application/json`
 - **Payload:** `{ "phone": "9820123456", "countryCode": "+91", "purpose": "LOGIN" }`
 - **Scenarios:**
-  1. **Success (Valid Indian Mobile):** Generates 6-digit OTP, saves in Redis with 10-minute TTL, dispatches multi-channel notification (SMS + WhatsApp), returns `HTTP 200 OK`.
+  1. **Success (Valid Indian Mobile):** Generates 4-digit OTP, saves in Redis with 10-minute TTL, dispatches multi-channel notification (SMS + WhatsApp), returns `HTTP 200 OK`.
   2. **Suspended Account:** Candidate mobile is registered but flagged `status: "SUSPENDED"`. Returns `HTTP 403 Forbidden` with `"Your account has been suspended. Please contact support."`.
   3. **Invalid Phone (Validation Error):** Phone length < 10 digits or contains alphabets. Returns `HTTP 422 Unprocessable Entity` in < 2ms with `"Please enter a valid 10-digit mobile number."`.
 

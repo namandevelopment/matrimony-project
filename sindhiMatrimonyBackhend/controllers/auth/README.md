@@ -12,7 +12,7 @@ Authentication aur authorization se jude sabhi flows ko handle karna.
 1. **Admin Login (`admin.js`)**:
    - Email + Password validation.
    - Brute-force rate limiting check.
-   - If MFA enabled -> Require 6-digit TOTP code.
+   - If MFA enabled -> Require 4-digit TOTP code.
    - Sign Access Token (15 min) + Refresh Token (7 days).
 2. **User Login (`users.js`)**:
    - Mobile number input -> MSG91 OTP generation (or test OTP in dev).

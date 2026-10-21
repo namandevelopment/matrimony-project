@@ -12,6 +12,7 @@ import LegalContent from "./common/legalContent.model.js";
 import OurProcess from "./common/ourProcess.model.js";
 import HelpSupport from "./support/helpSupport.model.js";
 import SupportTicket from "./support/supportTicket.model.js";
+import Employee from "./employees/employee.model.js";
 
 export {
   User,
@@ -29,6 +30,7 @@ export {
   OurProcess,
   HelpSupport,
   SupportTicket,
+  Employee,
 };
 
 export const Models = {
@@ -47,6 +49,7 @@ export const Models = {
   OurProcess,
   HelpSupport,
   SupportTicket,
+  Employee,
 };
 
 export default Models;

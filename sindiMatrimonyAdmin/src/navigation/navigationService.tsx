@@ -7,11 +7,26 @@ export const setNavigator = (nav: (path: string, options?: any) => void) => {
 export const navigate = (path: string, options?: any) => {
   if (navigateFunction) {
     navigateFunction(path, options);
-  } else {
+  } else if (typeof window !== 'undefined') {
     window.location.href = path;
   }
 };
 
-export const goBack = () => {
-  window.history.back();
+export const reset = (path: string, options?: any) => {
+  navigate(path, options);
 };
+
+export const goBack = () => {
+  if (typeof window !== 'undefined') {
+    window.history.back();
+  }
+};
+
+const navigationService = {
+  navigate,
+  reset,
+  goBack,
+  setNavigator,
+};
+
+export default navigationService;

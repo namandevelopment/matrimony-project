@@ -255,10 +255,10 @@ FIREBASE_SERVICE_ACCOUNT_JSON=
 ### 4. Complete Registration Flow `apiFetch` Integration:
 - **Landing Page (`QuickRegisterForm.tsx`)**:
   - Connected to `ApiURL.sendOtp` via `apiFetch`.
-  - Sends 6-digit OTP to mobile with purpose `REGISTER`.
+  - Sends 4-digit OTP to mobile with purpose `REGISTER`.
   - Persists registration draft in `sessionStorage` and navigates to OTP verification.
 - **OTP Verification (`RegistrationOtpScreen.tsx` & `OtpInputBoxes.tsx`)**:
-  - Dynamic 6-digit input box with auto-focus and auto-advance.
+  - Dynamic 4-digit input box with auto-focus and auto-advance.
   - Connected to `ApiURL.resendOtp` for instantaneous OTP resending.
   - Stores verified OTP in session draft.
 - **Wizard Steps (Basic, Personal/Religious, Location/Career)**:

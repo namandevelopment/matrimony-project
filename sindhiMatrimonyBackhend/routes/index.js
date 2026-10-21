@@ -17,6 +17,7 @@ import paymentRoutes from "./finance/payments.js";
 import notificationRoutes from "./notifications/index.js";
 import contentRoutes from "./common/content.js";
 import supportRoutes from "./support/index.js";
+import adminRoutes from "./admin/index.js";
 import { getContent } from "../controllers/common/contentMasterController.js";
 import {
   getDashboardData,
@@ -47,6 +48,9 @@ router.get("/health", (req, res) => {
 
 // 2. Authentication & Registration Router
 router.use("/auth", authRoutes);
+
+// 2b. Admin Portal & CRM Router
+router.use("/admin", adminRoutes);
 
 // 3. Candidate Profile & Partner Preferences Router (Matches Mobile App & Web Panel)
 router.use("/profile", profileRoutes);
