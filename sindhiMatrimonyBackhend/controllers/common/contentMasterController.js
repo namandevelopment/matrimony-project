@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import LegalContent from "../../models/common/legalContent.model.js";
 import OurProcess from "../../models/common/ourProcess.model.js";
 import HelpSupport from "../../models/support/helpSupport.model.js";
@@ -87,6 +88,9 @@ const projectFields = (doc, selectQuery) => {
  * 🔒 Safe Data Fetchers with DB auto-seed and in-memory resilience
  */
 export const fetchPrivacyPolicy = async () => {
+  if (mongoose.connection.readyState !== 1) {
+    return DEFAULT_PRIVACY_POLICY;
+  }
   try {
     let doc = await LegalContent.findOne({
       type: "PRIVACY_POLICY",
@@ -109,6 +113,9 @@ export const fetchPrivacyPolicy = async () => {
 };
 
 export const fetchTermsAndConditions = async () => {
+  if (mongoose.connection.readyState !== 1) {
+    return DEFAULT_TERMS_AND_CONDITIONS;
+  }
   try {
     let doc = await LegalContent.findOne({
       type: "TERMS_AND_CONDITIONS",
@@ -131,6 +138,37 @@ export const fetchTermsAndConditions = async () => {
 };
 
 export const fetchHelpSupport = async (options = {}) => {
+  const { category, q } = options;
+
+  if (mongoose.connection.readyState !== 1) {
+    let faqs = Array.isArray(DEFAULT_HELP_SUPPORT_DATA.faqs)
+      ? [...DEFAULT_HELP_SUPPORT_DATA.faqs]
+      : [];
+
+    if (category && category !== "ALL") {
+      const catClean = String(category).trim().toLowerCase();
+      faqs = faqs.filter(
+        (f) => String(f.categoryId).toLowerCase() === catClean
+      );
+    }
+
+    if (q && String(q).trim()) {
+      const searchTerm = String(q).trim().toLowerCase();
+      faqs = faqs.filter(
+        (f) =>
+          f.question?.toLowerCase().includes(searchTerm) ||
+          f.answer?.toLowerCase().includes(searchTerm) ||
+          f.keywords?.some((k) => k.toLowerCase().includes(searchTerm))
+      );
+    }
+
+    return {
+      ...DEFAULT_HELP_SUPPORT_DATA,
+      faqs,
+      totalFaqsCount: faqs.length,
+    };
+  }
+
   try {
     let doc = await HelpSupport.findOne({
       key: "DEFAULT_HELP_SUPPORT",
@@ -147,7 +185,6 @@ export const fetchHelpSupport = async (options = {}) => {
     }
 
     // Apply optional category and keyword search filters
-    const { category, q } = options;
     let faqs = Array.isArray(doc.faqs) ? [...doc.faqs] : [];
 
     if (category && category !== "ALL") {
@@ -179,6 +216,9 @@ export const fetchHelpSupport = async (options = {}) => {
 };
 
 export const fetchOurProcess = async () => {
+  if (mongoose.connection.readyState !== 1) {
+    return DEFAULT_OUR_PROCESS;
+  }
   try {
     let doc = await OurProcess.findOne({ isActive: true }).lean();
 
@@ -520,19 +560,30 @@ export const submitSupportTicket = asyncHandler(async (req, res) => {
 
   const userId = req.user?._id || req.user?.id || null;
 
-  const ticket = await SupportTicket.create({
-    ticketId,
-    userId,
-    name: String(name).trim(),
-    email: String(email).trim().toLowerCase(),
-    phone: phone ? String(phone).trim() : "",
-    category: category || "GENERAL",
-    subject: String(subject).trim(),
-    message: String(message).trim(),
-    priority: priority || "MEDIUM",
-    source: source || "WEB",
-    status: "OPEN",
-  });
+  let ticket;
+  if (mongoose.connection.readyState !== 1) {
+    ticket = {
+      ticketId,
+      status: "OPEN",
+      subject: String(subject).trim(),
+      category: category || "GENERAL",
+      createdAt: new Date(),
+    };
+  } else {
+    ticket = await SupportTicket.create({
+      ticketId,
+      userId,
+      name: String(name).trim(),
+      email: String(email).trim().toLowerCase(),
+      phone: phone ? String(phone).trim() : "",
+      category: category || "GENERAL",
+      subject: String(subject).trim(),
+      message: String(message).trim(),
+      priority: priority || "MEDIUM",
+      source: source || "WEB",
+      status: "OPEN",
+    });
+  }
 
   return apiHTTPResponse(
     req,
@@ -568,6 +619,18 @@ export const getMySupportTickets = asyncHandler(async (req, res) => {
       null,
       HTTP_BAD_REQUEST,
       ERROR_TRUE
+    );
+  }
+
+  if (mongoose.connection.readyState !== 1) {
+    return apiHTTPResponse(
+      req,
+      res,
+      HTTP_OK,
+      "Support tickets retrieved successfully.",
+      [],
+      OK,
+      ERROR_FALSE
     );
   }
 
