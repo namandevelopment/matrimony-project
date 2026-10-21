@@ -13,8 +13,19 @@ const getEnvVar = (key: string): string | undefined => {
   return undefined;
 };
 
-export const BASE_URL = getEnvVar('VITE_API_URL') || 'http://localhost:5001';
-export const SOCKET_URL = getEnvVar('VITE_SOCKET_URL') || 'http://localhost:5001';
+export const BASE_URL =
+  getEnvVar('VITE_API_URL')?.replace(/\/api\/?$/, '') ||
+  (typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:5001'
+    : 'https://sindhi-matrimony-backend.vercel.app');
+
+export const SOCKET_URL =
+  getEnvVar('VITE_SOCKET_URL') ||
+  (typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:5001'
+    : 'https://sindhi-matrimony-backend.vercel.app');
 
 export const ApiURL = {
   // =========================================================================
