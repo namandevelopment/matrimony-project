@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, memo } from "react";
+import { createPortal } from "react-dom";
 import { Star, X, CheckCircle2, ShieldCheck, HeartHandshake, Loader2 } from "lucide-react";
 import apiFetch, { ApiURL, showToast } from "@/redux/apiService";
 import { CustomDropDown, DropdownOption } from "@/components/CustomDropDown";
@@ -46,6 +47,7 @@ export const SubmitReviewModal: React.FC<SubmitReviewModalProps> = memo(({
   onClose,
   onSuccess,
 }) => {
+  const [mounted, setMounted] = useState(false);
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [memberName, setMemberName] = useState("");
@@ -61,6 +63,10 @@ export const SubmitReviewModal: React.FC<SubmitReviewModalProps> = memo(({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submittedReviewId, setSubmittedReviewId] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Prevent background scrolling when modal is open
   useEffect(() => {
@@ -84,7 +90,7 @@ export const SubmitReviewModal: React.FC<SubmitReviewModalProps> = memo(({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, isLoading]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,39 +190,39 @@ export const SubmitReviewModal: React.FC<SubmitReviewModalProps> = memo(({
     onClose();
   };
 
-  return (
+  const modalContent = (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="submit-review-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-[99999] overflow-y-auto bg-black/70 backdrop-blur-xs flex min-h-screen items-center justify-center p-3 sm:p-4 text-center animate-in fade-in duration-150"
       onClick={handleResetAndClose}
     >
       <div
-        className="relative w-full max-w-xl sm:max-w-2xl max-h-[min(92vh,780px)] flex flex-col bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-stone-200 overflow-hidden my-auto animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-xl max-h-[86vh] flex flex-col bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-stone-200 overflow-hidden text-left my-auto animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Ribbon (Sticky / Fixed at top) */}
-        <div className="bg-gradient-to-r from-stone-900 via-stone-850 to-stone-900 text-white p-4.5 sm:p-6 shrink-0 flex items-start justify-between border-b border-stone-800">
-          <div className="space-y-1 sm:space-y-1.5 pr-3">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[11px] sm:text-xs font-semibold tracking-wide border border-rose-500/30">
+        <div className="bg-gradient-to-r from-stone-900 via-stone-850 to-stone-900 text-white px-4 sm:px-6 py-3.5 sm:py-4 shrink-0 flex items-start justify-between border-b border-stone-800">
+          <div className="space-y-0.5 sm:space-y-1 pr-3">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[10px] sm:text-xs font-semibold tracking-wide border border-rose-500/30">
               <HeartHandshake className="w-3.5 h-3.5" />
               Community Feedback &amp; Stories
             </div>
             <h2
               id="submit-review-title"
-              className="text-lg sm:text-2xl font-bold tracking-tight font-heading text-white"
+              className="text-lg sm:text-xl font-bold tracking-tight font-heading text-white"
             >
               Share Your Experience
             </h2>
-            <p className="text-xs sm:text-sm text-stone-300 leading-normal">
+            <p className="text-xs text-stone-300 leading-normal">
               Help Sindhi brides, grooms, and parents learn from your journey.
             </p>
           </div>
           <button
             type="button"
             onClick={handleResetAndClose}
-            className="p-1.5 sm:p-2 rounded-xl text-stone-400 hover:text-white hover:bg-white/10 active:bg-white/20 transition-colors cursor-pointer shrink-0"
+            className="p-1.5 rounded-xl text-stone-400 hover:text-white hover:bg-white/10 active:bg-white/20 transition-colors cursor-pointer shrink-0"
             aria-label="Close dialog"
           >
             <X className="w-5 h-5" />
@@ -254,7 +260,7 @@ export const SubmitReviewModal: React.FC<SubmitReviewModalProps> = memo(({
         ) : (
           <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
             {/* Scrollable Form Body */}
-            <div className="flex-1 overflow-y-auto overscroll-contain p-4.5 sm:p-6 space-y-4 pb-8">
+            <div className="flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6 py-4 sm:py-5 space-y-3.5 pb-6">
               {errorMsg && (
                 <div className="p-3 bg-red-50 text-red-700 text-xs sm:text-sm rounded-xl border border-red-200 font-medium">
                   {errorMsg}
@@ -262,7 +268,7 @@ export const SubmitReviewModal: React.FC<SubmitReviewModalProps> = memo(({
               )}
 
               {/* Star Rating Selector Card */}
-              <div className="p-3.5 sm:p-4 bg-gradient-to-r from-amber-50/70 via-stone-50 to-amber-50/40 rounded-2xl border border-amber-200/70 space-y-2">
+              <div className="p-3 sm:p-3.5 bg-gradient-to-r from-amber-50/70 via-stone-50 to-amber-50/40 rounded-2xl border border-amber-200/70 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-bold text-stone-800 uppercase tracking-wide">
                     Your Overall Rating <span className="text-[#DB2F3C] ml-0.5">*</span>
@@ -285,7 +291,7 @@ export const SubmitReviewModal: React.FC<SubmitReviewModalProps> = memo(({
                         aria-label={`Rate ${star} stars`}
                       >
                         <Star
-                          className={`w-6 h-6 sm:w-7 sm:h-7 transition-colors ${
+                          className={`w-6 h-6 sm:w-6.5 sm:h-6.5 transition-colors ${
                             active
                               ? "text-amber-400 fill-amber-400 drop-shadow-xs"
                               : "text-stone-300 fill-stone-100"
@@ -298,7 +304,7 @@ export const SubmitReviewModal: React.FC<SubmitReviewModalProps> = memo(({
               </div>
 
               {/* Reviewer Name & Role (CustomDropDown) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 relative z-20">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5 relative z-20">
                 <div className="w-full flex flex-col gap-1">
                   <label className="block text-xs sm:text-sm font-semibold text-stone-700 select-none">
                     Your Name / Couple Name
@@ -329,7 +335,7 @@ export const SubmitReviewModal: React.FC<SubmitReviewModalProps> = memo(({
               </div>
 
               {/* Subcaste (CustomDropDown) & City */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 relative z-10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5 relative z-10">
                 <div className="w-full">
                   <CustomDropDown
                     label="Sindhi Sub-caste"
@@ -394,12 +400,12 @@ export const SubmitReviewModal: React.FC<SubmitReviewModalProps> = memo(({
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="Share details about the match, kundli matching, relationship manager support, or family meetings..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs sm:text-sm bg-white text-[#1A1A1A] placeholder-stone-400 focus:outline-none focus:border-[#DB2F3C] focus:ring-1 focus:ring-[#DB2F3C] transition-colors resize-y min-h-[88px]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs sm:text-sm bg-white text-[#1A1A1A] placeholder-stone-400 focus:outline-none focus:border-[#DB2F3C] focus:ring-1 focus:ring-[#DB2F3C] transition-colors resize-y min-h-[84px]"
                 />
               </div>
 
               {/* Admin Moderation Notice Banner */}
-              <div className="flex items-start gap-2.5 p-3 sm:p-3.5 bg-gradient-to-r from-amber-50 to-orange-50/50 rounded-xl border border-amber-200/90 text-xs text-amber-900 leading-relaxed shadow-2xs">
+              <div className="flex items-start gap-2.5 p-3 bg-gradient-to-r from-amber-50 to-orange-50/50 rounded-xl border border-amber-200/90 text-xs text-amber-900 leading-relaxed shadow-2xs">
                 <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
                 <div className="space-y-0.5">
                   <p className="font-bold text-amber-950 text-xs">
@@ -413,19 +419,19 @@ export const SubmitReviewModal: React.FC<SubmitReviewModalProps> = memo(({
             </div>
 
             {/* Sticky Action Footer */}
-            <div className="shrink-0 border-t border-stone-100 bg-stone-50/95 backdrop-blur-xs px-4.5 sm:px-6 py-3 sm:py-3.5 flex items-center justify-end gap-2.5 sm:gap-3">
+            <div className="shrink-0 border-t border-stone-100 bg-stone-50/95 backdrop-blur-xs px-4 sm:px-6 py-3 flex items-center justify-end gap-2.5 sm:gap-3">
               <button
                 type="button"
                 onClick={handleResetAndClose}
                 disabled={isLoading}
-                className="px-4 sm:px-5 py-2 sm:py-2.5 border border-stone-200 text-stone-700 bg-white hover:bg-stone-100 active:bg-stone-200 rounded-xl text-xs sm:text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                className="px-4 sm:px-5 py-2 border border-stone-200 text-stone-700 bg-white hover:bg-stone-100 active:bg-stone-200 rounded-xl text-xs sm:text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-[#FF4A57] via-[#DB2F3C] to-[#B71F2A] hover:brightness-105 active:scale-[0.99] text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-red-700/20 hover:shadow-lg hover:shadow-red-600/30 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none"
+                className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2 bg-gradient-to-r from-[#FF4A57] via-[#DB2F3C] to-[#B71F2A] hover:brightness-105 active:scale-[0.99] text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-red-700/20 hover:shadow-lg hover:shadow-red-600/30 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none"
               >
                 {isLoading ? (
                   <>
@@ -442,6 +448,8 @@ export const SubmitReviewModal: React.FC<SubmitReviewModalProps> = memo(({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 });
 
 SubmitReviewModal.displayName = "SubmitReviewModal";
