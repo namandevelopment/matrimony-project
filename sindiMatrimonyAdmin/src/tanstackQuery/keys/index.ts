@@ -50,6 +50,8 @@ export const QUERY_KEYS = {
   // 9. ADMIN SPECIFIC QUERY KEYS
   // =========================================================================
   dashboardStats: ['admin', 'dashboard', 'stats'] as const,
+  dashboardActionQueues: ['admin', 'dashboard', 'action-queues'] as const,
+  dashboardChartsOverview: ['admin', 'dashboard', 'charts-overview'] as const,
   dashboardCharts: (type: string) => ['admin', 'dashboard', 'charts', type] as const,
   leads: (filters: Record<string, any> = {}) => ['admin', 'leads', filters] as const,
   leadDetail: (id: string) => ['admin', 'leads', id] as const,

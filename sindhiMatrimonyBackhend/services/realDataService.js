@@ -788,6 +788,7 @@ export function getLeadsInMemory({ search = "", view = "ALL", status, source, pr
  * Compute KPI stats
  */
 export function getDashboardStatsInMemory() {
+  const allCandidates = [...SEED_CANDIDATE_POOL, ...customProfilesMap.values()];
   const totalRegistrations = 150 + customProfilesMap.size;
   const activeMembers = totalRegistrations - 4;
   const newLeadsToday = IN_MEMORY_LEADS.filter((l) => l.status === "NEW").length + 12;
@@ -797,7 +798,24 @@ export function getDashboardStatsInMemory() {
   const activeSubscriptions = 142;
   const pendingVerifications = IN_MEMORY_VERIFICATIONS.filter((v) => v.status === "PENDING").length;
 
+  let maleProfiles = allCandidates.filter((m) => (m.gender || "").toUpperCase() === "MALE").length;
+  let femaleProfiles = allCandidates.filter((m) => (m.gender || "").toUpperCase() === "FEMALE").length;
+  if (maleProfiles === 75 && customProfilesMap.size === 0) {
+    maleProfiles = 93;
+    femaleProfiles = 57;
+  }
+  const inactiveMembers = 4;
+  const membershipPlans = 6;
+  const totalBlogs = 1;
+
   return {
+    totalMembers: totalRegistrations,
+    maleProfiles,
+    femaleProfiles,
+    inactiveMembers,
+    membershipPlans,
+    totalBlogs,
+    totalRevenueNumeric: totalRevenue,
     totalRegistrations: { value: totalRegistrations, change: +12.5 },
     activeMembers: { value: activeMembers, change: +4.2 },
     newLeadsToday: { value: newLeadsToday, change: +8.3 },
@@ -808,6 +826,108 @@ export function getDashboardStatsInMemory() {
     pendingVerifications: { value: pendingVerifications, change: -4.0 },
     avgFirstContactMin: { value: 18, change: -12.0 },
     slaBreachCount: { value: 3, change: -2 },
+  };
+}
+
+/**
+ * Live Operational Action Queues
+ */
+export function getDashboardActionQueuesInMemory() {
+  const pendingVerifCount = IN_MEMORY_VERIFICATIONS.filter((v) => v.status === "PENDING").length || 38;
+
+  return {
+    profileVerification: {
+      id: "profile_verification",
+      title: "Profile Verification",
+      count: pendingVerifCount,
+      badgeText: "High SLA",
+      badgeColor: "bg-blue-100 text-blue-700",
+      iconBg: "bg-blue-50 text-blue-600",
+      description: "Govt ID cards, salary slips & selfies awaiting visual authenticity audit",
+      items: [
+        "18 Aadhaar Card OCR Mismatch",
+        "12 High-Income Salary Slip (>30 LPA)",
+        "8 Selfie Liveness Review",
+      ],
+      actionLabel: "Open Verification Desk",
+      route: "/verifications",
+      urgent: false,
+    },
+    matchExceptions: {
+      id: "match_exceptions",
+      title: "Match Exceptions",
+      count: 7,
+      badgeText: "Requires Admin Sign-off",
+      badgeColor: "bg-amber-100 text-amber-700",
+      iconBg: "bg-amber-50 text-amber-600",
+      description: "Borderline horoscope gunas, age gap > 6 yrs, or inter-subcaste manual requests",
+      items: [
+        "3 Horoscope Guna < 18 (Client Requested)",
+        "2 Age Gap Exception (+6 Years)",
+        "2 Sagotra Distance Review",
+      ],
+      actionLabel: "Review Match Exceptions",
+      route: "/matchmaking",
+      urgent: true,
+    },
+    abuseComplaints: {
+      id: "abuse_complaints",
+      title: "Abuse Complaints",
+      count: 4,
+      badgeText: "Priority 1",
+      badgeColor: "bg-rose-100 text-rose-700",
+      iconBg: "bg-rose-50 text-rose-600",
+      description: "Grievances reported by members regarding harassment, fake profiles, or extortion",
+      items: [
+        "2 Misbehavior on Phone Call",
+        "1 Suspicious NRI Identity Claim",
+        "1 Already Married / Impersonation",
+      ],
+      actionLabel: "Open Priority Triage",
+      route: "/safety",
+      urgent: true,
+    },
+    marriageOffboarding: {
+      id: "marriage_offboarding",
+      title: "Engagement / Marriage",
+      count: 6,
+      badgeText: "Offboarding Ready",
+      badgeColor: "bg-emerald-100 text-emerald-700",
+      iconBg: "bg-emerald-50 text-emerald-600",
+      description: "Couples who reported wedding fix. Deactivate from matches and log success stories",
+      items: [
+        "4 Vivah Confirmed (Archive Profile)",
+        "2 Success Story Photos Submitted",
+        "RM Attribution: Priya (2), Amit (2)",
+      ],
+      actionLabel: "Review & Offboard",
+      route: "/success-stories",
+      urgent: false,
+    },
+  };
+}
+
+/**
+ * Dashboard Charts & Analytics Overview
+ */
+export function getDashboardChartsDataInMemory() {
+  return {
+    membersWeekly: [
+      { day: "Sat", deposit: 490, withdraw: 210 },
+      { day: "Sun", deposit: 260, withdraw: 310 },
+      { day: "Mon", deposit: 310, withdraw: 290 },
+      { day: "Tue", deposit: 450, withdraw: 410 },
+      { day: "Wed", deposit: 180, withdraw: 310 },
+      { day: "Thu", deposit: 340, withdraw: 460 },
+      { day: "Fri", deposit: 395, withdraw: 380 },
+    ],
+    totalWeeklyInteractions: 4495,
+    plansDistribution: [
+      { label: "Free Tier", percentage: 40, count: 15774, color: "#0F172A" },
+      { label: "Silver Plan", percentage: 15, count: 5915, color: "#F97316" },
+      { label: "Gold Royal", percentage: 25, count: 9858, color: "#D946EF" },
+      { label: "Diamond / NRI", percentage: 20, count: 7887, color: "#4F46E5" },
+    ],
   };
 }
 
@@ -822,4 +942,6 @@ export default {
   getMembersInMemory,
   getLeadsInMemory,
   getDashboardStatsInMemory,
+  getDashboardActionQueuesInMemory,
+  getDashboardChartsDataInMemory,
 };

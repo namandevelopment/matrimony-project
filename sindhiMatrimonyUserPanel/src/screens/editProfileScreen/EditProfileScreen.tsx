@@ -485,7 +485,6 @@ const EditProfileScreenComponent: React.FC<EditProfileScreenProps> = ({
       <DashboardHeader
         user={user}
         onUpgradeClick={onUpgradeClick || (() => router.push("/subscription"))}
-        onLogout={() => router.push("/")}
       />
 
       {/* 2. Photo Reminder Notice Banner */}

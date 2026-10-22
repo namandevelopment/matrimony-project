@@ -102,13 +102,16 @@ export const defaultKpiCards: KPICardData[] = [
 export function createKpiCardsFromStats(stats: any): KPICardData[] {
   if (!stats) return defaultKpiCards;
 
-  const total = stats.totalRegistrations?.value ?? 150;
-  const male = Math.round(total * 0.62);
-  const female = Math.max(0, total - male);
-  const inactive = 4;
-  const revenue = stats.totalRevenue?.value
-    ? `₹${Number(stats.totalRevenue.value).toLocaleString('en-IN')}`
-    : '₹3,85,000';
+  const total = stats.totalMembers ?? stats.totalRegistrations?.value ?? 150;
+  const male = stats.maleProfiles ?? Math.round(total * 0.62);
+  const female = stats.femaleProfiles ?? Math.max(0, total - male);
+  const inactive = stats.inactiveMembers ?? 4;
+  const rawRev = stats.totalRevenueNumeric ?? stats.totalRevenue?.value ?? stats.totalRevenue ?? 385000;
+  const revenue = typeof rawRev === 'number'
+    ? `₹${Number(rawRev).toLocaleString('en-IN')}`
+    : String(rawRev);
+  const plans = stats.membershipPlans != null ? String(stats.membershipPlans) : '6';
+  const blogs = stats.totalBlogs != null ? String(stats.totalBlogs) : '1';
 
   return [
     {
@@ -153,7 +156,7 @@ export function createKpiCardsFromStats(stats: any): KPICardData[] {
     },
     {
       id: 'membership_plans',
-      value: '6',
+      value: plans,
       label: 'Membership Plans',
       icon: CreditCard,
       badgeBg: 'bg-amber-500',
@@ -161,7 +164,7 @@ export function createKpiCardsFromStats(stats: any): KPICardData[] {
     },
     {
       id: 'total_blogs',
-      value: '1',
+      value: blogs,
       label: 'Total Blogs',
       icon: BookOpen,
       badgeBg: 'bg-emerald-600',

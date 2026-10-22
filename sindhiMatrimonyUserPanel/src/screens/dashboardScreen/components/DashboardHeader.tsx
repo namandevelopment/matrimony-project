@@ -5,6 +5,7 @@ import Link from "next/link";
 import { MatrimonyHeartLogo } from "@/screens/landingScreen/components/Icons";
 import { DashboardNav } from "./DashboardNav";
 import { ProfileDropdown } from "./ProfileDropdown";
+import { useGlobalModal } from "@/customModals";
 import type { UserProfile, DashboardNavTab } from "../types";
 
 import { useDashboardNav } from "../context/DashboardNavContext";
@@ -59,6 +60,8 @@ const DashboardHeaderComponent: React.FC<DashboardHeaderProps> = ({
   className = "",
 }) => {
   const context = useDashboardNav();
+  const { openLogoutModal } = useGlobalModal();
+  const effectiveLogout = onLogout || openLogoutModal;
 
   const handleLogoClick = React.useCallback(
     (e: React.MouseEvent) => {
@@ -94,7 +97,7 @@ const DashboardHeaderComponent: React.FC<DashboardHeaderProps> = ({
           <div className="border-l border-stone-200 pl-2 sm:pl-3">
             <ProfileDropdown
               user={user}
-              onLogout={onLogout}
+              onLogout={effectiveLogout}
               onUpgradeClick={onUpgradeClick}
             />
           </div>

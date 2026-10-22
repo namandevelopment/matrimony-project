@@ -43,6 +43,8 @@ export const ApiURL = {
   // 2. ADMIN DASHBOARD & ANALYTICS
   // =========================================================================
   dashboardStats: `${BASE_URL}/api/v1/admin/dashboard/stats`,
+  dashboardActionQueues: `${BASE_URL}/api/v1/admin/dashboard/action-queues`,
+  dashboardChartsOverview: `${BASE_URL}/api/v1/admin/dashboard/charts`,
   dashboardCharts: (type: string) => `${BASE_URL}/api/v1/admin/dashboard/charts/${type}`,
   dashboard: `${BASE_URL}/api/v1/admin/dashboard/stats`,
   mobileHomeFeed: `${BASE_URL}/api/v1/dashboard/mobile-home`,

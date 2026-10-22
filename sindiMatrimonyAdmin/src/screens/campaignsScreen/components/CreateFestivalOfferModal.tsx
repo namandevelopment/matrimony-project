@@ -13,6 +13,7 @@ import {
   campaignService,
 } from '../../../services/campaignService';
 import { useInputs } from '../../../customHooks/useInputs';
+import { toast } from '../../../toastMessage/toast';
 
 interface CreateFestivalOfferModalProps {
   isOpen: boolean;
@@ -192,7 +193,7 @@ export const CreateFestivalOfferModal: React.FC<CreateFestivalOfferModalProps> =
     e.preventDefault();
     if (!validateForm()) return;
     if (!effectiveFestivalName.trim() || !values.tagline.trim()) {
-      alert('Please fill Festival Name and Tagline');
+      toast.warning('Please fill Festival Name and Tagline');
       return;
     }
 

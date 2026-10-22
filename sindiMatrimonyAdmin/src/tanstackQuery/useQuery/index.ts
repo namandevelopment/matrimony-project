@@ -307,6 +307,22 @@ export const useDashboardStatsQuery = () => {
   });
 };
 
+/** Admin Dashboard Action Queues */
+export const useDashboardActionQueuesQuery = () => {
+  return useApiQuery({
+    queryKey: QUERY_KEYS.dashboardActionQueues,
+    url: ApiURL.dashboardActionQueues,
+  });
+};
+
+/** Admin Dashboard Charts Overview */
+export const useDashboardChartsOverviewQuery = () => {
+  return useApiQuery({
+    queryKey: QUERY_KEYS.dashboardChartsOverview,
+    url: ApiURL.dashboardChartsOverview,
+  });
+};
+
 /** Admin Dashboard Charts */
 export const useDashboardChartsQuery = (type: string) => {
   return useApiQuery({

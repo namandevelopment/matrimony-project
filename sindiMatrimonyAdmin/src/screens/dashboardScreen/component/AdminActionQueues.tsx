@@ -82,8 +82,50 @@ const QueueCard: React.FC<QueueCardProps> = ({
   </div>
 );
 
-export const AdminActionQueues: React.FC = memoWithDeepEqual(() => {
+export interface QueueItemData {
+  id?: string;
+  title?: string;
+  count?: number;
+  badgeText?: string;
+  badgeColor?: string;
+  iconBg?: string;
+  description?: string;
+  items?: string[];
+  actionLabel?: string;
+  route?: string;
+  urgent?: boolean;
+}
+
+export interface AdminActionQueuesData {
+  profileVerification?: QueueItemData;
+  matchExceptions?: QueueItemData;
+  abuseComplaints?: QueueItemData;
+  marriageOffboarding?: QueueItemData;
+}
+
+export interface AdminActionQueuesProps {
+  queues?: AdminActionQueuesData;
+  onNavigate?: (route: string) => void;
+}
+
+export const AdminActionQueues: React.FC<AdminActionQueuesProps> = memoWithDeepEqual(({
+  queues,
+  onNavigate,
+}) => {
   const navigate = useNavigate();
+
+  const handleRoute = (route: string) => {
+    if (onNavigate) {
+      onNavigate(route);
+    } else {
+      navigate(route);
+    }
+  };
+
+  const pv = queues?.profileVerification;
+  const me = queues?.matchExceptions;
+  const ac = queues?.abuseComplaints;
+  const mo = queues?.marriageOffboarding;
 
   return (
     <div className="space-y-4">
@@ -110,78 +152,81 @@ export const AdminActionQueues: React.FC = memoWithDeepEqual(() => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 1. Profile Verification Queue */}
         <QueueCard
-          title="Profile Verification"
-          count={38}
-          badgeText="High SLA"
-          badgeColor="bg-blue-100 text-blue-700"
+          title={pv?.title || "Profile Verification"}
+          count={pv?.count ?? 38}
+          badgeText={pv?.badgeText || "High SLA"}
+          badgeColor={pv?.badgeColor || "bg-blue-100 text-blue-700"}
           icon={FileCheck2}
-          iconBg="bg-blue-50 text-blue-600"
-          description="Govt ID cards, salary slips & selfies awaiting visual authenticity audit"
-          items={[
+          iconBg={pv?.iconBg || "bg-blue-50 text-blue-600"}
+          description={pv?.description || "Govt ID cards, salary slips & selfies awaiting visual authenticity audit"}
+          items={pv?.items || [
             "18 Aadhaar Card OCR Mismatch",
             "12 High-Income Salary Slip (>30 LPA)",
             "8 Selfie Liveness Review"
           ]}
-          actionLabel="Open Verification Desk"
-          onAction={() => navigate('/verifications')}
+          actionLabel={pv?.actionLabel || "Open Verification Desk"}
+          onAction={() => handleRoute(pv?.route || '/verifications')}
         />
 
         {/* 2. Match Policy Exceptions */}
         <QueueCard
-          title="Match Exceptions"
-          count={7}
-          badgeText="Requires Admin Sign-off"
-          badgeColor="bg-amber-100 text-amber-700"
+          title={me?.title || "Match Exceptions"}
+          count={me?.count ?? 7}
+          badgeText={me?.badgeText || "Requires Admin Sign-off"}
+          badgeColor={me?.badgeColor || "bg-amber-100 text-amber-700"}
           icon={AlertTriangle}
-          iconBg="bg-amber-50 text-amber-600"
-          description="Borderline horoscope gunas, age gap > 6 yrs, or inter-subcaste manual requests"
-          items={[
+          iconBg={me?.iconBg || "bg-amber-50 text-amber-600"}
+          description={me?.description || "Borderline horoscope gunas, age gap > 6 yrs, or inter-subcaste manual requests"}
+          items={me?.items || [
             "3 Horoscope Guna < 18 (Client Requested)",
             "2 Age Gap Exception (+6 Years)",
             "2 Sagotra Distance Review"
           ]}
-          actionLabel="Review Match Exceptions"
-          onAction={() => navigate('/matchmaking')}
-          urgent
+          actionLabel={me?.actionLabel || "Review Match Exceptions"}
+          onAction={() => handleRoute(me?.route || '/matchmaking')}
+          urgent={me?.urgent ?? true}
         />
 
         {/* 3. Abuse & Safety Complaints */}
         <QueueCard
-          title="Abuse Complaints"
-          count={4}
-          badgeText="Priority 1"
-          badgeColor="bg-rose-100 text-rose-700"
+          title={ac?.title || "Abuse Complaints"}
+          count={ac?.count ?? 4}
+          badgeText={ac?.badgeText || "Priority 1"}
+          badgeColor={ac?.badgeColor || "bg-rose-100 text-rose-700"}
           icon={ShieldAlert}
-          iconBg="bg-rose-50 text-rose-600"
-          description="Grievances reported by members regarding harassment, fake profiles, or extortion"
-          items={[
+          iconBg={ac?.iconBg || "bg-rose-50 text-rose-600"}
+          description={ac?.description || "Grievances reported by members regarding harassment, fake profiles, or extortion"}
+          items={ac?.items || [
             "2 Misbehavior on Phone Call",
             "1 Suspicious NRI Identity Claim",
             "1 Already Married / Impersonation"
           ]}
-          actionLabel="Open Priority Triage"
-          onAction={() => navigate('/safety')}
-          urgent
+          actionLabel={ac?.actionLabel || "Open Priority Triage"}
+          onAction={() => handleRoute(ac?.route || '/safety')}
+          urgent={ac?.urgent ?? true}
         />
 
         {/* 4. Engagement & Marriage Reports */}
         <QueueCard
-          title="Engagement / Marriage"
-          count={6}
-          badgeText="Offboarding Ready"
-          badgeColor="bg-emerald-100 text-emerald-700"
+          title={mo?.title || "Engagement / Marriage"}
+          count={mo?.count ?? 6}
+          badgeText={mo?.badgeText || "Offboarding Ready"}
+          badgeColor={mo?.badgeColor || "bg-emerald-100 text-emerald-700"}
           icon={HeartHandshake}
-          iconBg="bg-emerald-50 text-emerald-600"
-          description="Couples who reported wedding fix. Deactivate from matches and log success stories"
-          items={[
+          iconBg={mo?.iconBg || "bg-emerald-50 text-emerald-600"}
+          description={mo?.description || "Couples who reported wedding fix. Deactivate from matches and log success stories"}
+          items={mo?.items || [
             "4 Vivah Confirmed (Archive Profile)",
             "2 Success Story Photos Submitted",
             "RM Attribution: Priya (2), Amit (2)"
           ]}
-          actionLabel="Review & Offboard"
-          onAction={() => navigate('/success-stories')}
+          actionLabel={mo?.actionLabel || "Review & Offboard"}
+          onAction={() => handleRoute(mo?.route || '/success-stories')}
+          urgent={mo?.urgent ?? false}
         />
       </div>
     </div>
   );
 });
+
+AdminActionQueues.displayName = 'AdminActionQueues';

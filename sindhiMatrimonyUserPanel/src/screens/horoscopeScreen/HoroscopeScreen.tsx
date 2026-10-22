@@ -80,7 +80,6 @@ const HoroscopeScreenComponent: React.FC<HoroscopeScreenProps> = ({
       <DashboardHeader
         user={headerUser}
         onUpgradeClick={() => router.push("/subscription")}
-        onLogout={() => router.push("/")}
       />
 
       {/* 2. Main Page Container */}

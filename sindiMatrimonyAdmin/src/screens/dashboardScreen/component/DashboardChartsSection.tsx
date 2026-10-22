@@ -6,6 +6,7 @@ import { PlansPieChart, type PlanSlice } from './PlansPieChart';
 export interface DashboardChartsSectionProps {
   barChartTitle?: string;
   barChartData?: DailyActivityItem[];
+  totalInteractions?: number | string;
   pieChartTitle?: string;
   pieChartSlices?: PlanSlice[];
 }
@@ -13,6 +14,7 @@ export interface DashboardChartsSectionProps {
 export const DashboardChartsSection: React.FC<DashboardChartsSectionProps> = memoWithDeepEqual(({
   barChartTitle,
   barChartData,
+  totalInteractions,
   pieChartTitle,
   pieChartSlices,
 }) => {
@@ -20,7 +22,7 @@ export const DashboardChartsSection: React.FC<DashboardChartsSectionProps> = mem
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
       {/* Members Overview: 7-Day Dual Bar Chart (2 cols) */}
       <div className="lg:col-span-2 h-full flex flex-col">
-        <MembersBarChart title={barChartTitle} data={barChartData} />
+        <MembersBarChart title={barChartTitle} data={barChartData} totalInteractions={totalInteractions} />
       </div>
 
       {/* Content & Plans: Segmented Donut / Pie Chart (1 col) */}

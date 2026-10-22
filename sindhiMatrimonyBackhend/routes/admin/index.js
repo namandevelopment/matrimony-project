@@ -12,6 +12,8 @@ import {
   setLeadFollowUp,
   bulkAssignLeads,
   getDashboardStats,
+  getDashboardActionQueues,
+  getDashboardChartsOverview,
   getDashboardCharts,
   getTopAgents,
   getRecentLeads,
@@ -31,6 +33,8 @@ const router = express.Router();
 
 // 1. Dashboard & Analytics
 router.get("/dashboard/stats", getDashboardStats);
+router.get("/dashboard/action-queues", getDashboardActionQueues);
+router.get("/dashboard/charts", getDashboardChartsOverview);
 router.get("/dashboard/charts/:type", getDashboardCharts);
 router.get("/dashboard/top-agents", getTopAgents);
 router.get("/dashboard/recent-leads", getRecentLeads);

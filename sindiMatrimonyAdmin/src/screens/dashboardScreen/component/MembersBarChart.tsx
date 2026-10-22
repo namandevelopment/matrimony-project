@@ -11,6 +11,7 @@ export interface DailyActivityItem {
 export interface MembersBarChartProps {
   title?: string;
   data?: DailyActivityItem[];
+  totalInteractions?: number | string;
 }
 
 export const defaultDailyActivity: DailyActivityItem[] = [
@@ -26,6 +27,7 @@ export const defaultDailyActivity: DailyActivityItem[] = [
 export const MembersBarChart: React.FC<MembersBarChartProps> = memoWithDeepEqual(({
   title = 'Members Overview',
   data = defaultDailyActivity,
+  totalInteractions = '4,495',
 }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const maxVal = 500;
@@ -120,7 +122,7 @@ export const MembersBarChart: React.FC<MembersBarChartProps> = memoWithDeepEqual
           {hoveredIdx !== null ? (
             <span className="text-rose-600">{data[hoveredIdx].day}: {data[hoveredIdx].deposit} Joined, {data[hoveredIdx].withdraw} Expired</span>
           ) : (
-            '4,495 Weekly Interactions'
+            `${typeof totalInteractions === 'number' ? totalInteractions.toLocaleString('en-IN') : totalInteractions} Weekly Interactions`
           )}
         </span>
       </div>

@@ -9,11 +9,15 @@ import { ExportNoticeBanner } from './component/ExportNoticeBanner';
 import { memoWithDeepEqual } from '../../utils/memoUtils';
 import { toast } from '../../toastMessage/toast';
 import { usePerformanceTracker } from '../../customHooks/usePerformanceTracker';
-import { useDashboardStatsQuery } from '../../tanstackQuery';
+import {
+  useDashboardStatsQuery,
+  useDashboardActionQueuesQuery,
+  useDashboardChartsOverviewQuery,
+  useMembersQuery,
+} from '../../tanstackQuery';
 
-// Static CSV export payload hoisted outside component to prevent recurring memory allocation
-// Fallback dummy records preserved per project guidelines
-const CSV_EXPORT_DATA = [
+// Fallback CSV template hoisted outside component
+const FALLBACK_CSV_DATA = [
   'S.No,Name,Profession,Email,JoinedOn,Status',
   '1,JITAMITRA DHARMADHIKARY,Software Architect,jitamitra@example.com,10 Oct 2026,Active',
   '2,ABHISHEK SINGH RAIZADA,Real Estate,abhishek.r@example.com,08 Oct 2026,Active',
@@ -44,7 +48,66 @@ export const DashboardScreen: React.FC = memoWithDeepEqual(() => {
     navigate('/members');
   }, [navigate]);
 
-  // Stable callback: CSV export trigger with async simulation
+  // 1. TanStack Query: KPI Stats (Cached for 5 minutes, 0 redundant hits)
+  const { data: statsRaw, isLoading: isStatsLoading } = useDashboardStatsQuery();
+  const statsData = useMemo(() => statsRaw?.stats || statsRaw?.data?.stats || statsRaw, [statsRaw]);
+
+  // 2. TanStack Query: Live Action Queues
+  const { data: queuesRaw } = useDashboardActionQueuesQuery();
+  const queuesData = useMemo(() => queuesRaw?.queues || queuesRaw?.data?.queues || queuesRaw, [queuesRaw]);
+
+  // 3. TanStack Query: Charts & Analytics Overview (Weekly Bar & Plans Donut)
+  const { data: chartsRaw } = useDashboardChartsOverviewQuery();
+  const chartsData = useMemo(() => chartsRaw?.data || chartsRaw, [chartsRaw]);
+
+  // 4. TanStack Query: Recent Member Registrations (6 items from live members API)
+  const { members: apiMembers } = useMembersQuery({ page: 1, limit: 6 });
+
+  // Dynamic KPI cards mapped from live backend API, with fast-deep-equal memoization
+  const kpiCards = useMemo(() => {
+    return createKpiCardsFromStats(statsData);
+  }, [statsData]);
+
+  const totalMembersCount = useMemo(() => {
+    if (statsData?.totalMembers) {
+      return Number(statsData.totalMembers).toLocaleString('en-IN');
+    }
+    if (statsData?.totalRegistrations?.value) {
+      return Number(statsData.totalRegistrations.value).toLocaleString('en-IN');
+    }
+    return '150';
+  }, [statsData]);
+
+  // Map live API members to RecentRegistrationsTable format
+  const recentMembers = useMemo(() => {
+    if (!apiMembers || apiMembers.length === 0) return undefined;
+    return apiMembers.slice(0, 6).map((m: any, idx: number) => {
+      const rawDate = m.createdAt || m.updatedAt;
+      const formattedDate = rawDate
+        ? new Date(rawDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+        : `${10 - idx} Oct 2026`;
+
+      const profession =
+        m.profession?.occupation ||
+        (typeof m.profession === 'string' ? m.profession : '') ||
+        (m.education?.degree ? `${m.education.degree} Specialist` : 'Business & Real Estate');
+
+      const name = m.fullName || m.name || 'Sindhi Candidate';
+      const cleanSlug = name.toLowerCase().replace(/[^a-z0-9]/g, '.');
+      const email = m.email || `${cleanSlug}@example.com`;
+
+      return {
+        sNo: idx + 1,
+        name: name.toUpperCase(),
+        businessType: profession,
+        email,
+        joinedOn: formattedDate,
+        status: (m.status === 'INACTIVE' ? 'Suspended' : m.status === 'PENDING' ? 'Pending' : 'Active') as 'Active' | 'Pending' | 'Suspended',
+      };
+    });
+  }, [apiMembers]);
+
+  // Stable callback: CSV export trigger with real dynamic profile backup
   const handleExportCsv = useCallback(() => {
     setExportNotice('Exporting CSV backup of verified Sindhi profiles...');
     toast.info('Exporting CSV backup of verified Sindhi profiles...');
@@ -54,7 +117,27 @@ export const DashboardScreen: React.FC = memoWithDeepEqual(() => {
     }
 
     exportTimerRef.current = setTimeout(() => {
-      const blob = new Blob([CSV_EXPORT_DATA], { type: 'text/csv' });
+      let csvContent = FALLBACK_CSV_DATA;
+
+      if (apiMembers && apiMembers.length > 0) {
+        const rows = [
+          'S.No,Profile ID,Name,Gender,Subcaste,Gotra,City,Joined On,Status',
+          ...apiMembers.map((m: any, idx: number) => {
+            const pid = m.profileId || m.matrimonyId || `SM${1000 + idx}`;
+            const name = `"${(m.fullName || m.name || '').replace(/"/g, '""')}"`;
+            const gender = m.gender || '—';
+            const subcaste = m.subcaste || 'Sindhi';
+            const gotra = m.gotra || '—';
+            const city = m.city || m.location?.city || 'Jaipur';
+            const date = m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-GB') : '10/10/2026';
+            const status = m.status || 'Active';
+            return `${idx + 1},${pid},${name},${gender},${subcaste},${gotra},${city},${date},${status}`;
+          }),
+        ];
+        csvContent = rows.join('\n');
+      }
+
+      const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -64,25 +147,10 @@ export const DashboardScreen: React.FC = memoWithDeepEqual(() => {
       setExportNotice(null);
       toast.success('CSV backup downloaded successfully!');
     }, 800);
-  }, []);
-
-  // TanStack Query: Cached for 5 minutes, 0 repeated API hits on navigation
-  const { data: statsData, isLoading } = useDashboardStatsQuery();
-
-  // Dynamic KPI cards mapped from live backend API, with fallback to default cards
-  const kpiCards = useMemo(() => {
-    /* Fallback static mock cards kept commented out per requirement:
-     * return defaultKpiCards;
-     */
-    return createKpiCardsFromStats(statsData);
-  }, [statsData]);
-
-  const totalMembersCount = statsData?.totalRegistrations?.value
-    ? Number(statsData.totalRegistrations.value).toLocaleString('en-IN')
-    : '150';
+  }, [apiMembers]);
 
   // Loader shows ONLY ONCE when data is not in cache yet
-  const isInitialLoading = isLoading && !statsData;
+  const isInitialLoading = isStatsLoading && !statsData;
 
   // Stable callback: KPI card interaction router
   const handleCardClick = useCallback((id: string) => {
@@ -120,13 +188,17 @@ export const DashboardScreen: React.FC = memoWithDeepEqual(() => {
       <KPIGrid cards={kpiCards} onCardClick={handleCardClick} />
 
       {/* 3. Operational Action Queues (Verification, Exceptions, Abuse, Marriage Offboarding) */}
-      <AdminActionQueues />
+      <AdminActionQueues queues={queuesData} />
 
       {/* 4. Charts & Analytics Row (Members Overview Bar Chart & Content Plans Donut Chart) */}
-      <DashboardChartsSection />
+      <DashboardChartsSection
+        barChartData={chartsData?.membersWeekly}
+        pieChartSlices={chartsData?.plansDistribution}
+        totalInteractions={chartsData?.totalWeeklyInteractions}
+      />
 
-      {/* 4. Recent Member Registrations Table (With Crimson Red Header Row) */}
-      <RecentRegistrationsTable />
+      {/* 5. Recent Member Registrations Table (With Crimson Red Header Row) */}
+      <RecentRegistrationsTable members={recentMembers} />
     </div>
   );
 });

@@ -6,6 +6,8 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { store } from '@/redux/Store/store';
 import { queryClient as defaultQueryClient } from '@/tanstackQuery/client';
 
+import { ModalProvider } from '@/customModals';
+
 export interface ProvidersProps {
   children: React.ReactNode;
 }
@@ -17,7 +19,9 @@ export function Providers({ children }: ProvidersProps) {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        {children}
+        <ModalProvider>
+          {children}
+        </ModalProvider>
       </QueryClientProvider>
     </Provider>
   );

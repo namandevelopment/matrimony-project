@@ -12,6 +12,7 @@ import {
 } from '../../../services/campaignService';
 import { CustomTextInput } from '../../../components/CustomTextInput';
 import { CustomDropDown } from '../../../components/CustomDropDown';
+import { toast } from '../../../toastMessage/toast';
 
 interface BroadcastOfferModalProps {
   isOpen: boolean;
@@ -87,7 +88,7 @@ export const BroadcastOfferModal: React.FC<BroadcastOfferModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !message.trim()) {
-      alert('Please provide title and notification message');
+      toast.warning('Please provide title and notification message');
       return;
     }
 
@@ -97,7 +98,7 @@ export const BroadcastOfferModal: React.FC<BroadcastOfferModalProps> = ({
     if (sendWhatsApp) channels.push('WHATSAPP');
 
     if (channels.length === 0) {
-      alert('Please select at least one delivery channel (Push / Bell)');
+      toast.warning('Please select at least one delivery channel (Push / Bell)');
       return;
     }
 

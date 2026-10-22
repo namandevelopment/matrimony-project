@@ -22,6 +22,8 @@ import {
   getMembersInMemory,
   getLeadsInMemory,
   getDashboardStatsInMemory,
+  getDashboardActionQueuesInMemory,
+  getDashboardChartsDataInMemory,
   findProfileByIdInMemory,
 } from "../../services/realDataService.js";
 
@@ -367,6 +369,32 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
     CONSTANTS.HTTP_OK,
     "Dashboard KPI metrics retrieved.",
     { stats },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const getDashboardActionQueues = asyncHandler(async (req, res) => {
+  const queues = getDashboardActionQueuesInMemory();
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    "Admin action queues retrieved.",
+    { queues },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const getDashboardChartsOverview = asyncHandler(async (req, res) => {
+  const charts = getDashboardChartsDataInMemory();
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    "Dashboard charts overview retrieved.",
+    charts,
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
@@ -729,6 +757,8 @@ export default {
   setLeadFollowUp,
   bulkAssignLeads,
   getDashboardStats,
+  getDashboardActionQueues,
+  getDashboardChartsOverview,
   getDashboardCharts,
   getTopAgents,
   getRecentLeads,

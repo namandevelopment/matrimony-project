@@ -2,7 +2,8 @@ const TOKEN_KEY = 'admin_auth_token';
 const REFRESH_TOKEN_KEY = 'admin_refresh_token';
 const USER_KEY = 'admin_auth_user';
 
-export { Storage } from './Storage';
+import { Storage } from './Storage';
+export { Storage };
 
 const memoryStore = new Map<string, string>();
 
@@ -132,15 +133,62 @@ export const setActiveRole = (role: string | null) => {
   }
 };
 
-export const clearTokens = () => {
+export const clearAllAdminStorage = () => {
   cachedUserRaw = null;
   cachedUserObj = null;
   cachedSimUserRaw = null;
   cachedSimUserObj = null;
-  storage.remove(TOKEN_KEY);
-  storage.remove(REFRESH_TOKEN_KEY);
-  storage.remove(USER_KEY);
-  storage.remove(SIMULATED_USER_KEY);
-  storage.remove(ACTIVE_ROLE_KEY);
+
+  const keysToRemove = [
+    TOKEN_KEY,
+    REFRESH_TOKEN_KEY,
+    USER_KEY,
+    SIMULATED_USER_KEY,
+    ACTIVE_ROLE_KEY,
+    'token',
+    'refreshToken',
+    'user',
+  ];
+
+  keysToRemove.forEach((k) => {
+    try {
+      storage.remove(k);
+      Storage.removeItemSync(k);
+    } catch (_) {}
+  });
+
+  if (typeof window !== 'undefined') {
+    try {
+      if (typeof window.localStorage !== 'undefined') {
+        window.localStorage.clear();
+      }
+    } catch (_) {}
+
+    try {
+      if (typeof window.sessionStorage !== 'undefined') {
+        window.sessionStorage.clear();
+      }
+    } catch (_) {}
+
+    try {
+      if (typeof document !== 'undefined' && document.cookie) {
+        const cookies = document.cookie.split(';');
+        for (const cookie of cookies) {
+          const eqPos = cookie.indexOf('=');
+          const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+          if (name) {
+            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;`;
+            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname};`;
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  storage.clear();
+};
+
+export const clearTokens = () => {
+  clearAllAdminStorage();
 };
 

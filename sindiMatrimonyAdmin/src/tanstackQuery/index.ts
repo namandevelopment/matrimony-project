@@ -29,6 +29,8 @@ export {
   useNotificationsQuery,
   // Admin queries
   useDashboardStatsQuery,
+  useDashboardActionQueuesQuery,
+  useDashboardChartsOverviewQuery,
   useDashboardChartsQuery,
   useLeadsQuery,
   useLeadDetailQuery,

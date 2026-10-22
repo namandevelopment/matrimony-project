@@ -923,3 +923,42 @@ Content-Type: application/json
   "platform": "ANDROID"
 }
 
+### ============================================================================
+### 14. ADMIN DASHBOARD & CRM MODULE (SUB-1MS IN-MEMORY SPEED)
+### ============================================================================
+
+### 14.1 Admin Super Admin Login (Generates adminToken)
+POST {{baseUrl}}/auth/admin/login
+Content-Type: application/json
+
+{
+  "email": "admin@sindhimarriage.in",
+  "password": "Password@123"
+}
+
+### 14.2 Get Admin Dashboard KPI Stats (Top Counts: Total Members, Male/Female, Inactive, Revenue)
+GET {{baseUrl}}/admin/dashboard/stats
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 14.3 Get Admin Action Queues (Live SLA Monitored: Verification, Exceptions, Abuse, Marriage)
+GET {{baseUrl}}/admin/dashboard/action-queues
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 14.4 Get Dashboard Analytics & Charts (Weekly Dual-Bar Activity & Plans Donut Distribution)
+GET {{baseUrl}}/admin/dashboard/charts
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 14.5 Get Recent Member Registrations (Table with Pagination & Filters)
+GET {{baseUrl}}/admin/members?page=1&limit=6
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 14.6 Get Pending Verifications Queue Detail
+GET {{baseUrl}}/admin/verifications/pending
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+

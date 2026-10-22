@@ -17,6 +17,7 @@ import { DashboardNavProvider } from "./context/DashboardNavContext";
 import { FloatingChatWidget } from "@/screens/matchesScreen/components";
 import { NotificationsScreen } from "@/screens/notificationsScreen";
 import { apiFetch, ApiURL } from "@/redux/apiService";
+import { useGlobalModal } from "@/customModals";
 import { useDashboardFeedQuery, useProfileQuery } from "@/tanstackQuery";
 import type {
   UserProfile,
@@ -208,13 +209,15 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
     }
   }, [onAssistedServiceClick, router]);
 
+  const { openLogoutModal } = useGlobalModal();
+
   const handleLogoutAction = useCallback(() => {
     if (onLogout) {
       onLogout();
     } else {
-      router.push("/");
+      openLogoutModal();
     }
-  }, [onLogout, router]);
+  }, [onLogout, openLogoutModal]);
 
   return (
     <DashboardNavProvider activeTab={activeTab} onTabChange={handleTabChange}>

@@ -14,6 +14,7 @@ import {
   SuccessStoriesMenuIcon,
 } from "./DashboardIcons";
 import type { UserProfile } from "../types";
+import { useGlobalModal } from "@/customModals";
 
 export interface ProfileDropdownProps {
   user: UserProfile;
@@ -32,6 +33,17 @@ const ProfileDropdownComponent: React.FC<ProfileDropdownProps> = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { openLogoutModal } = useGlobalModal();
+
+  const handleLogoutClick = useCallback(() => {
+    setIsOpen(false);
+    if (onLogout) {
+      onLogout();
+    } else {
+      openLogoutModal();
+    }
+  }, [onLogout, openLogoutModal]);
 
   // Mouse Enter with smooth delay cancellation
   const handleMouseEnter = useCallback(() => {
@@ -344,23 +356,16 @@ const ProfileDropdownComponent: React.FC<ProfileDropdownProps> = ({
               <span>Member Reviews</span>
             </Link>
 
-            {/* Optional Logout Link */}
-            {onLogout && (
-              <>
-                <div className="border-t border-stone-200/70 my-2" />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsOpen(false);
-                    onLogout();
-                  }}
-                  className="w-full flex items-center gap-3.5 px-2 py-2 rounded-lg text-[14px] font-semibold text-[#DB2F3C] hover:bg-red-50/80 transition-colors cursor-pointer group"
-                >
-                  <LogOut className="w-4.5 h-4.5 shrink-0 transition-transform group-hover:-translate-x-0.5" />
-                  <span>Logout</span>
-                </button>
-              </>
-            )}
+            {/* Universal Clean Logout Link */}
+            <div className="border-t border-stone-200/70 my-2" />
+            <button
+              type="button"
+              onClick={handleLogoutClick}
+              className="w-full flex items-center gap-3.5 px-2 py-2 rounded-lg text-[14px] font-semibold text-[#DB2F3C] hover:bg-red-50/80 transition-colors cursor-pointer group"
+            >
+              <LogOut className="w-4.5 h-4.5 shrink-0 transition-transform group-hover:-translate-x-0.5" />
+              <span>Logout</span>
+            </button>
           </div>
         </div>
       )}

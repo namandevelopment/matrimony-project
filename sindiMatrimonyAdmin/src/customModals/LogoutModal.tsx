@@ -7,12 +7,15 @@ import {
   getStoredUser,
   getSimulatedUser,
   getActiveRole,
-  clearTokens,
+  clearAllAdminStorage,
 } from '../storage';
 import { ROLE_DEFINITIONS } from '../utils/rbac';
 import type { Role } from '../types/auth.types';
 import { toast } from '../toastMessage/toast';
 import { apiFetch, ApiURL } from '../redux/apiService';
+import { store } from '../redux/Store/store';
+import { resetEntireStore } from '../redux/slices/dataSlice';
+import { queryClient } from '../tanstackQuery/client';
 
 export interface LogoutModalProps {
   isOpen: boolean;
@@ -82,8 +85,19 @@ export const LogoutModal: React.FC<LogoutModalProps> = memoWithDeepEqual(({
           });
         } catch (_) {}
 
-        // Default standard secure logout routine
-        clearTokens();
+        // Thoroughly clear all Admin storage, cookies, and cached session
+        clearAllAdminStorage();
+
+        // Clear TanStack Query Cache
+        try {
+          queryClient.clear();
+        } catch (_) {}
+
+        // Reset Redux Store state
+        try {
+          store.dispatch(resetEntireStore());
+        } catch (_) {}
+
         toast.info('You have been logged out securely.');
         navigate('/login', { replace: true });
       }

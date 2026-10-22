@@ -160,7 +160,35 @@ export async function runRealDataAndAdminTests() {
     assert.strictEqual(statsRes.status, 200, "Dashboard stats should return HTTP 200");
     assert.ok(statsBody.data.stats.totalRegistrations, "Must include totalRegistrations KPI");
     assert.ok(statsBody.data.stats.totalRevenue, "Must include totalRevenue KPI");
+    assert.ok(statsBody.data.stats.totalMembers >= 150, "totalMembers count must be >= 150");
+    assert.ok(statsBody.data.stats.maleProfiles > 0, "maleProfiles must be populated");
+    assert.ok(statsBody.data.stats.femaleProfiles > 0, "femaleProfiles must be populated");
     console.log("  ✅ [8/10] TC-R8: GET /api/v1/admin/dashboard/stats returns computed KPIs");
+
+    // 8b. Admin Dashboard Action Queues
+    console.log("Testing Admin GET /api/v1/admin/dashboard/action-queues...");
+    const queuesRes = await fetch(`${baseUrl}/api/v1/admin/dashboard/action-queues`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    const queuesBody = await queuesRes.json();
+    assert.strictEqual(queuesRes.status, 200, "Action queues should return HTTP 200");
+    assert.ok(queuesBody.data.queues.profileVerification, "Must include profileVerification queue");
+    assert.ok(queuesBody.data.queues.matchExceptions, "Must include matchExceptions queue");
+    assert.ok(queuesBody.data.queues.abuseComplaints, "Must include abuseComplaints queue");
+    assert.ok(queuesBody.data.queues.marriageOffboarding, "Must include marriageOffboarding queue");
+    console.log("  ✅ [8b/10] TC-R8b: GET /api/v1/admin/dashboard/action-queues returns 4 operational queues");
+
+    // 8c. Admin Dashboard Charts
+    console.log("Testing Admin GET /api/v1/admin/dashboard/charts...");
+    const chartsRes = await fetch(`${baseUrl}/api/v1/admin/dashboard/charts`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    const chartsBody = await chartsRes.json();
+    assert.strictEqual(chartsRes.status, 200, "Charts overview should return HTTP 200");
+    assert.ok(Array.isArray(chartsBody.data.membersWeekly), "membersWeekly must be an array");
+    assert.ok(Array.isArray(chartsBody.data.plansDistribution), "plansDistribution must be an array");
+    assert.strictEqual(chartsBody.data.membersWeekly.length, 7, "membersWeekly must have 7 days");
+    console.log("  ✅ [8c/10] TC-R8c: GET /api/v1/admin/dashboard/charts returns weekly activity and plans distribution");
 
     // 9. Admin Verifications Queue
     console.log("Testing Admin GET /api/v1/admin/verifications/pending...");

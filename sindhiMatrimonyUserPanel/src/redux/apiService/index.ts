@@ -1,10 +1,10 @@
 import axios, { AxiosInstance, Method } from 'axios';
-import { Storage } from '../../storage/Storage';
+import { Storage, clearAllUserStorage } from '../../storage';
 import { toast, showToast, hideToast, type ToastOptions, type ToastType } from '../../toastMessage/toast';
 import { reset } from '../../navigation/navigationService';
 import { BASE_URL, ApiURL } from './endpoint';
 
-export { BASE_URL, ApiURL, toast, showToast, hideToast, type ToastOptions, type ToastType };
+export { BASE_URL, ApiURL, toast, showToast, hideToast, clearAllUserStorage, type ToastOptions, type ToastType };
 export const API_BASE = BASE_URL;
 
 const isDev = typeof process !== 'undefined' && process.env ? process.env.NODE_ENV !== 'production' : false;
@@ -113,8 +113,7 @@ export const getRefreshToken = (): string | null => Storage.getItemSync<string>(
 export const setToken = (token: string): boolean => Storage.setItemSync('token', token);
 export const setRefreshToken = (token: string): boolean => Storage.setItemSync('refreshToken', token);
 export const clearTokens = (): void => {
-  Storage.removeItemSync('token');
-  Storage.removeItemSync('refreshToken');
+  clearAllUserStorage();
 };
 
 // ============================================================================
