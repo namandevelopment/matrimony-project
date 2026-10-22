@@ -351,21 +351,285 @@ export function findUserByPhoneInMemory(cleanPhone) {
   return null;
 }
 
+// ============================================================================
+// CURATED FEATURED SINDHI MATCHES POOL (Matches User Panel Cards 1:1)
+// ============================================================================
+export const CURATED_MATCHES_POOL = [
+  {
+    _id: "67b34a12c8e312a0f90000a1",
+    userId: "67b34a12c8e312a0f9000ba1",
+    id: "match-roshni-advani",
+    matrimonyId: "SND4486236",
+    name: "Roshni Advani",
+    gender: "FEMALE",
+    age: 24,
+    height: 160,
+    heightFormatted: "5'3\"",
+    maritalStatus: "NEVER_MARRIED",
+    subcaste: "Bhaiband",
+    gotra: "Advani",
+    motherGotra: "Vaswani",
+    manglik: "NON_MANGLIK",
+    education: { degree: "B.Tech. Computer Science", field: "Engineering", college: "VJTI Mumbai" },
+    profession: { occupation: "Senior Software Engineer", companyName: "Tech MNC", annualIncome: 2200000, currency: "INR" },
+    location: { city: "Mumbai", state: "Maharashtra", country: "India" },
+    family: { familyType: "NUCLEAR", fatherOccupation: "Businessman", motherOccupation: "Homemaker", siblings: "1 Brother" },
+    aboutMe: "Born and raised in Mumbai. Working as a Senior Software Engineer. Looking for an educated, understanding partner with progressive values and strong Sindhi cultural roots.",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
+    photos: [
+      { url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80", isProfile: true },
+      { url: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80", isProfile: false },
+    ],
+    isVerified: true,
+    isFeatured: true,
+    membershipTier: "VIP",
+    isPrimary: true,
+    status: "ACTIVE",
+    partnerPreference: {
+      ageRange: { min: 25, max: 31 },
+      heightRange: { min: 168, max: 185 },
+      maritalStatus: ["NEVER_MARRIED"],
+      subcastes: ["Bhaiband", "Amil", "Sahiti"],
+      manglik: "NON_MANGLIK",
+      education: "B.Tech / MBA / CA / Masters",
+      occupation: "Software Engineer / Corporate Professional / Business",
+      preferredState: "Maharashtra / Gujarat",
+    },
+  },
+  {
+    _id: "67b34a12c8e312a0f90000a2",
+    userId: "67b34a12c8e312a0f9000ba2",
+    id: "match-aisha-bhavnani",
+    matrimonyId: "SND4498447",
+    name: "Aisha Bhavnani",
+    gender: "FEMALE",
+    age: 25,
+    height: 158,
+    heightFormatted: "5'2\"",
+    maritalStatus: "NEVER_MARRIED",
+    subcaste: "Amil",
+    gotra: "Bhavnani",
+    motherGotra: "Chhabria",
+    manglik: "NON_MANGLIK",
+    education: { degree: "MBA Finance", field: "Management", college: "Symbiosis Pune" },
+    profession: { occupation: "Investment Banker", companyName: "Global Investment Bank", annualIncome: 2500000, currency: "INR" },
+    location: { city: "Pune", state: "Maharashtra", country: "India" },
+    family: { familyType: "NUCLEAR", fatherOccupation: "Chartered Accountant", motherOccupation: "Professor", siblings: "1 Sister" },
+    aboutMe: "I hold an MBA in Finance from Symbiosis and work in Investment Banking in Pune. I enjoy travelling, literature, and weekend cooking.",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&auto=format&fit=crop&q=80",
+    photos: [
+      { url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&auto=format&fit=crop&q=80", isProfile: true },
+    ],
+    isVerified: true,
+    isFeatured: true,
+    membershipTier: "DIAMOND",
+    isPrimary: true,
+    status: "ACTIVE",
+    partnerPreference: {
+      ageRange: { min: 26, max: 32 },
+      heightRange: { min: 170, max: 185 },
+      maritalStatus: ["NEVER_MARRIED"],
+      subcastes: ["Amil", "Bhaiband"],
+      manglik: "ANY",
+      education: "MBA / CA / Post Graduate",
+      occupation: "Investment / Banking / Finance",
+    },
+  },
+  {
+    _id: "67b34a12c8e312a0f90000a3",
+    userId: "67b34a12c8e312a0f9000ba3",
+    id: "match-simran-motwani",
+    matrimonyId: "SND4436421",
+    name: "Simran Motwani",
+    gender: "FEMALE",
+    age: 26,
+    height: 163,
+    heightFormatted: "5'4\"",
+    maritalStatus: "NEVER_MARRIED",
+    subcaste: "Bhaiband",
+    gotra: "Motwani",
+    motherGotra: "Makhija",
+    manglik: "NON_MANGLIK",
+    education: { degree: "M.S. Data Science", field: "Computer Science", college: "IISc Bengaluru" },
+    profession: { occupation: "Lead AI Researcher", companyName: "AI Research Labs", annualIncome: 3200000, currency: "INR" },
+    location: { city: "Bengaluru", state: "Karnataka", country: "India" },
+    family: { familyType: "JOINT", fatherOccupation: "Industrialist", motherOccupation: "Homemaker", siblings: "2 Brothers" },
+    aboutMe: "Lead AI Researcher living in Bengaluru. Passionate about machine learning innovations, Hindustani classical music, and outdoor trekking.",
+    avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80",
+    photos: [
+      { url: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80", isProfile: true },
+    ],
+    isVerified: true,
+    isFeatured: true,
+    membershipTier: "VIP",
+    isPrimary: true,
+    status: "ACTIVE",
+  },
+  {
+    _id: "67b34a12c8e312a0f90000a4",
+    userId: "67b34a12c8e312a0f9000ba4",
+    id: "match-kajal-mirchandani",
+    matrimonyId: "SND4489404",
+    name: "Kajal Mirchandani",
+    gender: "FEMALE",
+    age: 24,
+    height: 155,
+    heightFormatted: "5'1\"",
+    maritalStatus: "NEVER_MARRIED",
+    subcaste: "Lohana",
+    gotra: "Mirchandani",
+    motherGotra: "Hingorani",
+    manglik: "NON_MANGLIK",
+    education: { degree: "Chartered Accountant (CA)", field: "Finance", college: "ICAI" },
+    profession: { occupation: "Financial Consultant", companyName: "Big 4 Firm", annualIncome: 2000000, currency: "INR" },
+    location: { city: "Ahmedabad", state: "Gujarat", country: "India" },
+    family: { familyType: "NUCLEAR", fatherOccupation: "Textile Merchant", motherOccupation: "Homemaker" },
+    aboutMe: "Qualified CA working as a Financial Consultant. Simple, family-oriented and ambitious. Love exploring culinary arts.",
+    avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500&auto=format&fit=crop&q=80",
+    photos: [
+      { url: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500&auto=format&fit=crop&q=80", isProfile: true },
+    ],
+    isVerified: true,
+    isFeatured: false,
+    membershipTier: "GOLD",
+    isPrimary: true,
+    status: "ACTIVE",
+  },
+  {
+    _id: "67b34a12c8e312a0f90000a5",
+    userId: "67b34a12c8e312a0f9000ba5",
+    id: "match-pooja-hingorani",
+    matrimonyId: "SND4491832",
+    name: "Pooja Hingorani",
+    gender: "FEMALE",
+    age: 25,
+    height: 160,
+    heightFormatted: "5'3\"",
+    maritalStatus: "NEVER_MARRIED",
+    subcaste: "Sahiti",
+    gotra: "Hingorani",
+    education: { degree: "B.Arch", field: "Architecture", college: "CEPT University" },
+    profession: { occupation: "Interior Architect", companyName: "Design Studio", annualIncome: 2800000, currency: "INR" },
+    location: { city: "Dubai", state: "UAE", country: "UAE" },
+    avatar: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=500&auto=format&fit=crop&q=80",
+    photos: [{ url: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=500&auto=format&fit=crop&q=80" }],
+    isVerified: true,
+    isPrimary: true,
+    status: "ACTIVE",
+  },
+  {
+    _id: "67b34a12c8e312a0f90000a6",
+    userId: "67b34a12c8e312a0f9000ba6",
+    id: "match-divya-advani",
+    matrimonyId: "SND4481232",
+    name: "Dr. Divya Advani",
+    gender: "FEMALE",
+    age: 27,
+    height: 165,
+    heightFormatted: "5'5\"",
+    maritalStatus: "NEVER_MARRIED",
+    subcaste: "Amil",
+    gotra: "Advani",
+    education: { degree: "MBBS, MD Medicine", field: "Medicine", college: "BJ Medical College" },
+    profession: { occupation: "Consultant Physician", companyName: "Hospital", annualIncome: 2600000, currency: "INR" },
+    location: { city: "Pune", state: "Maharashtra", country: "India" },
+    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=500&auto=format&fit=crop&q=80",
+    photos: [{ url: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=500&auto=format&fit=crop&q=80" }],
+    isVerified: true,
+    isPrimary: true,
+    status: "ACTIVE",
+  },
+  {
+    _id: "67b34a12c8e312a0f90000a7",
+    userId: "67b34a12c8e312a0f9000ba7",
+    id: "match-muskan-chawla",
+    matrimonyId: "SND4513818",
+    name: "Muskan Chawla",
+    gender: "FEMALE",
+    age: 23,
+    height: 158,
+    heightFormatted: "5'2\"",
+    maritalStatus: "NEVER_MARRIED",
+    subcaste: "Sakhrani",
+    gotra: "Chawla",
+    education: { degree: "M.Com", field: "Commerce", college: "Rajasthan University" },
+    profession: { occupation: "Corporate HR Manager", companyName: "Retail Conglomerate", annualIncome: 1400000, currency: "INR" },
+    location: { city: "Jaipur", state: "Rajasthan", country: "India" },
+    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80",
+    photos: [{ url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80" }],
+    isVerified: true,
+    isPrimary: true,
+    status: "ACTIVE",
+  },
+  {
+    _id: "67b34a12c8e312a0f90000a8",
+    userId: "67b34a12c8e312a0f9000ba8",
+    id: "match-karishma-makhija",
+    matrimonyId: "SND4472190",
+    name: "Karishma Makhija",
+    gender: "FEMALE",
+    age: 26,
+    height: 163,
+    heightFormatted: "5'4\"",
+    maritalStatus: "NEVER_MARRIED",
+    subcaste: "Bhaiband",
+    gotra: "Makhija",
+    education: { degree: "B.Des Fashion", field: "Fashion", college: "NIFT Mumbai" },
+    profession: { occupation: "Fashion Designer", companyName: "Fashion Label", annualIncome: 1800000, currency: "INR" },
+    location: { city: "Ulhasnagar", state: "Maharashtra", country: "India" },
+    avatar: "https://images.unsplash.com/photo-1520854221256-17451cc331bf?w=500&auto=format&fit=crop&q=80",
+    photos: [{ url: "https://images.unsplash.com/photo-1520854221256-17451cc331bf?w=500&auto=format&fit=crop&q=80" }],
+    isVerified: true,
+    isPrimary: true,
+    status: "ACTIVE",
+  },
+];
+
 /**
  * Retrieve candidate profile by ID or phone
  */
 export function findProfileByIdInMemory(id) {
   if (!id) return null;
   const strId = String(id).trim();
+  const lowerId = strId.toLowerCase();
+  const numericId = strId.replace(/\D/g, "");
 
   if (customProfilesMap.has(strId)) {
     return customProfilesMap.get(strId);
   }
 
-  // Check seed pool
-  const cand = SEED_CANDIDATE_POOL.find((c) => c._id === strId || c.userId === strId || c.matrimonyId === strId);
+  // 1. Check curated matches pool first (exact 1:1 match with user panel match cards)
+  const curatedMatch = CURATED_MATCHES_POOL.find((c) => 
+    c._id === strId ||
+    c.userId === strId ||
+    c.id?.toLowerCase() === lowerId ||
+    c.matrimonyId?.toLowerCase() === lowerId ||
+    (numericId && c.matrimonyId?.replace(/\D/g, "") === numericId)
+  );
+  if (curatedMatch) {
+    return curatedMatch;
+  }
+
+  // 2. Check full seed candidate pool (150 realistic Sindhi members)
+  const cand = SEED_CANDIDATE_POOL.find((c) => 
+    c._id === strId || 
+    c.userId === strId || 
+    c.matrimonyId?.toLowerCase() === lowerId ||
+    (numericId && c.matrimonyId?.replace(/\D/g, "") === numericId)
+  );
   if (cand) {
     return cand;
+  }
+
+  // 3. Fallback: If numeric ID provided (e.g., from generated matrimony IDs), derive deterministically
+  if (numericId && numericId.length >= 4) {
+    const seedIndex = parseInt(numericId.slice(-3), 10) % SEED_CANDIDATE_POOL.length;
+    const baseCand = SEED_CANDIDATE_POOL[seedIndex] || SEED_CANDIDATE_POOL[0];
+    return {
+      ...baseCand,
+      _id: strId.length === 24 ? strId : baseCand._id,
+      matrimonyId: strId.toUpperCase().startsWith("SM") || strId.toUpperCase().startsWith("SND") ? strId.toUpperCase() : `SM${numericId}`,
+    };
   }
 
   return null;

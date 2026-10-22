@@ -38,6 +38,9 @@ export const getProfile = asyncHandler(async (req, res) => {
     req.body?.id ||
     req.query?.id ||
     req.params?.id ||
+    req.body?.matrimonyId ||
+    req.query?.matrimonyId ||
+    req.params?.matrimonyId ||
     req.body?.profileId ||
     req.query?.profileId ||
     req.body?.userId ||
@@ -73,7 +76,7 @@ export const getProfile = asyncHandler(async (req, res) => {
             onboardingStep: 7,
             isOnboardingComplete: true,
           },
-          profile: foundSelf || {
+          profile: foundSelf ? cleanEntity(foundSelf, { stripUserId: true }) : {
             _id: (myActiveProfileId || "6ad3c0ff51bbaafbad99f39c").toString(),
             name: userName,
             profileFor: "MYSELF",
@@ -131,7 +134,7 @@ export const getProfile = asyncHandler(async (req, res) => {
             isPhoneVerified: true,
             isKycVerified: Boolean(targetCandidate?.isVerified ?? true),
           },
-          profile: targetCandidate || {
+          profile: targetCandidate ? cleanEntity(targetCandidate, { stripUserId: true }) : {
             _id: targetId,
             name: "Rohan Advani",
             profileFor: "MYSELF",
@@ -205,7 +208,7 @@ export const getProfile = asyncHandler(async (req, res) => {
       {
         isSelf: true,
         user: cleanEntity(user),
-        profile: cleanEntity(profile),
+        profile: cleanEntity(profile, { stripUserId: true }),
         partnerPreference: cleanEntity(partnerPreference),
       },
       CONSTANTS.OK,
@@ -217,17 +220,54 @@ export const getProfile = asyncHandler(async (req, res) => {
   let targetProfile = null;
   const isObjectId = mongoose.Types.ObjectId.isValid(targetId);
 
+  const orConditions = [
+    { matrimonyId: targetId },
+    { matrimonyId: targetId.toUpperCase() },
+  ];
   if (isObjectId) {
-    // Single consolidated fast query resolving either Profile _id or User userId in 1 roundtrip
-    targetProfile = await Profile.findOne({
-      $or: [{ _id: targetId }, { userId: targetId }],
-      isDeleted: false,
-    })
-      .sort({ isPrimary: -1, createdAt: 1 })
-      .lean();
+    orConditions.push({ _id: targetId }, { userId: targetId });
   }
 
+  targetProfile = await Profile.findOne({
+    $or: orConditions,
+    isDeleted: false,
+  })
+    .sort({ isPrimary: -1, createdAt: 1 })
+    .lean();
+
   if (!targetProfile) {
+    const memoryCandidate = findProfileByIdInMemory(targetId);
+    if (memoryCandidate) {
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_OK,
+        "Profile fetched successfully.",
+        {
+          isSelf: false,
+          user: {
+            _id: (memoryCandidate.userId || memoryCandidate._id || targetId).toString(),
+            countryCode: "+91",
+            role: 1,
+            status: "ACTIVE",
+            isPhoneVerified: true,
+            isKycVerified: Boolean(memoryCandidate.isVerified ?? true),
+          },
+          profile: cleanEntity(memoryCandidate),
+          partnerPreference: cleanEntity(memoryCandidate.partnerPreference || {
+            _id: "6ad3c0ff51bbaafbad99f39e",
+            ageRange: { min: 24, max: 32 },
+            heightRange: { min: 155, max: 180 },
+            maritalStatus: ["NEVER_MARRIED"],
+            subcastes: [memoryCandidate.subcaste || "Bhaiband", "Amil"],
+            manglik: "ANY",
+          }),
+        },
+        CONSTANTS.OK,
+        CONSTANTS.ERROR_FALSE
+      );
+    }
+
     return apiHTTPResponse(
       req,
       res,
@@ -260,7 +300,7 @@ export const getProfile = asyncHandler(async (req, res) => {
     {
       isSelf: verifiedIsSelf,
       user: cleanEntity(targetUser),
-      profile: cleanEntity(targetProfile),
+      profile: cleanEntity(targetProfile, { stripUserId: true }),
       partnerPreference: cleanEntity(targetPartnerPreference),
     },
     CONSTANTS.OK,

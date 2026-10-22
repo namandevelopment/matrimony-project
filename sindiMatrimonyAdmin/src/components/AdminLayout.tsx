@@ -166,9 +166,18 @@ export const AdminLayout: React.FC = memoWithDeepEqual(() => {
     notificationService.getUnreadCount()
   );
 
+  const [pendingStoriesCount, setPendingStoriesCount] = useState<number>(() =>
+    crmDataService.getPendingSuccessStoriesCount()
+  );
+  const [pendingReviewsCount, setPendingReviewsCount] = useState<number>(() =>
+    crmDataService.getPendingReviewsCount()
+  );
+
   useEffect(() => {
     const unsub = crmDataService.subscribe(() => {
       setUnreadChatCount(crmDataService.getUnreadMessageCount(effectiveUser.id || 'emp_001'));
+      setPendingStoriesCount(crmDataService.getPendingSuccessStoriesCount());
+      setPendingReviewsCount(crmDataService.getPendingReviewsCount());
     });
     return unsub;
   }, [effectiveUser.id]);
@@ -453,6 +462,16 @@ export const AdminLayout: React.FC = memoWithDeepEqual(() => {
                   {item.path === '/notifications' && unreadNotificationCount > 0 && (!isDesktopCollapsed || sidebarOpen) && (
                     <span className="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-[#DB2F3C] text-white shadow-xs">
                       {unreadNotificationCount}
+                    </span>
+                  )}
+                  {item.path === '/success-stories' && pendingStoriesCount > 0 && (!isDesktopCollapsed || sidebarOpen) && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-amber-400 text-slate-950 shadow-xs" title={`${pendingStoriesCount} stories pending approval`}>
+                      {pendingStoriesCount} new
+                    </span>
+                  )}
+                  {item.path === '/reviews' && pendingReviewsCount > 0 && (!isDesktopCollapsed || sidebarOpen) && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-amber-400 text-slate-950 shadow-xs" title={`${pendingReviewsCount} reviews pending moderation`}>
+                      {pendingReviewsCount} new
                     </span>
                   )}
                 </NavLink>

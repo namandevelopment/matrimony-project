@@ -72,19 +72,19 @@ export const SubmitReviewModal: React.FC<SubmitReviewModalProps> = memo(({
     setIsLoading(true);
     setErrorMsg(null);
 
-    try {
-      const payload = {
-        memberName: memberName.trim(),
-        memberRole,
-        subcaste,
-        city: city.trim() || "India",
-        rating,
-        title: title.trim(),
-        comment: comment.trim(),
-        contactPhone: contactPhone.trim(),
-        contactEmail: contactEmail.trim().toLowerCase(),
-      };
+    const payload = {
+      memberName: memberName.trim(),
+      memberRole,
+      subcaste,
+      city: city.trim() || "India",
+      rating,
+      title: title.trim(),
+      comment: comment.trim(),
+      contactPhone: contactPhone.trim(),
+      contactEmail: contactEmail.trim().toLowerCase(),
+    };
 
+    try {
       const res = await apiFetch<any>({
         url: ApiURL.submitReview,
         method: "POST",
@@ -95,6 +95,18 @@ export const SubmitReviewModal: React.FC<SubmitReviewModalProps> = memo(({
       const generatedId = res?.data?.reviewId || `REV-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
       setSubmittedReviewId(generatedId);
       setIsSubmitted(true);
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem(
+          "my_submitted_review",
+          JSON.stringify({
+            ...payload,
+            reviewId: generatedId,
+            status: "PENDING",
+            createdAt: new Date().toISOString().slice(0, 10),
+          })
+        );
+      }
 
       showToast({
         type: "success",
@@ -108,6 +120,19 @@ export const SubmitReviewModal: React.FC<SubmitReviewModalProps> = memo(({
       const fallbackId = `REV-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
       setSubmittedReviewId(fallbackId);
       setIsSubmitted(true);
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem(
+          "my_submitted_review",
+          JSON.stringify({
+            ...payload,
+            reviewId: fallbackId,
+            status: "PENDING",
+            createdAt: new Date().toISOString().slice(0, 10),
+          })
+        );
+      }
+
       showToast({
         type: "success",
         message: "Your review has been received for moderation! Thank you for sharing your experience.",

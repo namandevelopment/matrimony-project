@@ -103,7 +103,7 @@ export const initialEmployees: Employee[] = [
     managerName: 'Kavita Chhabria',
     recordScope: 'TEAM',
     permissions: getDefaultPermissionsForRole('CRM_MANAGER'),
-    allowedSections: ['dashboard', 'leads', 'tasks', 'chat', 'matchmaking', 'match_responses', 'member_search', 'members', 'employees'],
+    allowedSections: ['dashboard', 'leads', 'tasks', 'chat', 'matchmaking', 'match_responses', 'member_search', 'members', 'employees', 'success_stories', 'reviews'],
     isActive: true,
     isChatEnabled: true,
     maxLeadCapacity: 60,
@@ -216,7 +216,7 @@ export const initialEmployees: Employee[] = [
     managerName: 'Kavita Chhabria',
     recordScope: 'ALL',
     permissions: getDefaultPermissionsForRole('MODERATOR'),
-    allowedSections: ['verifications', 'member_search'],
+    allowedSections: ['verifications', 'member_search', 'success_stories', 'reviews'],
     isActive: true,
     isChatEnabled: true,
     maxLeadCapacity: 0,
@@ -4519,6 +4519,14 @@ class CRMDataService {
       bride.relationshipStatus = 'MARRIED';
     }
     this.saveState();
+  }
+
+  getPendingSuccessStoriesCount(): number {
+    return this.successStories.filter((s) => s.status === 'DRAFT').length;
+  }
+
+  getPendingReviewsCount(): number {
+    return this.reviews.filter((r) => r.status === 'PENDING').length;
   }
 
   // --- REVIEWS & RATINGS API ---

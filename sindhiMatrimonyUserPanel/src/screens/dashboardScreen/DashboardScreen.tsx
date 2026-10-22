@@ -17,7 +17,7 @@ import { DashboardNavProvider } from "./context/DashboardNavContext";
 import { FloatingChatWidget } from "@/screens/matchesScreen/components";
 import { NotificationsScreen } from "@/screens/notificationsScreen";
 import { apiFetch, ApiURL } from "@/redux/apiService";
-import { useDashboardFeedQuery } from "@/tanstackQuery";
+import { useDashboardFeedQuery, useProfileQuery } from "@/tanstackQuery";
 import type {
   UserProfile,
   DashboardNavTab,
@@ -77,6 +77,22 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
 
   // Live consolidated dashboard API integration via TanStack Query (cached 5 mins, zero duplicate flight)
   const { data: dashboardRes } = useDashboardFeedQuery();
+  const { data: profileRes } = useProfileQuery();
+
+  // Sync profile data if profile query updates
+  useEffect(() => {
+    if (!profileRes) return;
+    const p = (profileRes as any)?.profile || (profileRes as any)?.data?.profile;
+    const u = (profileRes as any)?.user || (profileRes as any)?.data?.user;
+    if (p || u) {
+      setUser((prev) => ({
+        ...prev,
+        name: p?.name || u?.name || prev.name,
+        avatarUrl: p?.avatar || p?.photos?.[0]?.url || prev.avatarUrl,
+        community: p?.subcaste ? `Sindhi (${p.subcaste})` : prev.community,
+      }));
+    }
+  }, [profileRes]);
 
   useEffect(() => {
     if (!dashboardRes) return;

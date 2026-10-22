@@ -13,6 +13,7 @@ export {
   useApiQuery,
   useApiInfiniteQuery,
   useProfileQuery,
+  useCandidateProfileQuery,
   useDashboardQuery,
   useDashboardFeedQuery,
   useDashboardMatchesQuery,
@@ -39,11 +40,14 @@ export {
 export {
   useApiMutation,
   useUpdateProfileMutation,
+  useUploadProfilePhotoMutation,
+  useDeleteProfilePhotoMutation,
   useSendInterestMutation,
   useShortlistMutation,
   useAcceptInterestMutation,
   useDeclineInterestMutation,
   useBlockUserMutation,
+  useRequestPhotoMutation,
   useSaveRashiMutation,
   useSubmitReviewMutation,
   useShareSuccessStoryMutation,
@@ -55,5 +59,9 @@ export {
   updateItemInQueryCache,
   removeItemFromQueryCache,
   addItemToQueryCache,
+  snapshotQueries,
+  rollbackQueries,
+  isItemMatch,
   useUpdateQueryCache,
 } from './optimisticUpdate';
+

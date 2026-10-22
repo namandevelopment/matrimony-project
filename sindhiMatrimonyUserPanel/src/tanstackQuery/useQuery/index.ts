@@ -119,6 +119,16 @@ export const useProfileQuery = (enabled = true) => {
   });
 };
 
+/** 1.1 Candidate Profile by Target ID */
+export const useCandidateProfileQuery = (candidateId?: string, enabled = true) => {
+  return useApiQuery({
+    queryKey: QUERY_KEYS.userProfile(candidateId || ''),
+    url: ApiURL.getProfile,
+    params: candidateId ? { id: candidateId } : undefined,
+    enabled: Boolean(enabled && candidateId),
+  });
+};
+
 /** 2. Consolidated Web Dashboard Feed (sub-10ms single flight) */
 export const useDashboardFeedQuery = (rashi?: string, enabled = true) => {
   return useApiQuery({

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, memo } from "react";
+import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { useRouter } from "next/navigation";
 import {
   DashboardHeader,
@@ -30,6 +30,14 @@ import {
   PartnerPreferences,
   MatchesScreenProps,
 } from "./types";
+import {
+  useDashboardMatchesQuery,
+  useShortlistMutation,
+  useSendInterestMutation,
+  useBlockUserMutation,
+  useRequestPhotoMutation,
+} from "@/tanstackQuery";
+import { ApiURL } from "@/redux/apiService/endpoint";
 
 const defaultUser: UserProfile = {
   name: "Member",
@@ -59,6 +67,51 @@ const MatchesScreenComponent: React.FC<MatchesScreenProps> = ({
   const [currentSort, setCurrentSort] = useState<SortOption>("relevance");
   const [currentPage, setCurrentPage] = useState<number>(1);
 
+  // TanStack Query for Live Matches & Optimistic Updates
+  const { data: matchesRes } = useDashboardMatchesQuery();
+  const shortlistMutation = useShortlistMutation();
+  const sendInterestMutation = useSendInterestMutation();
+  const blockUserMutation = useBlockUserMutation();
+  const requestPhotoMutation = useRequestPhotoMutation();
+
+  const activeProfiles: MatchDetailProfile[] = useMemo(() => {
+    if (!matchesRes) return initialProfiles;
+    const items =
+      (matchesRes as any)?.items ||
+      (Array.isArray(matchesRes) ? matchesRes : (matchesRes as any)?.data?.items || (matchesRes as any)?.data || []);
+
+    if (Array.isArray(items) && items.length > 0) {
+      return items.map((c: any, idx: number) => ({
+        id: c._id || c.id || `match_${idx}`,
+        matrimonyId: c.matrimonyId || `SND${882000 + idx}`,
+        name: c.name || "Sindhi Match",
+        age: Number(c.age) || 25,
+        height: c.heightFormatted || c.height || "5'4\"",
+        education: c.education?.degree || c.education || "Graduate",
+        profession: c.profession?.occupation || c.profession || "Professional",
+        city: c.location?.city || c.city || "Mumbai",
+        state: c.location?.state || c.state || "Maharashtra",
+        photoUrl: c.avatar || c.photoUrl || "",
+        lastSeen: "Active recently",
+        isNewlyJoined: idx < 3,
+        isSilhouette: !c.avatar && !c.photoUrl,
+        gender: c.gender || "female",
+        hasHoroscope: true,
+        isNotSeen: true,
+        phoneAvailable: true,
+        whatsappAvailable: true,
+        phoneNumber: "+91 98200 12345",
+        whatsappNumber: "+91 98200 12345",
+        isShortlisted: Boolean(c.isShortlisted),
+        interestSent: Boolean(c.interestSent),
+        photoRequested: Boolean(c.photoRequested),
+        caste: c.subcaste || c.caste || "Sindhi - Bhaiband",
+        motherTongue: "Sindhi",
+      }));
+    }
+    return initialProfiles;
+  }, [matchesRes, initialProfiles]);
+
   // User interactions state (Sets for O(1) lookups)
   const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(() => {
     const initialSet = new Set<string>();
@@ -78,6 +131,27 @@ const MatchesScreenComponent: React.FC<MatchesScreenProps> = ({
 
   const [requestedPhotoIds, setRequestedPhotoIds] = useState<Set<string>>(new Set());
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
+
+  // Synchronize with activeProfiles when live API or cache updates
+  useEffect(() => {
+    if (activeProfiles && activeProfiles.length > 0) {
+      setShortlistedIds((prev) => {
+        const next = new Set(prev);
+        activeProfiles.forEach((p) => {
+          if (p.isShortlisted) next.add(p.id);
+        });
+        return next;
+      });
+
+      setInterestedIds((prev) => {
+        const next = new Set(prev);
+        activeProfiles.forEach((p) => {
+          if (p.interestSent) next.add(p.id);
+        });
+        return next;
+      });
+    }
+  }, [activeProfiles]);
 
   // Preferences & Modals
   const [preferences, setPreferences] = useState<PartnerPreferences>(defaultPreferences);
@@ -132,48 +206,73 @@ const MatchesScreenComponent: React.FC<MatchesScreenProps> = ({
     setCurrentSort(sort);
   }, []);
 
-  // Card action callbacks
-  const handleToggleShortlist = useCallback((id: string) => {
-    setShortlistedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }, []);
+  // Card action callbacks (Instant Optimistic Updates via TanStack Query)
+  const handleToggleShortlist = useCallback(
+    (id: string) => {
+      const willShortlist = !shortlistedIds.has(id);
+      setShortlistedIds((prev) => {
+        const next = new Set(prev);
+        if (willShortlist) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+      shortlistMutation.mutate({
+        url: ApiURL.shortlistCandidate(id),
+        method: "POST",
+        data: { candidateId: id, shortlist: willShortlist, action: willShortlist ? "ADD" : "REMOVE" },
+        isToken: true,
+      });
+    },
+    [shortlistedIds, shortlistMutation]
+  );
 
-  const handleSendInterest = useCallback((id: string) => {
-    setInterestedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }, []);
+  const handleSendInterest = useCallback(
+    (id: string) => {
+      setInterestedIds((prev) => new Set(prev).add(id));
+      sendInterestMutation.mutate({
+        url: ApiURL.interestsSend,
+        method: "POST",
+        data: {
+          receiverProfileId: id,
+          receiverCandidateId: id,
+          candidateId: id,
+          message: "Namaste, we liked your profile and would love to connect.",
+        },
+        isToken: true,
+      });
+    },
+    [sendInterestMutation]
+  );
 
-  const handleDontShow = useCallback((id: string) => {
-    setHiddenIds((prev) => new Set(prev).add(id));
-  }, []);
+  const handleDontShow = useCallback(
+    (id: string) => {
+      setHiddenIds((prev) => new Set(prev).add(id));
+      blockUserMutation.mutate({
+        data: { candidateId: id, userId: id },
+      });
+    },
+    [blockUserMutation]
+  );
 
   const handleRequestPhoto = useCallback(
     (id: string) => {
-      const profile = initialProfiles.find((p) => p.id === id);
+      const profile = activeProfiles.find((p) => p.id === id);
       if (profile) {
         setSelectedProfileForPhoto(profile);
       }
     },
-    [initialProfiles]
+    [activeProfiles]
   );
 
-  const handleConfirmPhotoRequest = useCallback((id: string) => {
-    setRequestedPhotoIds((prev) => new Set(prev).add(id));
-  }, []);
+  const handleConfirmPhotoRequest = useCallback(
+    (id: string) => {
+      setRequestedPhotoIds((prev) => new Set(prev).add(id));
+      requestPhotoMutation.mutate({
+        data: { candidateId: id },
+      });
+    },
+    [requestPhotoMutation]
+  );
 
   const handleCallClick = useCallback((profile: MatchDetailProfile) => {
     setSelectedProfileForContact(profile);
@@ -192,7 +291,8 @@ const MatchesScreenComponent: React.FC<MatchesScreenProps> = ({
 
   const handleViewProfile = useCallback(
     (profile: MatchDetailProfile) => {
-      router.push(`/matches/viewprofile/${profile.matrimonyId}`);
+      const targetId = profile.matrimonyId || profile.id;
+      router.push(`/matches/viewprofile/${targetId}`);
     },
     [router]
   );
@@ -220,21 +320,21 @@ const MatchesScreenComponent: React.FC<MatchesScreenProps> = ({
   // Dynamic category counts
   const categoryCounts = useMemo<Partial<Record<MatchCategoryType, number>>>(() => {
     return {
-      your_matches: initialProfiles.filter((p) => !hiddenIds.has(p.id)).length,
+      your_matches: activeProfiles.filter((p) => !hiddenIds.has(p.id)).length,
       shortlisted_by_you: shortlistedIds.size,
       viewed_you: 4,
       shortlisted_you: 2,
       viewed_by_you: 6,
-      newly_joined: initialProfiles.filter(
+      newly_joined: activeProfiles.filter(
         (p) => p.isNewlyJoined && !hiddenIds.has(p.id)
       ).length,
       nearby_matches: 8,
     };
-  }, [initialProfiles, hiddenIds, shortlistedIds]);
+  }, [activeProfiles, hiddenIds, shortlistedIds]);
 
   // Compute filtered & sorted profiles
   const filteredProfiles = useMemo(() => {
-    let result = initialProfiles.filter((p) => !hiddenIds.has(p.id));
+    let result = activeProfiles.filter((p) => !hiddenIds.has(p.id));
 
     // Filter by category
     if (activeCategory === "shortlisted_by_you") {

@@ -2,7 +2,7 @@
 
 import React, { memo, useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronUp, LogOut } from "lucide-react";
+import { ChevronDown, ChevronUp, LogOut, Star } from "lucide-react";
 import {
   MaleSilhouetteAvatar,
   EditProfileMenuIcon,
@@ -332,6 +332,16 @@ const ProfileDropdownComponent: React.FC<ProfileDropdownProps> = ({
             >
               <SuccessStoriesMenuIcon className="w-5 h-5 shrink-0 transition-transform group-hover:scale-105" />
               <span>Success Stories</span>
+            </Link>
+
+            {/* Member Reviews & Ratings Link */}
+            <Link
+              href="/reviews"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-3.5 px-2 py-2 rounded-lg text-[14px] sm:text-[14.5px] font-medium text-stone-800 hover:text-[#DB2F3C] hover:bg-stone-50 transition-colors group"
+            >
+              <Star className="w-5 h-5 text-amber-500 fill-amber-500 shrink-0 transition-transform group-hover:scale-105" />
+              <span>Member Reviews</span>
             </Link>
 
             {/* Optional Logout Link */}

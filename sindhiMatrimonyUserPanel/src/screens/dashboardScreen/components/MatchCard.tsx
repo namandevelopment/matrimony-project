@@ -33,9 +33,8 @@ const MatchCardComponent: React.FC<MatchCardProps> = ({ profile, className = "" 
     []
   );
 
-  const profileUrl = profile.id.startsWith("BRH")
-    ? `/matches/viewprofile/${profile.id}`
-    : `/matches/viewprofile/BRH4486236`;
+  const targetId = (profile as any).matrimonyId || profile.id;
+  const profileUrl = `/matches/viewprofile/${targetId}`;
 
   return (
     <Link

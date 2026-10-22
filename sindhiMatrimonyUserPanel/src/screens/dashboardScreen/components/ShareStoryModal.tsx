@@ -93,6 +93,17 @@ export const ShareStoryModal = memo<ShareStoryModalProps>(
           fullStory: storyText,
         };
 
+        // Save locally for personal dashboard status
+        const savedSubmission = {
+          ...newStory,
+          status: "DRAFT",
+          badge: "Pending Verification",
+          submittedAt: new Date().toISOString(),
+        };
+        if (typeof window !== "undefined") {
+          localStorage.setItem("my_submitted_story", JSON.stringify(savedSubmission));
+        }
+
         // Post to live Backend API for admin moderation with TanStack cache invalidation
         shareStoryMutation.mutate({
           url: ApiURL.shareSuccessStory,
@@ -111,7 +122,7 @@ export const ShareStoryModal = memo<ShareStoryModalProps>(
             photoUrl: uploadedImages[0] || "/images/dashboard/couple_1.jpg",
             photoUrls: uploadedImages.length > 0 ? uploadedImages : ["/images/dashboard/couple_1.jpg"],
           },
-          isToken: false,
+          isToken: true,
         });
 
         onSubmit(newStory);

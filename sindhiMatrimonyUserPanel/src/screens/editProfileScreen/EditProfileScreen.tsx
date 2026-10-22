@@ -28,6 +28,14 @@ import {
   PhotoItem,
 } from "./types";
 import { INITIAL_EDIT_PROFILE_DATA } from "./staticData";
+import { mapBackendProfileToEditState, mapEditStateToBackendPayload } from "./profileMapper";
+import {
+  useProfileQuery,
+  useUpdateProfileMutation,
+  useUploadProfilePhotoMutation,
+  useDeleteProfilePhotoMutation,
+} from "@/tanstackQuery";
+import { ApiURL } from "@/redux/apiService/endpoint";
 import type { UserProfile } from "@/screens/dashboardScreen/types";
 
 const LOCAL_STORAGE_KEY = "sindhi_matrimony_edit_profile";
@@ -173,7 +181,22 @@ const EditProfileScreenComponent: React.FC<EditProfileScreenProps> = ({
     }
   }, []);
 
-  // Form State with localStorage persistence
+  // 1. Live Profile Query from Backend API
+  const {
+    data: profileApiResponse,
+    isLoading: isProfileLoading,
+    refetch: refetchProfile,
+  } = useProfileQuery();
+
+  // 2. Profile Mutations
+  const updateProfileMutation = useUpdateProfileMutation();
+  const uploadPhotoMutation = useUploadProfilePhotoMutation();
+  const deletePhotoMutation = useDeleteProfilePhotoMutation();
+
+  // Track if backend data has been synchronized once
+  const hasSyncedBackend = React.useRef(false);
+
+  // Form State with localStorage persistence and API hydration
   const [profileData, setProfileData] = useState<EditProfileState>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -195,6 +218,20 @@ const EditProfileScreenComponent: React.FC<EditProfileScreenProps> = ({
     }
     return INITIAL_EDIT_PROFILE_DATA;
   });
+
+  // Sync profileData when Live Backend API responds
+  useEffect(() => {
+    if (profileApiResponse && !hasSyncedBackend.current) {
+      hasSyncedBackend.current = true;
+      const mapped = mapBackendProfileToEditState(profileApiResponse, INITIAL_EDIT_PROFILE_DATA);
+      setProfileData(mapped);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mapped));
+        } catch {}
+      }
+    }
+  }, [profileApiResponse]);
 
   // Modal states
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
@@ -295,45 +332,96 @@ const EditProfileScreenComponent: React.FC<EditProfileScreenProps> = ({
     []
   );
 
-  // Photo handlers
-  const handleAddPhoto = useCallback((newPhoto: PhotoItem) => {
-    setProfileData((prev) => {
-      const updatedPhotos = [
-        ...prev.photos.map((p) => ({ ...p, isPrimary: false })),
-        newPhoto,
-      ];
-      return {
-        ...prev,
-        photos: updatedPhotos,
-      };
-    });
-    showToast("Profile photo uploaded successfully!");
-  }, [showToast]);
+  // Photo handlers with Live Backend Sync
+  const handleAddPhoto = useCallback(
+    async (newPhoto: PhotoItem) => {
+      setProfileData((prev) => {
+        const updatedPhotos = [
+          ...prev.photos.map((p) => ({ ...p, isPrimary: false })),
+          newPhoto,
+        ];
+        return {
+          ...prev,
+          photos: updatedPhotos,
+        };
+      });
 
-  const handleDeletePhoto = useCallback((photoId: string) => {
-    setProfileData((prev) => {
-      const filtered = prev.photos.filter((p) => p.id !== photoId);
-      if (filtered.length > 0 && !filtered.some((p) => p.isPrimary)) {
-        filtered[0].isPrimary = true;
+      try {
+        await uploadPhotoMutation.mutateAsync({
+          data: {
+            url: newPhoto.url,
+            isMain: true,
+          },
+        });
+        showToast("Profile photo uploaded and synced!");
+      } catch (err: any) {
+        console.error("Photo upload error:", err);
+        showToast("Photo added to profile preview.");
       }
-      return {
-        ...prev,
-        photos: filtered,
-      };
-    });
-    showToast("Photo removed.");
-  }, [showToast]);
+    },
+    [showToast, uploadPhotoMutation]
+  );
 
-  const handleSetPrimaryPhoto = useCallback((photoId: string) => {
-    setProfileData((prev) => ({
-      ...prev,
-      photos: prev.photos.map((p) => ({
-        ...p,
-        isPrimary: p.id === photoId,
-      })),
-    }));
-    showToast("Primary profile photo updated.");
-  }, [showToast]);
+  const handleDeletePhoto = useCallback(
+    async (photoId: string) => {
+      setProfileData((prev) => {
+        const filtered = prev.photos.filter((p) => p.id !== photoId);
+        if (filtered.length > 0 && !filtered.some((p) => p.isPrimary)) {
+          filtered[0].isPrimary = true;
+        }
+        return {
+          ...prev,
+          photos: filtered,
+        };
+      });
+
+      try {
+        if (!photoId.startsWith("photo_") || photoId.length === 24) {
+          await deletePhotoMutation.mutateAsync({
+            url: `${ApiURL.uploadProfilePhoto}/${photoId}`,
+            method: "DELETE",
+          });
+        }
+        showToast("Photo removed.");
+      } catch (err: any) {
+        console.error("Photo delete error:", err);
+        showToast("Photo removed from preview.");
+      }
+    },
+    [showToast, deletePhotoMutation]
+  );
+
+  const handleSetPrimaryPhoto = useCallback(
+    async (photoId: string) => {
+      let selectedUrl = "";
+      setProfileData((prev) => {
+        const updated = prev.photos.map((p) => {
+          const isTarget = p.id === photoId;
+          if (isTarget) selectedUrl = p.url;
+          return {
+            ...p,
+            isPrimary: isTarget,
+          };
+        });
+        return {
+          ...prev,
+          photos: updated,
+        };
+      });
+
+      if (selectedUrl) {
+        try {
+          await updateProfileMutation.mutateAsync({
+            data: { avatar: selectedUrl },
+          });
+        } catch (e) {
+          console.error("Error setting primary photo on backend:", e);
+        }
+      }
+      showToast("Primary profile photo updated.");
+    },
+    [showToast, updateProfileMutation]
+  );
 
   // Document upload for Trust Badges
   const handleUploadDocument = useCallback(
@@ -352,23 +440,35 @@ const EditProfileScreenComponent: React.FC<EditProfileScreenProps> = ({
     [showToast]
   );
 
-  // Generic Save Handler with simulated network delay and localStorage persistence
+  // Live Backend Save Handler (/api/v1/profile/editProfile)
   const handleSaveSection = useCallback(
-    (sectionName: string) => {
+    async (sectionName: string) => {
       setIsSaving(true);
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(profileData));
-        } catch (err) {
-          console.error("Error saving profile to localStorage:", err);
+      try {
+        // 1. Save local snapshot immediately for instant offline resilience
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(profileData));
+          } catch (err) {
+            console.error("Error saving profile to localStorage:", err);
+          }
         }
-      }
-      setTimeout(() => {
+
+        // 2. Call Live Backend API (/api/v1/profile/editProfile)
+        const payload = mapEditStateToBackendPayload(profileData);
+        await updateProfileMutation.mutateAsync({
+          data: payload,
+        });
+
+        showToast(`${sectionName} saved successfully to your profile!`);
+      } catch (error: any) {
+        console.error(`Error saving ${sectionName}:`, error);
+        showToast(error?.message || `Saved locally. (${sectionName})`);
+      } finally {
         setIsSaving(false);
-        showToast(`${sectionName} updated successfully!`);
-      }, 500);
+      }
     },
-    [profileData, showToast]
+    [profileData, showToast, updateProfileMutation]
   );
 
   const handleViewProfileClick = useCallback(() => {

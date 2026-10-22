@@ -14,6 +14,11 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
+  Crown,
+  CheckCircle2,
+  Clock,
+  X,
+  Lock,
 } from "lucide-react";
 import { LimcaBookBadge } from "./DashboardIcons";
 import { SuccessStoryModal } from "./SuccessStoryModal";
@@ -246,9 +251,51 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
     }
   }, [storiesData]);
 
+  // Paid user verification for story submission
+  const isPaidUser = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const raw = localStorage.getItem("user");
+      if (!raw) return false;
+      const u = JSON.parse(raw);
+      const st = String(u.membershipStatus || u.plan || u.tier || "").toLowerCase();
+      return (
+        st.includes("paid") ||
+        st.includes("prime") ||
+        st.includes("gold") ||
+        st.includes("diamond") ||
+        st.includes("premium") ||
+        Boolean(u.isPaidMember) ||
+        Boolean(u.isPaid)
+      );
+    } catch {
+      return false;
+    }
+  }, []);
+
   // Modal states
   const [selectedStory, setSelectedStory] = useState<MarriageSuccessStory | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isUpgradePromptOpen, setIsUpgradePromptOpen] = useState(false);
+
+  // User's own submitted story state ("khudka section me to show hogi hi")
+  const [mySubmittedStory, setMySubmittedStory] = useState<any>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const saved = localStorage.getItem("my_submitted_story");
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const handleOpenShareStory = () => {
+    if (!isPaidUser) {
+      setIsUpgradePromptOpen(true);
+    } else {
+      setIsShareModalOpen(true);
+    }
+  };
 
   // Likes tracking state
   const [likedStoryIds, setLikedStoryIds] = useState<Set<string>>(new Set());
@@ -275,6 +322,11 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
   }, []);
 
   const handleNewStorySubmitted = useCallback((newStory: MarriageSuccessStory) => {
+    setMySubmittedStory({
+      ...newStory,
+      status: "DRAFT",
+      badge: "Pending Verification",
+    });
     setStoriesList((prev) => [newStory, ...prev]);
   }, []);
 
@@ -345,16 +397,88 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
         <div className="flex flex-wrap items-center gap-3 shrink-0 self-start lg:self-auto">
           <button
             type="button"
-            onClick={() => setIsShareModalOpen(true)}
+            onClick={handleOpenShareStory}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#DB2F3C] to-[#B71F2A] hover:from-[#B71F2A] hover:to-[#961720] text-white text-xs sm:text-sm font-bold shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Share Your Story</span>
+            {!isPaidUser && (
+              <span className="text-[10px] font-extrabold bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                <Crown className="w-2.5 h-2.5" /> Paid Only
+              </span>
+            )}
           </button>
 
           <LimcaBookBadge className="w-24 sm:w-28 h-12 border-stone-200 shadow-2xs" />
         </div>
       </div>
+
+      {/* 1.5. User's Personal Submitted Story Section ("khudka section me to show hogi hi") */}
+      {mySubmittedStory && (
+        <div className="mt-5 p-5 bg-gradient-to-r from-amber-50/90 via-rose-50/40 to-white rounded-2xl border-2 border-amber-300 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-amber-200/60 mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-xs">
+                <Heart className="w-4.5 h-4.5 fill-white" />
+              </div>
+              <div>
+                <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-amber-800 block">
+                  Your Personal Submitted Story
+                </span>
+                <h4 className="text-base sm:text-lg font-bold text-stone-900">
+                  {mySubmittedStory.coupleNames}
+                </h4>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold shadow-2xs ${
+                mySubmittedStory.status === 'PUBLISHED'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-amber-600 text-white'
+              }`}>
+                {mySubmittedStory.status === 'PUBLISHED' ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Approved &amp; Live on Portal</span>
+                  </>
+                ) : (
+                  <>
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>Pending Admin Review</span>
+                  </>
+                )}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 items-start">
+            <div className="w-full sm:w-36 h-28 rounded-xl overflow-hidden bg-stone-200 shrink-0">
+              <img
+                src={mySubmittedStory.photoUrl || '/images/dashboard/couple_1.jpg'}
+                alt={mySubmittedStory.coupleNames}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="flex-1 space-y-1 text-xs text-stone-600">
+              <p className="font-semibold text-stone-900 text-sm">
+                "{mySubmittedStory.testimonial || mySubmittedStory.fullStory || 'Our beautiful wedding journey.'}"
+              </p>
+              <p className="text-stone-500 pt-1">
+                Wedding Date: <strong className="text-stone-700">{mySubmittedStory.weddingDate}</strong> • Location: <strong className="text-stone-700">{mySubmittedStory.location}</strong>
+              </p>
+              <div className="text-[11px] text-amber-900 bg-amber-100/70 p-2.5 rounded-lg border border-amber-200/60 mt-2 flex items-start gap-2">
+                <Clock className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <span>
+                  {mySubmittedStory.status === 'PUBLISHED'
+                    ? '🎉 Your success story is officially published and featured across the website and Limca Book of Records registry.'
+                    : '⏳ Your story request has been received by the Admin Panel. Once approved by our editorial desk, it will be published to the public website.'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2. Filter Bar & Interactive Navigation Pills */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-5 pb-3">
@@ -488,6 +612,56 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
         onClose={() => setIsShareModalOpen(false)}
         onSubmit={handleNewStorySubmitted}
       />
+
+      {/* Interactive Modal 3: Upgrade to Paid Member Prompt */}
+      {isUpgradePromptOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-stone-200 text-center animate-in fade-in zoom-in-95">
+            <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl mx-auto flex items-center justify-center mb-4 border border-amber-200">
+              <Crown className="w-7 h-7" />
+            </div>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100/80 px-2.5 py-0.5 rounded-full inline-block mb-2">
+              Paid Members Privilege
+            </span>
+            <h3 className="text-xl font-bold text-stone-900">
+              Share Your Wedding Story
+            </h3>
+            <p className="text-xs sm:text-sm text-stone-600 mt-2 leading-relaxed">
+              Publishing verified success stories and getting featured in the official <strong>Limca Book of Records</strong> registry is an exclusive feature for our <strong>Paid &amp; Premium Members</strong>.
+            </p>
+            <div className="mt-4 p-3.5 bg-stone-50 rounded-xl border border-stone-100 text-left space-y-2 text-xs text-stone-700">
+              <p className="flex items-center gap-2 font-medium">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Verified Couple profile in Limca Record gallery</span>
+              </p>
+              <p className="flex items-center gap-2 font-medium">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Editorial team verification &amp; photo album showcase</span>
+              </p>
+              <p className="flex items-center gap-2 font-medium">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Special wedding congratulation kit from community</span>
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setIsUpgradePromptOpen(false)}
+                className="px-4 py-2 rounded-xl border border-stone-200 text-stone-600 text-xs font-semibold hover:bg-stone-50 transition cursor-pointer"
+              >
+                Maybe Later
+              </button>
+              <Link
+                href="/membership"
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-bold shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Crown className="w-3.5 h-3.5" />
+                <span>Upgrade to Paid Plan</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

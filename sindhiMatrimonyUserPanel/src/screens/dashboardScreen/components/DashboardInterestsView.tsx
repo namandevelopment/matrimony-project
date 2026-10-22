@@ -7,7 +7,12 @@ import {
   InterestCard,
 } from "@/screens/interestsScreen/components";
 import { apiFetch, ApiURL } from "@/redux/apiService";
-import { useInterestsBadgeCountQuery, useInterestsTabQuery } from "@/tanstackQuery";
+import {
+  useInterestsBadgeCountQuery,
+  useInterestsTabQuery,
+  useAcceptInterestMutation,
+  useDeclineInterestMutation,
+} from "@/tanstackQuery";
 import { toast } from "@/toastMessage/toast";
 import type {
   InterestSection,
@@ -115,64 +120,43 @@ const DashboardInterestsViewComponent: React.FC<DashboardInterestsViewProps> = (
     []
   );
 
-  // Action: Accept Interest
-  const handleAccept = useCallback(
-    async (interestId: string) => {
-      try {
-        const res = await apiFetch<any>({
-          url: ApiURL.interestsAccept(interestId),
-          method: "PUT",
-        });
+  const acceptMutation = useAcceptInterestMutation();
+  const declineMutation = useDeclineInterestMutation();
 
-        if (!res.error) {
-          toast.success(
-            res.message || "Interest accepted! Contact details unlocked."
-          );
-          // Optimistically update list
-          setInterests((prev) =>
-            prev.map((item) =>
-              item._id === interestId ? { ...item, status: "ACCEPTED" } : item
-            )
-          );
-          refetchBadgeCounts();
-          refetchInterests();
-        } else {
-          toast.error(res.message || "Failed to accept interest.");
-        }
-      } catch {
-        toast.error("Failed to accept interest. Please try again.");
-      }
+  // Action: Accept Interest (Optimistic in TanStack Query)
+  const handleAccept = useCallback(
+    (interestId: string) => {
+      toast.success("Interest accepted! Contact details unlocked.");
+      setInterests((prev) =>
+        prev.map((item) =>
+          item._id === interestId ? { ...item, status: "ACCEPTED" } : item
+        )
+      );
+      acceptMutation.mutate({
+        url: ApiURL.interestsAccept(interestId),
+        method: "PUT",
+        data: { interestId },
+      });
     },
-    [refetchBadgeCounts, refetchInterests]
+    [acceptMutation]
   );
 
-  // Action: Decline Interest
+  // Action: Decline Interest (Optimistic in TanStack Query)
   const handleDecline = useCallback(
-    async (interestId: string) => {
-      try {
-        const res = await apiFetch<any>({
-          url: ApiURL.interestsDecline(interestId),
-          method: "PUT",
-        });
-
-        if (!res.error) {
-          toast.info("Interest politely declined.");
-          // Optimistically update list
-          setInterests((prev) =>
-            prev.map((item) =>
-              item._id === interestId ? { ...item, status: "DECLINED" } : item
-            )
-          );
-          refetchBadgeCounts();
-          refetchInterests();
-        } else {
-          toast.error(res.message || "Failed to decline interest.");
-        }
-      } catch {
-        toast.error("Failed to decline interest. Please try again.");
-      }
+    (interestId: string) => {
+      toast.info("Interest politely declined.");
+      setInterests((prev) =>
+        prev.map((item) =>
+          item._id === interestId ? { ...item, status: "DECLINED" } : item
+        )
+      );
+      declineMutation.mutate({
+        url: ApiURL.interestsDecline(interestId),
+        method: "PUT",
+        data: { interestId },
+      });
     },
-    [refetchBadgeCounts, refetchInterests]
+    [declineMutation]
   );
 
   // Action: Remind Interest

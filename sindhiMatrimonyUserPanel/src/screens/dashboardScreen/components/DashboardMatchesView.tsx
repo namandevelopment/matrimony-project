@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, memo } from "react";
+import { useRouter } from "next/navigation";
 import {
   MatchesSidebar,
   MatchesHeaderBar,
@@ -18,6 +19,8 @@ import {
   useDashboardMatchesQuery,
   useShortlistMutation,
   useSendInterestMutation,
+  useBlockUserMutation,
+  useRequestPhotoMutation,
 } from "@/tanstackQuery";
 import type {
   MatchDetailProfile,
@@ -40,6 +43,7 @@ const DashboardMatchesViewComponent: React.FC<DashboardMatchesViewProps> = ({
   onUpgradeClick,
   onAssistedServiceClick,
 }) => {
+  const router = useRouter();
   const [profilesList, setProfilesList] = useState<MatchDetailProfile[]>(initialMatchesList);
   const [activeCategory, setActiveCategory] = useState<MatchCategoryType>("your_matches");
   const [activeFilterChips, setActiveFilterChips] = useState<FilterChipId[]>([]);
@@ -50,6 +54,8 @@ const DashboardMatchesViewComponent: React.FC<DashboardMatchesViewProps> = ({
   const { data: matchesRes } = useDashboardMatchesQuery();
   const shortlistMutation = useShortlistMutation();
   const sendInterestMutation = useSendInterestMutation();
+  const blockUserMutation = useBlockUserMutation();
+  const requestPhotoMutation = useRequestPhotoMutation();
 
   React.useEffect(() => {
     if (!matchesRes) return;
@@ -81,10 +87,30 @@ const DashboardMatchesViewComponent: React.FC<DashboardMatchesViewProps> = ({
         whatsappNumber: "+91 98200 12345",
         isShortlisted: Boolean(c.isShortlisted),
         interestSent: Boolean(c.interestSent),
+        photoRequested: Boolean(c.photoRequested),
         caste: c.subcaste || c.caste || "Sindhi - Bhaiband",
         motherTongue: "Sindhi",
       }));
       setProfilesList(loaded);
+
+      // Synchronize shortlisted and interested IDs from cache data
+      setShortlistedIds((prev) => {
+        const next = new Set(prev);
+        items.forEach((c: any) => {
+          const cid = c._id || c.id;
+          if (c.isShortlisted && cid) next.add(cid);
+        });
+        return next;
+      });
+
+      setInterestedIds((prev) => {
+        const next = new Set(prev);
+        items.forEach((c: any) => {
+          const cid = c._id || c.id;
+          if (c.interestSent && cid) next.add(cid);
+        });
+        return next;
+      });
     }
   }, [matchesRes]);
 
@@ -142,56 +168,72 @@ const DashboardMatchesViewComponent: React.FC<DashboardMatchesViewProps> = ({
     setCurrentSort(sort);
   }, []);
 
-  // Card actions
+  // Card actions (Instant Optimistic Updates via TanStack Query)
   const handleToggleShortlist = useCallback(
     (id: string) => {
+      const willShortlist = !shortlistedIds.has(id);
       setShortlistedIds((prev) => {
         const next = new Set(prev);
-        const isShortlisting = !next.has(id);
-        if (!isShortlisting) next.delete(id);
-        else next.add(id);
+        if (willShortlist) next.add(id);
+        else next.delete(id);
         return next;
       });
       shortlistMutation.mutate({
         url: ApiURL.shortlistCandidate(id),
         method: "POST",
+        data: { candidateId: id, shortlist: willShortlist, action: willShortlist ? "ADD" : "REMOVE" },
         isToken: true,
       });
     },
-    [shortlistMutation]
+    [shortlistedIds, shortlistMutation]
   );
 
   const handleSendInterest = useCallback(
     (id: string) => {
-      setInterestedIds((prev) => {
-        const next = new Set(prev);
-        const isExpressing = !next.has(id);
-        if (!isExpressing) next.delete(id);
-        else next.add(id);
-        return next;
-      });
+      setInterestedIds((prev) => new Set(prev).add(id));
       sendInterestMutation.mutate({
         url: ApiURL.interestsSend,
         method: "POST",
-        data: { receiverCandidateId: id, message: "Interested in your profile." },
+        data: {
+          receiverProfileId: id,
+          receiverCandidateId: id,
+          candidateId: id,
+          message: "Namaste, we liked your profile and would love to connect.",
+        },
         isToken: true,
       });
     },
     [sendInterestMutation]
   );
 
-  const handleDontShow = useCallback((id: string) => {
-    setHiddenIds((prev) => new Set(prev).add(id));
-  }, []);
+  const handleDontShow = useCallback(
+    (id: string) => {
+      setHiddenIds((prev) => new Set(prev).add(id));
+      blockUserMutation.mutate({
+        data: { candidateId: id, userId: id },
+      });
+    },
+    [blockUserMutation]
+  );
 
-  const handleRequestPhoto = useCallback((id: string) => {
-    const profile = profilesList.find((p) => p.id === id);
-    if (profile) setSelectedProfileForPhoto(profile);
-  }, [profilesList]);
+  const handleRequestPhoto = useCallback(
+    (id: string) => {
+      const profile = profilesList.find((p) => p.id === id);
+      if (profile) setSelectedProfileForPhoto(profile);
+    },
+    [profilesList]
+  );
 
-  const handleConfirmPhotoRequest = useCallback((id: string) => {
-    setRequestedPhotoIds((prev) => new Set(prev).add(id));
-  }, []);
+  const handleConfirmPhotoRequest = useCallback(
+    (id: string) => {
+      setRequestedPhotoIds((prev) => new Set(prev).add(id));
+      requestPhotoMutation.mutate({
+        data: { candidateId: id },
+      });
+    },
+    [requestPhotoMutation]
+  );
+
 
   const handleCallClick = useCallback((profile: MatchDetailProfile) => {
     setSelectedProfileForContact(profile);
@@ -211,6 +253,14 @@ const DashboardMatchesViewComponent: React.FC<DashboardMatchesViewProps> = ({
   const handleClosePhotoModal = useCallback(() => {
     setSelectedProfileForPhoto(null);
   }, []);
+
+  const handleViewProfile = useCallback(
+    (profile: MatchDetailProfile) => {
+      const targetId = profile.matrimonyId || profile.id;
+      router.push(`/matches/viewprofile/${targetId}`);
+    },
+    [router]
+  );
 
   // Counts
   const categoryCounts = useMemo<Partial<Record<MatchCategoryType, number>>>(() => {
@@ -337,6 +387,7 @@ const DashboardMatchesViewComponent: React.FC<DashboardMatchesViewProps> = ({
                   onRequestPhoto={handleRequestPhoto}
                   onCallClick={handleCallClick}
                   onWhatsAppClick={handleWhatsAppClick}
+                  onViewProfile={handleViewProfile}
                 />
 
                 {/* In-feed Assisted Service Banner after Card 3 */}

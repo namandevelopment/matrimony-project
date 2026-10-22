@@ -8,12 +8,14 @@ import {
   UserCheck, 
   Sparkles, 
   Trash2, 
-  Eye, 
   EyeOff, 
   Star, 
   Trophy, 
   Filter,
   RefreshCw,
+  Edit3,
+  CheckCircle2,
+  Clock,
 } from 'lucide-react';
 import { crmDataService } from '../../services/crmDataService';
 import type { SuccessStory } from '../../types/crm.types';
@@ -77,6 +79,8 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingStory, setEditingStory] = useState<SuccessStory | null>(null);
+  const [editStoryData, setEditStoryData] = useState<Partial<SuccessStory>>({});
 
   // Form state via useInputs
   const {
@@ -207,6 +211,71 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
       } catch {
         // Handled locally
       }
+    }
+  };
+
+  const handleOpenEdit = (story: SuccessStory) => {
+    setEditingStory(story);
+    setEditStoryData({
+      groomName: story.groomName,
+      brideName: story.brideName,
+      weddingDate: story.weddingDate,
+      engagementDate: story.engagementDate || '',
+      city: story.city,
+      subcaste: story.subcaste,
+      storyTitle: story.storyTitle,
+      storyDescription: story.storyDescription,
+      couplePhoto: story.couplePhoto,
+      attributedEmployeeName: story.attributedEmployeeName || 'Admin Desk',
+      status: story.status,
+      featuredOnHome: story.featuredOnHome,
+      profilesArchived: story.profilesArchived,
+    });
+  };
+
+  const handleSaveEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStory) return;
+    if (!editStoryData.groomName || !editStoryData.brideName || !editStoryData.storyTitle) {
+      toast.error('Groom name, Bride name and Story Title are required');
+      return;
+    }
+
+    const targetId = editingStory.id;
+    crmDataService.updateSuccessStory(targetId, editStoryData);
+    setStories((prev) =>
+      prev.map((s) => (s.id === targetId || s.storyId === targetId ? { ...s, ...editStoryData } : s))
+    );
+    setEditingStory(null);
+    toast.success('Success story updated and saved successfully');
+
+    // Sync to Backend MongoDB API
+    try {
+      await apiFetch.put(ApiURL.adminSuccessStoryDetail(targetId), editStoryData, {
+        isToken: true,
+        showErrorToast: false,
+      });
+    } catch {
+      // Handled locally
+    }
+  };
+
+  const handleQuickApprove = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    crmDataService.updateSuccessStory(id, { status: 'PUBLISHED', featuredOnHome: true });
+    setStories((prev) =>
+      prev.map((s) => (s.id === id || s.storyId === id ? { ...s, status: 'PUBLISHED' as const, featuredOnHome: true } : s))
+    );
+    toast.success('Story approved and published to website feed!');
+
+    // Sync to Backend MongoDB API
+    try {
+      await apiFetch.put(ApiURL.adminSuccessStoryDetail(id), { status: 'PUBLISHED', isActive: true, isVerified: true }, {
+        isToken: true,
+        showErrorToast: false,
+      });
+    } catch {
+      // Handled locally
     }
   };
 
@@ -388,7 +457,7 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
               onClick={() => setFilterField('statusFilter', 'DRAFT')}
               className={`px-3 py-1.5 rounded-md transition-colors ${filters.statusFilter === 'DRAFT' ? 'bg-white shadow text-amber-700 font-bold' : 'text-slate-600 hover:text-slate-900'}`}
             >
-              Drafts ({kpis.total - kpis.published})
+              Pending Submissions ({kpis.total - kpis.published})
             </button>
           </div>
         </div>
@@ -399,7 +468,9 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
         {filteredStories.map((story) => (
           <div
             key={story.id}
-            className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+            className={`bg-white rounded-2xl border transition-all flex flex-col justify-between overflow-hidden shadow-sm hover:shadow-md ${
+              story.status !== 'PUBLISHED' ? 'border-amber-300 ring-1 ring-amber-200' : 'border-slate-200'
+            }`}
           >
             <div>
               {/* Image banner */}
@@ -409,13 +480,23 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
                   alt={`${story.groomName} & ${story.brideName}`}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute top-3 left-3 flex gap-2">
-                  <span className={`px-2.5 py-1 text-xs font-bold rounded-full shadow backdrop-blur-md ${
+                <div className="absolute top-3 left-3 flex gap-2 flex-wrap">
+                  <span className={`px-2.5 py-1 text-xs font-bold rounded-full shadow backdrop-blur-md flex items-center gap-1 ${
                     story.status === 'PUBLISHED' 
                       ? 'bg-emerald-600/90 text-white' 
-                      : 'bg-amber-600/90 text-white'
+                      : 'bg-amber-600/95 text-white'
                   }`}>
-                    {story.status}
+                    {story.status === 'PUBLISHED' ? (
+                      <>
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>Live on Web</span>
+                      </>
+                    ) : (
+                      <>
+                        <Clock className="w-3 h-3" />
+                        <span>Pending Approval</span>
+                      </>
+                    )}
                   </span>
                   {story.featuredOnHome && (
                     <span className="px-2.5 py-1 text-xs font-bold bg-amber-500/90 text-white rounded-full shadow backdrop-blur-md flex items-center gap-1">
@@ -432,9 +513,16 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
 
               {/* Content Body */}
               <div className="p-5">
-                <h3 className="font-bold text-slate-900 text-lg">
-                  {story.groomName} & {story.brideName}
-                </h3>
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="font-bold text-slate-900 text-lg">
+                    {story.groomName} & {story.brideName}
+                  </h3>
+                  {story.status !== 'PUBLISHED' && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                      User Request
+                    </span>
+                  )}
+                </div>
                 
                 <div className="flex items-center gap-3 text-xs text-slate-500 mt-1 mb-3">
                   <span className="flex items-center gap-1">
@@ -465,28 +553,40 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
 
             {/* Actions Footer */}
             <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-2">
+              {story.status !== 'PUBLISHED' ? (
+                <button
+                  type="button"
+                  onClick={(e) => handleQuickApprove(story.id, e)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer shadow-xs"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Approve & Publish</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={(e) => handleTogglePublish(story.id, e)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer"
+                >
+                  <EyeOff className="w-3.5 h-3.5" />
+                  <span>Unpublish</span>
+                </button>
+              )}
+
               <button
-                onClick={(e) => handleTogglePublish(story.id, e)}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold rounded-lg border transition-colors cursor-pointer ${
-                  story.status === 'PUBLISHED'
-                    ? 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                    : 'border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800'
-                }`}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenEdit(story);
+                }}
+                className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg border border-slate-200 bg-white transition-colors cursor-pointer"
+                title="Edit Success Story"
               >
-                {story.status === 'PUBLISHED' ? (
-                  <>
-                    <EyeOff className="w-3.5 h-3.5" />
-                    <span>Unpublish</span>
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Publish to Web</span>
-                  </>
-                )}
+                <Edit3 className="w-4 h-4" />
               </button>
 
               <button
+                type="button"
                 onClick={(e) => handleDelete(story.id, e)}
                 className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                 title="Delete Story"
@@ -679,6 +779,195 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
                   className="px-5 py-2 bg-rose-900 hover:bg-rose-800 text-white rounded-lg text-sm font-semibold shadow cursor-pointer"
                 >
                   Save & Publish Story
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Edit Success Story Modal Dialog */}
+      {editingStory && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 my-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Edit Success Story &amp; Moderation</h3>
+                  <p className="text-xs text-slate-500">
+                    ID: <strong className="text-slate-800">{editingStory.storyId}</strong> • Couple: {editingStory.groomName} &amp; {editingStory.brideName}
+                  </p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setEditingStory(null)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg text-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <CustomTextInput
+                  label="Groom Full Name *"
+                  required
+                  value={editStoryData.groomName || ''}
+                  onChange={(e) => setEditStoryData((prev) => ({ ...prev, groomName: e.target.value }))}
+                  size="sm"
+                />
+                <CustomTextInput
+                  label="Bride Full Name *"
+                  required
+                  value={editStoryData.brideName || ''}
+                  onChange={(e) => setEditStoryData((prev) => ({ ...prev, brideName: e.target.value }))}
+                  size="sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <CustomTextInput
+                  label="Wedding Date *"
+                  type="date"
+                  required
+                  value={editStoryData.weddingDate || ''}
+                  onChange={(e) => setEditStoryData((prev) => ({ ...prev, weddingDate: e.target.value }))}
+                  size="sm"
+                />
+                <CustomTextInput
+                  label="Engagement Date (Optional)"
+                  type="date"
+                  value={editStoryData.engagementDate || ''}
+                  onChange={(e) => setEditStoryData((prev) => ({ ...prev, engagementDate: e.target.value }))}
+                  size="sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <CustomTextInput
+                  label="City / Settlement *"
+                  value={editStoryData.city || ''}
+                  onChange={(e) => setEditStoryData((prev) => ({ ...prev, city: e.target.value }))}
+                  size="sm"
+                />
+                <CustomDropDown
+                  label="Subcaste / Community"
+                  value={editStoryData.subcaste || 'Amil'}
+                  onChange={(val) => setEditStoryData((prev) => ({ ...prev, subcaste: String(val) }))}
+                  options={[
+                    { value: 'Amil', label: 'Amil' },
+                    { value: 'Bhaiband', label: 'Bhaiband' },
+                    { value: 'Sahiti', label: 'Sahiti' },
+                    { value: 'Lohana', label: 'Lohana' },
+                    { value: 'Larkana', label: 'Larkana' },
+                    { value: 'Shikarpuri', label: 'Shikarpuri' },
+                    { value: 'Dadu', label: 'Dadu' },
+                    { value: 'Sukkur', label: 'Sukkur' },
+                    { value: 'Hyderabadi', label: 'Hyderabadi' },
+                    { value: 'Sindhi (General)', label: 'Sindhi (General)' },
+                  ]}
+                  size="sm"
+                />
+              </div>
+
+              <CustomTextInput
+                label="Story Headline / Title *"
+                required
+                value={editStoryData.storyTitle || ''}
+                onChange={(e) => setEditStoryData((prev) => ({ ...prev, storyTitle: e.target.value }))}
+                size="sm"
+              />
+
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Full Couple Narrative / Testimonial *
+                </label>
+                <textarea
+                  rows={4}
+                  value={editStoryData.storyDescription || ''}
+                  onChange={(e) => setEditStoryData((prev) => ({ ...prev, storyDescription: e.target.value }))}
+                  className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 bg-slate-50/50"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <CustomTextInput
+                  label="Couple High-Res Photo URL"
+                  value={editStoryData.couplePhoto || ''}
+                  onChange={(e) => setEditStoryData((prev) => ({ ...prev, couplePhoto: e.target.value }))}
+                  size="sm"
+                />
+                {editStoryData.couplePhoto && (
+                  <div className="mt-2 h-24 w-36 rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
+                    <img
+                      src={editStoryData.couplePhoto}
+                      alt="Couple preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <CustomTextInput
+                  label="Attributed RM / Matchmaker"
+                  value={editStoryData.attributedEmployeeName || 'Admin Desk'}
+                  onChange={(e) => setEditStoryData((prev) => ({ ...prev, attributedEmployeeName: e.target.value }))}
+                  size="sm"
+                />
+
+                <CustomDropDown
+                  label="Moderation Status"
+                  value={editStoryData.status || 'PUBLISHED'}
+                  onChange={(val) => setEditStoryData((prev) => ({ ...prev, status: val as any }))}
+                  options={[
+                    { value: 'PUBLISHED', label: 'Published (Live on Website & Feed)' },
+                    { value: 'DRAFT', label: 'Draft / Pending (Internal Review)' },
+                  ]}
+                  size="sm"
+                />
+              </div>
+
+              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-2.5">
+                <label className="flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(editStoryData.featuredOnHome)}
+                    onChange={(e) => setEditStoryData((prev) => ({ ...prev, featuredOnHome: e.target.checked }))}
+                    className="rounded text-rose-600 focus:ring-rose-500"
+                  />
+                  <span>Feature on Homepage Testimonials Carousel</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(editStoryData.profilesArchived)}
+                    onChange={(e) => setEditStoryData((prev) => ({ ...prev, profilesArchived: e.target.checked }))}
+                    className="rounded text-rose-600 focus:ring-rose-500"
+                  />
+                  <span>Mark both profiles as <strong>MARRIED</strong> (prevent new proposals)</span>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingStory(null)}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold shadow cursor-pointer"
+                >
+                  Save Changes &amp; Update Story
                 </button>
               </div>
             </form>
