@@ -14,8 +14,8 @@
 ### 1. Local Development (Port 5001)
 @baseUrl = http://localhost:5001/api/v1
 ### 2. Vercel Live Production
-### @baseUrl = https://sindhi-matrimony-backend.vercel.app/api/v1
-@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhZDVkOTM5MDBlYWRmZTEwMzljNDc3MiIsInVzZXJJZCI6IjZhZDVkOTM5MDBlYWRmZTEwMzljNDc3MiIsInBob25lIjoiOTgyOTAxMjM0NSIsInJvbGUiOjEsImFjdGl2ZVByb2ZpbGVJZCI6IjZhZDVkOTM5MDBlYWRmZTEwMzljNDc3MyIsImlhdCI6MTc5MjM5OTY3MywiZXhwIjoxNzkyNTcyNDczfQ.uqdroCRSqq0klUPfP55elbHIo4OKxId-xtVzomdCV1I
+# @baseUrl = https://sindhi-matrimony-backend.vercel.app/api/v1
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YWRiMjBhZTQzOGI4YjUwZDRlYWFlYWEiLCJyb2xlIjo2LCJwaG9uZSI6Ijk4NzY1NDMyMTAiLCJwcm9maWxlSWQiOiI2YWRiMjBhZTQzOGI4YjUwZDRlYWFlYWIiLCJhY3RpdmVQcm9maWxlSWQiOiI2YWRiMjBhZTQzOGI4YjUwZDRlYWFlYWIiLCJwcm9maWxlUm9sZSI6Ik9XTkVSIiwiaWF0IjoxNzkyNzQ1NjQ2LCJleHAiOjE3OTI5MTg0NDZ9.Eegq-TgzsF_sSXSn79c2LFVF7Rf6jLD2XIekc9ihL7o
 @profileId = 6ad467f1c77f327e52a82dfc
 @grantId = 67b34a12c8e312a0f9000002
 @photoId = 67b34a12c8e312a0f9000003
@@ -41,7 +41,7 @@ POST {{baseUrl}}/auth/send-otp
 Content-Type: application/json
 
 {
-  "phone": "9829012345",
+  "phone": "9876543210",
   "countryCode": "+91",
   "purpose": "REGISTER"
 }
@@ -52,10 +52,10 @@ POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
-  "phone": "9829012345",
-  "otp": "1234",
+  "phone": "9876543210",
+  "otp": "8989",
   "password": "Password123@",
-  "name": "Rohan Advani",
+  "name": "Testing User",
   "gender": "MALE",
   "profileFor": "MYSELF",
   "countryCode": "+91",
@@ -67,7 +67,7 @@ Content-Type: application/json
   "education": "B.Tech Computer Science",
   "profession": "Software Engineer",
   "annualIncome": 1800000,
-  "city": "Jaipur",
+  "city": "Ajmer",
   "state": "Rajasthan",
   "nativePlace": "Ajmer"
 }
@@ -87,26 +87,49 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "identifier": "+91 98290 12345",
+  "identifier": "+91 9876543210",
   "password": "Password123@",
-  "clientPlatform": "MOBILE"
+  "fcmToken": "c_sample_firebase_device_token_xyz123",
+  "clientPlatform": "WEB"
 }
 
-### 2.4 Forgot Password (Send OTP to Registered Mobile Number)
+### 2.4 Forgot Password (Send OTP to Registered Mobile Number - No Premature Token)
 POST {{baseUrl}}/auth/forgot-password
 Content-Type: application/json
 
 {
-  "phone": "9829012345",
+  "phone": "9876543210",
   "countryCode": "+91"
 }
 
-### 2.5 Reset Password (Verify OTP & Set New Password)
+### 2.4.1 Verify Password Reset OTP (Issues short-lived single-use resetToken)
+POST {{baseUrl}}/auth/verify-otp
+Content-Type: application/json
+
+{
+  "phone": "9876543210",
+  "otp": "1234",
+  "purpose": "RESET_PASSWORD",
+  "countryCode": "+91"
+}
+
+### 2.5 Reset Password (Set New Password with verified single-use resetToken)
 POST {{baseUrl}}/auth/reset-password
 Content-Type: application/json
 
 {
-  "phone": "9829012345",
+  "phone": "9876543210",
+  "newPassword": "NewSecretPassword123@",
+  "countryCode": "+91",
+  "token": "REPLACE_WITH_RESET_TOKEN_FROM_VERIFY_OTP_RESPONSE"
+}
+
+### 2.5.1 Combined 1-Step Reset Password (Alternative direct OTP verification)
+POST {{baseUrl}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "phone": "9876543210",
   "otp": "1234",
   "newPassword": "NewSecretPassword123@",
   "countryCode": "+91"
@@ -127,7 +150,7 @@ POST {{baseUrl}}/auth/check-phone
 Content-Type: application/json
 
 {
-  "phone": "9829012345",
+  "phone": "9876543210",
   "countryCode": "+91"
 }
 
@@ -926,14 +949,14 @@ Content-Type: application/json
 ### ============================================================================
 ### 14. ADMIN DASHBOARD & CRM MODULE (SUB-1MS IN-MEMORY SPEED)
 ### ============================================================================
-
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImVtcF8wMDEiLCJlbXBsb3llZUlkIjoiRU1QMDAxIiwiZW1haWwiOiJhZG1pbkBzaW5kaGltYXJyaWFnZS5pbiIsInJvbGUiOiJTVVBFUl9BRE1JTiIsInJvbGVDb2RlIjoxLCJpYXQiOjE3OTI3NTI2NjIsImV4cCI6MTc5MjkyNTQ2Mn0.TKdzg9QeDQARG1ETikQmkJ58rCMUY8bTF6M-G6ORFLo
 ### 14.1 Admin Super Admin Login (Generates adminToken)
 POST {{baseUrl}}/auth/admin/login
 Content-Type: application/json
 
 {
   "email": "admin@sindhimarriage.in",
-  "password": "Password@123"
+  "password": "Admin@1234"
 }
 
 ### 14.2 Get Admin Dashboard KPI Stats (Top Counts: Total Members, Male/Female, Inactive, Revenue)
@@ -961,4 +984,640 @@ GET {{baseUrl}}/admin/verifications/pending
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
+### 14.7 Get Admin Operational Alerts Feed (Default & Pagination)
+GET {{baseUrl}}/admin/notifications?page=1&limit=10
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 14.8 Get Admin Operational Alerts Feed (Filtered by Category & Priority)
+GET {{baseUrl}}/admin/notifications?category=VERIFICATION&priority=HIGH&isRead=false
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 14.9 Error Scenario: Invalid Category Validation (Expect 400)
+GET {{baseUrl}}/admin/notifications?category=INVALID_CATEGORY
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 14.10 Get Admin Notification Unread Count (Bell Badge)
+GET {{baseUrl}}/admin/notifications/unread-count
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 14.11 Mark Notification as Read (Specific ID)
+PUT {{baseUrl}}/admin/notifications/adm_notif_001/read
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 14.12 Error Scenario: Mark Read on Non-Existent ID (Expect 404)
+PUT {{baseUrl}}/admin/notifications/non_existent_999/read
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 14.13 Bulk Mark All Notifications as Read
+PUT {{baseUrl}}/admin/notifications/mark-read
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "markAll": true
+}
+
+### 14.14 Send Broadcast Notification (Success Scenario)
+POST {{baseUrl}}/admin/notifications/broadcast
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "title": "🎉 Weekend Matchmaking Mixer",
+  "body": "Special matchmaking mixer this Sunday! Over 500 active profiles available.",
+  "targetAudience": "ACTIVE_USERS",
+  "channel": "PUSH",
+  "priority": "HIGH",
+  "deepLink": "/mixer"
+}
+
+### 14.15 Error Scenario: Broadcast Missing Title/Body (Expect 400)
+POST {{baseUrl}}/admin/notifications/broadcast
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "title": "",
+  "body": "",
+  "targetAudience": "ALL_USERS"
+}
+
+### 14.16 Error Scenario: SPECIFIC_USERS without userIds (Expect 400)
+POST {{baseUrl}}/admin/notifications/broadcast
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "title": "Account Alert",
+  "body": "Please complete your photo verification.",
+  "targetAudience": "SPECIFIC_USERS",
+  "userIds": []
+}
+
+### 14.17 Get Broadcast Delivery Logs
+GET {{baseUrl}}/admin/notifications/logs?page=1&limit=10
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### ============================================================================
+### 15. MARKETING & CAMPAIGNS MODULE (`/campaigns`)
+### ============================================================================
+
+### 15.1 Get Marketing Campaigns List (Default Pagination & Analytics)
+GET {{baseUrl}}/admin/campaigns?page=1&limit=10
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 15.2 Get Campaigns Filtered by Status & Placement
+GET {{baseUrl}}/admin/campaigns?status=LIVE&placement=HOME_POPUP&channel=PUSH
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 15.3 Error Scenario: Invalid Campaign Status Filter (Expect 400)
+GET {{baseUrl}}/admin/campaigns?status=INVALID_STATUS
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 15.4 Create New Marketing Campaign (Push / Banner)
+POST {{baseUrl}}/admin/campaigns
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Diwali Rishta Utsav 2026",
+  "advertiserName": "Sindhi Matrimony Growth Team",
+  "channel": "PUSH",
+  "objective": "Festive membership conversions",
+  "placement": "HOME_POPUP",
+  "targetPlatform": "BOTH",
+  "targetAudience": "FREE_USERS",
+  "title": "✨ Diwali Dhamaka: 40% Off on All Gold Subscriptions!",
+  "message": "Connect with verified Sindhi families across India and UAE. Use code DIWALI40.",
+  "creativeUrl": "https://images.unsplash.com/photo-1511795409834-ef04bbd61622",
+  "destinationUrl": "/plans?coupon=DIWALI40",
+  "cta": "Claim Festive Discount",
+  "startDate": "2026-10-25T00:00:00.000Z",
+  "endDate": "2026-11-05T23:59:59.000Z",
+  "pricingModel": "FIXED_PLACEMENT",
+  "price": 20000
+}
+
+### 15.5 Error Scenario: SMS Campaign Without Message (Expect 400)
+POST {{baseUrl}}/admin/campaigns
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Invalid SMS Campaign",
+  "channel": "SMS",
+  "targetAudience": "ACTIVE_USERS",
+  "message": ""
+}
+
+### 15.6 Get Campaign Details by ID
+GET {{baseUrl}}/admin/campaigns/CMP_101
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 15.7 Update Campaign Schedule & Creative
+PUT {{baseUrl}}/admin/campaigns/CMP_101
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "cta": "Upgrade Now & Save 50%",
+  "price": 18000
+}
+
+### 15.8 Launch Campaign (Trigger Immediate Delivery)
+POST {{baseUrl}}/admin/campaigns/CMP_103/launch
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 15.9 Pause Live Campaign
+POST {{baseUrl}}/admin/campaigns/CMP_101/pause
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "reason": "Mid-campaign creative copy refresh"
+}
+
+### 15.10 Get In-App Promotional Popups List
+GET {{baseUrl}}/admin/campaigns/popups?status=ALL
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 15.11 Create In-App Promotional Popup
+POST {{baseUrl}}/admin/campaigns/popups
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "title": "Sindhi Samiti Youth Sammelan 2026",
+  "subtitle": "Meet 200+ prospective matches in person at Ahmedabad Convention",
+  "placement": "DISCOUNT_MODAL",
+  "targetPlatform": "BOTH",
+  "ctaText": "Register Seat",
+  "ctaLink": "/events/ahmedabad-sammelan-2026",
+  "couponCode": "SAMMELAN10",
+  "discountPercentage": 10,
+  "dismissible": true,
+  "startDate": "2026-11-01T00:00:00.000Z",
+  "endDate": "2026-11-20T23:59:59.000Z"
+}
+
+### 15.12 Error Scenario: Popup with End Date Before Start Date (Expect 400)
+POST {{baseUrl}}/admin/campaigns/popups
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "title": "Invalid Date Popup",
+  "placement": "HOME_SPLASH",
+  "ctaText": "Click Here",
+  "startDate": "2026-11-20T00:00:00.000Z",
+  "endDate": "2026-11-01T00:00:00.000Z"
+}
+
+### 15.13 Get Campaign Analytics Breakdown
+GET {{baseUrl}}/admin/campaigns/CMP_101/analytics
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### ============================================================================
+### 15b. ADVERTISEMENTS & PARTNER DEALS MODULE (`/ads`)
+### ============================================================================
+
+### 15b.1 List All Partner Deals & Ads (Admin)
+GET {{baseUrl}}/admin/ads?page=1&limit=10&status=ALL
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 15b.2 Create New Partner Deal with Multiple Photos (Admin)
+POST {{baseUrl}}/admin/ads
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Pure 925 Silver Couple Promise Bands",
+  "categoryLabel": "💍 Rings",
+  "categories": ["Rings", "Engagement", "Silver", "Gifts"],
+  "price": 549,
+  "originalPrice": 1899,
+  "platform": "Amazon",
+  "badge": "Top Engagement Gift",
+  "imageSrc": "/images/dashboard/gift_couple_rings.jpg",
+  "images": [
+    "/images/dashboard/gift_couple_rings.jpg",
+    "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600&auto=format&fit=crop&q=80"
+  ],
+  "description": "Adjustable authentic sterling silver promise rings with certificate.",
+  "couponCode": "AMZSILVER50",
+  "affiliateUrl": "https://www.amazon.in/s?k=couple+rings+silver&tag=sindhimatrimony-21",
+  "status": "ACTIVE",
+  "priority": 10
+}
+
+### 15b.3 Toggle Partner Deal Status (Admin)
+PATCH {{baseUrl}}/admin/ads/AD_COUPLE_RINGS/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 15b.4 Fetch Active Deals for Registered User Panel
+GET {{baseUrl}}/ads
+Content-Type: application/json
+
+### ============================================================================
+### 16. MEMBER 360° - WHATSAPP BIODATA MAKER (`/members/:id/generate-biodata`)
+### ============================================================================
+
+### 16.1 Generate WhatsApp & PDF Biodata (Full Family Details & Instant 1-Click WhatsApp Link)
+POST {{baseUrl}}/admin/members/SM10001/generate-biodata
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "includeContact": true,
+  "template": "CLASSIC_SINDHI",
+  "watermark": "Verified by Sindhi Matrimony Matchmaking Desk"
+}
+
+### 16.2 Generate Blind WhatsApp Biodata (Confidential Mode for Prospective Inquiries)
+POST {{baseUrl}}/admin/members/SM10001/generate-biodata
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "includeContact": false,
+  "isBlind": true,
+  "watermark": "Confidential Alliance Proposal"
+}
+
+### 16.3 Error Scenario: Non-Existent Member ID (Expect 404)
+POST {{baseUrl}}/admin/members/SM_NON_EXISTENT_999/generate-biodata
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### ============================================================================
+### 17. SETTINGS & SYSTEM CONFIGURATION MODULE (`/settings`)
+### ============================================================================
+
+### 17.1 Create New Subscription Plan
+POST {{baseUrl}}/admin/plans
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Platinum Elite NRI",
+  "tier": "PLATINUM",
+  "price": 14999,
+  "durationDays": 180,
+  "contactViewsQuota": 250,
+  "chatQuota": "Unlimited",
+  "horoscopeMatching": true,
+  "featuredListing": true,
+  "dedicatedAdvisor": true,
+  "status": "ACTIVE"
+}
+
+### 17.2 Update Existing Subscription Plan
+PUT {{baseUrl}}/admin/plans/plan_gold
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "price": 5499,
+  "contactViewsQuota": 75,
+  "featuredListing": true
+}
+
+### 17.3 Staff Change Account Password
+POST {{baseUrl}}/admin/auth/change-password
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "Admin@123",
+  "newPassword": "SecureAdmin#2026",
+  "confirmPassword": "SecureAdmin#2026"
+}
+
+### 17.4 Error Scenario: Staff Change Password With Wrong Current Password (Expect 400)
+POST {{baseUrl}}/admin/auth/change-password
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "WrongCurrentPassword!",
+  "newPassword": "SecureAdmin#2026",
+  "confirmPassword": "SecureAdmin#2026"
+}
+
+### 17.5 Get Platform System Constants & Configuration
+GET {{baseUrl}}/admin/settings/config
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 17.6 Update Platform System Constants
+PUT {{baseUrl}}/admin/settings/config
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "operations": {
+    "freeContactViewsCount": 5,
+    "maxPhotosPerProfile": 12
+  },
+  "telephony": {
+    "recordingEnabled": true
+  }
+}
+
+### 17.7 Get Master Subcastes Registry
+GET {{baseUrl}}/admin/master/subcastes
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 17.8 Add New Sindhi Subcaste
+POST {{baseUrl}}/admin/master/subcastes
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Rochiram",
+  "aliases": ["Rochirami", "Rochiramis"],
+  "description": "Lineage tracing to Upper Sindh commercial families.",
+  "historicalRegion": "Upper Sindh",
+  "displayOrder": 11
+}
+
+### 17.9 Update Existing Sindhi Subcaste
+PUT {{baseUrl}}/admin/master/subcastes/Amil
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "aliases": ["Amils", "Amil Sindhi"],
+  "displayOrder": 1
+}
+
+### 17.10 Get Master Gotras Catalog
+GET {{baseUrl}}/admin/master/gotras
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 17.11 Add New Sindhi Gotra
+POST {{baseUrl}}/admin/master/gotras
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "gotraName": "Sadhwani",
+  "subcaste": "Bhaiband",
+  "surnames": ["Sadhwani", "Sadhwani-Sindhi"]
+}
+
+### 17.12 Update Existing Sindhi Gotra
+PUT {{baseUrl}}/admin/master/gotras/Advani
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "surnames": ["Advani", "Adwani", "Advani-Amil"]
+}
+
+### ============================================================================
+### 18. MEMBERS MANAGEMENT MODULE (`/members`)
+### ============================================================================
+
+### 18.1 Staff Manual Candidate Registration (Success 201)
+POST {{baseUrl}}/admin/members
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Varun Chhabria",
+  "gender": "MALE",
+  "phone": "9820098765",
+  "email": "varun.chhabria@example.com",
+  "age": 29,
+  "dateOfBirth": "1997-04-12T00:00:00.000Z",
+  "height": 178,
+  "maritalStatus": "NEVER_MARRIED",
+  "subcaste": "Amil",
+  "gotra": "Chhabria",
+  "motherGotra": "Advani",
+  "manglik": "NON_MANGLIK",
+  "education": {
+    "degree": "B.Tech in Computer Science",
+    "college": "IIT Bombay"
+  },
+  "profession": {
+    "occupation": "Principal Software Architect",
+    "companyName": "Microsoft India",
+    "annualIncome": 3800000
+  },
+  "location": {
+    "city": "Bengaluru",
+    "state": "Karnataka",
+    "country": "India"
+  },
+  "membershipTier": "GOLD",
+  "isVerified": true
+}
+
+### 18.2 Error Scenario: Candidate Registration Under 18 Years (Expect 400)
+POST {{baseUrl}}/admin/members
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Underage Candidate",
+  "gender": "FEMALE",
+  "phone": "9820011122",
+  "age": 16,
+  "dateOfBirth": "2010-01-01T00:00:00.000Z"
+}
+
+### 18.3 Staff Editing Member Biodata (Success 200)
+PUT {{baseUrl}}/admin/members/SM10001
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "profession": {
+    "occupation": "Senior Vice President",
+    "annualIncome": 4500000
+  },
+  "aboutMe": "Promoted to Senior VP. Dedicated to family, cultural values, and philanthropic initiatives.",
+  "membershipTier": "DIAMOND",
+  "isVerified": true
+}
+
+### 18.4 Error Scenario: Edit Non-Existent Member ID (Expect 404)
+PUT {{baseUrl}}/admin/members/SM_NON_EXISTENT_999
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Non Existent Member"
+}
+
+### ============================================================================
+### 19. MATCH RESPONSES & PROPOSAL CLEARINGHOUSE (`/matchmaking/responses`)
+### ============================================================================
+
+### 19.1 Get Match Responses Clearinghouse Directory
+GET {{baseUrl}}/admin/matchmaking/responses?page=1&limit=10
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 19.2 Filter Match Responses by Stage (MEETING_FIXED)
+GET {{baseUrl}}/admin/matchmaking/responses?stage=MEETING_FIXED
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 19.3 Staff Recording Candidate Phone Consent
+POST {{baseUrl}}/admin/matchmaking/record-response
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "proposalId": "MR_702",
+  "candidateId": "SM10004",
+  "response": "ACCEPTED",
+  "feedbackReason": "Profiles match well. Excited for parental tele-conference.",
+  "phoneNotes": "Spoke with Ananya and her mother. Agreed to proceed with joint call."
+}
+
+### 19.4 Staff Recording Candidate Phone Consent (Declined Alliance)
+POST {{baseUrl}}/admin/matchmaking/record-response
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "proposalId": "MR_702",
+  "candidateId": "SM10004",
+  "response": "DECLINED",
+  "feedbackReason": "Relocation preference does not match expectations."
+}
+
+### 19.5 Error Scenario: Record Response for Unrelated Candidate (Expect 400)
+POST {{baseUrl}}/admin/matchmaking/record-response
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "proposalId": "MR_701",
+  "candidateId": "SM99999",
+  "response": "ACCEPTED"
+}
+
+### 19.6 Advance Proposal Stage to Meeting Fixed
+PUT {{baseUrl}}/admin/matchmaking/responses/MR_703/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "stage": "MEETING_FIXED",
+  "meetingDetails": {
+    "date": "2026-11-05",
+    "time": "05:00 PM",
+    "venue": "ITC Rajputana, Jaipur",
+    "attendees": "Both Families & RM Simran Khatri",
+    "agenda": "Formal Kachhi Misri and horoscope agreement"
+  },
+  "notes": "Both parents finalized date and venue over conference call."
+}
+
+### 19.7 Error Scenario: Advance Stage for Non-Existent Proposal (Expect 404)
+PUT {{baseUrl}}/admin/matchmaking/responses/MR_NON_EXISTENT/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "stage": "DROPPED",
+  "dropReason": "Test drop"
+}
+
+### ============================================================================
+### 20. MASTER SETTINGS & GLOBAL TOGGLES MODULE (`/master-settings`)
+### ============================================================================
+
+### 20.1 Get Global Master Settings & Platform Toggles
+GET {{baseUrl}}/admin/master-settings
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 20.2 Update Global Platform Toggles (SMS, Razorpay, Maintenance)
+PUT {{baseUrl}}/admin/master-settings
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "maintenanceMode": {
+    "enabled": false,
+    "message": "Routine database maintenance complete. Systems fully operational."
+  },
+  "smsGateway": {
+    "enabled": true,
+    "provider": "FAST2SMS",
+    "dltApproved": true,
+    "rateLimitPerMinute": 5
+  },
+  "paymentGateway": {
+    "enabled": true,
+    "provider": "RAZORPAY",
+    "sandboxMode": false
+  },
+  "features": {
+    "horoscopeGunaMilan": true,
+    "inAppChat": true,
+    "biodataPdfDownload": true
+  }
+}
+
+### ============================================================================
+### 21. ADMIN TOOLS & DIAGNOSTICS (`/tools`)
+### ============================================================================
+
+### 21.1 Telemetry Health Check (MongoDB, Redis & Socket status)
+GET {{baseUrl}}/admin/tools/health
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 21.2 Flush Redis Memory Cache (All Keys)
+POST {{baseUrl}}/admin/tools/cache/clear
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "scope": "ALL"
+}
+
+### 21.3 Flush Redis Memory Cache (Scoped to PROFILES)
+POST {{baseUrl}}/admin/tools/cache/clear
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "scope": "PROFILES"
+}
+
+### 21.4 Rebuild Search & Database Collection Indexes
+POST {{baseUrl}}/admin/tools/reindex
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 21.5 Trigger Encrypted Database Backup Dump
+GET {{baseUrl}}/admin/tools/export-backup?format=encrypted&encrypt=true
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
 

@@ -15,4 +15,7 @@ router.post("/verify-mfa", authRateLimiter, verifyAdminMfa);
 router.get("/me", getAdminProfile);
 router.post("/logout", adminLogout);
 
+import { adminChangePassword } from "../../controllers/admin/adminSettingsController.js";
+router.post("/change-password", adminChangePassword);
+
 export default router;

@@ -25,6 +25,7 @@ import {
   getDashboardActionQueuesInMemory,
   getDashboardChartsDataInMemory,
   findProfileByIdInMemory,
+  registerCandidateInMemory,
 } from "../../services/realDataService.js";
 
 // ============================================================================
@@ -143,6 +144,251 @@ export const verifyMember = asyncHandler(async (req, res) => {
     CONSTANTS.ERROR_FALSE
   );
 });
+
+export const createMember = asyncHandler(async (req, res) => {
+  const {
+    name,
+    gender,
+    phone,
+    mobile,
+    email,
+    dateOfBirth,
+    dob,
+    age,
+    height,
+    maritalStatus = "NEVER_MARRIED",
+    subcaste = "Bhaiband",
+    gotra = "Advani",
+    motherGotra = "Vaswani",
+    manglik = "NON_MANGLIK",
+    education = {},
+    profession = {},
+    location = {},
+    family = {},
+    partnerPreference = {},
+    aboutMe,
+    avatar,
+    membershipTier = "FREE",
+    isVerified = false,
+  } = req.body;
+
+  if (!name || typeof name !== "string" || name.trim().length < 2) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_BAD_REQUEST,
+      "Validation Failed: 'name' is required and must contain at least 2 characters.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.BAD_REQUEST,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const candidateGender = (gender || "").toString().toUpperCase();
+  if (candidateGender !== "MALE" && candidateGender !== "FEMALE") {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_BAD_REQUEST,
+      "Validation Failed: 'gender' is required and must be either 'MALE' or 'FEMALE'.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.BAD_REQUEST,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const rawPhone = phone || mobile || "";
+  const cleanPhone = String(rawPhone).replace(/\D/g, "");
+  if (cleanPhone.length < 10) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_BAD_REQUEST,
+      "Validation Failed: A valid 10-digit phone/mobile number is required.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.BAD_REQUEST,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  let calculatedAge = Number(age);
+  const resolvedDob = dateOfBirth || dob;
+  if (resolvedDob) {
+    const birthDate = new Date(resolvedDob);
+    if (!isNaN(birthDate.getTime())) {
+      const today = new Date();
+      let diffAge = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        diffAge--;
+      }
+      calculatedAge = diffAge;
+    }
+  }
+
+  if (calculatedAge && calculatedAge < 18) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_BAD_REQUEST,
+      "Validation Failed: Candidate must be at least 18 years old.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.BAD_REQUEST,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const finalAge = calculatedAge || (candidateGender === "FEMALE" ? 25 : 28);
+
+  const userPayload = {
+    phone: cleanPhone,
+    name: name.trim(),
+    email: email || `${cleanPhone}@sindhimarriage.in`,
+    role: 1,
+    status: "ACTIVE",
+    isPhoneVerified: true,
+    isEmailVerified: Boolean(email),
+  };
+
+  const profilePayload = {
+    name: name.trim(),
+    gender: candidateGender,
+    dateOfBirth: resolvedDob || new Date(Date.now() - finalAge * 365.25 * 24 * 3600 * 1000).toISOString(),
+    age: finalAge,
+    height: Number(height) || (candidateGender === "FEMALE" ? 165 : 175),
+    maritalStatus: maritalStatus.toUpperCase(),
+    subcaste: subcaste.trim(),
+    gotra: gotra.trim(),
+    motherGotra: motherGotra.trim(),
+    manglik: manglik.toUpperCase(),
+    education: typeof education === "object" ? education : { degree: String(education), field: "General", college: "University" },
+    profession: typeof profession === "object" ? profession : { occupation: String(profession), companyName: "Business/Corporate", annualIncome: 1200000, currency: "INR" },
+    location: typeof location === "object" ? location : { city: String(location) || "Mumbai", state: "Maharashtra", country: "India" },
+    family: typeof family === "object" ? family : { familyType: "NUCLEAR", fatherOccupation: "Businessman", motherOccupation: "Homemaker" },
+    partnerPreference: typeof partnerPreference === "object" ? partnerPreference : {},
+    aboutMe: aboutMe || `Sindhi candidate looking for a compatible life partner.`,
+    avatar: avatar || (candidateGender === "FEMALE" ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600" : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600"),
+    membershipTier: membershipTier.toUpperCase(),
+    isVerified: Boolean(isVerified),
+  };
+
+  const registeredProfile = registerCandidateInMemory(userPayload, profilePayload);
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_CREATED,
+    `Candidate '${registeredProfile.name}' registered successfully with ID ${registeredProfile.matrimonyId}.`,
+    registeredProfile,
+    CONSTANTS.CREATED,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const updateMember = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const candidate = findProfileByIdInMemory(id);
+
+  if (!candidate) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      `Member profile with ID '${id}' not found.`,
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const {
+    name,
+    gender,
+    age,
+    dateOfBirth,
+    height,
+    maritalStatus,
+    subcaste,
+    gotra,
+    motherGotra,
+    manglik,
+    education,
+    profession,
+    location,
+    family,
+    partnerPreference,
+    aboutMe,
+    avatar,
+    photos,
+    membershipTier,
+    isVerified,
+    status,
+  } = req.body;
+
+  if (age !== undefined && Number(age) < 18) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_BAD_REQUEST,
+      "Validation Failed: Candidate age must be at least 18.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.BAD_REQUEST,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  if (name !== undefined) candidate.name = name.trim();
+  if (gender !== undefined) candidate.gender = gender.toUpperCase();
+  if (age !== undefined) candidate.age = Number(age);
+  if (dateOfBirth !== undefined) candidate.dateOfBirth = dateOfBirth;
+  if (height !== undefined) {
+    candidate.height = Number(height);
+    candidate.heightFormatted = `${Math.floor(Number(height) / 30.48)}'${Math.round((Number(height) % 30.48) / 2.54)}"`;
+  }
+  if (maritalStatus !== undefined) candidate.maritalStatus = maritalStatus.toUpperCase();
+  if (subcaste !== undefined) candidate.subcaste = subcaste.trim();
+  if (gotra !== undefined) candidate.gotra = gotra.trim();
+  if (motherGotra !== undefined) candidate.motherGotra = motherGotra.trim();
+  if (manglik !== undefined) candidate.manglik = manglik.toUpperCase();
+
+  if (education !== undefined) {
+    candidate.education = typeof education === "object" ? { ...candidate.education, ...education } : { degree: String(education) };
+  }
+  if (profession !== undefined) {
+    candidate.profession = typeof profession === "object" ? { ...candidate.profession, ...profession } : { occupation: String(profession) };
+  }
+  if (location !== undefined) {
+    candidate.location = typeof location === "object" ? { ...candidate.location, ...location } : { city: String(location) };
+  }
+  if (family !== undefined) {
+    candidate.family = typeof family === "object" ? { ...candidate.family, ...family } : candidate.family;
+  }
+  if (partnerPreference !== undefined) {
+    candidate.partnerPreference = typeof partnerPreference === "object" ? { ...candidate.partnerPreference, ...partnerPreference } : candidate.partnerPreference;
+  }
+  if (aboutMe !== undefined) candidate.aboutMe = aboutMe.trim();
+  if (avatar !== undefined) candidate.avatar = avatar.trim();
+  if (photos !== undefined && Array.isArray(photos)) candidate.photos = photos;
+  if (membershipTier !== undefined) candidate.membershipTier = membershipTier.toUpperCase();
+  if (isVerified !== undefined) {
+    candidate.isVerified = Boolean(isVerified);
+    candidate.verificationBadge = isVerified ? "VERIFIED" : "NOT_SUBMITTED";
+  }
+  if (status !== undefined) candidate.status = status.toUpperCase();
+
+  candidate.updatedAt = new Date().toISOString();
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    `Member '${candidate.name}' updated successfully.`,
+    candidate,
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
 
 // ============================================================================
 // 2. LEADS & CRM MANAGEMENT
@@ -747,6 +993,8 @@ export const getPlansList = asyncHandler(async (req, res) => {
 export default {
   getMembersList,
   getMemberDetail,
+  createMember,
+  updateMember,
   updateMemberStatus,
   verifyMember,
   getLeadsList,

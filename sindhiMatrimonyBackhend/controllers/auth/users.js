@@ -6,7 +6,8 @@ import { ROLES, ACCOUNT_STATUS, MEMBERSHIP_TIERS, KYC_STATUS } from "../../utils
 import { User, Profile, PartnerPreference, ProfileAccessGrant, ACCESS_ROLES } from "../../models/index.js";
 import serviceOTP from "../../services/serviceOTP.js";
 import { sendMultiChannelNotification } from "../../services/serviceNotifications.js";
-import { signToken, generateRefreshToken, verifyRefreshToken } from "../../utils/jwtTokenUtils.js";
+import { signToken, generateRefreshToken, verifyRefreshToken, verifyToken, signResetToken, verifyResetToken } from "../../utils/jwtTokenUtils.js";
+import { setKeyWithTime, getKey, removeKey } from "../../services/serviceRedis.js";
 import { invalidateTokenInRedis } from "../../utils/logoutUtils.js";
 import { registerCandidateInMemory, findUserByPhoneInMemory } from "../../services/realDataService.js";
 
@@ -166,6 +167,17 @@ export const register = asyncHandler(async (req, res) => {
   // Offline / standalone test mode
   if (mongoose.connection.readyState !== 1) {
     const cleanNum = String(phone).replace(/\D/g, "");
+    if (findUserByPhoneInMemory(cleanNum)) {
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_CONFLICT,
+        "An account with this mobile number already exists. Please log in directly.",
+        CONSTANTS.DATA_NULL,
+        CONSTANTS.CONFLICT,
+        CONSTANTS.ERROR_TRUE
+      );
+    }
     const { user: regUser, profile: regProfile } = registerCandidateInMemory(
       { phone: cleanNum, countryCode, email, password: password || "Password123@", name: (name || "Sindhi Member").trim() },
       {
@@ -672,11 +684,12 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 
   // Offline / standalone test mode
   if (mongoose.connection.readyState !== 1) {
+    await serviceOTP.generateAndStoreOtp(phone, "RESET_PASSWORD").catch(() => {});
     return apiHTTPResponse(
       req,
       res,
       CONSTANTS.HTTP_OK,
-      "Password reset verification code (OTP) sent to your registered mobile number.",
+      "Password reset verification code sent if the account exists.",
       { phone, countryCode, purpose: "RESET_PASSWORD" },
       CONSTANTS.OK,
       CONSTANTS.ERROR_FALSE
@@ -684,46 +697,27 @@ export const forgotPassword = asyncHandler(async (req, res) => {
   }
 
   const user = await User.findOne({ phone, isDeleted: false }).select("_id status").lean();
-  if (!user) {
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_NOT_FOUND,
-      "No registered account found with this mobile number.",
-      CONSTANTS.DATA_NULL,
-      CONSTANTS.NOT_FOUND,
-      CONSTANTS.ERROR_TRUE
-    );
+
+  // Send OTP only if user exists and is not suspended
+  if (user && user.status !== ACCOUNT_STATUS.SUSPENDED) {
+    const otp = await serviceOTP.generateAndStoreOtp(phone, "RESET_PASSWORD");
+
+    sendMultiChannelNotification({
+      phone: `${countryCode}${phone}`,
+      channels: ["SMS", "WHATSAPP"],
+      title: "Sindhi Matrimony Password Reset OTP",
+      body: `Your OTP to reset your Sindhi Matrimony account password is ${otp}. Valid for 10 minutes.`,
+    }).catch((err) => {
+      logMessage("Non-blocking password reset OTP dispatch error:", err, "warn");
+    });
   }
 
-  if (user.status === ACCOUNT_STATUS.SUSPENDED) {
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_FORBIDDEN,
-      CONSTANTS_MSG.ACCOUNT_SUSPENDED,
-      CONSTANTS.DATA_NULL,
-      CONSTANTS.FORBIDDEN,
-      CONSTANTS.ERROR_TRUE
-    );
-  }
-
-  const otp = await serviceOTP.generateAndStoreOtp(phone, "RESET_PASSWORD");
-
-  sendMultiChannelNotification({
-    phone: `${countryCode}${phone}`,
-    channels: ["SMS", "WHATSAPP"],
-    title: "Sindhi Matrimony Password Reset OTP",
-    body: `Your OTP to reset your Sindhi Matrimony account password is ${otp}. Valid for 10 minutes.`,
-  }).catch((err) => {
-    logMessage("Non-blocking password reset OTP dispatch error:", err, "warn");
-  });
-
+  // Consistent non-enumerating public response without premature token
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
-    "Password reset verification code (OTP) sent to your registered mobile number.",
+    "Password reset verification code sent if the account exists.",
     { phone, countryCode, purpose: "RESET_PASSWORD" },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -735,20 +729,88 @@ export const forgotPassword = asyncHandler(async (req, res) => {
  * POST /api/v1/auth/reset-password (or /api/v1/auth/users/reset-password)
  */
 export const resetPassword = asyncHandler(async (req, res) => {
-  const { phone, otp, newPassword } = req.body;
+  const { phone, otp, newPassword, token } = req.body;
 
-  const otpResult = await serviceOTP.verifyOtp(phone, otp, "RESET_PASSWORD");
-  if (!otpResult.isValid) {
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_BAD_REQUEST,
-      otpResult.message || CONSTANTS_MSG.INVALID_OTP,
-      CONSTANTS.DATA_NULL,
-      CONSTANTS.BAD_REQUEST,
-      CONSTANTS.ERROR_TRUE
-    );
+  let isAuthorized = false;
+
+  // 1. If reset token is supplied, verify validity, binding to phone, and single-use presence in Redis
+  if (token) {
+    try {
+      const decoded = verifyResetToken(token);
+      if (decoded.purpose !== "RESET_PASSWORD" || !decoded.phone || decoded.phone !== phone) {
+        return apiHTTPResponse(
+          req,
+          res,
+          CONSTANTS.HTTP_BAD_REQUEST,
+          "Invalid or expired password reset token.",
+          CONSTANTS.DATA_NULL,
+          CONSTANTS.BAD_REQUEST,
+          CONSTANTS.ERROR_TRUE
+        );
+      }
+
+      // Check single-use token in Redis
+      const storedToken = await getKey(`reset_token:${phone}`);
+      if (!storedToken || storedToken !== token) {
+        return apiHTTPResponse(
+          req,
+          res,
+          CONSTANTS.HTTP_BAD_REQUEST,
+          "Password reset token has expired or has already been used.",
+          CONSTANTS.DATA_NULL,
+          CONSTANTS.BAD_REQUEST,
+          CONSTANTS.ERROR_TRUE
+        );
+      }
+
+      isAuthorized = true;
+    } catch {
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_BAD_REQUEST,
+        "Invalid or expired password reset token.",
+        CONSTANTS.DATA_NULL,
+        CONSTANTS.BAD_REQUEST,
+        CONSTANTS.ERROR_TRUE
+      );
+    }
   }
+
+  // 2. If token was not provided or didn't authorize, verify OTP directly (combined 1-step reset)
+  if (!isAuthorized) {
+    if (!otp) {
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_BAD_REQUEST,
+        "Valid OTP or reset token is required to reset password.",
+        CONSTANTS.DATA_NULL,
+        CONSTANTS.BAD_REQUEST,
+        CONSTANTS.ERROR_TRUE
+      );
+    }
+
+    const otpResult = await serviceOTP.verifyOtp(phone, otp, "RESET_PASSWORD");
+    if (!otpResult.isValid) {
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_BAD_REQUEST,
+        otpResult.message || CONSTANTS_MSG.INVALID_OTP,
+        CONSTANTS.DATA_NULL,
+        CONSTANTS.BAD_REQUEST,
+        CONSTANTS.ERROR_TRUE
+      );
+    }
+    isAuthorized = true;
+  }
+
+  // 3. Immediately invalidate single-use reset credential and OTP in Redis
+  await Promise.all([
+    removeKey(`reset_token:${phone}`),
+    removeKey(`otp:reset_password:${phone}`),
+  ]);
 
   // Offline / standalone test mode
   if (mongoose.connection.readyState !== 1) {
@@ -791,11 +853,48 @@ export const resetPassword = asyncHandler(async (req, res) => {
 });
 
 /**
- * 🔑 Verify OTP for Existing User Login (Optional Fallback)
+ * 🔑 Verify OTP for Existing User Login (Optional Fallback) or Password Reset
  * POST /api/v1/auth/users/verify-otp (or /api/v1/auth/verify-otp)
  */
 export const verifyLoginOtp = asyncHandler(async (req, res) => {
-  const { phone, otp, fcmToken, clientPlatform = "WEB" } = req.body;
+  const { phone, otp, purpose = "LOGIN", countryCode = "+91", fcmToken, clientPlatform = "WEB" } = req.body;
+  const upperPurpose = String(purpose).trim().toUpperCase();
+
+  // Reset Password OTP Verification flow: Validates OTP and returns purpose-restricted reset credential
+  if (upperPurpose === "RESET_PASSWORD") {
+    const otpResult = await serviceOTP.verifyOtp(phone, otp, "RESET_PASSWORD");
+    if (!otpResult.isValid) {
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_BAD_REQUEST,
+        otpResult.message || CONSTANTS_MSG.INVALID_OTP,
+        CONSTANTS.DATA_NULL,
+        CONSTANTS.BAD_REQUEST,
+        CONSTANTS.ERROR_TRUE
+      );
+    }
+
+    // Issue isolated, purpose-restricted 10m reset credential
+    const resetToken = signResetToken({ phone, countryCode, purpose: "RESET_PASSWORD" }, "10m");
+    await setKeyWithTime(`reset_token:${phone}`, resetToken, 600);
+
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_OK,
+      "OTP verified successfully. You can now reset your password.",
+      {
+        phone,
+        countryCode,
+        purpose: "RESET_PASSWORD",
+        resetToken,
+        token: resetToken,
+      },
+      CONSTANTS.OK,
+      CONSTANTS.ERROR_FALSE
+    );
+  }
 
   // 1. Parallelize OTP verification and User lookup for minimal latency
   const [otpResult, user] = await Promise.all([
@@ -971,10 +1070,13 @@ export const resendOtp = asyncHandler(async (req, res) => {
  */
 export const checkPhoneExists = asyncHandler(async (req, res) => {
   const { phone, countryCode = "+91" } = req.body;
+  const cleanPhone = String(phone).replace(/\D/g, "").slice(-10);
 
   let exists = false;
   if (mongoose.connection.readyState === 1) {
-    exists = await User.exists({ phone, isDeleted: false });
+    exists = await User.exists({ $or: [{ phone }, { phone: cleanPhone }], isDeleted: false });
+  } else {
+    exists = Boolean(findUserByPhoneInMemory(cleanPhone));
   }
 
   return apiHTTPResponse(

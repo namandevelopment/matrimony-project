@@ -98,6 +98,7 @@ export const ALL_NAV_ITEMS: NavItemDef[] = [
     icon: Megaphone,
     path: '/campaigns',
     subItems: [
+      { name: 'Ads & Partner Deals', path: '/campaigns/ads' },
       { name: 'Notification Management', path: '/campaigns/notifications' },
       { name: 'Festival & Offer Management', path: '/campaigns/offers' },
       { name: 'Popup Management', path: '/campaigns/popups' },

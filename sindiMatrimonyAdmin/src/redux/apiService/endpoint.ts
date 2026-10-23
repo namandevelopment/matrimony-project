@@ -115,6 +115,9 @@ export const ApiURL = {
   getCampaigns: `${BASE_URL}/api/v1/admin/campaigns`,
   createCampaign: `${BASE_URL}/api/v1/admin/campaigns`,
   pauseCampaign: (id: string) => `${BASE_URL}/api/v1/admin/campaigns/${id}/pause`,
+  ads: `${BASE_URL}/api/v1/admin/ads`,
+  adDetail: (id: string) => `${BASE_URL}/api/v1/admin/ads/${id}`,
+  adStatus: (id: string) => `${BASE_URL}/api/v1/admin/ads/${id}/status`,
 
   // =========================================================================
   // 11. EMPLOYEES & RBAC

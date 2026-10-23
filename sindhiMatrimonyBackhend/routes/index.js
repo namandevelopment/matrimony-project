@@ -27,6 +27,10 @@ import {
   saveUserRashi,
   getMobileHomeFeed,
 } from "../controllers/dashboard/userDashboardController.js";
+import {
+  getActiveAdvertisements,
+  trackAdClick,
+} from "../controllers/campaigns/index.js";
 
 const router = express.Router();
 
@@ -66,6 +70,11 @@ router.get("/feed/mobile-home", getMobileHomeFeed);
 router.get("/matches/recommendations", getRecommendedMatches);
 router.get("/horoscope/daily", getDailyHoroscope);
 router.post("/horoscope/save-rashi", saveUserRashi);
+
+// 4b. Partner Deals & Advertisements for User Panel
+router.get("/ads", getActiveAdvertisements);
+router.get("/feed/partner-deals", getActiveAdvertisements);
+router.post("/ads/:id/click", trackAdClick);
 
 
 // 5. Matchmaking, Search & Interests Router

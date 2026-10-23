@@ -220,6 +220,8 @@ export const isDataEqual = (currentData, incomingData) => {
   return equal(normalizeForComparison(currentData), normalizeForComparison(incomingData));
 };
 
+export const isDeepEqual = isDataEqual;
+
 // Zero-write delta comparison helper: checks if all keys in incomingDelta already match existingDoc
 export const isDeltaEqual = (
   existingDoc,

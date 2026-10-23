@@ -37,7 +37,11 @@ const OtpHeaderComponent: React.FC<OtpHeaderProps> = ({ onBackClick }) => {
 
           <Link
             href="/"
-            className="flex items-center gap-2.5 group focus:outline-hidden rounded-lg p-0.5"
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.reload();
+            }}
+            className="flex items-center gap-2.5 group focus:outline-hidden rounded-lg p-0.5 cursor-pointer"
             aria-label="Sindhi Matrimony Home"
           >
             <div className="shrink-0 transition-transform duration-200 group-hover:scale-105">

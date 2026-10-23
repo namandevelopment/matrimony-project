@@ -9,6 +9,8 @@ export const deepEqual = <T = unknown>(a: T, b: T): boolean => {
   return fastDeepEqual(a, b);
 };
 
+export const isDeepEqual = deepEqual;
+
 /**
  * HOC that wraps React.memo with fast-deep-equal props comparison.
  * Prevents unnecessary re-renders when parent creates new object/array references

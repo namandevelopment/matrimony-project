@@ -7,17 +7,20 @@ import {
   ListOrdered,
   TrendingUp,
   ShieldCheck,
+  ShoppingBag,
 } from 'lucide-react';
 import { NotificationManagementSection } from './sections/NotificationManagementSection';
 import { FestivalOffersSection } from './sections/FestivalOffersSection';
 import { PopupManagementSection } from './sections/PopupManagementSection';
 import { DeliveryLogsSection } from './sections/DeliveryLogsSection';
 import { CampaignAnalyticsSection } from './sections/CampaignAnalyticsSection';
+import { AdsManagementSection } from './sections/AdsManagementSection';
 import { MarketingAuditLogModal } from './components/MarketingAuditLogModal';
 import { campaignService } from '../../services/campaignService';
 import { memoWithDeepEqual } from '../../utils/memoUtils';
 
 export type CampaignTab =
+  | 'ADS'
   | 'NOTIFICATIONS'
   | 'FESTIVAL_OFFERS'
   | 'POPUPS'
@@ -39,6 +42,7 @@ export function resolveCampaignTab(pathname: string, search: string): CampaignTa
 
   // 1. Explicit query parameter
   if (
+    tabParam === 'ADS' ||
     tabParam === 'NOTIFICATIONS' ||
     tabParam === 'FESTIVAL_OFFERS' ||
     tabParam === 'OFFERS' ||
@@ -53,6 +57,7 @@ export function resolveCampaignTab(pathname: string, search: string): CampaignTa
   }
 
   // 2. Canonical route pathnames
+  if (cleanPath.includes('/ads') || cleanPath.includes('/deals')) return 'ADS';
   if (cleanPath.includes('/notifications')) return 'NOTIFICATIONS';
   if (cleanPath.includes('/offers')) return 'FESTIVAL_OFFERS';
   if (cleanPath.includes('/popups')) return 'POPUPS';
@@ -97,6 +102,12 @@ export const CampaignsScreen: React.FC = memoWithDeepEqual(() => {
 
   const tabs: TabItem[] = useMemo(
     () => [
+      {
+        id: 'ADS',
+        label: 'Ads & Partner Deals',
+        icon: ShoppingBag,
+        routePath: '/campaigns/ads',
+      },
       {
         id: 'NOTIFICATIONS',
         label: 'Notification Management',
@@ -219,6 +230,7 @@ export const CampaignsScreen: React.FC = memoWithDeepEqual(() => {
 
       {/* 3. Tab Section Content */}
       <div className="transition-all duration-200">
+        {activeTab === 'ADS' && <AdsManagementSection />}
         {activeTab === 'NOTIFICATIONS' && <NotificationManagementSection />}
         {activeTab === 'FESTIVAL_OFFERS' && <FestivalOffersSection />}
         {activeTab === 'POPUPS' && <PopupManagementSection />}

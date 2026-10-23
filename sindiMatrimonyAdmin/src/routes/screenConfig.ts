@@ -350,6 +350,20 @@ export const screens: ScreenConfig[] = [
     requiresAuth: true,
   },
   {
+    name: 'CampaignAdsScreen',
+    path: '/campaigns/ads',
+    component: CampaignsScreen,
+    title: 'Ads & Partner Deals',
+    requiresAuth: true,
+  },
+  {
+    name: 'DirectAdsScreen',
+    path: '/ads',
+    component: CampaignsScreen,
+    title: 'Ads & Partner Deals',
+    requiresAuth: true,
+  },
+  {
     name: 'CampaignNotificationsScreen',
     path: '/campaigns/notifications',
     component: CampaignsScreen,

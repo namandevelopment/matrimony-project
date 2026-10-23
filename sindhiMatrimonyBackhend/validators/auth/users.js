@@ -4,6 +4,7 @@ import {
   requiredString,
   optionalString,
   optionalEmailValidator,
+  requiredNumber,
   optionalNumber,
   requiredEnum,
   optionalEnum,
@@ -139,21 +140,24 @@ export const forgotPasswordSchema = Joi.object({
 // Reset Password (Verify OTP & Set New Password) Schema
 export const resetPasswordSchema = Joi.object({
   phone: phoneValidation(),
-  otp: requiredString(4, 6).messages({
-    "string.empty": "Verification OTP is required.",
-    "any.required": "Verification OTP is required.",
-  }),
+  otp: optionalString(4, 6),
   newPassword: requiredString(6, 50).messages({
     "string.empty": "New password is required (min 6 characters).",
     "any.required": "New password is required.",
   }),
   countryCode: optionalString(2, 6).default("+91"),
-});
+  token: optionalString(10, 1000),
+}).or("otp", "token");
 
-// Verify Login OTP Schema (Legacy/Fallback)
+// Verify Login / Reset OTP Schema
 export const verifyOtpSchema = Joi.object({
   phone: phoneValidation(),
   otp: requiredString(4, 6),
+  purpose: Joi.string()
+    .trim()
+    .uppercase()
+    .valid("LOGIN", "RESET_PASSWORD", "REGISTER")
+    .default("LOGIN"),
   countryCode: optionalString(2, 6).default("+91"),
   fcmToken: optionalString(10, 500),
   clientPlatform: Joi.string()
@@ -212,19 +216,52 @@ export const createSecondaryProfileSchema = Joi.object({
       "any.only": "Gender must be either MALE or FEMALE.",
       "any.required": "Gender is required.",
     }),
-  subcaste: optionalString(2, 50),
+  subcaste: requiredString(2, 50).messages({
+    "string.empty": "Subcaste is required.",
+    "any.required": "Subcaste is required.",
+  }),
+  dob: requiredString(4, 30).messages({
+    "string.empty": "Date of birth (dob) is required.",
+    "any.required": "Date of birth (dob) is required.",
+  }),
   dateOfBirth: optionalNumber(),
-  dob: optionalString(4, 30),
-  maritalStatus: optionalString(3, 50),
-  height: optionalNumber(),
-  education: optionalString(2, 100),
-  profession: optionalString(2, 100),
+  maritalStatus: requiredString(3, 50).messages({
+    "string.empty": "Marital status is required.",
+    "any.required": "Marital status is required.",
+  }),
+  height: requiredNumber(50, 300).messages({
+    "number.base": "Height is required.",
+    "any.required": "Height is required.",
+  }),
+  education: requiredString(2, 100).messages({
+    "string.empty": "Education is required.",
+    "any.required": "Education is required.",
+  }),
+  profession: requiredString(2, 100).messages({
+    "string.empty": "Profession is required.",
+    "any.required": "Profession is required.",
+  }),
   occupation: optionalString(2, 100),
-  annualIncome: optionalNumber(),
-  city: optionalString(2, 100),
-  state: optionalString(2, 100),
-  nativePlace: optionalString(2, 100),
-  aboutMe: optionalString(0, 1500),
+  annualIncome: requiredNumber(0).messages({
+    "number.base": "Annual income is required.",
+    "any.required": "Annual income is required.",
+  }),
+  city: requiredString(2, 100).messages({
+    "string.empty": "City is required.",
+    "any.required": "City is required.",
+  }),
+  state: requiredString(2, 100).messages({
+    "string.empty": "State is required.",
+    "any.required": "State is required.",
+  }),
+  nativePlace: requiredString(2, 100).messages({
+    "string.empty": "Native place is required.",
+    "any.required": "Native place is required.",
+  }),
+  aboutMe: requiredString(5, 1500).messages({
+    "string.empty": "About candidate description is required.",
+    "any.required": "About candidate description is required.",
+  }),
 });
 
 // Switch Active Profile Context Schema

@@ -63,18 +63,10 @@ const DashboardHeaderComponent: React.FC<DashboardHeaderProps> = ({
   const { openLogoutModal } = useGlobalModal();
   const effectiveLogout = onLogout || openLogoutModal;
 
-  const handleLogoClick = React.useCallback(
-    (e: React.MouseEvent) => {
-      if (context.isInsideProvider && context.onTabChange) {
-        e.preventDefault();
-        context.onTabChange("home");
-        if (typeof window !== "undefined") {
-          window.history.pushState(null, "", "/dashboard");
-        }
-      }
-    },
-    [context.isInsideProvider, context.onTabChange]
-  );
+  const handleLogoClick = React.useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    window.location.reload();
+  }, []);
 
   return (
     <header

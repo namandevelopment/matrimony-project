@@ -326,6 +326,8 @@ export const SIDEBAR_SECTIONS: SidebarSectionDef[] = [
     description: 'Notification management, festival promotions, dynamic popups, delivery logs & campaign analytics',
     subPaths: [
       '/campaigns',
+      '/campaigns/ads',
+      '/ads',
       '/campaigns/notifications',
       '/campaigns/offers',
       '/campaigns/popups',

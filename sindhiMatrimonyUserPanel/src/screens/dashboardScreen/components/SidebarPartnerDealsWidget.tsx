@@ -18,15 +18,17 @@ export interface GiftProduct {
   id: string;
   name: string;
   categoryLabel: string;
+  categories?: string[];
   price: number;
   originalPrice: number;
   discountPercent: number;
-  platform: "Amazon" | "Flipkart" | "Meesho";
+  platform: string;
   platformLogoBg: string;
   platformTextColor: string;
   badge: string;
   badgeColor: string;
   imageSrc: string;
+  images?: string[];
   description: string;
   couponCode: string;
   affiliateUrl: string;
@@ -114,14 +116,36 @@ const SidebarPartnerDealsWidgetComponent: React.FC<SidebarPartnerDealsWidgetProp
   onUpgradeClick,
   isPaidMember = false,
 }) => {
+  const [deals, setDeals] = useState<GiftProduct[]>(GIFT_PRODUCTS);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [activePhotoMap, setActivePhotoMap] = useState<Record<string, number>>({});
   const [isHovered, setIsHovered] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAds = async () => {
+      try {
+        const res = await fetch("/api/v1/ads", { credentials: "omit" });
+        if (res.ok) {
+          const json = await res.json();
+          const items = json?.data?.list || json?.data;
+          if (isMounted && Array.isArray(items) && items.length > 0) {
+            setDeals(items);
+          }
+        }
+      } catch {}
+    };
+    fetchAds();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const touchStartXRef = useRef<number>(0);
   const touchEndXRef = useRef<number>(0);
 
-  const totalSlides = GIFT_PRODUCTS.length;
+  const totalSlides = deals.length || 1;
 
   const nextSlide = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % totalSlides);
@@ -175,11 +199,14 @@ const SidebarPartnerDealsWidgetComponent: React.FC<SidebarPartnerDealsWidgetProp
     }
   }, []);
 
-  const handleOpenAffiliate = useCallback((url: string) => {
-    window.open(url, "_blank", "noopener,noreferrer");
+  const handleOpenAffiliate = useCallback((product: GiftProduct) => {
+    try {
+      fetch(`/api/v1/ads/${product.id}/click`, { method: "POST", credentials: "omit" }).catch(() => {});
+    } catch {}
+    window.open(product.affiliateUrl, "_blank", "noopener,noreferrer");
   }, []);
 
-  const activeProduct = GIFT_PRODUCTS[currentIndex];
+  const activeProduct = deals[currentIndex] || deals[0];
 
   return (
     <div
@@ -233,7 +260,7 @@ const SidebarPartnerDealsWidgetComponent: React.FC<SidebarPartnerDealsWidgetProp
 
       {/* 2. Quick Category Tag Tabs */}
       <div className="flex items-center gap-1 py-2 overflow-x-auto no-scrollbar">
-        {GIFT_PRODUCTS.map((prod, idx) => {
+        {deals.map((prod, idx) => {
           const isActive = idx === currentIndex;
           return (
             <button
@@ -263,48 +290,77 @@ const SidebarPartnerDealsWidgetComponent: React.FC<SidebarPartnerDealsWidgetProp
           className="flex transition-transform duration-500 ease-out"
           style={{ transform: `translateX(-${currentIndex * 100}%)` }}
         >
-          {GIFT_PRODUCTS.map((product) => (
-            <div
-              key={product.id}
-              className="w-full shrink-0 flex flex-col bg-gradient-to-br from-[#FFF9F6] via-white to-[#FFF5F7] border border-rose-100 rounded-2xl p-3 shadow-2xs"
-            >
-              {/* Image with overlay badge and platform */}
-              <div className="relative w-full aspect-4/3 rounded-xl overflow-hidden bg-white border border-stone-200/80 shadow-2xs group">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={product.imageSrc}
-                  alt={product.name}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  loading="lazy"
-                  decoding="async"
-                />
+          {deals.map((product) => {
+            const activePhotoIdx = activePhotoMap[product.id] || 0;
+            const currentImage =
+              (product.images && product.images[activePhotoIdx]) ||
+              product.imageSrc;
+            const hasMultiplePhotos = product.images && product.images.length > 1;
 
-                {/* Badge Top Left */}
-                <div className="absolute top-2 left-2">
-                  <span
-                    className={`text-[9px] font-bold px-2 py-0.5 rounded-full border backdrop-blur-md shadow-xs ${product.badgeColor}`}
-                  >
-                    {product.badge}
-                  </span>
-                </div>
+            return (
+              <div
+                key={product.id}
+                className="w-full shrink-0 flex flex-col bg-gradient-to-br from-[#FFF9F6] via-white to-[#FFF5F7] border border-rose-100 rounded-2xl p-3 shadow-2xs"
+              >
+                {/* Image with overlay badge and platform */}
+                <div className="relative w-full aspect-4/3 rounded-xl overflow-hidden bg-white border border-stone-200/80 shadow-2xs group">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={currentImage}
+                    alt={product.name}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    loading="lazy"
+                    decoding="async"
+                  />
 
-                {/* Discount Badge Top Right */}
-                <div className="absolute top-2 right-2">
-                  <span className="bg-[#DB2F3C] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-md shadow-xs">
-                    {product.discountPercent}% OFF
-                  </span>
-                </div>
+                  {/* Badge Top Left */}
+                  <div className="absolute top-2 left-2">
+                    <span
+                      className={`text-[9px] font-bold px-2 py-0.5 rounded-full border backdrop-blur-md shadow-xs ${product.badgeColor}`}
+                    >
+                      {product.badge}
+                    </span>
+                  </div>
 
-                {/* Platform Pill Bottom Left */}
-                <div className="absolute bottom-2 left-2">
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black ${product.platformLogoBg} ${product.platformTextColor} shadow-xs`}
-                  >
-                    <ShoppingBag className="w-2.5 h-2.5" />
-                    <span>{product.platform}</span>
-                  </span>
+                  {/* Discount Badge Top Right */}
+                  <div className="absolute top-2 right-2">
+                    <span className="bg-[#DB2F3C] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-md shadow-xs">
+                      {product.discountPercent}% OFF
+                    </span>
+                  </div>
+
+                  {/* Platform Pill Bottom Left */}
+                  <div className="absolute bottom-2 left-2">
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black ${product.platformLogoBg} ${product.platformTextColor} shadow-xs`}
+                    >
+                      <ShoppingBag className="w-2.5 h-2.5" />
+                      <span>{product.platform}</span>
+                    </span>
+                  </div>
+
+                  {/* Multi-Photo Dots Bottom Right */}
+                  {hasMultiplePhotos && (
+                    <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-xs px-1.5 py-0.5 rounded-full">
+                      {product.images!.map((_, pIdx) => {
+                        const isCurPhoto = activePhotoIdx === pIdx;
+                        return (
+                          <button
+                            key={pIdx}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActivePhotoMap((prev) => ({ ...prev, [product.id]: pIdx }));
+                            }}
+                            className={`w-1.5 h-1.5 rounded-full cursor-pointer transition-all ${
+                              isCurPhoto ? "bg-white scale-125" : "bg-white/40 hover:bg-white/75"
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              </div>
 
               {/* Product Info */}
               <div className="mt-2.5">
@@ -369,20 +425,21 @@ const SidebarPartnerDealsWidgetComponent: React.FC<SidebarPartnerDealsWidgetProp
               {/* Action Button: Linear Gradient */}
               <button
                 type="button"
-                onClick={() => handleOpenAffiliate(product.affiliateUrl)}
+                onClick={() => handleOpenAffiliate(product)}
                 className="mt-2.5 w-full py-2 px-3 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#FF4D5A] via-[#E53935] to-[#B71C1C] hover:from-[#FF5E6B] hover:via-[#EF4444] hover:to-[#C62828] active:scale-[0.98] shadow-md hover:shadow-red-500/25 transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 tracking-wide"
               >
                 <span>Buy / Send on {product.platform}</span>
                 <ExternalLink className="w-3 h-3" />
               </button>
             </div>
-          ))}
+          );
+        })}
         </div>
       </div>
 
       {/* 4. Dots Pagination Indicators */}
       <div className="flex items-center justify-center gap-1.5 pt-2">
-        {GIFT_PRODUCTS.map((_, dotIdx) => {
+        {deals.map((_, dotIdx) => {
           const isActive = dotIdx === currentIndex;
           return (
             <button

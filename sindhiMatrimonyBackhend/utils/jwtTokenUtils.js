@@ -18,3 +18,13 @@ export const verifyToken = (token) => {
 export const verifyRefreshToken = (token) => {
   return jwt.verify(token, getRefreshJwtSecret());
 };
+
+const getResetJwtSecret = () => process.env.RESET_JWT_SECRET_KEY || `${getJwtSecret()}_reset_pwd`;
+
+export const signResetToken = (payload, expiresIn = "10m") => {
+  return jwt.sign(payload, getResetJwtSecret(), { expiresIn });
+};
+
+export const verifyResetToken = (token) => {
+  return jwt.verify(token, getResetJwtSecret());
+};

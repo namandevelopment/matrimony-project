@@ -2,24 +2,28 @@
 
 import React, { memo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Star, HeartHandshake, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { ReviewsSection } from "@/screens/landingScreen/components/ReviewsSection";
 import { Footer } from "@/screens/landingScreen/components/Footer";
 
 export const ReviewsScreen: React.FC = memo(() => {
+  const router = useRouter();
+
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-[#1A1A1A] flex flex-col">
       {/* 1. Header */}
       <header className="sticky top-0 z-40 bg-white border-b border-stone-200 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="p-1.5 -ml-1 text-stone-500 hover:text-[#DB2F3C] rounded-lg hover:bg-stone-100 transition-colors"
-              aria-label="Back to home"
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="p-1.5 -ml-1 text-stone-500 hover:text-[#DB2F3C] rounded-lg hover:bg-stone-100 transition-colors cursor-pointer"
+              aria-label="Go back"
             >
               <ArrowLeft className="w-5 h-5" />
-            </Link>
+            </button>
             <span className="text-lg font-bold text-stone-900 font-heading">
               Member Reviews &amp; Ratings
             </span>

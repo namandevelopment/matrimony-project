@@ -94,7 +94,11 @@ const HeaderComponent: React.FC<HeaderProps> = ({
 
           <Link
             href="/"
-            className="flex items-center gap-3 group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#DB2F3C] rounded-lg p-1 transition-opacity hover:opacity-95"
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.reload();
+            }}
+            className="flex items-center gap-3 group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#DB2F3C] rounded-lg p-1 transition-opacity hover:opacity-95 cursor-pointer"
             aria-label="Sindhi Matrimony Home"
           >
             <div className="shrink-0 transition-transform duration-200 group-hover:scale-105">
