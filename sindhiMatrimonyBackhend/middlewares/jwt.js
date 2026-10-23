@@ -56,6 +56,7 @@ export const publicPaths = [
   /^\/api\/v1\/(dashboard\/)?(mobile-home|home-feed|matches|banners|support-info|success-stories(\/share)?|daily-recommendations|all-matches|new-matches|who-viewed-you|profiles-you-viewed)$/,
   /^\/api\/v1\/(common\/)?success-stories(\/share)?$/,
   /^\/api\/v1\/feed\/(home|mobile-home)$/,
+  /^\/api\/v1\/(ads(\/.*)?|feed\/partner-deals)$/,
 
 
   // Public Horoscope (Daily Rashifal & 12 Rashis Forecast)
