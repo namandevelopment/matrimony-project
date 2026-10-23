@@ -14,6 +14,14 @@ import {
 } from '../../../services/campaignService';
 import { useInputs } from '../../../customHooks/useInputs';
 import { toast } from '../../../toastMessage/toast';
+import { CustomDropDown } from '../../../components/CustomDropDown';
+
+const DISCOUNT_TYPE_OPTIONS = [
+  { label: 'Percentage (%)', value: 'PERCENTAGE' },
+  { label: 'Fixed Amount (₹)', value: 'FIXED_AMOUNT' },
+  { label: 'Special Price Flat (₹)', value: 'SPECIAL_PRICE' },
+  { label: '100% Free Promotional', value: 'FREE_TRIAL' },
+];
 
 interface CreateFestivalOfferModalProps {
   isOpen: boolean;
@@ -264,20 +272,15 @@ export const CreateFestivalOfferModal: React.FC<CreateFestivalOfferModalProps> =
           {/* Row 1: Festival Preset & Title */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Festival / Occasion *
-              </label>
-              <select
+              <CustomDropDown
+                label="Festival / Occasion"
+                required
                 value={values.festivalPreset}
-                onChange={(e) => setFieldValue('festivalPreset', e.target.value)}
-                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-rose-500/20 focus:border-[#C81E28] font-bold text-slate-900 bg-white"
-              >
-                {FESTIVAL_PRESETS.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
+                options={FESTIVAL_PRESETS}
+                onChange={(val) => setFieldValue('festivalPreset', String(val))}
+                size="sm"
+                variant="outline"
+              />
 
               {values.festivalPreset === 'Custom Occasion' && (
                 <input
@@ -350,21 +353,15 @@ export const CreateFestivalOfferModal: React.FC<CreateFestivalOfferModalProps> =
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Discount Type *
-                </label>
-                <select
-                  value={values.discountType}
-                  onChange={(e) => setFieldValue('discountType', e.target.value as DiscountType)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white font-bold"
-                >
-                  <option value="PERCENTAGE">Percentage (%)</option>
-                  <option value="FIXED_AMOUNT">Fixed Amount (₹)</option>
-                  <option value="SPECIAL_PRICE">Special Price Flat (₹)</option>
-                  <option value="FREE_TRIAL">100% Free Promotional</option>
-                </select>
-              </div>
+              <CustomDropDown
+                label="Discount Type"
+                required
+                value={values.discountType}
+                options={DISCOUNT_TYPE_OPTIONS}
+                onChange={(val) => setFieldValue('discountType', val as DiscountType)}
+                size="sm"
+                variant="outline"
+              />
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">

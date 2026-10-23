@@ -49,7 +49,7 @@ export const DashboardScreen: React.FC = memoWithDeepEqual(() => {
   }, [navigate]);
 
   // 1. TanStack Query: KPI Stats (Cached for 5 minutes, 0 redundant hits)
-  const { data: statsRaw, isLoading: isStatsLoading } = useDashboardStatsQuery();
+  const { data: statsRaw } = useDashboardStatsQuery();
   const statsData = useMemo(() => statsRaw?.stats || statsRaw?.data?.stats || statsRaw, [statsRaw]);
 
   // 2. TanStack Query: Live Action Queues
@@ -149,9 +149,6 @@ export const DashboardScreen: React.FC = memoWithDeepEqual(() => {
     }, 800);
   }, [apiMembers]);
 
-  // Loader shows ONLY ONCE when data is not in cache yet
-  const isInitialLoading = isStatsLoading && !statsData;
-
   // Stable callback: KPI card interaction router
   const handleCardClick = useCallback((id: string) => {
     if (id === 'export_backup') {
@@ -166,12 +163,6 @@ export const DashboardScreen: React.FC = memoWithDeepEqual(() => {
   return (
     <div className="space-y-6 pb-8">
       {/* Initial load indicator (only when starting with zero cache) */}
-      {isInitialLoading && (
-        <div className="flex items-center justify-center p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold gap-2 animate-pulse">
-          <div className="w-3.5 h-3.5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" />
-          Loading real-time admin metrics...
-        </div>
-      )}
 
       {/* 1. Royal Ruby Red Hero Welcome Banner */}
       <DashboardHeroBanner

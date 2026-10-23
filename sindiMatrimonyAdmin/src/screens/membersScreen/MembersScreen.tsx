@@ -22,6 +22,7 @@ import { toast } from '../../toastMessage/toast';
 import { useGlobalModal } from '../../customModals/ModalContext';
 import { useInputs } from '../../customHooks/useInputs';
 import { useMembersQuery } from '../../tanstackQuery';
+import { CustomDropDown } from '../../components/CustomDropDown';
 
 export interface MembersScreenState {
   members: MatrimonialMember[];
@@ -41,7 +42,7 @@ export const MembersScreen: React.FC = () => {
   // Fallback dummy members preserved per project guidelines
   // const initialFallbackMembers = memberDataService.getMembers();
 
-  const { values, setFieldValue, bind } = useInputs<MembersScreenState>(() => ({
+  const { values, setFieldValue } = useInputs<MembersScreenState>(() => ({
     members: memberDataService.getMembers(),
     search: '',
     selectedSubcaste: 'ALL',
@@ -349,27 +350,36 @@ export const MembersScreen: React.FC = () => {
         placeholder="Search Member by Profile ID, Name, City, Mobile..."
         filters={
           <>
-            <select
-              {...bind('selectedSubcaste')}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 focus:outline-none w-full sm:w-auto"
-            >
-              <option value="ALL">All Subcastes</option>
-              {subcasteGotraService.getSubcastes().filter((s) => s.active).map((s) => (
-                <option key={s.id} value={s.name}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-            <select
-              {...bind('selectedPlan')}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 focus:outline-none w-full sm:w-auto"
-            >
-              <option value="ALL">All Plans</option>
-              <option value="PLATINUM">Platinum</option>
-              <option value="GOLD">Gold</option>
-              <option value="SILVER">Silver</option>
-              <option value="FREE">Free</option>
-            </select>
+            <div className="w-40">
+              <CustomDropDown
+                value={values.selectedSubcaste}
+                options={[
+                  { label: 'All Subcastes', value: 'ALL' },
+                  ...subcasteGotraService.getSubcastes().filter((s) => s.active).map((s) => ({
+                    label: s.name,
+                    value: s.name,
+                  })),
+                ]}
+                onChange={(val) => setFieldValue('selectedSubcaste', String(val))}
+                size="sm"
+                variant="outline"
+              />
+            </div>
+            <div className="w-36">
+              <CustomDropDown
+                value={values.selectedPlan}
+                options={[
+                  { label: 'All Plans', value: 'ALL' },
+                  { label: 'Platinum VIP', value: 'PLATINUM' },
+                  { label: 'Gold Plan', value: 'GOLD' },
+                  { label: 'Silver Plan', value: 'SILVER' },
+                  { label: 'Free Plan', value: 'FREE' },
+                ]}
+                onChange={(val) => setFieldValue('selectedPlan', String(val))}
+                size="sm"
+                variant="outline"
+              />
+            </div>
           </>
         }
       />

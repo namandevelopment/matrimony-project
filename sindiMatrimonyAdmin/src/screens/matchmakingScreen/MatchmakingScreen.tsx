@@ -19,6 +19,7 @@ import type { ClientProfile, MatchRecommendation, MatchAuditRecord } from '../..
 import { PageHeader } from '../../components/PageHeader';
 import { toast } from '../../toastMessage/toast';
 import { useInputs } from '../../customHooks/useInputs';
+import { CustomDropDown } from '../../components/CustomDropDown';
 
 export interface MatchmakingFormValues {
   selectedClientForEngine: string;
@@ -289,34 +290,34 @@ export const MatchmakingScreen: React.FC = () => {
           </div>
 
           <form onSubmit={handleGenerate} className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 block">Select Client (Seeking Alliance)</label>
-              <select
+            <div>
+              <CustomDropDown
+                label="Select Client (Seeking Alliance)"
+                required
                 value={engineValues.selectedClientForEngine}
-                onChange={(e) => setFieldValue('selectedClientForEngine', e.target.value)}
-                className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium"
-              >
-                {clients.map((c) => (
-                  <option key={c.id} value={c.clientId}>
-                    {c.fullName} ({c.clientId}) — {c.gender}, {c.age} yrs, {c.subcaste} ({c.gotra})
-                  </option>
-                ))}
-              </select>
+                options={clients.map((c) => ({
+                  label: `${c.fullName} (${c.clientId}) — ${c.gender}, ${c.age} yrs, ${c.subcaste} (${c.gotra})`,
+                  value: c.clientId,
+                }))}
+                onChange={(val) => setFieldValue('selectedClientForEngine', String(val))}
+                size="md"
+                variant="outline"
+              />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 block">Select Candidate to Recommend</label>
-              <select
+            <div>
+              <CustomDropDown
+                label="Select Candidate to Recommend"
+                required
                 value={engineValues.selectedCandidateForEngine}
-                onChange={(e) => setFieldValue('selectedCandidateForEngine', e.target.value)}
-                className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium"
-              >
-                {clients.map((c) => (
-                  <option key={c.id} value={c.clientId}>
-                    {c.fullName} ({c.clientId}) — {c.gender}, {c.age} yrs, {c.subcaste} ({c.gotra})
-                  </option>
-                ))}
-              </select>
+                options={clients.map((c) => ({
+                  label: `${c.fullName} (${c.clientId}) — ${c.gender}, ${c.age} yrs, ${c.subcaste} (${c.gotra})`,
+                  value: c.clientId,
+                }))}
+                onChange={(val) => setFieldValue('selectedCandidateForEngine', String(val))}
+                size="md"
+                variant="outline"
+              />
             </div>
 
             {/* MANDATORY ADMIN REQUIREMENT: Informative duplicate detection banner */}

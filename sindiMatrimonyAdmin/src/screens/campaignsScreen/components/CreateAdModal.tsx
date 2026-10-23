@@ -17,6 +17,25 @@ import {
   CATEGORY_EMOJI_PRESETS,
 } from '../../../services/adsService';
 import { CustomTextInput } from '../../../components/CustomTextInput';
+import { CustomDropDown } from '../../../components/CustomDropDown';
+
+const PLATFORM_OPTIONS = [
+  { label: 'Amazon India', value: 'Amazon' },
+  { label: 'Flipkart', value: 'Flipkart' },
+  { label: 'Meesho', value: 'Meesho' },
+  { label: 'Myntra', value: 'Myntra' },
+  { label: 'Nykaa', value: 'Nykaa' },
+  { label: 'Custom Store', value: 'Custom' },
+  { label: 'Other Partner', value: 'Other' },
+];
+
+const TARGET_AUDIENCE_OPTIONS = [
+  { label: 'All Registered Users', value: 'ALL' },
+  { label: 'Paid Members Only', value: 'PAID_MEMBERS' },
+  { label: 'Free Members Only', value: 'FREE_MEMBERS' },
+  { label: 'Male Profiles Only', value: 'MALE' },
+  { label: 'Female Profiles Only', value: 'FEMALE' },
+];
 
 export interface CreateAdModalProps {
   isOpen: boolean;
@@ -360,39 +379,29 @@ export const CreateAdModal: React.FC<CreateAdModalProps> = ({
 
               {/* Platform Selector & Styling */}
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Platform *</label>
-                  <select
-                    value={formData.platform}
-                    onChange={(e) =>
-                      handlePlatformChange(e.target.value as AdvertisementDeal['platform'])
-                    }
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 focus:outline-none focus:border-[#DB2F3C]"
-                  >
-                    <option value="Amazon">Amazon India</option>
-                    <option value="Flipkart">Flipkart</option>
-                    <option value="Meesho">Meesho</option>
-                    <option value="Myntra">Myntra</option>
-                    <option value="Nykaa">Nykaa</option>
-                    <option value="Custom">Custom Store</option>
-                    <option value="Other">Other Partner</option>
-                  </select>
-                </div>
+                <CustomDropDown
+                  label="Platform"
+                  required
+                  value={formData.platform}
+                  options={PLATFORM_OPTIONS}
+                  onChange={(val) =>
+                    handlePlatformChange(val as AdvertisementDeal['platform'])
+                  }
+                  size="sm"
+                  variant="outline"
+                />
 
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Badge Color</label>
-                  <select
-                    value={formData.badgeColor}
-                    onChange={(e) => setFormData({ ...formData, badgeColor: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 focus:outline-none focus:border-[#DB2F3C]"
-                  >
-                    {BADGE_COLOR_PRESETS.map((bp) => (
-                      <option key={bp.value} value={bp.value}>
-                        {bp.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <CustomDropDown
+                  label="Badge Color"
+                  value={formData.badgeColor}
+                  options={BADGE_COLOR_PRESETS.map((bp) => ({
+                    label: bp.label,
+                    value: bp.value,
+                  }))}
+                  onChange={(val) => setFormData({ ...formData, badgeColor: String(val) })}
+                  size="sm"
+                  variant="outline"
+                />
               </div>
 
               {/* Badge Text & Coupon Code */}
@@ -521,27 +530,19 @@ export const CreateAdModal: React.FC<CreateAdModalProps> = ({
                   value={String(formData.priority)}
                   onChange={(e) => setFormData({ ...formData, priority: Number(e.target.value) })}
                 />
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Target Audience
-                  </label>
-                  <select
-                    value={formData.targetAudience}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        targetAudience: e.target.value as AdvertisementDeal['targetAudience'],
-                      })
-                    }
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 focus:outline-none focus:border-[#DB2F3C]"
-                  >
-                    <option value="ALL">All Registered Users</option>
-                    <option value="PAID_MEMBERS">Paid Members Only</option>
-                    <option value="FREE_MEMBERS">Free Members Only</option>
-                    <option value="MALE">Male Profiles Only</option>
-                    <option value="FEMALE">Female Profiles Only</option>
-                  </select>
-                </div>
+                <CustomDropDown
+                  label="Target Audience"
+                  value={formData.targetAudience}
+                  options={TARGET_AUDIENCE_OPTIONS}
+                  onChange={(val) =>
+                    setFormData({
+                      ...formData,
+                      targetAudience: val as AdvertisementDeal['targetAudience'],
+                    })
+                  }
+                  size="sm"
+                  variant="outline"
+                />
               </div>
             </div>
 

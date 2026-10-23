@@ -236,7 +236,7 @@ export const ProfileDetailsByIdScreen: React.FC = () => {
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard?.writeText(text);
     setCopiedField(label);
-    toast.success(`Copied ${label}: ${text}`);
+    // toast.success(`Copied ${label}: ${text}`);
     setTimeout(() => setCopiedField(null), 2000);
   };
 
@@ -495,9 +495,8 @@ export const ProfileDetailsByIdScreen: React.FC = () => {
                 />
                 {/* Status Dot Indicator */}
                 <div
-                  className={`absolute bottom-2 right-2 w-4 h-4 rounded-full border-2 border-white ${
-                    member.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-rose-500'
-                  }`}
+                  className={`absolute bottom-2 right-2 w-4 h-4 rounded-full border-2 border-white ${member.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-rose-500'
+                    }`}
                   title={member.status}
                 />
               </div>
@@ -509,11 +508,10 @@ export const ProfileDetailsByIdScreen: React.FC = () => {
                     {member.fullName}
                   </h1>
                   <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                      member.status === 'ACTIVE'
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : 'bg-rose-50 text-rose-700 border border-rose-200'
-                    }`}
+                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${member.status === 'ACTIVE'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : 'bg-rose-50 text-rose-700 border border-rose-200'
+                      }`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     {member.status === 'ACTIVE' ? 'Active' : 'Inactive'}
@@ -585,12 +583,12 @@ export const ProfileDetailsByIdScreen: React.FC = () => {
                   {member.plan === 'PLATINUM'
                     ? 'Platinum VIP'
                     : member.plan === 'GOLD'
-                    ? 'Gold Plan'
-                    : member.plan === 'SILVER'
-                    ? 'Silver Plan'
-                    : member.plan === 'TILL_MARRIAGE'
-                    ? 'Till Marriage'
-                    : 'Free Plan'}
+                      ? 'Gold Plan'
+                      : member.plan === 'SILVER'
+                        ? 'Silver Plan'
+                        : member.plan === 'TILL_MARRIAGE'
+                          ? 'Till Marriage'
+                          : 'Free Plan'}
                 </span>
               </div>
 

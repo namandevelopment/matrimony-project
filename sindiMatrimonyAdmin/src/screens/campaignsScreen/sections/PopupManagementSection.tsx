@@ -18,6 +18,21 @@ import { toast } from '../../../toastMessage/toast';
 import { CreatePopupModal } from '../components/CreatePopupModal';
 import { InteractivePopupPreviewModal } from '../components/InteractivePopupPreviewModal';
 import { useInputs } from '../../../customHooks/useInputs';
+import { CustomDropDown } from '../../../components/CustomDropDown';
+
+const POPUP_STATUS_OPTIONS = [
+  { label: 'All Statuses', value: 'ALL' },
+  { label: 'Active', value: 'ACTIVE' },
+  { label: 'Paused', value: 'PAUSED' },
+];
+
+const POPUP_PLACEMENT_OPTIONS = [
+  { label: 'All Placements', value: 'ALL' },
+  { label: 'Web Dashboard', value: 'DASHBOARD' },
+  { label: 'Mobile Home', value: 'MOBILE_HOME' },
+  { label: 'Pricing Plans', value: 'MEMBERSHIP_SCREEN' },
+  { label: 'Profile Screen', value: 'PROFILE_SCREEN' },
+];
 
 export interface PopupFilterValues {
   searchQuery: string;
@@ -123,27 +138,25 @@ export const PopupManagementSection: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <select
-              value={filterValues.statusFilter}
-              onChange={(e) => setFilterField('statusFilter', e.target.value)}
-              className="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white font-semibold text-slate-700"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="ACTIVE">Active</option>
-              <option value="PAUSED">Paused</option>
-            </select>
+            <div className="w-36">
+              <CustomDropDown
+                value={filterValues.statusFilter}
+                options={POPUP_STATUS_OPTIONS}
+                onChange={(val) => setFilterField('statusFilter', String(val))}
+                size="sm"
+                variant="outline"
+              />
+            </div>
 
-            <select
-              value={filterValues.placementFilter}
-              onChange={(e) => setFilterField('placementFilter', e.target.value)}
-              className="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white font-semibold text-slate-700"
-            >
-              <option value="ALL">All Placements</option>
-              <option value="DASHBOARD">Web Dashboard</option>
-              <option value="MOBILE_HOME">Mobile Home</option>
-              <option value="MEMBERSHIP_SCREEN">Pricing Plans</option>
-              <option value="PROFILE_SCREEN">Profile Screen</option>
-            </select>
+            <div className="w-40">
+              <CustomDropDown
+                value={filterValues.placementFilter}
+                options={POPUP_PLACEMENT_OPTIONS}
+                onChange={(val) => setFilterField('placementFilter', String(val))}
+                size="sm"
+                variant="outline"
+              />
+            </div>
 
             {/* Launch Interactive Simulator Button */}
             <button

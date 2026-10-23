@@ -20,6 +20,17 @@ import {
 } from '../../../services/adsService';
 import { CreateAdModal } from '../components/CreateAdModal';
 import { toast } from '../../../toastMessage/toast';
+import { CustomDropDown } from '../../../components/CustomDropDown';
+
+const PLATFORM_FILTER_OPTIONS = [
+  { label: 'All Platforms', value: 'ALL' },
+  { label: 'Amazon', value: 'Amazon' },
+  { label: 'Flipkart', value: 'Flipkart' },
+  { label: 'Meesho', value: 'Meesho' },
+  { label: 'Myntra', value: 'Myntra' },
+  { label: 'Nykaa', value: 'Nykaa' },
+  { label: 'Custom Store', value: 'Custom' },
+];
 
 export const AdsManagementSection: React.FC = () => {
   const [ads, setAds] = useState<AdvertisementDeal[]>([]);
@@ -203,19 +214,15 @@ export const AdsManagementSection: React.FC = () => {
           </div>
 
           {/* Platform Filter */}
-          <select
-            value={platformFilter}
-            onChange={(e) => setPlatformFilter(e.target.value)}
-            className="px-3 py-2 text-xs rounded-xl border border-stone-300 bg-white focus:outline-none focus:border-[#DB2F3C]"
-          >
-            <option value="ALL">All Platforms</option>
-            <option value="Amazon">Amazon</option>
-            <option value="Flipkart">Flipkart</option>
-            <option value="Meesho">Meesho</option>
-            <option value="Myntra">Myntra</option>
-            <option value="Nykaa">Nykaa</option>
-            <option value="Custom">Custom / Direct</option>
-          </select>
+          <div className="w-44">
+            <CustomDropDown
+              value={platformFilter}
+              options={PLATFORM_FILTER_OPTIONS}
+              onChange={(val) => setPlatformFilter(String(val))}
+              size="sm"
+              variant="outline"
+            />
+          </div>
         </div>
 
         {/* Status Filter & Add Button */}

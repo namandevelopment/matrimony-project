@@ -10,6 +10,13 @@ import {
 } from 'lucide-react';
 import { type InAppPopup, campaignService } from '../../../services/campaignService';
 import { toast } from '../../../toastMessage/toast';
+import { CustomDropDown } from '../../../components/CustomDropDown';
+
+const SIMULATION_USER_OPTIONS = [
+  { label: 'User #1 (Free Member)', value: 'usr_sample_free' },
+  { label: 'User #2 (Expired VIP)', value: 'usr_sample_expired' },
+  { label: 'User #3 (New Registrant)', value: 'usr_sample_new' },
+];
 
 interface InteractivePopupPreviewModalProps {
   isOpen: boolean;
@@ -113,16 +120,16 @@ export const InteractivePopupPreviewModal: React.FC<InteractivePopupPreviewModal
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-600">Simulate Member:</span>
-            <select
-              value={simulationUserId}
-              onChange={(e) => setSimulationUserId(e.target.value)}
-              className="px-2.5 py-1 rounded-xl border border-slate-200 bg-white font-bold text-slate-800 text-xs"
-            >
-              <option value="usr_sample_free">User #1 (Free Member)</option>
-              <option value="usr_sample_expired">User #2 (Expired VIP)</option>
-              <option value="usr_sample_new">User #3 (New Registrant)</option>
-            </select>
+            <span className="font-bold text-slate-600 text-xs">Simulate Member:</span>
+            <div className="w-48">
+              <CustomDropDown
+                value={simulationUserId}
+                options={SIMULATION_USER_OPTIONS}
+                onChange={(val) => setSimulationUserId(String(val))}
+                size="sm"
+                variant="outline"
+              />
+            </div>
             <button
               type="button"
               onClick={handleResetUser}
