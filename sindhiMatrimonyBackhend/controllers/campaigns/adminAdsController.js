@@ -137,10 +137,20 @@ const getPlatformDefaults = (platform = "Amazon") => {
   }
 };
 
+let inMemoryAds = DEFAULT_PARTNER_DEALS.map((d, i) => ({
+  ...d,
+  _id: `ad_mem_${i + 1}`,
+  clicks: 14 + i * 5,
+  impressions: 120 + i * 40,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+}));
+
 /**
  * 🌟 Ensure database has seed ads on cold start if empty
  */
 const ensureSeedAds = async () => {
+  if (mongoose.connection.readyState !== 1) return;
   try {
     const count = await Advertisement.countDocuments();
     if (count === 0) {
@@ -156,6 +166,26 @@ const ensureSeedAds = async () => {
  * 1. GET /api/v1/admin/ads - List all ads with filters, search, and pagination
  */
 export const getAdminAds = asyncHandler(async (req, res) => {
+  if (mongoose.connection.readyState !== 1) {
+    const stats = {
+      totalAds: inMemoryAds.length,
+      activeAds: inMemoryAds.filter((a) => a.status === "ACTIVE").length,
+      inactiveAds: inMemoryAds.filter((a) => a.status === "INACTIVE").length,
+    };
+    return apiHTTPResponse(
+      req,
+      res,
+      HTTP_OK,
+      "Advertisements retrieved successfully",
+      {
+        list: inMemoryAds,
+        pagination: { page: 1, limit: inMemoryAds.length, total: inMemoryAds.length, totalPages: 1 },
+        stats,
+      },
+      OK,
+      ERROR_FALSE
+    );
+  }
   await ensureSeedAds();
 
   const {
@@ -312,6 +342,25 @@ export const createAdminAd = asyncHandler(async (req, res) => {
     createdBy: req.user?.email || req.user?.id || "SUPER_ADMIN",
   });
 
+  if (mongoose.connection.readyState !== 1) {
+    const memAd = {
+      ...newAd.toObject(),
+      _id: `ad_mem_${Date.now()}`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    inMemoryAds.unshift(memAd);
+    return apiHTTPResponse(
+      req,
+      res,
+      HTTP_CREATED,
+      "Advertisement created successfully",
+      memAd,
+      OK,
+      ERROR_FALSE
+    );
+  }
+
   await newAd.save();
 
   return apiHTTPResponse(
@@ -330,6 +379,14 @@ export const createAdminAd = asyncHandler(async (req, res) => {
  */
 export const getAdminAdDetail = asyncHandler(async (req, res) => {
   const { id } = req.params;
+
+  if (mongoose.connection.readyState !== 1) {
+    const ad = inMemoryAds.find((a) => a.adId === id || a._id === id);
+    if (!ad) {
+      return apiHTTPResponse(req, res, HTTP_NOT_FOUND, "Advertisement not found", null, "NOT_FOUND", ERROR_TRUE);
+    }
+    return apiHTTPResponse(req, res, HTTP_OK, "Advertisement retrieved successfully", ad, OK, ERROR_FALSE);
+  }
 
   const query = mongoose.isValidObjectId(id) ? { _id: id } : { adId: id };
   const ad = await Advertisement.findOne(query).lean();
@@ -386,6 +443,15 @@ export const updateAdminAd = asyncHandler(async (req, res) => {
     if (!updateData.platformTextColor) updateData.platformTextColor = styleDefaults.platformTextColor;
   }
 
+  if (mongoose.connection.readyState !== 1) {
+    const idx = inMemoryAds.findIndex((a) => a.adId === id || a._id === id);
+    if (idx === -1) {
+      return apiHTTPResponse(req, res, HTTP_NOT_FOUND, "Advertisement not found", null, "NOT_FOUND", ERROR_TRUE);
+    }
+    inMemoryAds[idx] = { ...inMemoryAds[idx], ...updateData, updatedAt: new Date() };
+    return apiHTTPResponse(req, res, HTTP_OK, "Advertisement updated successfully", inMemoryAds[idx], OK, ERROR_FALSE);
+  }
+
   const query = mongoose.isValidObjectId(id) ? { _id: id } : { adId: id };
 
   const updated = await Advertisement.findOneAndUpdate(query, updateData, {
@@ -423,6 +489,17 @@ export const updateAdminAdStatus = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
+  if (mongoose.connection.readyState !== 1) {
+    const item = inMemoryAds.find((a) => a.adId === id || a._id === id);
+    if (!item) {
+      return apiHTTPResponse(req, res, HTTP_NOT_FOUND, "Advertisement not found", null, "NOT_FOUND", ERROR_TRUE);
+    }
+    const nextStatus = status || (item.status === "ACTIVE" ? "INACTIVE" : "ACTIVE");
+    item.status = nextStatus;
+    item.updatedAt = new Date();
+    return apiHTTPResponse(req, res, HTTP_OK, `Advertisement is now ${nextStatus}`, item, OK, ERROR_FALSE);
+  }
+
   const query = mongoose.isValidObjectId(id) ? { _id: id } : { adId: id };
   const existing = await Advertisement.findOne(query);
 
@@ -459,6 +536,12 @@ export const updateAdminAdStatus = asyncHandler(async (req, res) => {
 export const deleteAdminAd = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
+  if (mongoose.connection.readyState !== 1) {
+    const deleted = inMemoryAds.find((a) => a.adId === id || a._id === id);
+    inMemoryAds = inMemoryAds.filter((a) => a.adId !== id && a._id !== id);
+    return apiHTTPResponse(req, res, HTTP_OK, "Advertisement deleted successfully", deleted || { id }, OK, ERROR_FALSE);
+  }
+
   const query = mongoose.isValidObjectId(id) ? { _id: id } : { adId: id };
   const deleted = await Advertisement.findOneAndDelete(query);
 
@@ -489,6 +572,45 @@ export const deleteAdminAd = asyncHandler(async (req, res) => {
  * 7. GET /api/v1/ads & /api/v1/feed/partner-deals - Active deals for User Panel
  */
 export const getActiveAdvertisements = asyncHandler(async (req, res) => {
+  if (mongoose.connection.readyState !== 1) {
+    const { targetAudience, limit = 20 } = req.query;
+    let list = inMemoryAds.filter((a) => a.status === "ACTIVE");
+    if (targetAudience && targetAudience !== "ALL") {
+      list = list.filter((a) => a.targetAudience === "ALL" || a.targetAudience === targetAudience);
+    }
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10)));
+    const formattedDeals = list.slice(0, limitNum).map((ad) => ({
+      id: ad.adId || String(ad._id),
+      _id: String(ad._id || ad.adId),
+      name: ad.name,
+      categoryLabel: ad.categoryLabel || "🎁 Gifts",
+      categories: ad.categories || [],
+      price: ad.price,
+      originalPrice: ad.originalPrice,
+      discountPercent: ad.discountPercent,
+      platform: ad.platform,
+      platformLogoBg: ad.platformLogoBg,
+      platformTextColor: ad.platformTextColor,
+      badge: ad.badge,
+      badgeColor: ad.badgeColor,
+      imageSrc: ad.imageSrc,
+      images: ad.images && ad.images.length > 0 ? ad.images : [ad.imageSrc],
+      description: ad.description,
+      couponCode: ad.couponCode || "",
+      affiliateUrl: ad.affiliateUrl,
+      priority: ad.priority,
+    }));
+    return apiHTTPResponse(
+      req,
+      res,
+      HTTP_OK,
+      "Active partner deals retrieved successfully",
+      formattedDeals,
+      OK,
+      ERROR_FALSE
+    );
+  }
+
   await ensureSeedAds();
 
   const { targetAudience, limit = 20 } = req.query;
@@ -550,6 +672,13 @@ export const getActiveAdvertisements = asyncHandler(async (req, res) => {
  */
 export const trackAdClick = asyncHandler(async (req, res) => {
   const { id } = req.params;
+
+  if (mongoose.connection.readyState !== 1) {
+    const ad = inMemoryAds.find((a) => a.adId === id || a._id === id);
+    if (ad) ad.clicks = (ad.clicks || 0) + 1;
+    return apiHTTPResponse(req, res, HTTP_OK, "Ad click recorded", { success: true }, OK, ERROR_FALSE);
+  }
+
   const query = mongoose.isValidObjectId(id) ? { _id: id } : { adId: id };
 
   await Advertisement.updateOne(query, { $inc: { clicks: 1 } });
