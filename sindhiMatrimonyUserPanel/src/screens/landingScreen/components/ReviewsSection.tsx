@@ -193,7 +193,7 @@ export const ReviewsSection: React.FC = memo(() => {
       try {
         const raw = localStorage.getItem("my_submitted_review");
         if (raw) setMySubmittedReview(JSON.parse(raw));
-      } catch {}
+      } catch { }
     }
     refetchReviews();
   };
@@ -382,11 +382,10 @@ export const ReviewsSection: React.FC = memo(() => {
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveFilter(tab.key)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                  activeFilter === tab.key
-                    ? "bg-rose-600 text-white shadow-xs font-semibold"
-                    : "bg-white text-stone-600 border border-stone-200 hover:border-stone-300 hover:bg-stone-50"
-                }`}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${activeFilter === tab.key
+                  ? "bg-rose-600 text-white shadow-xs font-semibold"
+                  : "bg-white text-stone-600 border border-stone-200 hover:border-stone-300 hover:bg-stone-50"
+                  }`}
               >
                 {tab.label}
               </button>
@@ -451,11 +450,10 @@ export const ReviewsSection: React.FC = memo(() => {
                     {[1, 2, 3, 4, 5].map((i) => (
                       <Star
                         key={i}
-                        className={`w-4 h-4 ${
-                          i <= Math.round(Number(review.rating))
-                            ? "fill-amber-400 text-amber-400"
-                            : "fill-stone-200 text-stone-200"
-                        }`}
+                        className={`w-4 h-4 ${i <= Math.round(Number(review.rating))
+                          ? "fill-amber-400 text-amber-400"
+                          : "fill-stone-200 text-stone-200"
+                          }`}
                       />
                     ))}
                     <span className="text-xs font-semibold text-stone-700 ml-1.5">
@@ -494,11 +492,10 @@ export const ReviewsSection: React.FC = memo(() => {
                     <button
                       type="button"
                       onClick={() => handleToggleHelpful(review.reviewId, review.helpfulCount || 12)}
-                      className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
-                        isLiked
-                          ? "bg-rose-50 text-rose-700 border border-rose-200"
-                          : "bg-stone-50 hover:bg-stone-100 text-stone-600"
-                      }`}
+                      className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full transition-colors cursor-pointer ${isLiked
+                        ? "bg-rose-50 text-rose-700 border border-rose-200"
+                        : "bg-stone-50 hover:bg-stone-100 text-stone-600"
+                        }`}
                       title="Mark as helpful"
                     >
                       <ThumbsUp className={`w-3.5 h-3.5 ${isLiked ? "fill-rose-600 text-rose-600" : ""}`} />
@@ -531,6 +528,13 @@ export const ReviewsSection: React.FC = memo(() => {
               <span>Share Experience</span>
             </button>
             <a
+              onClick={(e) => {
+                e.preventDefault();
+                window.scrollTo({
+                  top: 0,
+                  behavior: "smooth",
+                });
+              }}
               href="#register"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#FF4A57] hover:bg-[#e03d4a] active:bg-[#c9323f] text-white text-xs sm:text-sm font-semibold shadow-xs transition-all hover:shadow-md cursor-pointer"
             >
