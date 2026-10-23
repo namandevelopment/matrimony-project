@@ -5,8 +5,6 @@ import {
   Tag,
   ExternalLink,
   Plus,
-  Trash2,
-  Image as ImageIcon,
   Check,
   Sparkles,
   Gift,
@@ -19,7 +17,6 @@ import {
   CATEGORY_EMOJI_PRESETS,
 } from '../../../services/adsService';
 import { CustomTextInput } from '../../../components/CustomTextInput';
-import { CustomDropDown } from '../../../components/CustomDropDown';
 
 export interface CreateAdModalProps {
   isOpen: boolean;

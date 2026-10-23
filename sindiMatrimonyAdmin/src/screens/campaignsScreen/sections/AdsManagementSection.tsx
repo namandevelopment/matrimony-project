@@ -13,7 +13,6 @@ import {
   XCircle,
   Copy,
   Layers,
-  Sparkles,
 } from 'lucide-react';
 import {
   type AdvertisementDeal,
@@ -250,7 +249,12 @@ export const AdsManagementSection: React.FC = () => {
       </div>
 
       {/* 3. Deals Grid */}
-      {filteredAds.length === 0 ? (
+      {isLoading ? (
+        <div className="p-12 text-center bg-white rounded-2xl border border-stone-200">
+          <div className="w-8 h-8 border-3 border-[#DB2F3C] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-xs text-stone-500 font-medium">Loading partner deals...</p>
+        </div>
+      ) : filteredAds.length === 0 ? (
         <div className="p-12 text-center bg-white rounded-2xl border border-dashed border-stone-300">
           <div className="w-14 h-14 rounded-2xl bg-rose-50 text-[#DB2F3C] flex items-center justify-center mx-auto mb-3">
             <ShoppingBag className="w-7 h-7" />

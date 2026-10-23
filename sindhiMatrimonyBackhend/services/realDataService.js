@@ -10,6 +10,7 @@
 
 import mongoose from "mongoose";
 import { SEED_CANDIDATE_POOL } from "../constants/seedCandidateData.js";
+export { SEED_CANDIDATE_POOL };
 import { User, Profile, PartnerPreference } from "../models/index.js";
 
 // ============================================================================

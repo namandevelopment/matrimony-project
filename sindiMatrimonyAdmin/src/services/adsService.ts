@@ -1,4 +1,4 @@
-import { api } from '../redux/apiService';
+import api from '../redux/apiService';
 import { ApiURL } from '../redux/apiService/endpoint';
 
 export interface AdvertisementDeal {
