@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery, useInfiniteQuery, type UseQueryOptions, type UseInfiniteQueryOptions } from '@tanstack/react-query';
 import { apiRequest } from '../../redux/apiService';
 import { ApiURL } from '../../redux/apiService/endpoint';
@@ -339,13 +340,17 @@ export const useLeadsQuery = (filters: Record<string, any> = {}) => {
     params: filters,
   });
 
-  const leads = query.data?.pages.flatMap((page) => {
-    if (Array.isArray(page?.leads)) return page.leads;
-    if (Array.isArray(page?.list)) return page.list;
-    if (Array.isArray(page?.data)) return page.data;
-    if (Array.isArray(page)) return page;
-    return [];
-  }) ?? [];
+  const leads = useMemo(() => {
+    return (
+      query.data?.pages.flatMap((page) => {
+        if (Array.isArray(page?.leads)) return page.leads;
+        if (Array.isArray(page?.list)) return page.list;
+        if (Array.isArray(page?.data)) return page.data;
+        if (Array.isArray(page)) return page;
+        return [];
+      }) ?? []
+    );
+  }, [query.data]);
 
   return {
     ...query,
@@ -370,13 +375,17 @@ export const useMembersQuery = (filters: Record<string, any> = {}) => {
     params: filters,
   });
 
-  const members = query.data?.pages.flatMap((page) => {
-    if (Array.isArray(page?.members)) return page.members;
-    if (Array.isArray(page?.list)) return page.list;
-    if (Array.isArray(page?.data)) return page.data;
-    if (Array.isArray(page)) return page;
-    return [];
-  }) ?? [];
+  const members = useMemo(() => {
+    return (
+      query.data?.pages.flatMap((page) => {
+        if (Array.isArray(page?.members)) return page.members;
+        if (Array.isArray(page?.list)) return page.list;
+        if (Array.isArray(page?.data)) return page.data;
+        if (Array.isArray(page)) return page;
+        return [];
+      }) ?? []
+    );
+  }, [query.data]);
 
   return {
     ...query,

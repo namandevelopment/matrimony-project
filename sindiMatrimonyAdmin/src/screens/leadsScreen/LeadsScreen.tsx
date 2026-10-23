@@ -46,6 +46,7 @@ export const LeadsScreen: React.FC = memoWithDeepEqual(() => {
 
   // Timer ref for auto-clearing success banners safely without leaks
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSyncedLeadsRef = useRef<any>(null);
 
   // Cached session & role detection
   const storedUser = useMemo(() => getStoredUser() || FALLBACK_USER, []);
@@ -110,7 +111,8 @@ export const LeadsScreen: React.FC = memoWithDeepEqual(() => {
 
   // Sync live API leads into state when available (5 minutes TanStack cache)
   useEffect(() => {
-    if (apiLeads && apiLeads.length > 0) {
+    if (apiLeads && apiLeads.length > 0 && lastSyncedLeadsRef.current !== apiLeads) {
+      lastSyncedLeadsRef.current = apiLeads;
       updateState({ leads: apiLeads as any });
     }
   }, [apiLeads, updateState]);

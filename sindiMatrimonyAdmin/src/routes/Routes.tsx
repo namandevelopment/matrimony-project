@@ -106,7 +106,8 @@ const Routes: React.FC = () => {
           return (
             <Route
               key={screen.name}
-              path={screen.path === '/' ? '' : screen.path.replace('/', '')}
+              index={screen.path === '/' ? true : undefined}
+              path={screen.path === '/' ? undefined : screen.path.replace('/', '')}
               element={
                 <Suspense fallback={ContentFallback}>
                   <RBACScreenGuard path={screen.path}>
