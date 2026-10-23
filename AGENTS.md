@@ -118,3 +118,12 @@ Rule: Only edit this file. Minimal diff. Silent mode. English only.
 1. **Copy Relative Path**: Right-click file in IDE > "Copy Relative Path" and paste in prompt.
 2. **Gemini Flash**: Fastest execution with the lowest token rate.
 3. **Fresh Context**: Start a new chat after completing a task to avoid sending long histories.
+
+---
+
+## 🌐 4. Live Production Links & Repository
+- **User Web Panel**: [sindhi-matrimony-user-panel.vercel.app](https://sindhi-matrimony-user-panel.vercel.app) ([sindhimarriage.in](https://sindhimarriage.in))
+- **Admin CRM Panel**: [sindi-matrimony-admin.vercel.app](https://sindi-matrimony-admin.vercel.app) ([admin.sindhimarriage.in](https://admin.sindhimarriage.in))
+- **Backend API Gateway**: [sindhi-matrimony-backend.vercel.app](https://sindhi-matrimony-backend.vercel.app/api/v1/health)
+- **GitHub Repository**: `namandevelopment/matrimony-project` (`main` auto-deploys to Vercel)
+
