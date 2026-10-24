@@ -52,9 +52,13 @@ const ProfileDropdownComponent: React.FC<ProfileDropdownProps> = ({
     if (onLogout) {
       onLogout();
     } else {
-      openLogoutModal();
+      openLogoutModal({
+        userName: profile?.name,
+        userMatrimonyId: profile?.matrimonyId,
+        userAvatar: profile?.avatar,
+      });
     }
-  }, [onLogout, openLogoutModal]);
+  }, [onLogout, openLogoutModal, profile?.name, profile?.matrimonyId, profile?.avatar]);
 
   // Mouse Enter with smooth delay cancellation
   const handleMouseEnter = useCallback(() => {

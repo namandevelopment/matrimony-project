@@ -223,9 +223,13 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
     if (onLogout) {
       onLogout();
     } else {
-      openLogoutModal();
+      openLogoutModal({
+        userName: user?.name,
+        userMatrimonyId: user?.matrimonyId,
+        userAvatar: user?.avatarUrl,
+      });
     }
-  }, [onLogout, openLogoutModal]);
+  }, [onLogout, openLogoutModal, user?.name, user?.matrimonyId, user?.avatarUrl]);
 
   return (
     <DashboardNavProvider activeTab={activeTab} onTabChange={handleTabChange}>

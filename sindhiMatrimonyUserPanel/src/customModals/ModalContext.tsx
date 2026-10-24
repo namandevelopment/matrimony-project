@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useCallback, useMemo } from
 import { LogoutModal } from './LogoutModal';
 
 export interface GlobalModalContextType {
-  openLogoutModal: () => void;
+  openLogoutModal: (userData?: { userName?: string; userMatrimonyId?: string; userAvatar?: string }) => void;
   closeLogoutModal: () => void;
   isLogoutModalOpen: boolean;
 }
@@ -17,13 +17,20 @@ export interface ModalProviderProps {
 
 export const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const [modalUserData, setModalUserData] = useState<{
+    userName?: string;
+    userMatrimonyId?: string;
+    userAvatar?: string;
+  } | undefined>(undefined);
 
-  const openLogoutModal = useCallback(() => {
+  const openLogoutModal = useCallback((userData?: { userName?: string; userMatrimonyId?: string; userAvatar?: string }) => {
+    setModalUserData(userData);
     setLogoutOpen(true);
   }, []);
 
   const closeLogoutModal = useCallback(() => {
     setLogoutOpen(false);
+    setModalUserData(undefined);
   }, []);
 
   const value = useMemo(
@@ -39,7 +46,7 @@ export const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
     <GlobalModalContext.Provider value={value}>
       {children}
       {/* Mount universal clean LogoutModal globally */}
-      <LogoutModal isOpen={logoutOpen} onClose={closeLogoutModal} />
+      <LogoutModal isOpen={logoutOpen} onClose={closeLogoutModal} {...modalUserData} />
     </GlobalModalContext.Provider>
   );
 };

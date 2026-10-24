@@ -9,6 +9,7 @@ import { apiFetch, ApiURL } from '../redux/apiService';
 import { store } from '../redux/Store/store';
 import { resetEntireStore } from '../redux/slices/dataSlice';
 import { queryClient } from '../tanstackQuery/client';
+import { useProfileQuery } from '../tanstackQuery';
 
 export interface LogoutModalProps {
   isOpen: boolean;
@@ -37,20 +38,37 @@ const LogoutModalComponent: React.FC<LogoutModalProps> = ({
   const [internalLoading, setInternalLoading] = useState(false);
   const isLoading = externalLoading || internalLoading;
 
-  // Retrieve current authenticated user profile
+  // Retrieve current authenticated user profile dynamically from live API, Redux or Storage
+  const { data: profileRes } = useProfileQuery(isOpen);
+  const liveProfile =
+    (profileRes as any)?.profile ||
+    (profileRes as any)?.data?.profile ||
+    (profileRes as any)?.data;
+  const liveUser = (profileRes as any)?.user || (profileRes as any)?.data?.user;
+
   const storedUser = getStoredUser();
   const displayName =
     userName ||
+    liveProfile?.name ||
+    liveUser?.name ||
     storedUser?.fullName ||
     storedUser?.name ||
     'Sindhi Matrimony Member';
   const displayId =
     userMatrimonyId ||
+    liveProfile?.matrimonyId ||
+    liveUser?.matrimonyId ||
     storedUser?.matrimonyId ||
     storedUser?.memberId ||
-    storedUser?.mobile ||
-    'Verified Member';
-  const avatarSrc = userAvatar || storedUser?.avatarUrl || storedUser?.photoUrl || '';
+    (liveProfile?.subcaste ? `${liveProfile.subcaste} • Verified Member` : 'Verified Member');
+  const avatarSrc =
+    userAvatar ||
+    liveProfile?.avatar ||
+    liveProfile?.photos?.[0] ||
+    liveProfile?.photoUrl ||
+    storedUser?.avatarUrl ||
+    storedUser?.photoUrl ||
+    '';
 
   // Handle ESC key press
   useEffect(() => {
