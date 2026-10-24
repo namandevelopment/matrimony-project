@@ -30,17 +30,11 @@ import type {
   MarriageSuccessStory,
 } from "./types";
 
-const defaultUserProfile: UserProfile = {
-  name: "Naman",
-  matrimonyId: "SM4517087",
-  community: "SindhiMatrimony",
-  membershipStatus: "Free member",
-  completenessScore: 42,
-};
+
 
 const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
   initialTab = "home",
-  initialUser = defaultUserProfile,
+  initialUser,
   initialMatches,
   initialViewedProfiles,
   initialSuccessStories,
