@@ -1,6 +1,7 @@
 "use client";
 
 import React, { memo, useState, useRef, useCallback, useEffect } from "react";
+import { isDeepEqual } from "@/utils";
 import Link from "next/link";
 import { ChevronDown, ChevronUp, LogOut, Star } from "lucide-react";
 import {
@@ -15,18 +16,28 @@ import {
 } from "./DashboardIcons";
 import type { UserProfile } from "../types";
 import { useGlobalModal } from "@/customModals";
+import { useProfileQuery } from "@/tanstackQuery";
 
 export interface ProfileDropdownProps {
-  user: UserProfile;
   onLogout?: () => void;
   onUpgradeClick?: () => void;
 }
 
 const ProfileDropdownComponent: React.FC<ProfileDropdownProps> = ({
-  user,
   onLogout,
   onUpgradeClick,
 }) => {
+  const { data: profileRes } = useProfileQuery();
+  const profileRef = useRef<any>(null);
+
+  if (!isDeepEqual(profileRef.current, profileRes?.profile)) {
+    profileRef.current = profileRes?.profile;
+    if (profileRes?.profile) {
+      console.log('yieyriweyriewyiryeiryiewyriweyriwyeri', profileRef.current);
+    }
+  }
+  const profile = profileRef.current ?? {};
+
   const [isOpen, setIsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -130,11 +141,11 @@ const ProfileDropdownComponent: React.FC<ProfileDropdownProps> = ({
         className="flex items-center gap-1.5 p-1 rounded-full hover:bg-stone-100 transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#DB2F3C]"
       >
         <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-stone-200 bg-stone-100 shrink-0 shadow-2xs">
-          {user.avatarUrl ? (
+          {profile?.avatar ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={user.avatarUrl}
-              alt={user.name}
+              src={profile?.avatar}
+              alt={profile?.name}
               className="w-full h-full object-cover"
               loading="lazy"
               decoding="async"
@@ -144,9 +155,8 @@ const ProfileDropdownComponent: React.FC<ProfileDropdownProps> = ({
           )}
         </div>
         <ChevronDown
-          className={`w-4 h-4 text-stone-500 transition-transform duration-200 ${
-            isOpen ? "rotate-180 text-[#DB2F3C]" : ""
-          }`}
+          className={`w-4 h-4 text-stone-500 transition-transform duration-200 ${isOpen ? "rotate-180 text-[#DB2F3C]" : ""
+            }`}
         />
       </button>
 
@@ -174,15 +184,15 @@ const ProfileDropdownComponent: React.FC<ProfileDropdownProps> = ({
             {/* Top User Details */}
             <div className="flex flex-col items-center text-center pt-1 pb-1">
               <h2 className="text-[19px] sm:text-[20px] font-bold text-stone-900 leading-tight tracking-tight font-heading">
-                {user.name || "Naman"}
+                {profile?.name}
               </h2>
 
               <p className="mt-1 text-[15px] font-semibold text-stone-700 tracking-wide">
-                {user.matrimonyId || "BRH4517087"}
+                {profile?.matrimonyId || "BRH4517087"}
               </p>
 
               <p className="mt-0.5 text-[13px] text-stone-500 font-normal">
-                {user.membershipStatus || "Free member"}
+                {profile?.membershipStatus || "Free member"}
               </p>
             </div>
 
@@ -373,6 +383,9 @@ const ProfileDropdownComponent: React.FC<ProfileDropdownProps> = ({
   );
 };
 
-export const ProfileDropdown = memo(ProfileDropdownComponent);
+export const ProfileDropdown = memo(
+  ProfileDropdownComponent,
+  (prevProps, nextProps) => isDeepEqual(prevProps, nextProps)
+);
 ProfileDropdown.displayName = "ProfileDropdown";
 export default ProfileDropdown;

@@ -61,6 +61,7 @@ export interface ViewUserProfile {
   profileCreatedBy: string;
   isShortlisted?: boolean;
   interestSent?: boolean;
+  sendIntrestSended?: boolean;
   isNewlyJoined?: boolean;
   aboutText: string;
   personalInfo: ProfilePersonalInfo;

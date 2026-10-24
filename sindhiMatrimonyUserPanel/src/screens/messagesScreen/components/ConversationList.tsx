@@ -1,7 +1,8 @@
 "use client";
 
-import React, { memo } from "react";
+import React from "react";
 import { SlidersHorizontal, ChevronRight, Heart } from "lucide-react";
+import { memoWithDeepEqual } from "@/utils";
 import { MessageTab, ConversationItem } from "../types";
 
 export interface ConversationListProps {
@@ -32,9 +33,8 @@ const ConversationListComponent: React.FC<ConversationListProps> = ({
         <button
           type="button"
           onClick={() => onTabChange("received")}
-          className={`px-3 py-2.5 relative transition-colors cursor-pointer ${
-            currentTab === "received" ? "text-stone-900 font-bold" : "hover:text-stone-900"
-          }`}
+          className={`px-3 py-2.5 relative transition-colors cursor-pointer ${currentTab === "received" ? "text-stone-900 font-bold" : "hover:text-stone-900"
+            }`}
         >
           <span>Received</span>
           {currentTab === "received" && (
@@ -45,9 +45,8 @@ const ConversationListComponent: React.FC<ConversationListProps> = ({
         <button
           type="button"
           onClick={() => onTabChange("awaiting")}
-          className={`px-3 py-2.5 relative transition-colors cursor-pointer ${
-            currentTab === "awaiting" ? "text-stone-900 font-bold" : "hover:text-stone-900"
-          }`}
+          className={`px-3 py-2.5 relative transition-colors cursor-pointer ${currentTab === "awaiting" ? "text-stone-900 font-bold" : "hover:text-stone-900"
+            }`}
         >
           <span>Awaiting Response</span>
           {currentTab === "awaiting" && (
@@ -58,9 +57,8 @@ const ConversationListComponent: React.FC<ConversationListProps> = ({
         <button
           type="button"
           onClick={() => onTabChange("calls")}
-          className={`px-3 py-2.5 relative transition-colors cursor-pointer ${
-            currentTab === "calls" ? "text-stone-900 font-bold" : "hover:text-stone-900"
-          }`}
+          className={`px-3 py-2.5 relative transition-colors cursor-pointer ${currentTab === "calls" ? "text-stone-900 font-bold" : "hover:text-stone-900"
+            }`}
         >
           <span>Calls</span>
           {currentTab === "calls" && (
@@ -94,16 +92,25 @@ const ConversationListComponent: React.FC<ConversationListProps> = ({
               key={item.id}
               type="button"
               onClick={() => onSelectConversation(item.id)}
-              className={`w-full text-left p-3.5 flex items-center justify-between gap-3 transition-colors cursor-pointer ${
-                isSelected
+              className={`w-full text-left p-3.5 flex items-center justify-between gap-3 transition-colors cursor-pointer ${isSelected
                   ? "bg-[#F3F4F6]"
                   : "bg-white hover:bg-stone-50"
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3 min-w-0">
                 {/* Red Circular Logo with Online Green Dot */}
                 <div className="relative shrink-0 w-10 h-10 rounded-full bg-[#DB2F3C] text-white flex items-center justify-center shadow-xs">
-                  <Heart className="w-5 h-5 fill-current" />
+                  {item.avatarUrl ? (
+                    <img
+                      src={item.avatarUrl}
+                      alt={item.name}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <span className="font-bold text-sm">
+                      {item.name ? item.name.charAt(0).toUpperCase() : <Heart className="w-5 h-5 fill-current" />}
+                    </span>
+                  )}
                   {item.isOnline && (
                     <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#22C55E] border-2 border-white" />
                   )}
@@ -128,6 +135,8 @@ const ConversationListComponent: React.FC<ConversationListProps> = ({
   );
 };
 
-export const ConversationList = memo(ConversationListComponent);
-ConversationList.displayName = "ConversationList";
+export const ConversationList = memoWithDeepEqual(
+  ConversationListComponent,
+  "ConversationList"
+);
 export default ConversationList;

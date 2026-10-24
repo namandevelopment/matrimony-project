@@ -1,3 +1,4 @@
+import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 import { User, Profile, PartnerPreference, ProfileView, SuccessStory } from "../../models/index.js";
@@ -165,3 +166,19 @@ export async function seedCandidates() {
 }
 
 export default seedCandidates;
+
+if (process.argv[1]?.includes("seedCandidates.js")) {
+  dotenv.config();
+  const DB_URI = process.env.DB_STRING || "mongodb://127.0.0.1:27017/sindhi_matrimony";
+  mongoose
+    .connect(DB_URI)
+    .then(async () => {
+      await seedCandidates();
+      await mongoose.disconnect();
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error("Seeding failed:", err);
+      process.exit(1);
+    });
+}

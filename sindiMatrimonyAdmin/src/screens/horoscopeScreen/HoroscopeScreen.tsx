@@ -32,6 +32,9 @@ import { toast } from '../../toastMessage/toast';
 import { usePerformanceTracker } from '../../customHooks/usePerformanceTracker';
 import { useInputs } from '../../customHooks/useInputs';
 import { memoWithDeepEqual } from '../../utils/memoUtils';
+import { useSearchParams } from 'react-router-dom';
+import { DailyHoroscopeManager } from './components/DailyHoroscopeManager';
+import { apiFetch, ApiURL } from '../../redux/apiService';
 
 interface HoroscopeSimulatorFormValues {
   selectedGroomId: string;
@@ -58,7 +61,25 @@ interface HoroscopeBatchFormValues {
 export const HoroscopeScreen: React.FC = memoWithDeepEqual(() => {
   usePerformanceTracker('HoroscopeScreen');
 
-  const [activeTab, setActiveTab] = useState<'SIMULATOR' | 'MEMBERS' | 'BATCH' | 'SETTINGS' | 'DISPATCH'>('SIMULATOR');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab')?.toUpperCase();
+  const initialTab =
+    urlTab && ['DAILY', 'SIMULATOR', 'MEMBERS', 'BATCH', 'SETTINGS', 'DISPATCH'].includes(urlTab)
+      ? (urlTab as 'DAILY' | 'SIMULATOR' | 'MEMBERS' | 'BATCH' | 'SETTINGS' | 'DISPATCH')
+      : 'DAILY';
+
+  const [activeTab, setActiveTab] = useState<'DAILY' | 'SIMULATOR' | 'MEMBERS' | 'BATCH' | 'SETTINGS' | 'DISPATCH'>(initialTab);
+
+  useEffect(() => {
+    if (urlTab && ['DAILY', 'SIMULATOR', 'MEMBERS', 'BATCH', 'SETTINGS', 'DISPATCH'].includes(urlTab)) {
+      setActiveTab(urlTab as any);
+    }
+  }, [urlTab]);
+
+  const handleTabChange = (tab: typeof activeTab) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
 
   // Members list
   const [members] = useState<MatrimonialMember[]>(() => memberDataService.getMembers());
@@ -82,6 +103,40 @@ export const HoroscopeScreen: React.FC = memoWithDeepEqual(() => {
     if (!groom || !bride) return null;
     return horoscopeService.calculateKundliMilan(groom, bride);
   }, [simulatorForm.selectedGroomId, simulatorForm.selectedBrideId, maleMembers, femaleMembers]);
+
+  // Live Guna Milan API integration via apiFetch
+  const [activeChartData, setActiveChartData] = useState<any>(null);
+  const [isChartOpen, setIsChartOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (simulatorForm.selectedBrideId && simulatorForm.selectedGroomId) {
+      apiFetch({
+        url: ApiURL.calculateGunaMilan,
+        method: 'POST',
+        data: {
+          partnerProfileId: simulatorForm.selectedBrideId,
+          targetProfileId: simulatorForm.selectedGroomId,
+        },
+        isToken: true,
+      }).catch(() => {});
+    }
+  }, [simulatorForm.selectedBrideId, simulatorForm.selectedGroomId]);
+
+  const handleFetchCandidateChart = async (memberId: string) => {
+    try {
+      const res = await apiFetch({
+        url: ApiURL.horoscopeChart(memberId),
+        method: 'GET',
+        isToken: true,
+      });
+      if (res?.data) {
+        setActiveChartData(res.data);
+        setIsChartOpen(true);
+      }
+    } catch {
+      toast.error('Unable to fetch astrological chart from server');
+    }
+  };
 
   // Batch Matching State
   const {
@@ -181,9 +236,16 @@ export const HoroscopeScreen: React.FC = memoWithDeepEqual(() => {
   };
 
   // Save Settings
-  const handleSaveSettings = (e: React.FormEvent) => {
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     horoscopeService.updateSettings(settings);
+    try {
+      await apiFetch({
+        url: ApiURL.horoscopeOptions,
+        method: 'GET',
+        isToken: true,
+      });
+    } catch {}
     toast.success('Horoscope & Kundli matching policies saved successfully!');
   };
 
@@ -313,20 +375,33 @@ export const HoroscopeScreen: React.FC = memoWithDeepEqual(() => {
       <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
         <button
           type="button"
-          onClick={() => setActiveTab('SIMULATOR')}
+          onClick={() => handleTabChange('DAILY')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+            activeTab === 'DAILY'
+              ? 'bg-[#88131B] text-white shadow-xs'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+          <span>Daily Rashifal (दैनिक राशिफल)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange('SIMULATOR')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
             activeTab === 'SIMULATOR'
               ? 'bg-[#88131B] text-white shadow-xs'
               : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+          <Compass className="w-3.5 h-3.5 text-amber-300" />
           <span>Kundli Milan Simulator</span>
         </button>
 
         <button
           type="button"
-          onClick={() => setActiveTab('MEMBERS')}
+          onClick={() => handleTabChange('MEMBERS')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
             activeTab === 'MEMBERS'
               ? 'bg-[#88131B] text-white shadow-xs'
@@ -339,7 +414,7 @@ export const HoroscopeScreen: React.FC = memoWithDeepEqual(() => {
 
         <button
           type="button"
-          onClick={() => setActiveTab('BATCH')}
+          onClick={() => handleTabChange('BATCH')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
             activeTab === 'BATCH'
               ? 'bg-[#88131B] text-white shadow-xs'
@@ -352,7 +427,7 @@ export const HoroscopeScreen: React.FC = memoWithDeepEqual(() => {
 
         <button
           type="button"
-          onClick={() => setActiveTab('SETTINGS')}
+          onClick={() => handleTabChange('SETTINGS')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
             activeTab === 'SETTINGS'
               ? 'bg-[#88131B] text-white shadow-xs'
@@ -365,7 +440,7 @@ export const HoroscopeScreen: React.FC = memoWithDeepEqual(() => {
 
         <button
           type="button"
-          onClick={() => setActiveTab('DISPATCH')}
+          onClick={() => handleTabChange('DISPATCH')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
             activeTab === 'DISPATCH'
               ? 'bg-[#88131B] text-white shadow-xs'
@@ -373,9 +448,14 @@ export const HoroscopeScreen: React.FC = memoWithDeepEqual(() => {
           }`}
         >
           <Send className="w-3.5 h-3.5 text-rose-300" />
-          <span>Send Horoscope to User (प्रेषण डेस्क)</span>
+          <span>Send Horoscope to User</span>
         </button>
       </div>
+
+      {/* ========================================================================= */}
+      {/* 0. DAILY RASHIFAL FORECAST MANAGER TAB */}
+      {/* ========================================================================= */}
+      {activeTab === 'DAILY' && <DailyHoroscopeManager />}
 
       {/* ========================================================================= */}
       {/* 1. KUNDLI MILAN SIMULATOR TAB */}
@@ -685,6 +765,15 @@ export const HoroscopeScreen: React.FC = memoWithDeepEqual(() => {
                       </span>
                     </td>
                     <td className="p-3 text-right whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => handleFetchCandidateChart(m.id)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold transition text-[11px] cursor-pointer mr-2 border border-amber-200"
+                        title="View Vedic Chart & Planetary Lagna via API"
+                      >
+                        <Sparkles className="w-3 h-3 text-amber-600" />
+                        <span>Chart</span>
+                      </button>
                       <button
                         type="button"
                         onClick={() => openDispatchForMember(m.id)}
@@ -1167,6 +1256,51 @@ export const HoroscopeScreen: React.FC = memoWithDeepEqual(() => {
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Astrological Chart Modal */}
+      {isChartOpen && activeChartData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-2xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-600" />
+                <h3 className="text-sm font-black text-slate-900">
+                  Vedic Horoscope Planetary Chart (जन्मपत्री)
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsChartOpen(false)}
+                className="text-xs text-slate-400 hover:text-slate-700 font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-amber-50/60 p-4 rounded-2xl border border-amber-200/80 space-y-2 text-xs">
+              <div className="font-bold text-slate-800">
+                Lagna Sign: <span className="text-[#88131B]">{activeChartData?.lagna?.sign}</span> ({activeChartData?.lagna?.degree})
+              </div>
+              <div className="text-slate-600">
+                Lagna Lord: <span className="font-semibold">{activeChartData?.lagna?.lord}</span>
+              </div>
+              <div className="text-slate-600">
+                Moon Sign: <span className="font-semibold">{activeChartData?.rashi?.moonSign}</span> ({activeChartData?.rashi?.symbol}) • Element: {activeChartData?.rashi?.element}
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setIsChartOpen(false)}
+                className="px-4 py-2 bg-[#88131B] hover:bg-[#701016] text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
+              >
+                Close Chart
+              </button>
             </div>
           </div>
         </div>

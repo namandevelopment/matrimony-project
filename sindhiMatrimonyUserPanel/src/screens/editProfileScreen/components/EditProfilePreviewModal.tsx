@@ -59,6 +59,7 @@ const EditProfilePreviewModalComponent: React.FC<EditProfilePreviewModalProps> =
                   src={primaryPhoto}
                   alt={basicInfo.name}
                   fill
+                  unoptimized
                   className="object-cover"
                 />
               ) : (

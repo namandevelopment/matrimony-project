@@ -1,6 +1,7 @@
 "use client";
 
 import React, { memo, useCallback } from "react";
+import { isDeepEqual } from "@/utils";
 import Link from "next/link";
 import {
   Home,
@@ -181,6 +182,9 @@ const DashboardNavComponent: React.FC<DashboardNavProps> = ({
   );
 };
 
-export const DashboardNav = memo(DashboardNavComponent);
+export const DashboardNav = memo(
+  DashboardNavComponent,
+  (prev, next) => isDeepEqual(prev, next)
+);
 DashboardNav.displayName = "DashboardNav";
 export default DashboardNav;

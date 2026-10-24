@@ -7,9 +7,12 @@ import {
   PartnerPreference,
   ProfileView,
   SuccessStory,
+  UserSubscription,
 } from "../../models/index.js";
 import { getKey, setKeyWithTime, removeKey } from "../../services/serviceRedis.js";
 import { SEED_CANDIDATE_POOL, SEED_SUCCESS_STORIES } from "../../constants/seedCandidateData.js";
+import { isInterestSentToCandidate } from "../matchmaking/interestsController.js";
+import { addNotification } from "../notifications/notificationController.js";
 
 const getUserId = (req) =>
   req.user?.id ||
@@ -329,6 +332,7 @@ const DEFAULT_MATCHES = SEED_CANDIDATE_POOL.map((c) => ({
   matrimonyId: c.matrimonyId,
   matchScore: c.matchScore || c.compatibilityScore || 90,
   badge: c.matchScore >= 95 ? `${c.matchScore}% Match` : c.membershipTier === "VIP" ? "VIP Match" : "Horoscope Match",
+  sendIntrestSended: false,
 }));
 
 const DEFAULT_VIEWED_PROFILES = SEED_CANDIDATE_POOL.slice(0, 8).map((c, idx) => ({
@@ -777,7 +781,13 @@ export const getRecommendedMatches = asyncHandler(async (req, res) => {
 
   if (mongoose.connection.readyState !== 1) {
     const startIdx = (page - 1) * limit;
-    const paginated = DEFAULT_MATCHES.slice(startIdx, startIdx + limit);
+    const paginated = DEFAULT_MATCHES.slice(startIdx, startIdx + limit).map((m) => {
+      const isSent = isInterestSentToCandidate(m._id, userId);
+      return {
+        ...m,
+        sendIntrestSended: isSent,
+      };
+    });
     return apiHTTPResponse(
       req,
       res,
@@ -818,20 +828,28 @@ export const getRecommendedMatches = asyncHandler(async (req, res) => {
     Profile.countDocuments(query),
   ]);
 
-  const formattedItems = (items.length > 0 ? items : DEFAULT_MATCHES).map((m) => ({
-    _id: m._id.toString(),
-    name: m.name,
-    age: m.age || 25,
-    height: m.height ? `${Math.floor(m.height / 30.48)}'${Math.round((m.height % 30.48) / 2.54)}"` : "5'2\"",
-    city: m.location?.city || "Jaipur",
-    caste: m.subcaste || "Bhaiband",
-    education: m.education?.degree ? `${m.education.degree} / ${m.profession?.occupation || "Professional"}` : "Graduate",
-    profession: m.profession?.occupation || "Professional",
-    photoUrl: m.avatar || m.photos?.[0] || "",
-    isSilhouette: !m.avatar && (!m.photos || m.photos.length === 0),
-    isVerified: Boolean(m.verificationBadge === "VERIFIED" || m.isVerified),
-    matrimonyId: `SM${m._id.toString().slice(-7).toUpperCase()}`,
-  }));
+  const formattedItems = (items.length > 0 ? items : DEFAULT_MATCHES).map((m) => {
+    const isSent = isInterestSentToCandidate(m._id, userId);
+    return {
+      _id: m._id.toString(),
+      name: m.name,
+      age: m.age || 25,
+      height: m.height ? `${Math.floor(m.height / 30.48)}'${Math.round((m.height % 30.48) / 2.54)}"` : (m.heightFormatted || m.height || "5'2\""),
+      city: m.location?.city || m.city || "Mumbai",
+      caste: m.subcaste || m.caste || "Bhaiband",
+      subcaste: m.subcaste || m.caste || "Bhaiband",
+      education: m.education?.degree ? `${m.education.degree} / ${m.profession?.occupation || "Professional"}` : (m.education || "Graduate"),
+      profession: m.profession?.occupation || m.profession || "Professional",
+      photoUrl: m.avatar || m.photos?.[0] || m.photoUrl || "",
+      avatar: m.avatar || m.photos?.[0] || m.photoUrl || "",
+      isSilhouette: !m.avatar && (!m.photos || m.photos.length === 0),
+      isVerified: Boolean(m.verificationBadge === "VERIFIED" || m.isVerified),
+      matrimonyId: m.matrimonyId || `SM${m._id.toString().slice(-7).toUpperCase()}`,
+      matchScore: m.matchScore || 95,
+      badge: m.badge || "98% Match",
+      sendIntrestSended: isSent,
+    };
+  });
 
   return apiHTTPResponse(
     req,
@@ -1779,7 +1797,7 @@ export const getWhoViewedYouFeed = asyncHandler(async (req, res) => {
     );
   }
 
-  const [dbViews, count] = await Promise.all([
+  const [dbViews, count, activeSub] = await Promise.all([
     ProfileView.find({ viewedUserId: userId })
       .sort({ viewedAt: -1 })
       .skip((page - 1) * limit)
@@ -1790,7 +1808,14 @@ export const getWhoViewedYouFeed = asyncHandler(async (req, res) => {
       })
       .lean(),
     ProfileView.countDocuments({ viewedUserId: userId }),
+    UserSubscription.findOne({
+      userId,
+      status: "ACTIVE",
+      expiresAt: { $gt: Date.now() },
+    }).lean(),
   ]);
+
+  const isPaidSubscriber = Boolean(activeSub);
 
   const items =
     dbViews && dbViews.length > 0
@@ -1798,18 +1823,22 @@ export const getWhoViewedYouFeed = asyncHandler(async (req, res) => {
           const p = v.viewerProfileId || {};
           return {
             id: (p._id || v._id).toString(),
-            name: p.name || "Member",
-            age: p.age || 25,
+            name: isPaidSubscriber ? (p.name || "Member") : "Sindhi Candidate",
+            age: isPaidSubscriber ? (p.age || 25) : 25,
             height: p.height
               ? `${Math.floor(p.height / 30.48)}'${Math.round((p.height % 30.48) / 2.54)}"`
               : "5'2\"",
-            city: p.location?.city || "Mumbai",
-            caste: p.subcaste || "Amil",
-            profession: p.profession?.occupation || "Professional",
-            photoUrl: p.avatar || p.photos?.[0]?.url || "",
+            city: isPaidSubscriber ? (p.location?.city || "Mumbai") : "City Hidden",
+            caste: p.subcaste || "Sindhi",
+            profession: isPaidSubscriber ? (p.profession?.occupation || "Professional") : "Occupation Locked",
+            photoUrl: isPaidSubscriber ? (p.avatar || p.photos?.[0]?.url || "") : "",
+            isLocked: !isPaidSubscriber,
+            upgradeRequired: !isPaidSubscriber,
             viewedAt: formatViewedRelativeTime(v.viewedAt),
             viewCount: v.viewCount || 1,
-            matrimonyId: p._id ? `SM${p._id.toString().slice(-7).toUpperCase()}` : "SM4517094",
+            matrimonyId: isPaidSubscriber
+              ? (p._id ? `SM${p._id.toString().slice(-7).toUpperCase()}` : "SM4517094")
+              : "SM******",
           };
         })
       : DEFAULT_WHO_VIEWED_YOU;
@@ -1823,6 +1852,7 @@ export const getWhoViewedYouFeed = asyncHandler(async (req, res) => {
       count: count || items.length,
       page,
       limit,
+      isPaidSubscriber,
       items,
     },
     CONSTANTS.OK,
@@ -1975,6 +2005,16 @@ export const trackProfileView = asyncHandler(async (req, res) => {
     }
 
     if (resolvedViewedUserId) {
+      const THIRTY_MINUTES = 30 * 60 * 1000;
+      const existingView = await ProfileView.findOne({
+        viewerUserId,
+        viewedProfileId,
+      }).lean();
+
+      const isRecentVisit =
+        existingView &&
+        Date.now() - new Date(existingView.viewedAt).getTime() < THIRTY_MINUTES;
+
       await ProfileView.findOneAndUpdate(
         {
           viewerUserId,
@@ -1990,6 +2030,39 @@ export const trackProfileView = asyncHandler(async (req, res) => {
         },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
+
+      // Send In-App Profile Visit Notification to profile owner if not a duplicate recent visit
+      if (!isRecentVisit) {
+        const viewerProfile = resolvedViewerProfileId
+          ? await Profile.findById(resolvedViewerProfileId)
+              .select("name avatar photos age location profession")
+              .lean()
+          : null;
+
+        const visitorName = viewerProfile?.name || "A candidate";
+        const visitorCity = viewerProfile?.location?.city || "Mumbai";
+        const visitorProfession =
+          viewerProfile?.profession?.occupation || "Professional";
+
+        addNotification({
+          _id: `notif_visit_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          type: "PROFILE_VIEWED",
+          title: "Profile Visitor 👁️",
+          body: `${visitorName} (${visitorProfession}, ${visitorCity}) viewed your profile.`,
+          data: {
+            candidateId: String(resolvedViewerProfileId || viewedProfileId),
+            viewerUserId: String(viewerUserId),
+            viewedUserId: String(resolvedViewedUserId),
+            age: viewerProfile?.age || 25,
+            city: visitorCity,
+            profession: visitorProfession,
+            viewedAt: Date.now(),
+          },
+          avatar: viewerProfile?.avatar || viewerProfile?.photos?.[0]?.url || "",
+          isRead: false,
+          createdAt: Date.now(),
+        });
+      }
 
       // Invalidate both users' home feed Redis cache for immediate real-time update
       try {

@@ -1,13 +1,25 @@
 "use client";
 
-import React, { memo } from "react";
+import React, { memo, useMemo } from "react";
 import { Phone, MessageCircle, X } from "lucide-react";
 import { MatchDetailProfile } from "../types";
+import { UpgradeModal } from "@/screens/viewProfileScreen/components/ViewProfileModals";
+
+export const formatMaskedPhone = (phone?: string) => {
+  if (!phone) return "+91 98XXXXXX";
+  const trimmed = phone.trim();
+  const match = trimmed.match(/^(\+?\d{1,3}[\s-]?)?(\d{2})(\d*)$/);
+  if (match) {
+    return `${match[1] || ""}${match[2]}XXXXXX`;
+  }
+  return "+91 98XXXXXX";
+};
 
 export interface ContactDetailsModalProps {
   isOpen: boolean;
   type: "call" | "whatsapp" | null;
   profile: MatchDetailProfile | null;
+  isSubscribed?: boolean;
   onClose: () => void;
   onUpgradeClick?: () => void;
 }
@@ -16,12 +28,55 @@ const ContactDetailsModalComponent: React.FC<ContactDetailsModalProps> = ({
   isOpen,
   type,
   profile,
+  isSubscribed,
   onClose,
   onUpgradeClick,
 }) => {
+  const isSubscribedUser = useMemo(() => {
+    if (typeof isSubscribed === "boolean") return isSubscribed;
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("user");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return Boolean(parsed.isSubscribed || parsed.membershipStatus === "Paid member" || parsed.plan);
+        }
+      } catch {}
+    }
+    return false;
+  }, [isSubscribed]);
+
+  const userPhotoUrl = useMemo(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("user");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return parsed.avatar || parsed.avatarUrl || parsed.photoUrl || "";
+        }
+      } catch {}
+    }
+    return "";
+  }, []);
+
   if (!isOpen || !profile) return null;
 
   const isCall = type === "call";
+
+  if (!isSubscribedUser) {
+    return (
+      <UpgradeModal
+        isOpen={isOpen}
+        onClose={onClose}
+        targetField={isCall ? "Phone Number" : "WhatsApp Number"}
+        prospectName={profile.name}
+        prospectPhotoUrl={profile.photoUrl}
+        userPhotoUrl={userPhotoUrl}
+        maskedPhone={formatMaskedPhone(profile.phoneNumber || profile.whatsappNumber)}
+        onUpgradeNow={onUpgradeClick}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">

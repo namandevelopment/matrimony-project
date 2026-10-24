@@ -99,6 +99,7 @@ const EditProfilePhotoModalComponent: React.FC<EditProfilePhotoModalProps> = ({
                 src={selectedPreview}
                 alt="Selected preview"
                 fill
+                unoptimized
                 className="object-cover"
               />
               <button
@@ -148,6 +149,7 @@ const EditProfilePhotoModalComponent: React.FC<EditProfilePhotoModalProps> = ({
                     src={url}
                     alt={`Sample ${i + 1}`}
                     fill
+                    unoptimized
                     className="object-cover"
                   />
                   {selectedPreview === url && (

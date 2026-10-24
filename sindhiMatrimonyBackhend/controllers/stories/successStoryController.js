@@ -146,6 +146,81 @@ export const getPublicSuccessStories = asyncHandler(async (req, res) => {
 });
 
 /**
+ * ❤️ TOGGLE LIKE SUCCESS STORY
+ * Route: POST /api/v1/dashboard/success-stories/:id/like
+ * Route: PUT  /api/v1/dashboard/success-stories/:id/like
+ */
+export const toggleLikeSuccessStory = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = (req.user?.id || req.auth?.id || req.user?._id || req.auth?._id || "guest_user").toString();
+
+  let isLiked = false;
+  let likesCount = 120;
+  let found = false;
+
+  if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(id)) {
+    try {
+      const dbStory = await SuccessStory.findById(id);
+      if (dbStory) {
+        found = true;
+        if (!Array.isArray(dbStory.likedUserIds)) {
+          dbStory.likedUserIds = [];
+        }
+        const uIndex = dbStory.likedUserIds.findIndex((u) => u.toString() === userId);
+        if (uIndex >= 0) {
+          dbStory.likedUserIds.splice(uIndex, 1);
+          dbStory.likesCount = Math.max(0, (Number(dbStory.likesCount) || 1) - 1);
+          isLiked = false;
+        } else {
+          dbStory.likedUserIds.push(userId);
+          dbStory.likesCount = (Number(dbStory.likesCount) || 0) + 1;
+          isLiked = true;
+        }
+        await dbStory.save();
+        likesCount = dbStory.likesCount;
+      }
+    } catch {
+      // Fall through to memory
+    }
+  }
+
+  if (!found) {
+    const memIdx = inMemoryStories.findIndex((s) => s.id === id || s._id === id || s.storyId === id);
+    if (memIdx >= 0) {
+      const memStory = inMemoryStories[memIdx];
+      if (!Array.isArray(memStory.likedUserIds)) {
+        memStory.likedUserIds = [];
+      }
+      const uIndex = memStory.likedUserIds.indexOf(userId);
+      if (uIndex >= 0) {
+        memStory.likedUserIds.splice(uIndex, 1);
+        memStory.likesCount = Math.max(0, (Number(memStory.likesCount) || 120) - 1);
+        isLiked = false;
+      } else {
+        memStory.likedUserIds.push(userId);
+        memStory.likesCount = (Number(memStory.likesCount) || 120) + 1;
+        isLiked = true;
+      }
+      likesCount = memStory.likesCount;
+    }
+  }
+
+  return apiHTTPResponse(
+    req,
+    res,
+    HTTP_OK,
+    isLiked ? "Story liked successfully." : "Story like removed.",
+    {
+      storyId: id,
+      isLiked,
+      likesCount,
+    },
+    OK,
+    ERROR_FALSE
+  );
+});
+
+/**
  * 💌 2. USER SUBMIT SUCCESS STORY
  * Route: POST /api/v1/dashboard/success-stories/share
  * Route: POST /api/v1/common/success-stories/share

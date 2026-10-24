@@ -3,6 +3,8 @@ import { asyncHandler, apiHTTPResponse, logMessage, cleanEntity } from "../../ut
 import * as CONSTANTS from "../../utils/constants.js";
 import { SEED_MATCH_CANDIDATES } from "./matchmakingController.js";
 import { SEED_INTERESTS } from "../../constants/seedCandidateData.js";
+import { addNotification } from "../notifications/notificationController.js";
+import { findProfileByIdInMemory } from "../../services/realDataService.js";
 
 const getUserId = (req) =>
   req.user?.id ||
@@ -14,6 +16,30 @@ const getUserId = (req) =>
 
 // In-memory interest clearinghouse store
 const inMemoryInterests = new Map();
+export const sentInterestReceiverIds = new Set();
+
+export const isInterestSentToCandidate = (candidateId, userId) => {
+  if (!candidateId) return false;
+  const idStr = candidateId.toString();
+  const cand = findProfileByIdInMemory(idStr);
+  const allIds = [idStr];
+  if (cand?._id) allIds.push(cand._id.toString());
+  if (cand?.matrimonyId) allIds.push(cand.matrimonyId.toString());
+  if (cand?.userId) allIds.push(cand.userId.toString());
+
+  for (const id of allIds) {
+    if (sentInterestReceiverIds.has(id)) return true;
+  }
+  for (const item of inMemoryInterests.values()) {
+    if (item.direction === "SENT") {
+      const recId = item.receiverProfileId || item.receiverProfile?._id;
+      if (recId && allIds.includes(recId.toString())) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
 
 // Initialize initial seed interests from realistic dataset
 SEED_INTERESTS.forEach((item) => inMemoryInterests.set(item._id, { ...item }));
@@ -24,37 +50,75 @@ SEED_INTERESTS.forEach((item) => inMemoryInterests.set(item._id, { ...item }));
  */
 export const sendInterest = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
-  const { receiverProfileId, personalizedNote } = req.body;
+  const targetId = req.body?.receiverProfileId || req.body?.receiverCandidateId || req.body?.candidateId;
+  const personalizedNote = req.body?.personalizedNote || req.body?.message;
 
-  if (!receiverProfileId) {
+  if (!targetId) {
     return apiHTTPResponse(
       req,
       res,
       CONSTANTS.HTTP_BAD_REQUEST,
-      "receiverProfileId is required to send interest.",
+      "receiverProfileId or candidateId is required to send interest.",
       CONSTANTS.DATA_NULL,
       CONSTANTS.BAD_REQUEST,
       CONSTANTS.ERROR_TRUE
     );
   }
 
+  const idStr = targetId.toString();
+  const cand = findProfileByIdInMemory(idStr);
+  const allIds = [idStr];
+  if (cand?._id) allIds.push(cand._id.toString());
+  if (cand?.matrimonyId) allIds.push(cand.matrimonyId.toString());
+  if (cand?.userId) allIds.push(cand.userId.toString());
+
+  const isAlreadySent = isInterestSentToCandidate(idStr, userId);
+
+  if (isAlreadySent) {
+    allIds.forEach((id) => sentInterestReceiverIds.delete(id));
+    for (const [key, item] of inMemoryInterests.entries()) {
+      if (
+        item.direction === "SENT" &&
+        (allIds.includes(item.receiverProfileId) || (item.receiverProfile?._id && allIds.includes(item.receiverProfile._id)))
+      ) {
+        inMemoryInterests.delete(key);
+      }
+    }
+
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_OK,
+      "Interest withdrawn successfully.",
+      {
+        sendIntrestSended: false,
+        candidateId: idStr,
+      },
+      CONSTANTS.OK,
+      CONSTANTS.ERROR_FALSE
+    );
+  }
+
+  allIds.forEach((id) => sentInterestReceiverIds.add(id));
   const interestId = new mongoose.Types.ObjectId().toString();
-  const targetCandidate = SEED_MATCH_CANDIDATES.find(c => c._id === receiverProfileId);
+  const targetCandidate = cand || SEED_MATCH_CANDIDATES.find((c) => c._id === idStr);
 
   const newInterest = {
     _id: interestId,
     senderUserId: userId,
     senderProfileId: req.user?.activeProfileId || "my_active_profile",
-    receiverProfileId,
-    receiverProfile: targetCandidate ? {
-      _id: targetCandidate._id,
-      name: targetCandidate.name,
-      age: targetCandidate.age,
-      subcaste: targetCandidate.subcaste,
-      city: targetCandidate.location?.city || "Mumbai",
-      profession: targetCandidate.profession?.occupation || "Professional",
-      avatar: targetCandidate.avatar,
-    } : null,
+    receiverProfileId: idStr,
+    receiverProfile: targetCandidate
+      ? {
+          _id: targetCandidate._id || idStr,
+          name: targetCandidate.name,
+          age: targetCandidate.age,
+          subcaste: targetCandidate.subcaste,
+          city: targetCandidate.location?.city || "Mumbai",
+          profession: targetCandidate.profession?.occupation || "Professional",
+          avatar: targetCandidate.avatar,
+        }
+      : null,
     personalizedNote: personalizedNote || "Namaste, we liked your profile and would love to connect.",
     status: "PENDING",
     direction: "SENT",
@@ -63,17 +127,52 @@ export const sendInterest = asyncHandler(async (req, res) => {
 
   inMemoryInterests.set(interestId, newInterest);
 
+  // Also record received interest for receiver's inbox
+  const receivedInterestId = `rec_${interestId}`;
+  inMemoryInterests.set(receivedInterestId, {
+    _id: receivedInterestId,
+    senderUserId: userId,
+    senderProfileId: req.user?.activeProfileId || userId || "my_active_profile",
+    senderProfile: {
+      _id: userId || "my_active_profile",
+      name: req.user?.name || "Sindhi Member",
+      city: req.user?.location?.city || "Mumbai",
+      profession: req.user?.profession || "Professional",
+      avatar: req.user?.avatar || "",
+    },
+    receiverProfileId: idStr,
+    receiverUserId: idStr,
+    personalizedNote: personalizedNote || "Namaste, we liked your profile and would love to connect.",
+    status: "PENDING",
+    direction: "RECEIVED",
+    sentAt: Date.now(),
+  });
+
+  // Dispatch in-app notification for receiver
+  addNotification({
+    _id: `notif_${Date.now()}`,
+    type: "INTEREST_RECEIVED",
+    title: "New Rishta Connect Request 💌",
+    body: `${req.user?.name || "A member"} expressed interest in your profile.`,
+    data: { candidateId: idStr, interestId, receiverProfileId: idStr },
+    avatar: req.user?.avatar || "",
+    isRead: false,
+    createdAt: Date.now(),
+  });
+
   return apiHTTPResponse(
     req,
     res,
-    CONSTANTS.HTTP_CREATED,
+    CONSTANTS.HTTP_OK,
     "Connect interest sent successfully.",
     {
       interestId,
+      sendIntrestSended: true,
+      candidateId: idStr,
       status: "PENDING",
       sentAt: newInterest.sentAt,
     },
-    CONSTANTS.CREATED,
+    CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
 });

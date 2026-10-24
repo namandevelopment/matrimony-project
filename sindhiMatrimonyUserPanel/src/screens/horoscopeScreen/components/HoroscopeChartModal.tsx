@@ -3,7 +3,6 @@
 import React, { memo } from "react";
 import { X, Printer, Sparkles, CheckCircle2 } from "lucide-react";
 import { HoroscopeProfileData, KundaliPlanetaryPosition } from "../types";
-import { MOCK_KUNDALI_PLANETS } from "../staticData";
 
 export interface HoroscopeChartModalProps {
   isOpen: boolean;
@@ -17,7 +16,7 @@ const HoroscopeChartModalComponent: React.FC<HoroscopeChartModalProps> = ({
   isOpen,
   onClose,
   data,
-  planets = MOCK_KUNDALI_PLANETS,
+  planets = [],
   className = "",
 }) => {
   if (!isOpen) return null;
@@ -193,7 +192,14 @@ const HoroscopeChartModalComponent: React.FC<HoroscopeChartModalProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100">
-                  {planets.map((p, idx) => (
+                  {planets.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-6 text-center text-xs text-stone-500">
+                        Planetary chart details available upon horoscope verification.
+                      </td>
+                    </tr>
+                  ) : (
+                    planets.map((p, idx) => (
                     <tr key={idx} className="hover:bg-stone-50/80 transition-colors">
                       <td className="py-2 px-3 font-semibold text-stone-800">{p.planet}</td>
                       <td className="py-2 px-3 text-stone-600">{p.sign}</td>
@@ -209,7 +215,7 @@ const HoroscopeChartModalComponent: React.FC<HoroscopeChartModalProps> = ({
                         )}
                       </td>
                     </tr>
-                  ))}
+                  )))}
                 </tbody>
               </table>
             </div>

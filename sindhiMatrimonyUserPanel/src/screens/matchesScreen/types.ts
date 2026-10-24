@@ -69,3 +69,17 @@ export interface MatchesScreenProps {
   onUpgradeClick?: () => void;
   onAssistedServiceClick?: () => void;
 }
+
+export const defaultPreferences: PartnerPreferences = {
+  ageRange: [21, 29],
+  heightRange: ["5'0\"", "5'8\""],
+  maritalStatus: ["Never Married"],
+  religion: "Hindu",
+  community: "Sindhi",
+  motherTongue: ["Sindhi", "Hindi", "English"],
+  country: ["India", "United Arab Emirates"],
+  state: ["Maharashtra", "Gujarat", "Rajasthan", "Karnataka", "Delhi", "Dubai"],
+  education: ["B.Tech.", "MBA", "Chartered Accountant (CA)", "MBBS", "M.S.", "B.Arch"],
+  occupation: ["Software Engineer", "Investment Banker", "Doctor", "Chartered Accountant", "Entrepreneur"],
+  annualIncome: "₹ 10 Lakh & above",
+};

@@ -147,6 +147,10 @@ export const ApiURL = {
   cities: `${BASE_URL}/api/v1/master/locations/cities`,
   getCountriesListForMobile: `${BASE_URL}/api/v1/master/locations/countries`,
   horoscopeOptions: `${BASE_URL}/api/v1/master/horoscope`,
+  calculateGunaMilan: `${BASE_URL}/api/v1/horoscope/guna-milan`,
+  horoscopeChart: (candidateId: string) => `${BASE_URL}/api/v1/horoscope/chart/${candidateId}`,
+  dailyHoroscope: (rashi: string = 'leo') => `${BASE_URL}/api/v1/dashboard/horoscope?rashi=${rashi}`,
+  saveUserRashi: `${BASE_URL}/api/v1/dashboard/horoscope/save-rashi`,
 
   // =========================================================================
   // 14. MATCHMAKING & FEEDS (Shared with User Panel & Mobile)

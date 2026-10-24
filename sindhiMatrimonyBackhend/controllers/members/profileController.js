@@ -5,6 +5,7 @@ import * as CONSTANTS_MSG from "../../utils/constantsMessage.js";
 import { User, Profile, PartnerPreference } from "../../models/index.js";
 import { updateDocumentByQueryAndData } from "../../services/serviceGlobal.js";
 import { findProfileByIdInMemory } from "../../services/realDataService.js";
+import { isInterestSentToCandidate } from "../matchmaking/interestsController.js";
 
 const getUserId = (req) => req.user?.id || req.auth?.id || req.user?._id || req.auth?._id || req.user?.userId || req.auth?.userId;
 
@@ -238,6 +239,12 @@ export const getProfile = asyncHandler(async (req, res) => {
   if (!targetProfile) {
     const memoryCandidate = findProfileByIdInMemory(targetId);
     if (memoryCandidate) {
+      const isSent = Boolean(
+        isInterestSentToCandidate(targetId, myUserId) ||
+        (memoryCandidate.matrimonyId && isInterestSentToCandidate(memoryCandidate.matrimonyId, myUserId))
+      );
+      const cleanedProf = cleanEntity(memoryCandidate);
+      cleanedProf.sendIntrestSended = isSent;
       return apiHTTPResponse(
         req,
         res,
@@ -253,7 +260,8 @@ export const getProfile = asyncHandler(async (req, res) => {
             isPhoneVerified: true,
             isKycVerified: Boolean(memoryCandidate.isVerified ?? true),
           },
-          profile: cleanEntity(memoryCandidate),
+          profile: cleanedProf,
+          sendIntrestSended: isSent,
           partnerPreference: cleanEntity(memoryCandidate.partnerPreference || {
             _id: "6ad3c0ff51bbaafbad99f39e",
             ageRange: { min: 24, max: 32 },
@@ -284,6 +292,12 @@ export const getProfile = asyncHandler(async (req, res) => {
     (myActiveProfileId && targetProfile._id?.toString() === myActiveProfileId.toString())
   );
 
+  const isInterestSent = !verifiedIsSelf && Boolean(
+    isInterestSentToCandidate(targetProfile._id, myUserId) ||
+    isInterestSentToCandidate(targetProfile.matrimonyId, myUserId) ||
+    (targetProfile.userId && isInterestSentToCandidate(targetProfile.userId, myUserId))
+  );
+
   // Fetch target user details & partner preferences
   const [targetUser, targetPartnerPreference] = await Promise.all([
     User.findById(targetProfile.userId)
@@ -292,6 +306,9 @@ export const getProfile = asyncHandler(async (req, res) => {
     PartnerPreference.findOne({ userId: targetProfile.userId, isDeleted: false }).lean(),
   ]);
 
+  const profileEntity = cleanEntity(targetProfile, { stripUserId: true });
+  profileEntity.sendIntrestSended = isInterestSent;
+
   return apiHTTPResponse(
     req,
     res,
@@ -299,8 +316,9 @@ export const getProfile = asyncHandler(async (req, res) => {
     "Profile fetched successfully.",
     {
       isSelf: verifiedIsSelf,
+      sendIntrestSended: isInterestSent,
       user: cleanEntity(targetUser),
-      profile: cleanEntity(targetProfile, { stripUserId: true }),
+      profile: profileEntity,
       partnerPreference: cleanEntity(targetPartnerPreference),
     },
     CONSTANTS.OK,

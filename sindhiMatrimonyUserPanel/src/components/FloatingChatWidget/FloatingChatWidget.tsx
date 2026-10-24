@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect, memo } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import Image from "next/image";
 import {
   MessageCircle,
@@ -14,55 +14,11 @@ import {
   ThumbsUp,
   AlertTriangle,
 } from "lucide-react";
+import { memoWithDeepEqual } from "@/utils";
 import type { ChatMessage, QuickSuggestion, FloatingChatWidgetProps } from "./types";
+import englishTalks from "./data/englishTalks.json";
 
-const DEFAULT_SUGGESTIONS: QuickSuggestion[] = [
-  {
-    id: "search",
-    label: "💍 Find Matches",
-    query: "How can I find compatible Sindhi matches?",
-    response:
-      "You can browse thousands of verified profiles by Sub-caste (Bhaiband, Amil, Lohana, Sahiti, etc.), City, Education, and Horoscope. Register for free to start viewing matches!",
-    actionLabel: "Browse Matches",
-    actionUrl: "/dashboard",
-  },
-  {
-    id: "membership",
-    label: "👑 Membership Plans",
-    query: "What are the premium membership benefits?",
-    response:
-      "Our Premium Membership includes direct contact views, personalized matchmaker assistance, verified contact numbers, and priority profile placement.",
-    actionLabel: "View Plans",
-    actionUrl: "https://wa.me/918769530667?text=Hello%20Sindhi%20Matrimony%2C%20please%20share%20plans",
-  },
-  {
-    id: "registration",
-    label: "📝 Free Registration",
-    query: "Registration kaise kare?",
-    response:
-      "Sindhi Matrimony par registration bilkul 100% free aur aasan hai. Kewal 4 steps me apni profile create karein!",
-    actionLabel: "Start Free Registration",
-    actionUrl: "/registration/basic-info",
-  },
-  {
-    id: "gotra",
-    label: "🕉️ Gotra & Sub-caste",
-    query: "Gotra aur Sub-caste kaise search karein?",
-    response:
-      "Aap Bhaiband, Amil, Lohana, Sahiti aadi sub-castes aur apne Gotra (Nukh) ke anusaar compatible profiles filter kar sakte hain.",
-    actionLabel: "Filter by Gotra",
-    actionUrl: "/dashboard",
-  },
-  {
-    id: "whatsapp",
-    label: "💬 Talk on WhatsApp",
-    query: "I would like to speak directly with a relationship manager.",
-    response:
-      "Our dedicated relationship managers are available on WhatsApp to assist you immediately. Click below to chat now!",
-    actionLabel: "Chat on WhatsApp",
-    actionUrl: "https://wa.me/918769530667?text=Hello%20Sindhi%20Matrimony%2C%20I%20need%20help%20with%20finding%20matches",
-  },
-];
+const DEFAULT_SUGGESTIONS: QuickSuggestion[] = englishTalks.quickSuggestions as QuickSuggestion[];
 
 const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
   title = "Sindhi Matrimony Support",
@@ -86,12 +42,7 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
       sender: "support",
       text: initialGreeting,
       timestamp: "Just now",
-      suggestedQuestions: [
-        "Free Registration Kaise Kare?",
-        "Find Compatible Sindhi Matches",
-        "Membership Plans & Fees",
-        "Talk to Relationship Manager",
-      ],
+      suggestedQuestions: englishTalks.suggestedQuestions,
     },
   ]);
 
@@ -210,7 +161,7 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
               {
                 id: `support-${Date.now()}`,
                 sender: "support",
-                text: "Namaste! 🙏 Hamare Sindhi Relationship Manager se seedhe WhatsApp par baat karein:",
+                text: "Namaste! 🙏 Connect directly with our Senior Sindhi Relationship Manager on WhatsApp:",
                 timestamp: "Just now",
                 actionType: "whatsapp",
                 actionUrl: `https://wa.me/${whatsappNumber}?text=Namaste%2C%20I%20need%20assistance`,
@@ -573,5 +524,8 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
   );
 };
 
-export const FloatingChatWidget = memo(FloatingChatWidgetComponent);
-FloatingChatWidget.displayName = "FloatingChatWidget";
+export const FloatingChatWidget = memoWithDeepEqual(
+  FloatingChatWidgetComponent,
+  "FloatingChatWidget"
+);
+export default FloatingChatWidget;

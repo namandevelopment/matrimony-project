@@ -1,6 +1,7 @@
 "use client";
 
 import React, { memo } from "react";
+import { isDeepEqual } from "@/utils";
 import {
   DashboardSidebar,
   ProfileCompletenessCard,
@@ -19,6 +20,7 @@ import type {
   ViewedProfile,
   MarriageSuccessStory,
 } from "../types";
+import { useProfileQuery } from "@/tanstackQuery";
 
 export interface DashboardHomeViewProps {
   user: UserProfile;
@@ -37,11 +39,12 @@ const DashboardHomeViewComponent: React.FC<DashboardHomeViewProps> = ({
   onUpgradeClick,
   onAssistedServiceClick,
 }) => {
+
+  //  const { data: profileRes } = useProfileQuery();
   return (
     <div className="flex flex-col lg:flex-row items-start gap-6">
       {/* Left Column: Sidebar with Profile Card, Peach Promo & Settings */}
       <DashboardSidebar
-        user={user}
         onUpgradeClick={onUpgradeClick}
       />
 
@@ -90,6 +93,9 @@ const DashboardHomeViewComponent: React.FC<DashboardHomeViewProps> = ({
   );
 };
 
-export const DashboardHomeView = memo(DashboardHomeViewComponent);
+export const DashboardHomeView = memo(
+  DashboardHomeViewComponent,
+  (prev, next) => isDeepEqual(prev, next)
+);
 DashboardHomeView.displayName = "DashboardHomeView";
 export default DashboardHomeView;

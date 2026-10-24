@@ -9,37 +9,11 @@ export interface ProfilesViewedSectionProps {
   className?: string;
 }
 
-const defaultViewedProfiles: ViewedProfile[] = [
-  {
-    id: "viewed-1",
-    name: "Riya Dubey",
-    age: 24,
-    height: "4'6\"",
-    viewedDate: "16 Oct 2026",
-    photoUrl: "/images/dashboard/viewed_riya.jpg",
-  },
-  {
-    id: "viewed-2",
-    name: "Vaishnavi Sharma",
-    age: 22,
-    height: "4'6\"",
-    viewedDate: "16 Oct 2026",
-    photoUrl: "/images/dashboard/viewed_vaishnavi.jpg",
-  },
-  {
-    id: "viewed-3",
-    name: "Shivangi Tiwari",
-    age: 25,
-    height: "4'6\"",
-    viewedDate: "16 Oct 2026",
-    photoUrl: "/images/dashboard/viewed_shivangi.jpg",
-  },
-];
-
 const ViewedProfileCard = memo<{ profile: ViewedProfile }>(({ profile }) => {
+  const targetId = (profile as any)?.matrimonyId || (profile as any)?._id || profile?.id;
   return (
     <Link
-      href={`/matches/${profile.id}`}
+      href={targetId ? `/matches/viewprofile/${targetId}` : "/matches"}
       className="group flex flex-col bg-white rounded-xl overflow-hidden cursor-pointer"
     >
       {/* Photo Container */}
@@ -73,9 +47,10 @@ const ViewedProfileCard = memo<{ profile: ViewedProfile }>(({ profile }) => {
 ViewedProfileCard.displayName = "ViewedProfileCard";
 
 const ProfilesViewedSectionComponent: React.FC<ProfilesViewedSectionProps> = ({
-  profiles = defaultViewedProfiles,
+  profiles = [],
   className = "",
-}) => {
+}: any) => {
+  console.log("profilesprofilesprofilesprofilesuiuiuiu,", profiles);
   return (
     <section
       aria-label="Profiles You Viewed Section"
@@ -84,7 +59,7 @@ const ProfilesViewedSectionComponent: React.FC<ProfilesViewedSectionProps> = ({
       {/* Title & Subtitle */}
       <div className="pb-4">
         <h3 className="text-base sm:text-lg font-bold text-[#1A1A1A] font-heading">
-          Profiles You Viewed ({profiles.length})
+          Profiles You Viewed ({profiles?.length || 0})
         </h3>
         <p className="text-xs text-[#666666] mt-0.5">
           Members that you have viewed
@@ -93,8 +68,8 @@ const ProfilesViewedSectionComponent: React.FC<ProfilesViewedSectionProps> = ({
 
       {/* Profiles Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-5">
-        {profiles.map((profile) => (
-          <ViewedProfileCard key={profile.id} profile={profile} />
+        {profiles?.map((profile: any, index: number) => (
+          <ViewedProfileCard key={profile?._id || profile?.id || index} profile={profile} />
         ))}
       </div>
     </section>

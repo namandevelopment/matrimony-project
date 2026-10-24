@@ -8,7 +8,7 @@ import { Employee } from "../../models/index.js";
 // ============================================================================
 
 // 1.1 In-Memory Plans Store
-let adminPlansStore = [
+export let adminPlansStore = [
   {
     _id: "plan_silver",
     planId: "plan_silver",
@@ -261,6 +261,11 @@ export const createAdminPlan = asyncHandler(async (req, res) => {
     dedicatedAdvisor: Boolean(dedicatedAdvisor),
     relationshipManager: Boolean(relationshipManager),
     description: description.trim(),
+    tagline: req.body.tagline || req.body.subtitle || description.trim(),
+    category: req.body.category || (tier === "VIP" ? "ASSIST_PLAN" : "SELF_SERVICE"),
+    features: Array.isArray(req.body.features) ? req.body.features : [],
+    badge: req.body.badge || null,
+    originalPrice: Number(req.body.originalPrice) || Number(price),
     status: status.toUpperCase() === "INACTIVE" ? "INACTIVE" : "ACTIVE",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -387,6 +392,11 @@ export const updateAdminPlan = asyncHandler(async (req, res) => {
   if (relationshipManager !== undefined) existingPlan.relationshipManager = Boolean(relationshipManager);
   if (status !== undefined) existingPlan.status = status.toUpperCase();
   if (description !== undefined) existingPlan.description = description.trim();
+  if (req.body.tagline || req.body.subtitle) existingPlan.tagline = req.body.tagline || req.body.subtitle;
+  if (req.body.category) existingPlan.category = req.body.category;
+  if (Array.isArray(req.body.features)) existingPlan.features = req.body.features;
+  if (req.body.badge !== undefined) existingPlan.badge = req.body.badge;
+  if (req.body.originalPrice) existingPlan.originalPrice = Number(req.body.originalPrice);
 
   existingPlan.updatedAt = new Date().toISOString();
   adminPlansStore[planIndex] = existingPlan;
@@ -400,6 +410,14 @@ export const updateAdminPlan = asyncHandler(async (req, res) => {
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
+});
+
+export const deleteAdminPlan = asyncHandler(async (req, res) => {
+  const planIdentifier = req.params.id || req.body._id || req.body.planId || req.body.id;
+  adminPlansStore = adminPlansStore.filter(
+    (p) => p._id !== planIdentifier && p.planId !== planIdentifier && p.id !== planIdentifier
+  );
+  return apiHTTPResponse(req, res, CONSTANTS.HTTP_OK, "Subscription plan deleted successfully.", null, CONSTANTS.OK, CONSTANTS.ERROR_FALSE);
 });
 
 // ============================================================================

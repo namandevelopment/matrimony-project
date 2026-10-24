@@ -1,4 +1,4 @@
-import rawKnowledgeBase from "./data/chatKnowledgeBase.json";
+import rawKnowledgeBase from "./data/englishTalks.json";
 import { checkAbusiveContent } from "./abusiveFilter";
 import type {
   BotResponseResult,

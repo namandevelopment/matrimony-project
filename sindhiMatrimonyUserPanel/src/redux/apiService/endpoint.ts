@@ -180,6 +180,7 @@ export const ApiURL = {
   // =========================================================================
   getPlans: `${BASE_URL}/api/v1/plans`,
   createPaymentOrder: `${BASE_URL}/api/v1/payments/create-order`,
+  cancelPaymentOrder: `${BASE_URL}/api/v1/payments/cancel`,
   verifyPaymentSignature: `${BASE_URL}/api/v1/payments/verify`,
 
   // =========================================================================

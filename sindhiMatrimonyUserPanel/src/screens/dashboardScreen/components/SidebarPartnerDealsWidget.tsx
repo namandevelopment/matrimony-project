@@ -1,6 +1,7 @@
 "use client";
 
-import React, { memo, useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import { memoWithDeepEqual } from "@/utils";
 import {
   Tag,
   Sparkles,
@@ -13,6 +14,8 @@ import {
   ChevronRight,
   ShoppingBag,
 } from "lucide-react";
+import { apiFetch } from "@/redux/apiService";
+import { useApiQuery } from "@/tanstackQuery";
 
 export interface GiftProduct {
   id: string;
@@ -122,25 +125,21 @@ const SidebarPartnerDealsWidgetComponent: React.FC<SidebarPartnerDealsWidgetProp
   const [isHovered, setIsHovered] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
+  const { data: remoteDeals } = useApiQuery<GiftProduct[]>({
+    queryKey: ["partnerDeals"],
+    url: "/api/v1/ads",
+    isToken: false,
+    staleTime: 1000 * 60 * 10,
+  });
+
   useEffect(() => {
-    let isMounted = true;
-    const fetchAds = async () => {
-      try {
-        const res = await fetch("/api/v1/ads", { credentials: "omit" });
-        if (res.ok) {
-          const json = await res.json();
-          const items = json?.data?.list || json?.data;
-          if (isMounted && Array.isArray(items) && items.length > 0) {
-            setDeals(items);
-          }
-        }
-      } catch {}
-    };
-    fetchAds();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    const items = Array.isArray(remoteDeals)
+      ? remoteDeals
+      : (remoteDeals as any)?.list || (remoteDeals as any)?.data;
+    if (Array.isArray(items) && items.length > 0) {
+      setDeals(items);
+    }
+  }, [remoteDeals]);
 
   const touchStartXRef = useRef<number>(0);
   const touchEndXRef = useRef<number>(0);
@@ -200,10 +199,16 @@ const SidebarPartnerDealsWidgetComponent: React.FC<SidebarPartnerDealsWidgetProp
   }, []);
 
   const handleOpenAffiliate = useCallback((product: GiftProduct) => {
-    try {
-      fetch(`/api/v1/ads/${product.id}/click`, { method: "POST", credentials: "omit" }).catch(() => {});
-    } catch {}
-    window.open(product.affiliateUrl, "_blank", "noopener,noreferrer");
+    apiFetch({
+      url: `/api/v1/ads/${product.id}/click`,
+      method: "POST",
+      isToken: false,
+      showErrorToast: false,
+    }).catch(() => {});
+
+    if (product?.affiliateUrl) {
+      window.open(product.affiliateUrl, "_blank", "noopener,noreferrer");
+    }
   }, []);
 
   const activeProduct = deals[currentIndex] || deals[0];
@@ -370,14 +375,18 @@ const SidebarPartnerDealsWidgetComponent: React.FC<SidebarPartnerDealsWidgetProp
 
                 <div className="flex items-baseline gap-1.5 mt-1">
                   <span className="text-sm font-black text-[#DB2F3C]">
-                    ₹{product.price}
+                    ₹{product.price ?? 0}
                   </span>
-                  <span className="text-[10px] text-stone-400 line-through">
-                    ₹{product.originalPrice}
-                  </span>
-                  <span className="text-[10px] font-bold text-emerald-600">
-                    Save ₹{product.originalPrice - product.price}
-                  </span>
+                  {product.originalPrice ? (
+                    <span className="text-[10px] text-stone-400 line-through">
+                      ₹{product.originalPrice}
+                    </span>
+                  ) : null}
+                  {(product.originalPrice ?? 0) > (product.price ?? 0) ? (
+                    <span className="text-[10px] font-bold text-emerald-600">
+                      Save ₹{(product.originalPrice ?? 0) - (product.price ?? 0)}
+                    </span>
+                  ) : null}
                 </div>
 
                 <p className="mt-1 text-[11px] text-[#555555] line-clamp-2 leading-relaxed">
@@ -477,6 +486,8 @@ const SidebarPartnerDealsWidgetComponent: React.FC<SidebarPartnerDealsWidgetProp
   );
 };
 
-export const SidebarPartnerDealsWidget = memo(SidebarPartnerDealsWidgetComponent);
-SidebarPartnerDealsWidget.displayName = "SidebarPartnerDealsWidget";
+export const SidebarPartnerDealsWidget = memoWithDeepEqual(
+  SidebarPartnerDealsWidgetComponent,
+  "SidebarPartnerDealsWidget"
+);
 export default SidebarPartnerDealsWidget;

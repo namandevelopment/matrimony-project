@@ -27,7 +27,7 @@ router.post("/conversations", getOrCreateConversation);
 router.get("/messages/:conversationId", getMessages);
 
 // 4. Send Message (Quota verified: Paid user -> unlimited, Free user -> 5 trial msgs)
-router.post("/messages", sendMessage);
+router.post(["/messages", "/messages/send"], sendMessage);
 
 // 5. Mark Messages Read
 router.put("/messages/read", markMessagesRead);

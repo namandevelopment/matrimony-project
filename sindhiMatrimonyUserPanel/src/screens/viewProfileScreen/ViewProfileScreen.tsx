@@ -22,25 +22,16 @@ import {
   BranchesModal,
   ViewProfileScrollTopButton,
 } from "./components";
-import { mockViewProfiles } from "./mockData";
-import { initialMatchesList } from "@/screens/matchesScreen/mockData";
 import { ViewProfileScreenProps, ViewUserProfile } from "./types";
 import { mapBackendToViewProfile } from "./viewProfileMapper";
 import {
   useProfileQuery,
   useCandidateProfileQuery,
+  useDashboardMatchesQuery,
   useSendInterestMutation,
   useShortlistMutation,
 } from "@/tanstackQuery";
-import { ApiURL } from "@/redux/apiService/endpoint";
-
-const defaultUser: UserProfile = {
-  name: "Naman",
-  matrimonyId: "SM4517087",
-  community: "SindhiMatrimony",
-  membershipStatus: "Free member",
-  completenessScore: 42,
-};
+import apiFetch, { ApiURL } from "@/redux/apiService";
 
 const ViewProfileScreenComponent: React.FC<ViewProfileScreenProps> = ({
   initialProfileId,
@@ -58,38 +49,22 @@ const ViewProfileScreenComponent: React.FC<ViewProfileScreenProps> = ({
   );
 
   const { data: selfApiResponse, isLoading: isSelfLoading } = useProfileQuery(!initialProfileId);
+  const { data: dashboardMatchesData } = useDashboardMatchesQuery();
+  const matchesFeed = useMemo(() => {
+    if (!dashboardMatchesData) return [];
+    const items =
+      (dashboardMatchesData as any)?.items ||
+      (Array.isArray(dashboardMatchesData)
+        ? dashboardMatchesData
+        : (dashboardMatchesData as any)?.data?.items ||
+        (dashboardMatchesData as any)?.data ||
+        []);
+    return Array.isArray(items) && items.length > 0 ? items : [];
+  }, [dashboardMatchesData]);
 
   // 2. Mutations
   const sendInterestMutation = useSendInterestMutation();
   const shortlistMutation = useShortlistMutation();
-
-  // Find initial profile index in mock list as fallback
-  const initialIndex = useMemo(() => {
-    if (!initialProfileId) return 0;
-    const cleanId = initialProfileId.trim().toLowerCase();
-    const cleanDigits = initialProfileId.replace(/\D/g, "");
-
-    const idx = mockViewProfiles.findIndex((p) => {
-      const pid = p.id.toLowerCase();
-      const pmat = p.matrimonyId.toLowerCase();
-      const pDigits = p.matrimonyId.replace(/\D/g, "");
-      return (
-        pid === cleanId ||
-        pmat === cleanId ||
-        (cleanDigits.length >= 4 && pDigits === cleanDigits) ||
-        pid.includes(cleanId) ||
-        cleanId.includes(pid)
-      );
-    });
-    return idx >= 0 ? idx : 0;
-  }, [initialProfileId]);
-
-  const [activeProfileIndex, setActiveProfileIndex] = useState(initialIndex);
-
-  // Synchronize if initialProfileId changes
-  useEffect(() => {
-    setActiveProfileIndex(initialIndex);
-  }, [initialIndex]);
 
   // Live profile transformed from backend API
   const liveBackendProfile: ViewUserProfile | null = useMemo(() => {
@@ -97,162 +72,57 @@ const ViewProfileScreenComponent: React.FC<ViewProfileScreenProps> = ({
     return mapBackendToViewProfile(rawData);
   }, [initialProfileId, candidateApiResponse, selfApiResponse]);
 
-  // Current active profile (prioritizing live API profile if available, then mock or matches list match)
-  const currentProfile: ViewUserProfile = useMemo(() => {
-    if (liveBackendProfile) return liveBackendProfile;
+  // Current active profile directly from live API
+  const currentProfile: ViewUserProfile | null = liveBackendProfile;
 
-    if (initialProfileId) {
-      const cleanId = initialProfileId.trim().toLowerCase();
-      const cleanDigits = initialProfileId.replace(/\D/g, "");
+  // Current match index in matches feed
+  const currentMatchIndex = useMemo(() => {
+    if (!initialProfileId || matchesFeed.length === 0) return 0;
+    const cleanId = initialProfileId.trim().toLowerCase();
+    const idx = matchesFeed.findIndex((m: any) => {
+      const mid = String(m._id || m.id || "").toLowerCase();
+      const mMat = String(m.matrimonyId || "").toLowerCase();
+      return mid === cleanId || mMat === cleanId || mid.includes(cleanId) || cleanId.includes(mid);
+    });
+    return idx >= 0 ? idx : 0;
+  }, [initialProfileId, matchesFeed]);
 
-      const matchedMock = mockViewProfiles.find((p) => {
-        const pid = p.id.toLowerCase();
-        const pmat = p.matrimonyId.toLowerCase();
-        const pDigits = p.matrimonyId.replace(/\D/g, "");
-        return (
-          pid === cleanId ||
-          pmat === cleanId ||
-          (cleanDigits.length >= 4 && pDigits === cleanDigits) ||
-          pid.includes(cleanId) ||
-          cleanId.includes(pid)
-        );
-      });
-      if (matchedMock) return matchedMock;
+  const totalMatchesCount = matchesFeed.length;
 
-      const matchedCard = initialMatchesList.find((m) => {
-        const mid = m.id.toLowerCase();
-        const mmat = m.matrimonyId.toLowerCase();
-        const mDigits = m.matrimonyId.replace(/\D/g, "");
-        return (
-          mid === cleanId ||
-          mmat === cleanId ||
-          (cleanDigits.length >= 4 && mDigits === cleanDigits) ||
-          mid.includes(cleanId) ||
-          cleanId.includes(mid)
-        );
-      });
-
-      if (matchedCard) {
-        return {
-          id: matchedCard.id,
-          matrimonyId: matchedCard.matrimonyId,
-          name: matchedCard.name,
-          age: matchedCard.age,
-          height: matchedCard.height,
-          education: matchedCard.education,
-          profession: matchedCard.profession,
-          city: matchedCard.city,
-          state: matchedCard.state || "India",
-          lastSeen: matchedCard.lastSeen || "Active today",
-          photoUrls: matchedCard.photoUrl ? [matchedCard.photoUrl] : [],
-          gender: (matchedCard.gender as "female" | "male") || "female",
-          casteSummary: matchedCard.caste || "Sindhi - Bhaiband",
-          maritalStatus: "Never married",
-          profileCreatedBy: "Self",
-          isShortlisted: matchedCard.isShortlisted,
-          interestSent: matchedCard.interestSent,
-          isNewlyJoined: matchedCard.isNewlyJoined,
-          aboutText: `Hello, I am ${matchedCard.name} based in ${matchedCard.city}, ${matchedCard.state || "India"}. Working as a ${matchedCard.profession}. Looking for a compatible and educated life partner in the Sindhi community.`,
-          personalInfo: {
-            age: `${matchedCard.age} Years`,
-            height: matchedCard.height,
-            motherTongue: matchedCard.motherTongue || "Sindhi / Hindi",
-            profileCreatedBy: "Self",
-            maritalStatus: "Never married",
-            livesIn: `${matchedCard.city}, ${matchedCard.state || "India"}`,
-            eatingHabits: "Vegetarian",
-            religion: "Hindu",
-            caste: "Sindhi",
-            subcaste: matchedCard.caste ? matchedCard.caste.replace("Sindhi - ", "") : "Bhaiband",
-            gothra: matchedCard.name.split(" ").slice(-1)[0] || "Sindhi",
-            manglik: "No",
-            dateOfBirthMasked: "•• ••• ••••",
-            timeOfBirthMasked: "••:•• ••",
-            horoscopeAvailable: Boolean(matchedCard.hasHoroscope),
-            employment: matchedCard.profession,
-            education: matchedCard.education,
-            occupation: matchedCard.profession,
-          },
-          contactInfo: {
-            phoneMasked: matchedCard.phoneNumber ? `${matchedCard.phoneNumber.slice(0, 6)} ********` : "+91 98 ********",
-            whatsappMasked: matchedCard.whatsappNumber ? `${matchedCard.whatsappNumber.slice(0, 6)} ********` : "+91 98 ********",
-            isUnlocked: false,
-          },
-          partnerPreferences: {
-            matchCount: 18,
-            totalCount: 20,
-            basicPreferences: [
-              {
-                id: "pref-age",
-                label: "Preferred Age",
-                preferenceValue: `${matchedCard.age + 1}-${matchedCard.age + 6} yrs`,
-                isMatched: true,
-                category: "basic",
-              },
-              {
-                id: "pref-marital-status",
-                label: "Preferred Marital Status",
-                preferenceValue: "Never married",
-                isMatched: true,
-                category: "basic",
-              },
-            ],
-            religiousPreferences: [
-              {
-                id: "pref-caste",
-                label: "Community",
-                preferenceValue: matchedCard.caste || "Sindhi",
-                isMatched: true,
-                category: "religious",
-              },
-            ],
-            professionalPreferences: [
-              {
-                id: "pref-education",
-                label: "Education",
-                preferenceValue: "Graduate / Post Graduate",
-                isMatched: true,
-                category: "professional",
-              },
-            ],
-            locationPreferences: [
-              {
-                id: "pref-location",
-                label: "Location",
-                preferenceValue: `${matchedCard.city}, ${matchedCard.state}, India`,
-                isMatched: true,
-                category: "location",
-              },
-            ],
-          },
-        };
-      }
+  // Next profile for pill preview & routing
+  const nextProfileInfo = useMemo(() => {
+    if (matchesFeed.length > 0) {
+      const nextIdx = (currentMatchIndex + 1) % matchesFeed.length;
+      const target = matchesFeed[nextIdx];
+      return {
+        id: target._id || target.id || "",
+        matrimonyId: target.matrimonyId || target._id || target.id || "",
+        name: target.name || "Next Match",
+        photoUrl: target.photoUrl || target.avatar || target.photos?.[0] || (Array.isArray(target.photoUrls) ? target.photoUrls[0] : ""),
+      };
     }
-
-    return mockViewProfiles[activeProfileIndex] || mockViewProfiles[0];
-  }, [liveBackendProfile, initialProfileId, activeProfileIndex]);
-
-  // Next profile for pill preview
-  const nextIndex = (activeProfileIndex + 1) % mockViewProfiles.length;
-  const nextProfile = mockViewProfiles[nextIndex];
+    return {
+      id: "",
+      matrimonyId: "",
+      name: "",
+      photoUrl: "",
+    };
+  }, [matchesFeed, currentMatchIndex]);
 
   // User interactions state (Sets for O(1) lookups)
-  const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(() => {
-    const s = new Set<string>();
-    mockViewProfiles.forEach((p) => {
-      if (p.isShortlisted) s.add(p.id);
-    });
-    return s;
-  });
-
+  const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set());
   const [interestSentIds, setInterestSentIds] = useState<Set<string>>(() => {
-    const s = new Set<string>();
-    mockViewProfiles.forEach((p) => {
-      if (p.interestSent) s.add(p.id);
-    });
-    return s;
+    const initialSet = new Set<string>();
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("sent_interests_cache");
+        if (stored) {
+          JSON.parse(stored).forEach((id: string) => initialSet.add(id));
+        }
+      } catch { }
+    }
+    return initialSet;
   });
-
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
 
   // Synchronize with active profile when live API or cache arrives
@@ -262,10 +132,35 @@ const ViewProfileScreenComponent: React.FC<ViewProfileScreenProps> = ({
         setShortlistedIds((prev) => new Set(prev).add(currentProfile.id));
       }
       if (currentProfile.interestSent) {
-        setInterestSentIds((prev) => new Set(prev).add(currentProfile.id));
+        setInterestSentIds((prev) => {
+          const next = new Set(prev).add(currentProfile.id);
+          if (currentProfile.matrimonyId) next.add(currentProfile.matrimonyId);
+          return next;
+        });
       }
     }
   }, [currentProfile]);
+
+  // Track profile visit event with client-side deduplication
+  const trackedViewsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const targetId = currentProfile?.id || initialProfileId;
+    if (targetId && initialProfileId && !trackedViewsRef.current.has(targetId)) {
+      trackedViewsRef.current.add(targetId);
+      (async () => {
+        try {
+          await apiFetch({
+            url: ApiURL.trackProfileView,
+            method: "POST",
+            data: {
+              viewedProfileId: targetId,
+              viewedUserId: (currentProfile as any)?.userId,
+            },
+          });
+        } catch { }
+      })();
+    }
+  }, [currentProfile?.id, currentProfile, initialProfileId]);
 
   // Toast feedback state
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -306,7 +201,7 @@ const ViewProfileScreenComponent: React.FC<ViewProfileScreenProps> = ({
 
     observer.observe(heroElem);
     return () => observer.disconnect();
-  }, [activeProfileIndex]);
+  }, []);
 
   // Monitor scroll for Top button
   useEffect(() => {
@@ -332,7 +227,7 @@ const ViewProfileScreenComponent: React.FC<ViewProfileScreenProps> = ({
           showToast(`Removed from your Shortlist.`);
         } else {
           next.add(id);
-          showToast(`Added ${currentProfile.name} to your Shortlist.`);
+          showToast(`Added ${currentProfile?.name || "profile"} to your Shortlist.`);
         }
         return next;
       });
@@ -347,62 +242,76 @@ const ViewProfileScreenComponent: React.FC<ViewProfileScreenProps> = ({
         console.error("Shortlist mutation error:", e);
       }
     },
-    [currentProfile.name, shortlistedIds, showToast, shortlistMutation]
+    [currentProfile?.name, shortlistedIds, showToast, shortlistMutation]
   );
 
   const handleSendInterest = useCallback(
     async (id: string) => {
-      const isAlreadySent = interestSentIds.has(id);
+      const targetId = id || currentProfile?.id || initialProfileId || "";
+      const isAlreadySent =
+        interestSentIds.has(targetId) ||
+        (currentProfile?.matrimonyId ? interestSentIds.has(currentProfile.matrimonyId) : false);
+
+      const willBeSent = !isAlreadySent;
       setInterestSentIds((prev) => {
         const next = new Set(prev);
-        if (next.has(id)) {
-          next.delete(id);
+        if (!willBeSent) {
+          next.delete(targetId);
+          if (currentProfile?.id) next.delete(currentProfile.id);
+          if (currentProfile?.matrimonyId) next.delete(currentProfile.matrimonyId);
+          if (initialProfileId) next.delete(initialProfileId);
           showToast(`Interest withdrawn.`);
         } else {
-          next.add(id);
-          showToast(`Interest sent to ${currentProfile.name}!`);
+          next.add(targetId);
+          if (currentProfile?.id) next.add(currentProfile.id);
+          if (currentProfile?.matrimonyId) next.add(currentProfile.matrimonyId);
+          if (initialProfileId) next.add(initialProfileId);
+          showToast(`Interest sent to ${currentProfile?.name || "profile"}!`);
+        }
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("sent_interests_cache", JSON.stringify(Array.from(next)));
+          } catch { }
         }
         return next;
       });
 
-      if (!isAlreadySent) {
-        try {
-          await sendInterestMutation.mutateAsync({
-            url: ApiURL.interestsSend,
-            method: "POST",
-            data: {
-              receiverProfileId: id,
-              receiverCandidateId: id,
-              candidateId: id,
-              message: "Namaste, we liked your profile and would love to connect.",
-            },
-          });
-        } catch (e) {
-          console.error("Send interest mutation error:", e);
-        }
+      try {
+        await sendInterestMutation.mutateAsync({
+          url: ApiURL.interestsSend,
+          method: "POST",
+          data: {
+            receiverProfileId: targetId,
+            receiverCandidateId: targetId,
+            candidateId: targetId,
+            message: "Namaste, we liked your profile and would love to connect.",
+          },
+        });
+      } catch (e) {
+        console.error("Send interest mutation error:", e);
       }
     },
-    [currentProfile.name, interestSentIds, showToast, sendInterestMutation]
+    [currentProfile?.name, currentProfile?.id, currentProfile?.matrimonyId, initialProfileId, interestSentIds, showToast, sendInterestMutation]
   );
+
+  const handleNextProfile = useCallback(() => {
+    const nextTargetId = nextProfileInfo.matrimonyId || nextProfileInfo.id;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (onNavigateToNext) {
+      onNavigateToNext(nextTargetId);
+    } else if (nextTargetId && initialProfileId) {
+      router.push(`/matches/viewprofile/${nextTargetId}`);
+    }
+  }, [nextProfileInfo, onNavigateToNext, initialProfileId, router]);
 
   const handleDontShow = useCallback(
     (id: string) => {
       setHiddenIds((prev) => new Set(prev).add(id));
-      showToast(`${currentProfile.name} won't be shown in your matches again.`);
-      // Move to next profile
-      setActiveProfileIndex((prev) => (prev + 1) % mockViewProfiles.length);
+      showToast(`${currentProfile?.name || "Profile"} won't be shown in your matches again.`);
+      handleNextProfile();
     },
-    [currentProfile.name, showToast]
+    [currentProfile?.name, showToast, handleNextProfile]
   );
-
-  const handleNextProfile = useCallback(() => {
-    const nextIdx = (activeProfileIndex + 1) % mockViewProfiles.length;
-    setActiveProfileIndex(nextIdx);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    if (onNavigateToNext) {
-      onNavigateToNext(mockViewProfiles[nextIdx].matrimonyId);
-    }
-  }, [activeProfileIndex, onNavigateToNext]);
 
   const handleBackToMatches = useCallback(() => {
     if (onBackToMatches) {
@@ -431,8 +340,8 @@ const ViewProfileScreenComponent: React.FC<ViewProfileScreenProps> = ({
 
   const handleConfirmHoroscopeSend = useCallback(() => {
     setIsHoroscopeSent(true);
-    showToast(`Horoscope request sent to ${currentProfile.name}.`);
-  }, [currentProfile.name, showToast]);
+    showToast(`Horoscope request sent to ${currentProfile?.name || "profile"}.`);
+  }, [currentProfile?.name, showToast]);
 
   const handleViewBranches = useCallback(() => {
     setIsBranchesModalOpen(true);
@@ -446,14 +355,81 @@ const ViewProfileScreenComponent: React.FC<ViewProfileScreenProps> = ({
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
-  const isShortlisted = shortlistedIds.has(currentProfile.id);
-  const interestSent = interestSentIds.has(currentProfile.id);
+  const matchedFeedItem = useMemo(() => {
+    if (!matchesFeed || matchesFeed.length === 0) return null;
+    const cleanId = (initialProfileId || currentProfile?.id || "").toLowerCase();
+    const cleanMat = (currentProfile?.matrimonyId || "").toLowerCase();
+    return matchesFeed.find((m: any) => {
+      const mid = String(m._id || m.id || "").toLowerCase();
+      const mMat = String(m.matrimonyId || "").toLowerCase();
+      return (
+        (cleanId && (mid === cleanId || mMat === cleanId)) ||
+        (cleanMat && (mid === cleanMat || mMat === cleanMat))
+      );
+    });
+  }, [matchesFeed, currentProfile?.id, currentProfile?.matrimonyId, initialProfileId]);
+
+  if (isCandidateLoading && !liveBackendProfile && initialProfileId) {
+    return (
+      <div className={`min-h-screen flex flex-col bg-[#F5F7F9] text-stone-900 ${className}`}>
+        <DashboardHeader
+
+          activeTab="matches"
+          onUpgradeClick={onUpgradeClick || (() => setUpgradeField("premium features"))}
+        />
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col items-center justify-center">
+          <div className="w-10 h-10 border-4 border-rose-200 border-t-rose-600 rounded-full animate-spin mb-4" />
+          <p className="text-stone-500 font-medium text-sm">Loading verified profile...</p>
+        </main>
+        <DashboardFooter />
+      </div>
+    );
+  }
+
+  if (!currentProfile) {
+    return (
+      <div className={`min-h-screen flex flex-col bg-[#F5F7F9] text-stone-900 ${className}`}>
+        <DashboardHeader
+          activeTab="matches"
+          onUpgradeClick={onUpgradeClick || (() => setUpgradeField("premium features"))}
+        />
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col items-center justify-center text-center">
+          <div className="w-16 h-16 rounded-full bg-rose-50 text-[#DB2F3C] flex items-center justify-center font-bold text-2xl mb-4">
+            !
+          </div>
+          <h2 className="text-xl font-bold text-stone-900 mb-2">Profile Not Available</h2>
+          <p className="text-stone-500 text-sm mb-6 max-w-md">
+            This profile could not be loaded from the server or may no longer be active.
+          </p>
+          <button
+            type="button"
+            onClick={handleBackToMatches}
+            className="px-6 py-2.5 rounded-full bg-[#DB2F3C] text-white text-sm font-semibold hover:bg-[#B71F2A] transition-colors cursor-pointer shadow-xs"
+          >
+            Explore All Matches
+          </button>
+        </main>
+        <DashboardFooter />
+      </div>
+    );
+  }
+
+  const isShortlisted =
+    shortlistedIds.has(currentProfile.id) ||
+    (currentProfile.matrimonyId ? shortlistedIds.has(currentProfile.matrimonyId) : false) ||
+    Boolean(initialProfileId && shortlistedIds.has(initialProfileId));
+
+  const interestSent =
+    interestSentIds.has(currentProfile.id) ||
+    (currentProfile.matrimonyId ? interestSentIds.has(currentProfile.matrimonyId) : false) ||
+    Boolean(initialProfileId && interestSentIds.has(initialProfileId)) ||
+    Boolean(currentProfile.interestSent) ||
+    Boolean(matchedFeedItem?.interestSent || matchedFeedItem?.sendIntrestSended);
 
   return (
     <div className={`min-h-screen flex flex-col bg-[#F5F7F9] text-stone-900 ${className}`}>
       {/* 1. Dashboard Navigation Header */}
       <DashboardHeader
-        user={defaultUser}
         activeTab="matches"
         onUpgradeClick={onUpgradeClick || (() => setUpgradeField("premium features"))}
       />
@@ -463,8 +439,8 @@ const ViewProfileScreenComponent: React.FC<ViewProfileScreenProps> = ({
         profile={currentProfile}
         interestSent={interestSent}
         isVisible={isStickyHeaderVisible}
-        nextProfilePhotoUrl={nextProfile?.photoUrls?.[0]}
-        nextProfileName={nextProfile?.name}
+        nextProfilePhotoUrl={nextProfileInfo.photoUrl}
+        nextProfileName={nextProfileInfo.name}
         onSendInterest={handleSendInterest}
         onDontShow={handleDontShow}
         onNext={handleNextProfile}
@@ -474,11 +450,11 @@ const ViewProfileScreenComponent: React.FC<ViewProfileScreenProps> = ({
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {/* Sub-navigation top bar: ← All Matches 1/23 + Next >> */}
         <ViewProfileHeaderNav
-          currentIndex={activeProfileIndex}
-          totalProfiles={mockViewProfiles.length}
+          currentIndex={currentMatchIndex}
+          totalProfiles={totalMatchesCount}
           categoryLabel="All Matches"
-          nextProfilePhotoUrl={nextProfile?.photoUrls?.[0]}
-          nextProfileName={nextProfile?.name}
+          nextProfilePhotoUrl={nextProfileInfo.photoUrl}
+          nextProfileName={nextProfileInfo.name}
           onBack={handleBackToMatches}
           onNext={handleNextProfile}
         />

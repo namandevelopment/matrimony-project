@@ -267,7 +267,7 @@ export const SuccessStoryModal = memo<SuccessStoryModalProps>(
                 }`}
               />
               <span>
-                {isLiked ? "Congratulated!" : "Congratulate"} ({story.likesCount ? (isLiked ? story.likesCount + 1 : story.likesCount) : 100})
+                {isLiked ? "Congratulated!" : "Congratulate"} ({typeof story.likesCount === "number" ? story.likesCount : (isLiked ? 121 : 120)})
               </span>
             </button>
 

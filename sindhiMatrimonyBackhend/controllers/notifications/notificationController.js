@@ -4,6 +4,10 @@ import { SEED_NOTIFICATIONS } from "../../constants/seedCandidateData.js";
 
 const inMemoryNotifications = SEED_NOTIFICATIONS.map((n) => ({ ...n }));
 
+export const addNotification = (notif) => {
+  inMemoryNotifications.unshift(notif);
+};
+
 /**
  * 🔔 Get In-App Notifications Feed
  * GET /api/v1/notifications?page=1&limit=20

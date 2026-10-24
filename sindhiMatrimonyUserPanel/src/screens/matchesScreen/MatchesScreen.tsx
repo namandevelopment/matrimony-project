@@ -21,7 +21,6 @@ import {
   ContactDetailsModal,
   FloatingChatWidget,
 } from "./components";
-import { initialMatchesList, defaultPreferences } from "./mockData";
 import {
   MatchDetailProfile,
   MatchCategoryType,
@@ -29,6 +28,7 @@ import {
   SortOption,
   PartnerPreferences,
   MatchesScreenProps,
+  defaultPreferences,
 } from "./types";
 import {
   useDashboardMatchesQuery,
@@ -39,18 +39,11 @@ import {
 } from "@/tanstackQuery";
 import { ApiURL } from "@/redux/apiService/endpoint";
 
-const defaultUser: UserProfile = {
-  name: "Member",
-  matrimonyId: "SM4517087",
-  community: "SindhiMatrimony",
-  membershipStatus: "Free member",
-  completenessScore: 42,
-};
 
 const PAGE_SIZE = 5;
 
 const MatchesScreenComponent: React.FC<MatchesScreenProps> = ({
-  initialProfiles = initialMatchesList,
+  initialProfiles = [],
   initialCategory = "your_matches",
   initialMode = "regular",
   onUpgradeClick,
@@ -103,7 +96,7 @@ const MatchesScreenComponent: React.FC<MatchesScreenProps> = ({
         phoneNumber: "+91 98200 12345",
         whatsappNumber: "+91 98200 12345",
         isShortlisted: Boolean(c.isShortlisted),
-        interestSent: Boolean(c.interestSent),
+        interestSent: Boolean(c.interestSent || c.sendIntrestSended),
         photoRequested: Boolean(c.photoRequested),
         caste: c.subcaste || c.caste || "Sindhi - Bhaiband",
         motherTongue: "Sindhi",
@@ -126,6 +119,14 @@ const MatchesScreenComponent: React.FC<MatchesScreenProps> = ({
     initialProfiles.forEach((p) => {
       if (p.interestSent) initialSet.add(p.id);
     });
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("sent_interests_cache");
+        if (stored) {
+          JSON.parse(stored).forEach((id: string) => initialSet.add(id));
+        }
+      } catch { }
+    }
     return initialSet;
   });
 
@@ -228,7 +229,15 @@ const MatchesScreenComponent: React.FC<MatchesScreenProps> = ({
 
   const handleSendInterest = useCallback(
     (id: string) => {
-      setInterestedIds((prev) => new Set(prev).add(id));
+      setInterestedIds((prev) => {
+        const next = new Set(prev).add(id);
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("sent_interests_cache", JSON.stringify(Array.from(next)));
+          } catch { }
+        }
+        return next;
+      });
       sendInterestMutation.mutate({
         url: ApiURL.interestsSend,
         method: "POST",
@@ -378,7 +387,7 @@ const MatchesScreenComponent: React.FC<MatchesScreenProps> = ({
 
     return result;
   }, [
-    initialProfiles,
+    activeProfiles,
     hiddenIds,
     activeCategory,
     shortlistedIds,
@@ -403,140 +412,139 @@ const MatchesScreenComponent: React.FC<MatchesScreenProps> = ({
       <div className="relative min-h-screen flex flex-col bg-[#F8F9FA] text-[#1A1A1A] selection:bg-red-100 selection:text-red-900">
         {/* 1. Header with Matches tab active */}
         <DashboardHeader
-          user={defaultUser}
           onUpgradeClick={handleUpgrade}
         />
 
-      {/* 2. Mode Switcher (Regular vs PRIME*) */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-1">
-        <DashboardModeSwitcher
-          currentMode={mode}
-          onModeChange={handleModeChange}
-        />
-      </div>
-
-      {/* 3. Main 2-Column Matches Layout */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="flex flex-col lg:flex-row items-start gap-6">
-          {/* Left Column: Matches Sidebar */}
-          <MatchesSidebar
-            activeCategory={activeCategory}
-            onSelectCategory={handleSelectCategory}
-            counts={categoryCounts}
+        {/* 2. Mode Switcher (Regular vs PRIME*) */}
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-1">
+          <DashboardModeSwitcher
+            currentMode={mode}
+            onModeChange={handleModeChange}
           />
+        </div>
 
-          {/* Right Column: Header & Cards Feed */}
-          <div className="flex-1 w-full min-w-0 space-y-5">
-            {/* Top Bar: Title + Filter / Sort Chips */}
-            <MatchesHeaderBar
-              totalMatchesCount={filteredProfiles.length}
-              activeFilterChips={activeFilterChips}
-              onToggleFilterChip={handleToggleFilterChip}
-              currentSort={currentSort}
-              onSelectSort={handleSelectSort}
-              onOpenFilterModal={() => setIsFilterModalOpen(true)}
-              onOpenPreferencesModal={() => setIsPreferencesOpen(true)}
+        {/* 3. Main 2-Column Matches Layout */}
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <div className="flex flex-col lg:flex-row items-start gap-6">
+            {/* Left Column: Matches Sidebar */}
+            <MatchesSidebar
+              activeCategory={activeCategory}
+              onSelectCategory={handleSelectCategory}
+              counts={categoryCounts}
             />
 
-            {/* Profiles Feed */}
-            {paginatedProfiles.length === 0 ? (
-              <div className="w-full p-12 text-center bg-white rounded-2xl border border-stone-200 space-y-3">
-                <p className="text-base font-bold text-stone-800">
-                  No profiles match the selected criteria
-                </p>
-                <p className="text-xs text-stone-500">
-                  Try clearing some filter tags or updating your partner preferences.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveFilterChips([]);
-                    setCurrentSort("relevance");
-                  }}
-                  className="px-5 py-2 rounded-full bg-[#DB2F3C] text-white text-xs font-semibold hover:bg-[#B71F2A] transition-colors cursor-pointer"
-                >
-                  Reset All Filters
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {paginatedProfiles.map((profile, index) => (
-                  <React.Fragment key={profile.id}>
-                    <MatchDetailCard
-                      profile={profile}
-                      isShortlisted={shortlistedIds.has(profile.id)}
-                      interestSent={interestedIds.has(profile.id)}
-                      photoRequested={requestedPhotoIds.has(profile.id)}
-                      onToggleShortlist={handleToggleShortlist}
-                      onSendInterest={handleSendInterest}
-                      onDontShow={handleDontShow}
-                      onRequestPhoto={handleRequestPhoto}
-                      onCallClick={handleCallClick}
-                      onWhatsAppClick={handleWhatsAppClick}
-                      onViewProfile={handleViewProfile}
-                    />
-
-                    {/* In-feed Assisted Service Banner: Inserted after card 3 or 4 */}
-                    {index === 2 && (
-                      <AssistedServiceMatchCard
-                        onGetAssistedService={handleAssistedService}
-                      />
-                    )}
-                  </React.Fragment>
-                ))}
-              </div>
-            )}
-
-            {/* Pagination Controls */}
-            {filteredProfiles.length > 0 && (
-              <MatchesPagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
+            {/* Right Column: Header & Cards Feed */}
+            <div className="flex-1 w-full min-w-0 space-y-5">
+              {/* Top Bar: Title + Filter / Sort Chips */}
+              <MatchesHeaderBar
+                totalMatchesCount={filteredProfiles.length}
+                activeFilterChips={activeFilterChips}
+                onToggleFilterChip={handleToggleFilterChip}
+                currentSort={currentSort}
+                onSelectSort={handleSelectSort}
+                onOpenFilterModal={() => setIsFilterModalOpen(true)}
+                onOpenPreferencesModal={() => setIsPreferencesOpen(true)}
               />
-            )}
+
+              {/* Profiles Feed */}
+              {paginatedProfiles.length === 0 ? (
+                <div className="w-full p-12 text-center bg-white rounded-2xl border border-stone-200 space-y-3">
+                  <p className="text-base font-bold text-stone-800">
+                    No profiles match the selected criteria
+                  </p>
+                  <p className="text-xs text-stone-500">
+                    Try clearing some filter tags or updating your partner preferences.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveFilterChips([]);
+                      setCurrentSort("relevance");
+                    }}
+                    className="px-5 py-2 rounded-full bg-[#DB2F3C] text-white text-xs font-semibold hover:bg-[#B71F2A] transition-colors cursor-pointer"
+                  >
+                    Reset All Filters
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {paginatedProfiles.map((profile, index) => (
+                    <React.Fragment key={profile.id}>
+                      <MatchDetailCard
+                        profile={profile}
+                        isShortlisted={shortlistedIds.has(profile.id)}
+                        interestSent={interestedIds.has(profile.id)}
+                        photoRequested={requestedPhotoIds.has(profile.id)}
+                        onToggleShortlist={handleToggleShortlist}
+                        onSendInterest={handleSendInterest}
+                        onDontShow={handleDontShow}
+                        onRequestPhoto={handleRequestPhoto}
+                        onCallClick={handleCallClick}
+                        onWhatsAppClick={handleWhatsAppClick}
+                        onViewProfile={handleViewProfile}
+                      />
+
+                      {/* In-feed Assisted Service Banner: Inserted after card 3 or 4 */}
+                      {index === 2 && (
+                        <AssistedServiceMatchCard
+                          onGetAssistedService={handleAssistedService}
+                        />
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
+
+              {/* Pagination Controls */}
+              {filteredProfiles.length > 0 && (
+                <MatchesPagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              )}
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
 
-      {/* 4. Full-Width Footer matching screenshot */}
-      <DashboardFooter />
+        {/* 4. Full-Width Footer matching screenshot */}
+        <DashboardFooter />
 
-      {/* 5. Floating Chat Widget */}
-      <FloatingChatWidget />
+        {/* 5. Floating Chat Widget */}
+        <FloatingChatWidget />
 
-      {/* 6. Preferences Modal */}
-      <MatchesPreferencesModal
-        isOpen={isPreferencesOpen}
-        onClose={() => setIsPreferencesOpen(false)}
-        preferences={preferences}
-        onSavePreferences={setPreferences}
-      />
+        {/* 6. Preferences Modal */}
+        <MatchesPreferencesModal
+          isOpen={isPreferencesOpen}
+          onClose={() => setIsPreferencesOpen(false)}
+          preferences={preferences}
+          onSavePreferences={setPreferences}
+        />
 
-      {/* 7. Advanced Filter Modal */}
-      <MatchesFilterModal
-        isOpen={isFilterModalOpen}
-        onClose={() => setIsFilterModalOpen(false)}
-        activeFilterChips={activeFilterChips}
-        onApplyChips={handleApplyFilterModalChips}
-      />
+        {/* 7. Advanced Filter Modal */}
+        <MatchesFilterModal
+          isOpen={isFilterModalOpen}
+          onClose={() => setIsFilterModalOpen(false)}
+          activeFilterChips={activeFilterChips}
+          onApplyChips={handleApplyFilterModalChips}
+        />
 
-      {/* 8. Request Photo Confirmation Modal */}
-      <RequestPhotoModal
-        isOpen={Boolean(selectedProfileForPhoto)}
-        profile={selectedProfileForPhoto}
-        onClose={handleClosePhotoModal}
-        onConfirmRequest={handleConfirmPhotoRequest}
-      />
+        {/* 8. Request Photo Confirmation Modal */}
+        <RequestPhotoModal
+          isOpen={Boolean(selectedProfileForPhoto)}
+          profile={selectedProfileForPhoto}
+          onClose={handleClosePhotoModal}
+          onConfirmRequest={handleConfirmPhotoRequest}
+        />
 
-      {/* 9. Contact Details Modal */}
-      <ContactDetailsModal
-        isOpen={Boolean(selectedProfileForContact)}
-        type={contactModalType}
-        profile={selectedProfileForContact}
-        onClose={handleCloseContactModal}
-        onUpgradeClick={handleUpgrade}
-      />
+        {/* 9. Contact Details Modal */}
+        <ContactDetailsModal
+          isOpen={Boolean(selectedProfileForContact)}
+          type={contactModalType}
+          profile={selectedProfileForContact}
+          onClose={handleCloseContactModal}
+          onUpgradeClick={handleUpgrade}
+        />
       </div>
     </DashboardNavProvider>
   );

@@ -91,6 +91,7 @@ const EditProfileEnhanceSectionComponent: React.FC<EditProfileEnhanceSectionProp
                     src={photo.url}
                     alt="User photo"
                     fill
+                    unoptimized
                     className="object-cover"
                   />
                   {photo.isPrimary && (

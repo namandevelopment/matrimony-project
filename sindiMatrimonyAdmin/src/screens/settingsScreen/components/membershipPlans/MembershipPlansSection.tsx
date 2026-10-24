@@ -15,6 +15,7 @@ import { toast } from '../../../../toastMessage/toast';
 import { storage } from '../../../../storage';
 import { useInputs } from '../../../../customHooks/useInputs';
 import { usePlansQuery } from '../../../../tanstackQuery/useQuery';
+import { apiFetch, ApiURL } from '../../../../redux/apiService';
 
 interface MembershipPlansFilterValues {
   activeCategory: PlanCategory;
@@ -206,6 +207,25 @@ export const MembershipPlansSection: React.FC = () => {
       }
     }
 
+    const apiPayload = {
+      name: values.title,
+      tier: values.category === 'ASSIST_PLAN' ? 'VIP' : values.title.toUpperCase(),
+      price: Number(values.offerPrice || values.price),
+      originalPrice: Number(values.price),
+      durationDays: parseInt(values.duration, 10) || 90,
+      features: parsedFeatures,
+      tagline: values.subtitle,
+      category: values.category,
+      badge: values.badge || undefined,
+      status: values.active ? 'ACTIVE' : 'INACTIVE',
+    };
+
+    if (formMode === 'edit' && planId) {
+      apiFetch({ url: `${ApiURL.plans}/${planId}`, method: 'PUT', data: apiPayload }).catch(() => {});
+    } else {
+      apiFetch({ url: ApiURL.plans, method: 'POST', data: apiPayload }).catch(() => {});
+    }
+
     setIsFormModalOpen(false);
     setSelectedPlan(null);
   }, [formMode, plans.length, filterValues.activeCategory, setFilterFieldValue]);
@@ -222,6 +242,7 @@ export const MembershipPlansSection: React.FC = () => {
 
   const handleConfirmDelete = useCallback((planId: string) => {
     setPlans((prev) => prev.filter((p) => p.id !== planId));
+    apiFetch({ url: `${ApiURL.plans}/${planId}`, method: 'DELETE' }).catch(() => {});
     toast.success('Membership plan deleted successfully.');
     setIsDeleteModalOpen(false);
     setPlanToDelete(null);

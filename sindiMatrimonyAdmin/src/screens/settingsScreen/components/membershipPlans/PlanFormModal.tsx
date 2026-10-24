@@ -80,7 +80,10 @@ export const PlanFormModal: React.FC<PlanFormModalProps> = memo(({
     validateForm,
     reset,
   } = useInputs<PlanFormInputValues>(
-    () => getInitialValues(mode, initialPlan, defaultCategory),
+    React.useMemo(
+      () => getInitialValues(mode, initialPlan, defaultCategory),
+      [mode, initialPlan, defaultCategory]
+    ),
     {
       validate: (v) => {
         const errs: Partial<Record<keyof PlanFormInputValues, string>> = {};
@@ -258,9 +261,8 @@ export const PlanFormModal: React.FC<PlanFormModalProps> = memo(({
               rows={5}
               {...bind('featuresText')}
               placeholder="View 150 contacts&#10;Send 120 interests&#10;Shortlist 60 profiles&#10;Highlighted in match listings&#10;Priority customer support"
-              className={`w-full px-3.5 py-2.5 bg-white border rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition font-mono ${
-                getFieldError('featuresText') ? 'border-rose-500 bg-rose-50/20' : 'border-slate-200'
-              }`}
+              className={`w-full px-3.5 py-2.5 bg-white border rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition font-mono ${getFieldError('featuresText') ? 'border-rose-500 bg-rose-50/20' : 'border-slate-200'
+                }`}
             />
             {getFieldError('featuresText') && (
               <p className="text-[11px] text-rose-600 mt-1 flex items-center gap-1">

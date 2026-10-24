@@ -2,8 +2,10 @@
 
 import React, { memo, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 import { MatchCard } from "./MatchCard";
+import { useDashboardNav, defaultNavContext } from "../context/DashboardNavContext";
 import type { MatchProfile } from "../types";
 
 export interface DashboardMatchesSectionProps {
@@ -81,6 +83,28 @@ const DashboardMatchesSectionComponent: React.FC<DashboardMatchesSectionProps> =
   className = "",
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const navContext = useDashboardNav();
+
+  const handleViewAllClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (
+        navContext.isInsideProvider &&
+        navContext.onTabChange &&
+        navContext.onTabChange !== defaultNavContext.onTabChange
+      ) {
+        e.preventDefault();
+        navContext.onTabChange("matches");
+        if (typeof window !== "undefined") {
+          window.history.pushState(null, "", "/matches");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+        return;
+      }
+      router.push("/matches");
+    },
+    [navContext, router]
+  );
 
   const scrollLeft = useCallback(() => {
     if (scrollContainerRef.current) {
@@ -147,6 +171,7 @@ const DashboardMatchesSectionComponent: React.FC<DashboardMatchesSectionProps> =
       <div className="flex justify-center pt-3 border-t border-stone-100">
         <Link
           href="/matches"
+          onClick={handleViewAllClick}
           className="inline-flex items-center justify-center px-10 py-2 rounded-full border border-[#DB2F3C] text-xs sm:text-sm font-semibold text-[#DB2F3C] hover:bg-gradient-to-r hover:from-[#FF4D5A] hover:via-[#DB2F3C] hover:to-[#B71F2A] hover:text-white hover:border-transparent active:scale-[0.98] shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer"
         >
           View all &gt;

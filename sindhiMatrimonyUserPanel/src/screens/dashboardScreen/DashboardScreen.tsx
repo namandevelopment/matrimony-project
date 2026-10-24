@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect, memo } from "react";
+import { isDeepEqual } from "@/utils";
 import { useRouter } from "next/navigation";
 import {
   DashboardHeader,
@@ -52,6 +53,7 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
     if (typeof window !== "undefined") {
       try {
         const stored = localStorage.getItem("user");
+        console.log('storedstoredstoredstoredstored', stored)
         if (stored) {
           const parsed = JSON.parse(stored);
           return {
@@ -63,7 +65,7 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
             avatarUrl: parsed.avatar || parsed.avatarUrl || parsed.photoUrl || "",
           };
         }
-      } catch {}
+      } catch { }
     }
     return initialUser;
   });
@@ -79,19 +81,22 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
   // Live consolidated dashboard API integration via TanStack Query (cached 5 mins, zero duplicate flight)
   const { data: dashboardRes } = useDashboardFeedQuery();
   const { data: profileRes } = useProfileQuery();
-
+  console.log('profileResprofileResprofileResprofileRes', profileRes)
   // Sync profile data if profile query updates
   useEffect(() => {
     if (!profileRes) return;
     const p = (profileRes as any)?.profile || (profileRes as any)?.data?.profile;
     const u = (profileRes as any)?.user || (profileRes as any)?.data?.user;
     if (p || u) {
-      setUser((prev) => ({
-        ...prev,
-        name: p?.name || u?.name || prev.name,
-        avatarUrl: p?.avatar || p?.photos?.[0]?.url || prev.avatarUrl,
-        community: p?.subcaste ? `Sindhi (${p.subcaste})` : prev.community,
-      }));
+      setUser((prev) => {
+        const next = {
+          ...prev,
+          name: p?.name || u?.name || prev.name,
+          avatarUrl: p?.avatar || p?.photos?.[0]?.url || prev.avatarUrl,
+          community: p?.subcaste ? `Sindhi (${p.subcaste})` : prev.community,
+        };
+        return isDeepEqual(prev, next) ? prev : next;
+      });
     }
   }, [profileRes]);
 
@@ -101,13 +106,16 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
 
     // 1. Sync User Profile
     if (d.user) {
-      setUser({
-        name: d.user.name || "Member",
-        matrimonyId: d.user.matrimonyId || "SM4517087",
-        community: d.user.community || "SindhiMatrimony",
-        membershipStatus: d.user.membershipStatus || "Free member",
-        completenessScore: d.completeness?.score ?? d.user.completenessScore ?? 42,
-        avatarUrl: d.user.avatarUrl || d.user.avatar || "",
+      setUser((prev) => {
+        const next = {
+          name: d.user.name || prev.name || "Member",
+          matrimonyId: d.user.matrimonyId || prev.matrimonyId || "SM4517087",
+          community: d.user.community || prev.community || "SindhiMatrimony",
+          membershipStatus: d.user.membershipStatus || prev.membershipStatus || "Free member",
+          completenessScore: d.completeness?.score ?? d.user.completenessScore ?? prev.completenessScore ?? 42,
+          avatarUrl: d.user.avatarUrl || d.user.avatar || prev.avatarUrl || "",
+        };
+        return isDeepEqual(prev, next) ? prev : next;
       });
     }
 
@@ -224,7 +232,6 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
       <div className="relative min-h-screen flex flex-col bg-[#F8F9FA] text-[#1A1A1A] selection:bg-red-100 selection:text-red-900">
         {/* 1. Sticky Header - DOES NOT RE-RENDER ON TAB CHANGE */}
         <DashboardHeader
-          user={user}
           onLogout={handleLogoutAction}
           onUpgradeClick={handleUpgrade}
         />
@@ -301,6 +308,9 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
   );
 };
 
-export const DashboardScreen = memo(DashboardScreenComponent);
+export const DashboardScreen = memo(
+  DashboardScreenComponent,
+  (prev, next) => isDeepEqual(prev, next)
+);
 DashboardScreen.displayName = "DashboardScreen";
 export default DashboardScreen;

@@ -74,7 +74,8 @@ export const mapBackendToViewProfile = (backendData: any): ViewUserProfile | nul
       profile.maritalStatus === "NEVER_MARRIED" ? "Never married" : profile.maritalStatus || "Unmarried",
     profileCreatedBy: (profile.profileFor || "Self").toLowerCase(),
     isShortlisted: Boolean(profile.isShortlisted),
-    interestSent: Boolean(profile.interestSent),
+    sendIntrestSended: Boolean(profile.sendIntrestSended ?? root?.sendIntrestSended),
+    interestSent: Boolean(profile.sendIntrestSended ?? root?.sendIntrestSended),
     isNewlyJoined: Boolean(profile.isNewlyJoined),
     aboutText:
       profile.aboutMe ||

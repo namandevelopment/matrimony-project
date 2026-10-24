@@ -1,6 +1,7 @@
 "use client";
 
 import React, { memo } from "react";
+import { isDeepEqual } from "@/utils";
 import { DashboardModeSwitcher } from "./DashboardModeSwitcher";
 import type { DashboardMode } from "../types";
 
@@ -79,6 +80,9 @@ const DashboardSubHeaderComponent: React.FC<DashboardSubHeaderProps> = ({
   );
 };
 
-export const DashboardSubHeader = memo(DashboardSubHeaderComponent);
+export const DashboardSubHeader = memo(
+  DashboardSubHeaderComponent,
+  (prev, next) => isDeepEqual(prev, next)
+);
 DashboardSubHeader.displayName = "DashboardSubHeader";
 export default DashboardSubHeader;

@@ -90,7 +90,7 @@ import {
 // 6. Finance & Subscriptions
 router.get("/finance/summary", getFinanceSummary);
 router.get("/finance/transactions", getTransactionsList);
-router.get("/plans", getPlansList);
+router.get("/plans", getAdminPlans);
 
 import {
   getAdminSuccessStories,
@@ -181,6 +181,7 @@ import {
   getAdminPlans,
   createAdminPlan,
   updateAdminPlan,
+  deleteAdminPlan,
   adminChangePassword,
   getSystemConfig,
   updateSystemConfig,
@@ -198,6 +199,8 @@ import {
 router.post("/plans", createAdminPlan);
 router.put("/plans/:id", updateAdminPlan);
 router.put("/plans", updateAdminPlan);
+router.delete("/plans/:id", deleteAdminPlan);
+router.delete("/plans", deleteAdminPlan);
 
 // 12. Staff Change Password (/auth/change-password)
 router.post("/auth/change-password", adminChangePassword);

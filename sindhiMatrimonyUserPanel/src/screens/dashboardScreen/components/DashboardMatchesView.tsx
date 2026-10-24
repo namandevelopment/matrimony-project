@@ -13,7 +13,6 @@ import {
   RequestPhotoModal,
   ContactDetailsModal,
 } from "@/screens/matchesScreen/components";
-import { initialMatchesList, defaultPreferences } from "@/screens/matchesScreen/mockData";
 import { apiFetch, ApiURL } from "@/redux/apiService";
 import {
   useDashboardMatchesQuery,
@@ -22,12 +21,13 @@ import {
   useBlockUserMutation,
   useRequestPhotoMutation,
 } from "@/tanstackQuery";
-import type {
-  MatchDetailProfile,
-  MatchCategoryType,
-  FilterChipId,
-  SortOption,
-  PartnerPreferences,
+import {
+  type MatchDetailProfile,
+  type MatchCategoryType,
+  type FilterChipId,
+  type SortOption,
+  type PartnerPreferences,
+  defaultPreferences,
 } from "@/screens/matchesScreen/types";
 import type { UserProfile } from "../types";
 
@@ -44,7 +44,7 @@ const DashboardMatchesViewComponent: React.FC<DashboardMatchesViewProps> = ({
   onAssistedServiceClick,
 }) => {
   const router = useRouter();
-  const [profilesList, setProfilesList] = useState<MatchDetailProfile[]>(initialMatchesList);
+  const [profilesList, setProfilesList] = useState<MatchDetailProfile[]>([]);
   const [activeCategory, setActiveCategory] = useState<MatchCategoryType>("your_matches");
   const [activeFilterChips, setActiveFilterChips] = useState<FilterChipId[]>([]);
   const [currentSort, setCurrentSort] = useState<SortOption>("relevance");
@@ -86,7 +86,7 @@ const DashboardMatchesViewComponent: React.FC<DashboardMatchesViewProps> = ({
         phoneNumber: "+91 98200 12345",
         whatsappNumber: "+91 98200 12345",
         isShortlisted: Boolean(c.isShortlisted),
-        interestSent: Boolean(c.interestSent),
+        interestSent: Boolean(c.interestSent || c.sendIntrestSended),
         photoRequested: Boolean(c.photoRequested),
         caste: c.subcaste || c.caste || "Sindhi - Bhaiband",
         motherTongue: "Sindhi",
@@ -107,7 +107,7 @@ const DashboardMatchesViewComponent: React.FC<DashboardMatchesViewProps> = ({
         const next = new Set(prev);
         items.forEach((c: any) => {
           const cid = c._id || c.id;
-          if (c.interestSent && cid) next.add(cid);
+          if ((c.interestSent || c.sendIntrestSended) && cid) next.add(cid);
         });
         return next;
       });
@@ -115,19 +115,18 @@ const DashboardMatchesViewComponent: React.FC<DashboardMatchesViewProps> = ({
   }, [matchesRes]);
 
   // User interactions state
-  const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(() => {
-    const initialSet = new Set<string>();
-    initialMatchesList.forEach((p) => {
-      if (p.isShortlisted) initialSet.add(p.id);
-    });
-    return initialSet;
-  });
+  const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set());
 
   const [interestedIds, setInterestedIds] = useState<Set<string>>(() => {
     const initialSet = new Set<string>();
-    initialMatchesList.forEach((p) => {
-      if (p.interestSent) initialSet.add(p.id);
-    });
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("sent_interests_cache");
+        if (stored) {
+          JSON.parse(stored).forEach((id: string) => initialSet.add(id));
+        }
+      } catch { }
+    }
     return initialSet;
   });
 
@@ -190,7 +189,15 @@ const DashboardMatchesViewComponent: React.FC<DashboardMatchesViewProps> = ({
 
   const handleSendInterest = useCallback(
     (id: string) => {
-      setInterestedIds((prev) => new Set(prev).add(id));
+      setInterestedIds((prev) => {
+        const next = new Set(prev).add(id);
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("sent_interests_cache", JSON.stringify(Array.from(next)));
+          } catch { }
+        }
+        return next;
+      });
       sendInterestMutation.mutate({
         url: ApiURL.interestsSend,
         method: "POST",

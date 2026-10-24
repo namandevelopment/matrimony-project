@@ -2,6 +2,7 @@ import axios, { type AxiosInstance, type Method } from 'axios';
 import { Storage } from '../../storage/Storage';
 import { toast, showToast, hideToast, type ToastOptions, type ToastType } from '../../toastMessage/toast';
 import { reset } from '../../navigation/navigationService';
+import { perfMonitor } from '../../utils/perfMonitor';
 import { BASE_URL, ApiURL } from './endpoint';
 
 export { BASE_URL, ApiURL, toast, showToast, hideToast, type ToastOptions, type ToastType };
@@ -162,6 +163,28 @@ export const apiClient: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+apiClient.interceptors.request.use((config) => {
+  (config as any)._startTime = performance.now();
+  return config;
+});
+
+apiClient.interceptors.response.use(
+  (res) => {
+    const start = (res.config as any)?._startTime;
+    if (start) {
+      perfMonitor.recordApi(res.config.url || '', res.config.method || 'GET', performance.now() - start, res.status);
+    }
+    return res;
+  },
+  (err) => {
+    const start = (err?.config as any)?._startTime;
+    if (start) {
+      perfMonitor.recordApi(err?.config?.url || '', err?.config?.method || 'GET', performance.now() - start, err?.response?.status || 'ERR');
+    }
+    return Promise.reject(err);
+  }
+);
 
 // ============================================================================
 // 4. Real-time Network Connectivity Tracking (Web Native & SSR-Safe)

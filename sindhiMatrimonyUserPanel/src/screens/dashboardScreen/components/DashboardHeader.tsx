@@ -1,17 +1,17 @@
 "use client";
 
 import React, { memo } from "react";
+import { isDeepEqual } from "@/utils";
 import Link from "next/link";
 import { MatrimonyHeartLogo } from "@/screens/landingScreen/components/Icons";
 import { DashboardNav } from "./DashboardNav";
 import { ProfileDropdown } from "./ProfileDropdown";
 import { useGlobalModal } from "@/customModals";
-import type { UserProfile, DashboardNavTab } from "../types";
+import type { DashboardNavTab } from "../types";
 
 import { useDashboardNav } from "../context/DashboardNavContext";
 
 export interface DashboardHeaderProps {
-  user: UserProfile;
   activeTab?: DashboardNavTab["id"];
   onTabChange?: (tabId: DashboardNavTab["id"]) => void;
   onLogout?: () => void;
@@ -51,7 +51,6 @@ const HeaderLogo = memo<{ subtitle?: string; onLogoClick?: (e: React.MouseEvent)
 HeaderLogo.displayName = "HeaderLogo";
 
 const DashboardHeaderComponent: React.FC<DashboardHeaderProps> = ({
-  user,
   activeTab,
   onTabChange,
   onLogout,
@@ -61,7 +60,10 @@ const DashboardHeaderComponent: React.FC<DashboardHeaderProps> = ({
 }) => {
   const context = useDashboardNav();
   const { openLogoutModal } = useGlobalModal();
-  const effectiveLogout = onLogout || openLogoutModal;
+  const effectiveLogout = React.useMemo(
+    () => onLogout || openLogoutModal,
+    [onLogout, openLogoutModal]
+  );
 
   const handleLogoClick = React.useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -88,7 +90,6 @@ const DashboardHeaderComponent: React.FC<DashboardHeaderProps> = ({
           {/* Profile Hover Dropdown Trigger */}
           <div className="border-l border-stone-200 pl-2 sm:pl-3">
             <ProfileDropdown
-              user={user}
               onLogout={effectiveLogout}
               onUpgradeClick={onUpgradeClick}
             />
@@ -101,20 +102,7 @@ const DashboardHeaderComponent: React.FC<DashboardHeaderProps> = ({
 
 export const DashboardHeader = memo(
   DashboardHeaderComponent,
-  (prevProps, nextProps) => {
-    // Custom memo comparator:
-    // Header does NOT need to re-render when switching tabs because DashboardNav
-    // handles activeTab updates via DashboardNavContext without re-rendering the header.
-    return (
-      prevProps.user === nextProps.user &&
-      prevProps.activeTab === nextProps.activeTab &&
-      prevProps.onTabChange === nextProps.onTabChange &&
-      prevProps.onLogout === nextProps.onLogout &&
-      prevProps.onUpgradeClick === nextProps.onUpgradeClick &&
-      prevProps.subtitle === nextProps.subtitle &&
-      prevProps.className === nextProps.className
-    );
-  }
+  (prevProps, nextProps) => isDeepEqual(prevProps, nextProps)
 );
 DashboardHeader.displayName = "DashboardHeader";
 export default DashboardHeader;

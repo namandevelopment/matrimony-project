@@ -114,11 +114,10 @@ const MatchesHeaderBarComponent: React.FC<MatchesHeaderBarProps> = ({
                       onSelectSort(opt.id);
                       setSortDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 transition-colors flex items-center justify-between cursor-pointer ${
-                      currentSort === opt.id
-                        ? "bg-red-50 text-[#DB2F3C] font-semibold"
-                        : "text-stone-700 hover:bg-stone-50"
-                    }`}
+                    className={`w-full text-left px-3.5 py-2 transition-colors flex items-center justify-between cursor-pointer ${currentSort === opt.id
+                      ? "bg-red-50 text-[#DB2F3C] font-semibold"
+                      : "text-stone-700 hover:bg-stone-50"
+                      }`}
                   >
                     <span>{opt.label}</span>
                     {currentSort === opt.id && (
@@ -144,11 +143,10 @@ const MatchesHeaderBarComponent: React.FC<MatchesHeaderBarProps> = ({
                 key={chip.id}
                 type="button"
                 onClick={() => onToggleFilterChip(chip.id)}
-                className={`shrink-0 px-3 sm:px-3.5 py-1.5 rounded-full text-xs sm:text-[13px] font-medium transition-all duration-150 cursor-pointer shadow-2xs active:scale-95 border ${
-                  isActive
-                    ? "bg-[#FEF2F2] border-[#DB2F3C] text-[#DB2F3C] font-semibold"
-                    : "bg-white hover:bg-stone-50 border-stone-300 text-stone-700"
-                }`}
+                className={`shrink-0 px-3 sm:px-3.5 py-1.5 rounded-full text-xs sm:text-[13px] font-medium transition-all duration-150 cursor-pointer shadow-2xs active:scale-95 border ${isActive
+                  ? "bg-[#FEF2F2] border-[#DB2F3C] text-[#DB2F3C] font-semibold"
+                  : "bg-white hover:bg-stone-50 border-stone-300 text-stone-700"
+                  }`}
               >
                 {chip.label}
               </button>

@@ -24,15 +24,135 @@ import {
   HoroscopePartnerSection,
   HoroscopeChartModal,
 } from "./components";
-import { INITIAL_HOROSCOPE_PROFILE_DATA } from "./staticData";
-import { HoroscopeScreenProps } from "./types";
+import { useProfileQuery } from "@/tanstackQuery";
+import { HoroscopeProfileData, HoroscopeScreenProps } from "./types";
 
 const HoroscopeScreenComponent: React.FC<HoroscopeScreenProps> = ({
-  initialData = INITIAL_HOROSCOPE_PROFILE_DATA,
+  initialData,
   className = "",
 }) => {
   const router = useRouter();
-  const [data] = useState(initialData);
+  const { data: profileRes } = useProfileQuery();
+  const userDoc = (profileRes as any)?.profile || (profileRes as any)?.data?.profile || (profileRes as any)?.data || profileRes;
+  const partnerPref = (profileRes as any)?.partnerPreference || (profileRes as any)?.data?.partnerPreference || {};
+
+  const liveData: HoroscopeProfileData = useMemo(() => {
+    if (!userDoc) {
+      return (
+        initialData || {
+          matrimonyId: "",
+          profileCreatedFor: "Self",
+          name: "",
+          age: 0,
+          height: "",
+          heightCm: 0,
+          education: "",
+          occupation: "",
+          location: "",
+          mobileNumber: "",
+          aboutMe: "",
+          basicDetails: { profileCreatedFor: "Self", name: "", age: "", height: "", gender: "", maritalStatus: "", motherTongue: "", physicalStatus: "Normal" },
+          religiousInfo: { subcaste: "", casteDivision: "", star: "", raasi: "", gothram: "" },
+          professionalInfo: { education: "", educationDetail: "", occupation: "" },
+          locationInfo: { country: "", state: "", city: "", citizenship: "" },
+          horoscopeInfo: { name: "", dateOfBirth: "", timeOfBirth: "", timeZone: "", timeCorrection: "", placeOfBirth: "" },
+          familyDetails: { familyStatus: "" },
+          lifestyleInfo: { eatingHabits: "", drinkingHabits: "", smokingHabits: "" },
+          partnerPreference: { maritalStatus: "", haveChildren: "", age: "", height: "", motherTongue: "", physicalStatus: "", eatingHabits: "", drinkingHabits: "", smokingHabits: "", casteDivision: "", subcaste: "", star: "", manglik: "", education: "" },
+        }
+      );
+    }
+    const h = userDoc.horoscope || {};
+    const loc = userDoc.location || {};
+    const prof = userDoc.profession || {};
+    const edu = userDoc.education || {};
+    const fam = userDoc.family || {};
+
+    return {
+      matrimonyId: userDoc.matrimonyId || "",
+      profileCreatedFor: userDoc.profileCreatedFor || "Self",
+      name: userDoc.name || "",
+      age: Number(userDoc.age) || 0,
+      height: userDoc.heightFormatted || (userDoc.height ? `${userDoc.height} cm` : ""),
+      heightCm: Number(userDoc.height) || 0,
+      education: typeof edu === "string" ? edu : edu.degree || "",
+      occupation: typeof prof === "string" ? prof : prof.occupation || "",
+      location: loc.city ? `${loc.city}, ${loc.state || ""}` : "",
+      mobileNumber: userDoc.phone || "",
+      photoUrl: userDoc.avatar || userDoc.photoUrl,
+      aboutMe: userDoc.aboutMe || "",
+      basicDetails: {
+        profileCreatedFor: userDoc.profileCreatedFor || "Self",
+        name: userDoc.name || "",
+        age: userDoc.age ? `${userDoc.age} yrs` : "",
+        height: userDoc.heightFormatted || (userDoc.height ? `${userDoc.height} cm` : ""),
+        gender: userDoc.gender || "",
+        maritalStatus: userDoc.maritalStatus || "Unmarried",
+        motherTongue: userDoc.motherTongue || "Sindhi",
+        physicalStatus: userDoc.physicalStatus || "Normal",
+      },
+      religiousInfo: {
+        subcaste: userDoc.subcaste || "",
+        casteDivision: userDoc.caste || "Sindhi",
+        star: h.nakshatra || userDoc.nakshatra || "Not Specified",
+        raasi: h.rashi || userDoc.rashi || "Not Specified",
+        gothram: userDoc.gotra || "Not Specified",
+      },
+      professionalInfo: {
+        education: typeof edu === "string" ? edu : edu.degree || "",
+        educationDetail: edu.college || "",
+        occupation: typeof prof === "string" ? prof : prof.occupation || "",
+        annualIncome: prof.annualIncome ? `₹ ${prof.annualIncome}` : undefined,
+      },
+      locationInfo: {
+        country: loc.country || "India",
+        state: loc.state || "",
+        city: loc.city || "",
+        citizenship: loc.citizenship || "India",
+      },
+      horoscopeInfo: {
+        name: userDoc.name || "",
+        dateOfBirth: userDoc.dob ? new Date(userDoc.dob).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "",
+        timeOfBirth: h.birthTime || "Not Specified",
+        timeZone: "(Hrs. Mins): 05.30E",
+        timeCorrection: "Standard Time",
+        placeOfBirth: h.birthPlace || loc.city || "Not Specified",
+        sunSign: h.sunSign,
+        moonSign: h.rashi,
+        nakshatraPada: h.nakshatra ? `${h.nakshatra}${h.charan ? ` - Pada ${h.charan}` : ""}` : undefined,
+      },
+      familyDetails: {
+        familyStatus: fam.familyStatus || "Middle class",
+        familyValues: fam.familyValues || "Moderate",
+        familyType: fam.familyType || "Nuclear",
+        fatherOccupation: fam.fatherOccupation,
+        motherOccupation: fam.motherOccupation,
+      },
+      lifestyleInfo: {
+        eatingHabits: userDoc.eatingHabits || "Vegetarian",
+        drinkingHabits: userDoc.drinkingHabits || "Non-drinker",
+        smokingHabits: userDoc.smokingHabits || "Non-smoker",
+      },
+      partnerPreference: {
+        maritalStatus: (partnerPref.maritalStatus || []).join(", ") || "Never Married",
+        haveChildren: "No",
+        age: partnerPref.ageRange ? `${partnerPref.ageRange[0]} - ${partnerPref.ageRange[1]} yrs` : "",
+        height: partnerPref.heightRange ? `${partnerPref.heightRange[0]} - ${partnerPref.heightRange[1]}` : "",
+        motherTongue: (partnerPref.motherTongue || ["Sindhi"]).join(", "),
+        physicalStatus: "Normal",
+        eatingHabits: "Vegetarian",
+        drinkingHabits: "Non-drinker",
+        smokingHabits: "Non-smoker",
+        casteDivision: "Sindhi",
+        subcaste: partnerPref.subcaste || "Any",
+        star: "Any",
+        manglik: partnerPref.manglik || "Any",
+        education: (partnerPref.education || []).join(", ") || "Any",
+      },
+    };
+  }, [userDoc, partnerPref, initialData]);
+
+  const data = liveData;
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"personal" | "partner">("personal");
   const [showTopBtn, setShowTopBtn] = useState(false);

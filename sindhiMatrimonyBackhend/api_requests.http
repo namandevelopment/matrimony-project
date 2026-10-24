@@ -15,7 +15,7 @@
 @baseUrl = http://localhost:5001/api/v1
 ### 2. Vercel Live Production
 # @baseUrl = https://sindhi-matrimony-backend.vercel.app/api/v1
-@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YWRiMjBhZTQzOGI4YjUwZDRlYWFlYWEiLCJyb2xlIjo2LCJwaG9uZSI6Ijk4NzY1NDMyMTAiLCJwcm9maWxlSWQiOiI2YWRiMjBhZTQzOGI4YjUwZDRlYWFlYWIiLCJhY3RpdmVQcm9maWxlSWQiOiI2YWRiMjBhZTQzOGI4YjUwZDRlYWFlYWIiLCJwcm9maWxlUm9sZSI6Ik9XTkVSIiwiaWF0IjoxNzkyNzQ1NjQ2LCJleHAiOjE3OTI5MTg0NDZ9.Eegq-TgzsF_sSXSn79c2LFVF7Rf6jLD2XIekc9ihL7o
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhZGI3OGU3NDVkYWQ2ZDRhZTQ2ZjdkOSIsInVzZXJJZCI6IjZhZGI3OGU3NDVkYWQ2ZDRhZTQ2ZjdkOSIsInBob25lIjoiOTg4NzA4MTgwMCIsInJvbGUiOjEsImFjdGl2ZVByb2ZpbGVJZCI6IjZhZGI3OGU3NDVkYWQ2ZDRhZTQ2ZjdkYSIsImlhdCI6MTc5Mjc2ODM0MCwiZXhwIjoxNzkyOTQxMTQwfQ.0HJbXsRhJsO3L0K_CWI_yO4-hSRX8m7HWBT3lv_lLMw
 @profileId = 6ad467f1c77f327e52a82dfc
 @grantId = 67b34a12c8e312a0f9000002
 @photoId = 67b34a12c8e312a0f9000003
@@ -78,7 +78,7 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "phone": "9829012345",
+  "phone": "9887081800",
   "password": "Password123@"
 }
 

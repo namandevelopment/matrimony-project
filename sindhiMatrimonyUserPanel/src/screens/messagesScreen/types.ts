@@ -9,15 +9,18 @@ export interface ConversationItem {
   unreadCount?: number;
   isAssisted?: boolean;
   avatarUrl?: string;
+  recipientProfileId?: string;
 }
 
 export interface ChatMessage {
   id: string;
   senderId: string;
-  senderName: string;
+  senderName?: string;
   text: string;
   time: string;
   isAssistedOffer?: boolean;
+  isMe?: boolean;
+  status?: "sending" | "sent" | "failed" | "read";
 }
 
 export interface MessagesScreenProps {

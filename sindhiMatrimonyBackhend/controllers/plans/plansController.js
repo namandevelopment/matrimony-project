@@ -2,6 +2,8 @@ import { asyncHandler, apiHTTPResponse, logMessage } from "../../utils/globalFun
 import * as CONSTANTS from "../../utils/constants.js";
 import { User, Profile, UserSubscription } from "../../models/index.js";
 import { MEMBERSHIP_TIERS } from "../../utils/variables.js";
+import { adminPlansStore } from "../admin/adminSettingsController.js";
+import { addAdminNotification } from "../admin/adminNotificationController.js";
 
 const getUserId = (req) =>
   req.user?.id ||
@@ -131,6 +133,45 @@ export const MEMBERSHIP_PLANS = [
  * GET /api/v1/plans
  */
 export const getPlans = asyncHandler(async (req, res) => {
+  const activePlans = (adminPlansStore || []).filter((p) => p.status === "ACTIVE" || !p.status);
+  const formattedPlans = activePlans.map((p) => {
+    const isAssisted = p.tier === "VIP" || p.category === "ASSIST_PLAN" || p.name?.toLowerCase().includes("assist");
+    const durationDays = Number(p.durationDays) || 30;
+    const durationMonths = Math.max(1, Math.round(durationDays / 30));
+    const priceINR = Number(p.offerPrice || p.price || 0);
+    const originalPriceINR = Number(p.originalPrice || p.originalPriceINR || (p.offerPrice ? p.price : Math.round(priceINR * 1.5)));
+    const discountPercentage = p.discountPercentage || (originalPriceINR > priceINR ? Math.round(((originalPriceINR - priceINR) / originalPriceINR) * 100) : 0);
+
+    return {
+      id: p.planId || p._id || p.id,
+      name: p.name || p.title,
+      tagline: p.tagline || p.subtitle || (isAssisted ? "White-glove matrimonial assistance by senior Sindhi matchmaker" : `Essential ${p.name} membership package`),
+      tier: p.tier || (isAssisted ? "DIAMOND_ASSISTED" : "GOLD"),
+      durationMonths,
+      durationDays,
+      priceINR,
+      originalPriceINR,
+      discountPercentage,
+      contactViewCredits: Number(p.contactViewsQuota || p.contactViewCredits || 25),
+      canChat: p.canChat !== false,
+      isUnlimitedChat: p.chatQuota === "Unlimited" || p.isUnlimitedChat !== false,
+      allowDirectChat: p.allowDirectChat !== false,
+      badge: p.badge || (p.tier === "GOLD" ? "MOST POPULAR" : p.tier === "DIAMOND" ? "BEST VALUE" : null),
+      features: Array.isArray(p.features) && p.features.length > 0 ? p.features : [
+        `Unlock ${p.contactViewsQuota || 25} verified Phone & WhatsApp contacts`,
+        `Direct chat messaging with candidates (${p.chatQuota || "Unlimited"})`,
+        p.horoscopeMatching ? "Kundli & Horoscope Matching breakdown" : null,
+        p.featuredListing ? "Featured candidate badge on profile card" : null,
+        p.dedicatedAdvisor ? "Dedicated matrimonial advisor support" : null,
+        p.relationshipManager ? "Personal Sindhi Matchmaking Relationship Manager" : null,
+        `Valid for ${durationDays} Days`,
+      ].filter(Boolean),
+      isPopular: Boolean(p.isPopular || p.tier === "GOLD"),
+    };
+  });
+
+  const finalPlans = formattedPlans.length > 0 ? formattedPlans : MEMBERSHIP_PLANS;
+
   return apiHTTPResponse(
     req,
     res,
@@ -139,8 +180,8 @@ export const getPlans = asyncHandler(async (req, res) => {
     {
       currency: "INR",
       currencySymbol: "₹",
-      totalPlans: MEMBERSHIP_PLANS.length,
-      plans: MEMBERSHIP_PLANS,
+      totalPlans: finalPlans.length,
+      plans: finalPlans,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -152,12 +193,31 @@ export const getPlans = asyncHandler(async (req, res) => {
  * POST /api/v1/payments/create-order
  */
 export const createPaymentOrder = asyncHandler(async (req, res) => {
-  const { planId = "PLAN_GOLD_3_MONTHS", currency = "INR" } = req.body;
+  const { planId = "plan_gold", currency = "INR" } = req.body;
 
+  const allPlans = (adminPlansStore && adminPlansStore.length > 0) ? adminPlansStore : MEMBERSHIP_PLANS;
   const selectedPlan =
-    MEMBERSHIP_PLANS.find((p) => p.id === planId) || MEMBERSHIP_PLANS[1];
+    allPlans.find((p) => p.id === planId || p.planId === planId || p._id === planId) || allPlans[0];
+  const priceINR = Number(selectedPlan.priceINR || selectedPlan.offerPrice || selectedPlan.price || 1499);
+  const durationMonths = Number(selectedPlan.durationMonths) || Math.max(1, Math.round((selectedPlan.durationDays || 30) / 30));
 
   const orderId = `order_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`;
+
+  addAdminNotification({
+    title: `Purchase Intent: ${selectedPlan.name || selectedPlan.title || "Membership"}`,
+    message: `A candidate initiated checkout for ${selectedPlan.name || selectedPlan.title} (₹${priceINR}).`,
+    category: "PAYMENT",
+    priority: "NORMAL",
+    actionUrl: `/admin/finance/transactions?orderId=${orderId}`,
+    actionLabel: "View Order",
+    metadata: {
+      orderId,
+      userId: getUserId(req) || "guest",
+      planId: selectedPlan.planId || selectedPlan._id || selectedPlan.id,
+      amount: priceINR,
+      status: "INITIATED",
+    },
+  });
 
   return apiHTTPResponse(
     req,
@@ -166,16 +226,16 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
     "Payment order initiated successfully.",
     {
       orderId,
-      amount: selectedPlan.priceINR * 100, // Amount in paise
-      amountFormatted: `₹${selectedPlan.priceINR}`,
+      amount: priceINR * 100, // Amount in paise
+      amountFormatted: `₹${priceINR}`,
       currency,
-      planId: selectedPlan.id,
-      planName: selectedPlan.name,
-      contactViewCredits: selectedPlan.contactViewCredits,
+      planId: selectedPlan.planId || selectedPlan._id || selectedPlan.id,
+      planName: selectedPlan.name || selectedPlan.title,
+      contactViewCredits: Number(selectedPlan.contactViewsQuota || selectedPlan.contactViewCredits || 25),
       razorpayKeyId: process.env.RAZORPAY_KEY_ID || "rzp_test_simulated_key",
       notes: {
         platform: "Sindhi Matrimony",
-        planDuration: `${selectedPlan.durationMonths} Months`,
+        planDuration: `${durationMonths} Months`,
       },
     },
     CONSTANTS.OK,
@@ -263,6 +323,23 @@ export const verifyAndActivateMembership = asyncHandler(async (req, res) => {
     };
   }
 
+  addAdminNotification({
+    title: `Payment Received: ${selectedPlan.name}`,
+    message: `Payment of ₹${selectedPlan.priceINR} received for ${selectedPlan.name}. Subscription activated.`,
+    category: "PAYMENT",
+    priority: "NORMAL",
+    actionUrl: `/admin/finance/transactions?orderId=${paymentOrderId || paymentId}`,
+    actionLabel: "View Receipt",
+    metadata: {
+      orderId: paymentOrderId,
+      paymentId,
+      userId,
+      planId: selectedPlan.id,
+      amount: selectedPlan.priceINR,
+      status: "SUCCESSFUL",
+    },
+  });
+
   return apiHTTPResponse(
     req,
     res,
@@ -275,6 +352,40 @@ export const verifyAndActivateMembership = asyncHandler(async (req, res) => {
       isUnlimitedChat: true,
       expiresAt,
     },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+/**
+ * 🚫 Cancel Payment Checkout Order
+ * POST /api/v1/payments/cancel
+ */
+export const cancelPaymentOrder = asyncHandler(async (req, res) => {
+  const { orderId, reason = "User cancelled transaction at checkout" } = req.body;
+  const userId = getUserId(req);
+
+  addAdminNotification({
+    title: "Payment Checkout Cancelled",
+    message: `Checkout was cancelled for order ${orderId || "unknown"}. Reason: ${reason}`,
+    category: "PAYMENT",
+    priority: "HIGH",
+    actionUrl: `/admin/finance/transactions?orderId=${orderId}`,
+    actionLabel: "Inspect Order",
+    metadata: {
+      orderId,
+      userId,
+      status: "CANCELLED",
+      cancellationReason: reason,
+    },
+  });
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    "Payment checkout marked as cancelled.",
+    { orderId, status: "CANCELLED", reason },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );

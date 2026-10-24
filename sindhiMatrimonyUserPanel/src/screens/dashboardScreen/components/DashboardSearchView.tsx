@@ -66,7 +66,7 @@ const DashboardSearchViewComponent: React.FC<DashboardSearchViewProps> = ({
   }, [router]);
 
   const handleSearchIdSubmit = useCallback((id: string) => {
-    router.push(`/matches/${id}`);
+    router.push(`/matches/viewprofile/${id}`);
   }, [router]);
 
   return (

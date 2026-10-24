@@ -21,7 +21,6 @@ import type {
   InterestBadgeCounts,
 } from "@/screens/interestsScreen/types";
 import { Loader2, RefreshCw } from "lucide-react";
-import { mockInterestsList, mockBadgeCounts } from "@/screens/interestsScreen/mockData";
 
 export interface DashboardInterestsViewProps {
   onUpgradeClick?: () => void;
@@ -85,25 +84,12 @@ const DashboardInterestsViewComponent: React.FC<DashboardInterestsViewProps> = (
       (interestsData as any)?.data?.interests ||
       (Array.isArray(interestsData) ? interestsData : []);
 
-    if (Array.isArray(rawList) && rawList.length > 0) {
+    if (Array.isArray(rawList)) {
       setInterests(rawList);
     } else {
-      // Graceful fallback to mock data
-      const filtered = mockInterestsList.filter((item) => {
-        const matchesSection = item.direction?.toLowerCase() === section;
-        const matchesStatus =
-          status === "all" || item.status.toLowerCase() === status;
-        const profile = section === "received" ? item.senderProfile : item.receiverProfile;
-        const matchesSearch =
-          !debouncedSearch.trim() ||
-          profile?.name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          profile?.subcaste?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          profile?.city?.toLowerCase().includes(debouncedSearch.toLowerCase());
-        return matchesSection && matchesStatus && matchesSearch;
-      });
-      setInterests(filtered);
+      setInterests([]);
     }
-  }, [interestsData, section, status, debouncedSearch]);
+  }, [interestsData]);
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);

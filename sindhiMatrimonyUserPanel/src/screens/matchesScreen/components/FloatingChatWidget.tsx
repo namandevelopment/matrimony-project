@@ -1,7 +1,9 @@
 "use client";
 
-import React, { memo, useState, useCallback } from "react";
-import { MessageSquare, X, Send, User } from "lucide-react";
+import React, { memo, useState, useCallback, useRef, useEffect } from "react";
+import { MessageSquare, X, Send, User, ExternalLink } from "lucide-react";
+import englishTalks from "@/components/FloatingChatWidget/data/englishTalks.json";
+import { getBotResponse } from "@/components/FloatingChatWidget/chatBotEngine";
 
 export interface FloatingChatWidgetProps {
   className?: string;
@@ -12,6 +14,8 @@ interface ChatMessage {
   sender: "bot" | "user";
   text: string;
   time: string;
+  actionLabel?: string;
+  actionUrl?: string;
 }
 
 const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
@@ -23,40 +27,73 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
     {
       id: "msg-1",
       sender: "bot",
-      text: "Namaste! Welcome to Matrimony Support. How can I help you find your dream partner today?",
+      text: englishTalks.welcome.greeting,
       time: "Just now",
     },
   ]);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isOpen]);
 
   const toggleChat = useCallback(() => {
     setIsOpen((prev) => !prev);
   }, []);
 
+  const handleQuickQuestion = useCallback(
+    (q: (typeof englishTalks.quickSuggestions)[0]) => {
+      const userMsg: ChatMessage = {
+        id: `user-${Date.now()}`,
+        sender: "user",
+        text: q.query,
+        time: "Just now",
+      };
+      const botReply: ChatMessage = {
+        id: `bot-${Date.now() + 1}`,
+        sender: "bot",
+        text: q.response,
+        time: "Just now",
+        actionLabel: q.actionLabel,
+        actionUrl: q.actionUrl,
+      };
+      setMessages((prev) => [...prev, userMsg, botReply]);
+    },
+    []
+  );
+
   const handleSend = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      if (!inputText.trim()) return;
+      const query = inputText.trim();
+      if (!query) return;
 
       const userMsg: ChatMessage = {
         id: `user-${Date.now()}`,
         sender: "user",
-        text: inputText.trim(),
+        text: query,
         time: "Just now",
       };
 
       setMessages((prev) => [...prev, userMsg]);
       setInputText("");
 
-      // Simulated auto-reply
+      const botResult = getBotResponse(query);
+
       setTimeout(() => {
         const botReply: ChatMessage = {
           id: `bot-${Date.now()}`,
           sender: "bot",
-          text: "Thank you for reaching out! Our matchmaking counselor will assist you shortly, or you can check our Assisted Service plan for 3X faster matches.",
+          text: botResult.text,
           time: "Just now",
+          actionLabel: botResult.actionLabel,
+          actionUrl: botResult.actionUrl,
         };
         setMessages((prev) => [...prev, botReply]);
-      }, 700);
+      }, 400);
     },
     [inputText]
   );
@@ -77,7 +114,7 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
               </div>
               <div>
                 <h4 className="text-sm font-bold leading-none">Matrimony Help Desk</h4>
-                <p className="text-[10px] text-white/80 mt-1">24x7 Relationship Support</p>
+                <p className="text-[10px] text-white/80 mt-1">{englishTalks.welcome.status}</p>
               </div>
             </div>
             <button
@@ -105,14 +142,42 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
                       : "bg-white text-stone-800 border border-stone-200 rounded-bl-xs"
                   }`}
                 >
-                  {m.text}
+                  <p>{m.text}</p>
+                  {m.actionUrl && m.actionLabel && (
+                    <a
+                      href={m.actionUrl}
+                      target={m.actionUrl.startsWith("http") ? "_blank" : undefined}
+                      rel={m.actionUrl.startsWith("http") ? "noopener noreferrer" : undefined}
+                      className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-full bg-[#DB2F3C] text-white text-[11px] font-semibold hover:bg-[#B71F2A] transition-colors"
+                    >
+                      <span>{m.actionLabel}</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
                 </div>
                 <span className="text-[10px] text-stone-400 mt-1 px-1">
                   {m.time}
                 </span>
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
+
+          {/* Quick Suggestions from englishTalks.json */}
+          {englishTalks.quickSuggestions?.length > 0 && (
+            <div className="px-3 py-2 bg-stone-50 border-t border-stone-200 flex items-center gap-1.5 overflow-x-auto">
+              {englishTalks.quickSuggestions.slice(0, 4).map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => handleQuickQuestion(s)}
+                  className="px-2.5 py-1 rounded-full bg-white border border-stone-200 text-[11px] text-stone-700 font-medium hover:border-[#DB2F3C] hover:text-[#DB2F3C] shrink-0 transition-colors cursor-pointer"
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Footer Input */}
           <form

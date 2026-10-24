@@ -35,8 +35,8 @@ const AUDIENCE_ESTIMATES = {
   STAFF_ONLY: 15,
 };
 
-// Seed In-Memory Staff Operational Alerts
-let adminNotificationsStore = [
+// In-Memory Staff Operational Alerts
+export let adminNotificationsStore = [
   {
     _id: "adm_notif_001",
     title: "Pending Photo Verifications (14)",
@@ -117,6 +117,16 @@ let adminNotificationsStore = [
   },
 ];
 
+export const addAdminNotification = (notif) => {
+  adminNotificationsStore.unshift({
+    _id: `adm_notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    isRead: false,
+    createdAt: new Date().toISOString(),
+    readAt: null,
+    ...notif,
+  });
+};
+
 // Delivery Logs Store for Broadcasts
 let broadcastDeliveryLogs = [
   {
@@ -146,7 +156,7 @@ let broadcastDeliveryLogs = [
  * - Metadata summary counts (unreadCount, criticalCount, byCategory)
  */
 export const getAdminNotifications = asyncHandler(async (req, res) => {
-  const { category, priority, status, isRead, search, q } = req.query;
+  const { category, priority, status, isRead, search, q, paymentStatus } = req.query;
 
   // Scenario: Sanitize and validate pagination
   const rawPage = Number(req.query.page);
@@ -192,6 +202,13 @@ export const getAdminNotifications = asyncHandler(async (req, res) => {
   // 1. Category Filter
   if (category && category.toUpperCase() !== "ALL") {
     filtered = filtered.filter((n) => n.category.toUpperCase() === category.toUpperCase());
+  }
+
+  // 1b. Payment Lifecycle Status Filter
+  if (paymentStatus && paymentStatus.toUpperCase() !== "ALL") {
+    filtered = filtered.filter(
+      (n) => n.metadata?.status?.toUpperCase() === paymentStatus.toUpperCase()
+    );
   }
 
   // 2. Priority Filter

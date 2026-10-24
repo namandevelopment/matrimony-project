@@ -23,10 +23,10 @@ import {
 import { LimcaBookBadge } from "./DashboardIcons";
 import { SuccessStoryModal } from "./SuccessStoryModal";
 import { ShareStoryModal } from "./ShareStoryModal";
-import { defaultSuccessStoriesList } from "../data/successStoriesData";
 import type { MarriageSuccessStory } from "../types";
 import { apiFetch, ApiURL } from "@/redux/apiService";
 import { useSuccessStoriesQuery } from "@/tanstackQuery";
+import { useQueryClient } from "@tanstack/react-query";
 
 export interface HappyMarriagesSectionProps {
   stories?: MarriageSuccessStory[];
@@ -70,13 +70,7 @@ const SuccessStoryCard = memo<SuccessStoryCardProps>(
       [story.id, onLikeToggle]
     );
 
-    const currentLikes = story.likesCount
-      ? isLiked
-        ? story.likesCount + 1
-        : story.likesCount
-      : isLiked
-        ? 1
-        : 0;
+    const currentLikes = typeof story.likesCount === "number" ? story.likesCount : (isLiked ? 121 : 120);
 
     return (
       <div
@@ -213,15 +207,14 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
   className = "",
   defaultExpanded = false,
 }) => {
+  const queryClient = useQueryClient();
   // Store stories list in state so user submissions appear live
   const [storiesList, setStoriesList] = useState<MarriageSuccessStory[]>(() => {
-    return propStories && propStories.length >= 12
-      ? propStories
-      : defaultSuccessStoriesList;
+    return propStories || [];
   });
 
   // Fetch live success stories from TanStack Query (10 mins fresh cache, zero duplicate requests)
-  const { data: storiesData } = useSuccessStoriesQuery(1, 12);
+  const { data: storiesData } = useSuccessStoriesQuery(1, 50);
 
   useEffect(() => {
     if (!storiesData) return;
@@ -278,6 +271,12 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isUpgradePromptOpen, setIsUpgradePromptOpen] = useState(false);
 
+  // Synchronize modal story dynamically with updated stories list
+  const activeModalStory = useMemo(() => {
+    if (!selectedStory) return null;
+    return storiesList.find((s) => s.id === selectedStory.id) || selectedStory;
+  }, [selectedStory, storiesList]);
+
   // User's own submitted story state ("khudka section me to show hogi hi")
   const [mySubmittedStory, setMySubmittedStory] = useState<any>(() => {
     if (typeof window === "undefined") return null;
@@ -297,8 +296,24 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
     }
   };
 
-  // Likes tracking state
-  const [likedStoryIds, setLikedStoryIds] = useState<Set<string>>(new Set());
+  // Likes tracking state (persisted per browser session)
+  const [likedStoryIds, setLikedStoryIds] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const saved = localStorage.getItem("liked_story_ids");
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("liked_story_ids", JSON.stringify(Array.from(likedStoryIds)));
+      } catch { }
+    }
+  }, [likedStoryIds]);
 
   // Category filter state: "all" | "multi_photo" | "recent"
   const [categoryFilter, setCategoryFilter] = useState<"all" | "multi_photo" | "recent">("all");
@@ -309,17 +324,83 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
   // Pagination index for 3-at-a-time pagination
   const [currentPage, setCurrentPage] = useState(0);
 
-  const handleLikeToggle = useCallback((storyId: string) => {
-    setLikedStoryIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(storyId)) {
-        next.delete(storyId);
-      } else {
-        next.add(storyId);
+  const handleLikeToggle = useCallback(
+    async (storyId: string) => {
+      let willBeLiked = false;
+      setLikedStoryIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(storyId)) {
+          next.delete(storyId);
+          willBeLiked = false;
+        } else {
+          next.add(storyId);
+          willBeLiked = true;
+        }
+        return next;
+      });
+
+      // 1. Optimistic Local State Update (+1 on like, -1 on dislike)
+      setStoriesList((prev) =>
+        prev.map((s) => {
+          if (s.id === storyId) {
+            const currentCount = Number(s.likesCount) || 120;
+            return {
+              ...s,
+              likesCount: willBeLiked ? currentCount + 1 : Math.max(0, currentCount - 1),
+            };
+          }
+          return s;
+        })
+      );
+
+      // 2. Optimistic TanStack Query Cache Update
+      queryClient.setQueriesData(
+        { queryKey: ["dashboard", "success-stories"] },
+        (old: any) => {
+          if (!old) return old;
+          const patchItem = (item: any) => {
+            const itemId = item.id || item._id;
+            if (itemId === storyId) {
+              const currentCount = Number(item.likesCount) || 120;
+              return {
+                ...item,
+                likesCount: willBeLiked ? currentCount + 1 : Math.max(0, currentCount - 1),
+              };
+            }
+            return item;
+          };
+
+          if (Array.isArray(old)) return old.map(patchItem);
+          if (Array.isArray(old.items)) return { ...old, items: old.items.map(patchItem) };
+          if (Array.isArray(old.stories)) return { ...old, stories: old.stories.map(patchItem) };
+          if (old.data && Array.isArray(old.data.items)) {
+            return {
+              ...old,
+              data: { ...old.data, items: old.data.items.map(patchItem) },
+            };
+          }
+          return old;
+        }
+      );
+
+      // 3. API Call to toggle like on backend
+      try {
+        const res = await fetch(`${ApiURL.dashboard}/success-stories/${storyId}/like`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        const json = await res.json();
+        if (json?.data && typeof json.data.likesCount === "number") {
+          setStoriesList((prev) =>
+            prev.map((s) => (s.id === storyId ? { ...s, likesCount: json.data.likesCount } : s))
+          );
+        }
+      } catch (err) {
+        console.error("Failed to sync story like:", err);
       }
-      return next;
-    });
-  }, []);
+    },
+    [queryClient]
+  );
 
   const handleNewStorySubmitted = useCallback((newStory: MarriageSuccessStory) => {
     setMySubmittedStory({
@@ -432,11 +513,10 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold shadow-2xs ${
-                mySubmittedStory.status === 'PUBLISHED'
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-amber-600 text-white'
-              }`}>
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold shadow-2xs ${mySubmittedStory.status === 'PUBLISHED'
+                ? 'bg-emerald-600 text-white'
+                : 'bg-amber-600 text-white'
+                }`}>
                 {mySubmittedStory.status === 'PUBLISHED' ? (
                   <>
                     <CheckCircle2 className="w-3.5 h-3.5" />
@@ -587,23 +667,58 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
           featured on our official Limca Book records.
         </p>
 
-        <div className="flex items-center gap-3">
-          <Link
-            href="/success-stories"
-            className="inline-flex items-center justify-center px-8 py-2.5 rounded-full border border-[#DB2F3C] text-xs sm:text-sm font-semibold text-[#DB2F3C] hover:bg-gradient-to-r hover:from-[#FF4D5A] hover:via-[#DB2F3C] hover:to-[#B71F2A] hover:text-white hover:border-transparent active:scale-[0.98] shadow-2xs hover:shadow-md transition-all duration-200 cursor-pointer"
-          >
-            View all 12+ success stories &gt;
-          </Link>
+        <div className="flex items-center gap-2">
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1.5 bg-stone-50 border border-stone-200/80 p-1 rounded-full shadow-2xs">
+              <button
+                type="button"
+                onClick={handlePrevPage}
+                disabled={currentPage === 0}
+                aria-label="Previous page"
+                className="px-2.5 py-1.5 rounded-full text-xs font-semibold text-stone-600 hover:text-stone-900 hover:bg-stone-200/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Prev</span>
+              </button>
+
+              <div className="flex items-center gap-1 px-1">
+                {Array.from({ length: totalPages }).map((_, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setCurrentPage(idx)}
+                    className={`w-7 h-7 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${currentPage === idx
+                      ? "bg-[#DB2F3C] text-white shadow-xs"
+                      : "text-stone-600 hover:bg-stone-200/70"
+                      }`}
+                  >
+                    {idx + 1}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleNextPage}
+                disabled={currentPage >= totalPages - 1}
+                aria-label="Next page"
+                className="px-2.5 py-1.5 rounded-full text-xs font-semibold text-stone-600 hover:text-stone-900 hover:bg-stone-200/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1"
+              >
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Interactive Modal 1: Complete Story Details with Image Swiper */}
       <SuccessStoryModal
-        story={selectedStory}
-        isOpen={Boolean(selectedStory)}
+        story={activeModalStory}
+        isOpen={Boolean(activeModalStory)}
         onClose={() => setSelectedStory(null)}
         onLikeToggle={handleLikeToggle}
-        isLiked={selectedStory ? likedStoryIds.has(selectedStory.id) : false}
+        isLiked={activeModalStory ? likedStoryIds.has(activeModalStory.id) : false}
       />
 
       {/* Interactive Modal 2: Share Your Story (User Submission & Admin Verification) */}

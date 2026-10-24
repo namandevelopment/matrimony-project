@@ -1,6 +1,7 @@
 "use client";
 
 import React, { memo, useState, useCallback } from "react";
+import { isDeepEqual } from "@/utils";
 import Link from "next/link";
 import { Camera, ChevronDown, ChevronUp } from "lucide-react";
 import { MatrimonyHeartLogo } from "@/screens/landingScreen/components/Icons";
@@ -19,9 +20,9 @@ import {
   MandapBrandIcon,
 } from "./DashboardIcons";
 import type { UserProfile } from "../types";
+import { useProfileQuery } from "@/tanstackQuery";
 
 export interface DashboardProfileCardProps {
-  user: UserProfile;
   onUpgradeClick?: () => void;
   onPhotoEditClick?: () => void;
   onLogout?: () => void;
@@ -31,13 +32,16 @@ export interface DashboardProfileCardProps {
 }
 
 const DashboardProfileCardComponent: React.FC<DashboardProfileCardProps> = ({
-  user,
+
   onUpgradeClick,
   onPhotoEditClick,
   className = "",
   defaultSettingsOpen = false,
   defaultHelpOpen = false,
 }) => {
+  const { data: profile } = useProfileQuery();
+  const user = profile?.profile || null;
+  console.log('useroyeroyeyuerieuwy', user)
   const [isSettingsOpen, setIsSettingsOpen] = useState(defaultSettingsOpen);
   const [isHelpOpen, setIsHelpOpen] = useState(defaultHelpOpen);
 
@@ -57,11 +61,11 @@ const DashboardProfileCardComponent: React.FC<DashboardProfileCardProps> = ({
       <div className="flex flex-col items-center text-center">
         <div className="relative">
           <div className="w-[88px] h-[88px] rounded-full overflow-hidden border border-stone-200 bg-[#CBD5E1] flex items-center justify-center shadow-xs">
-            {user.avatarUrl ? (
+            {user?.avatar ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={user.avatarUrl}
-                alt={user.name}
+                src={user?.avatar}
+                alt={user?.name}
                 className="w-full h-full object-cover"
                 loading="lazy"
                 decoding="async"
@@ -83,25 +87,25 @@ const DashboardProfileCardComponent: React.FC<DashboardProfileCardProps> = ({
 
         {/* User Name */}
         <h2 className="mt-3 text-[22px] font-bold text-[#111827] leading-tight font-heading">
-          {user.name}
+          {user?.name}
         </h2>
 
         {/* Community Badge */}
         <div className="flex items-center justify-center gap-1.5 mt-1">
           <MatrimonyHeartLogo size={18} className="w-4 h-4 shrink-0" color="#E53935" />
           <span className="text-[15px] font-semibold text-[#111827]">
-            {user.community || "BrahminMatrimony"}
+            {user?.community || "BrahminMatrimony"}
           </span>
         </div>
 
         {/* Matrimony ID */}
         <p className="mt-1 text-[17px] font-bold text-[#111827] tracking-normal">
-          {user.matrimonyId || "BRH4517087"}
+          {user?.matrimonyId || "BRH4517087"}
         </p>
 
         {/* Membership Tier */}
         <p className="mt-0.5 text-[14px] text-stone-500 font-normal">
-          {user.membershipStatus || "Free member"}
+          {user?.membershipStatus || "Free member"}
         </p>
       </div>
 
@@ -318,6 +322,9 @@ const DashboardProfileCardComponent: React.FC<DashboardProfileCardProps> = ({
   );
 };
 
-export const DashboardProfileCard = memo(DashboardProfileCardComponent);
+export const DashboardProfileCard = memo(
+  DashboardProfileCardComponent,
+  (prev, next) => isDeepEqual(prev, next)
+);
 DashboardProfileCard.displayName = "DashboardProfileCard";
 export default DashboardProfileCard;

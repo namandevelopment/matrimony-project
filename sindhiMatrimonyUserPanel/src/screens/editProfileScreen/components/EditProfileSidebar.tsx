@@ -124,6 +124,7 @@ const EditProfileSidebarComponent: React.FC<EditProfileSidebarProps> = ({
                 src={avatarUrl}
                 alt="Profile photo"
                 fill
+                unoptimized
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
               />
               <button
@@ -235,10 +236,17 @@ const EditProfileSidebarComponent: React.FC<EditProfileSidebarProps> = ({
                       ? `Photos (${photoCount}/10)`
                       : item.label;
 
+                    const handleItemClick = () => {
+                      onSelectSection(item.id);
+                      if (typeof window !== "undefined") {
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }
+                    };
+
                     return (
                       <div
                         key={item.id}
-                        onClick={() => onSelectSection(item.id)}
+                        onClick={handleItemClick}
                         className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs sm:text-[12.5px] cursor-pointer transition-all ${
                           isActive
                             ? "bg-red-50 text-[#DB2F3C] font-semibold border-l-3 border-[#DB2F3C] pl-2.5"
@@ -263,7 +271,7 @@ const EditProfileSidebarComponent: React.FC<EditProfileSidebarProps> = ({
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onSelectSection(item.id);
+                            handleItemClick();
                           }}
                           className={`text-[11.5px] font-medium lowercase ml-2 cursor-pointer transition-colors ${
                             item.actionText === "add"

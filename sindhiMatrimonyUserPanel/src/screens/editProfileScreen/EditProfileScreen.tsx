@@ -196,28 +196,28 @@ const EditProfileScreenComponent: React.FC<EditProfileScreenProps> = ({
   // Track if backend data has been synchronized once
   const hasSyncedBackend = React.useRef(false);
 
-  // Form State with localStorage persistence and API hydration
-  const [profileData, setProfileData] = useState<EditProfileState>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          return {
-            ...INITIAL_EDIT_PROFILE_DATA,
-            ...parsed,
-            hobbiesInterests: {
-              ...INITIAL_EDIT_PROFILE_DATA.hobbiesInterests,
-              ...(parsed.hobbiesInterests || {}),
-            },
-          };
-        }
-      } catch (err) {
-        console.error("Error reading saved edit profile from localStorage:", err);
+  // Form State initialized deterministically for SSR hydration
+  const [profileData, setProfileData] = useState<EditProfileState>(INITIAL_EDIT_PROFILE_DATA);
+
+  // Restore saved state from localStorage after mount to prevent hydration mismatch
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (saved && !hasSyncedBackend.current) {
+        const parsed = JSON.parse(saved);
+        setProfileData({
+          ...INITIAL_EDIT_PROFILE_DATA,
+          ...parsed,
+          hobbiesInterests: {
+            ...INITIAL_EDIT_PROFILE_DATA.hobbiesInterests,
+            ...(parsed.hobbiesInterests || {}),
+          },
+        });
       }
+    } catch (err) {
+      console.error("Error reading saved edit profile from localStorage:", err);
     }
-    return INITIAL_EDIT_PROFILE_DATA;
-  });
+  }, []);
 
   // Sync profileData when Live Backend API responds
   useEffect(() => {
@@ -228,7 +228,7 @@ const EditProfileScreenComponent: React.FC<EditProfileScreenProps> = ({
       if (typeof window !== "undefined") {
         try {
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mapped));
-        } catch {}
+        } catch { }
       }
     }
   }, [profileApiResponse]);
@@ -247,19 +247,6 @@ const EditProfileScreenComponent: React.FC<EditProfileScreenProps> = ({
       setToastMessage((cur) => (cur === msg ? null : cur));
     }, 3500);
   }, []);
-
-  // Header User profile data
-  const user: UserProfile = useMemo(
-    () => ({
-      name: profileData.basicInfo.name || "Naman",
-      matrimonyId: "SM1029482",
-      community: profileData.basicInfo.casteDivision || "Sindhi",
-      membershipStatus: "Free member",
-      completenessScore: profileData.photos.length > 0 ? 85 : 70,
-      avatarUrl: profileData.photos.find((p) => p.isPrimary)?.url,
-    }),
-    [profileData.basicInfo.name, profileData.basicInfo.casteDivision, profileData.photos]
-  );
 
   // Handlers for updating form parts
   const handleBasicInfoChange = useCallback(
@@ -483,7 +470,6 @@ const EditProfileScreenComponent: React.FC<EditProfileScreenProps> = ({
     <div className={`min-h-screen flex flex-col bg-[#F8F9FA] text-[#1A1A1A] selection:bg-red-100 selection:text-red-900 ${className}`}>
       {/* 1. Dashboard Standard Header */}
       <DashboardHeader
-        user={user}
         onUpgradeClick={onUpgradeClick || (() => router.push("/subscription"))}
       />
 
@@ -530,11 +516,10 @@ const EditProfileScreenComponent: React.FC<EditProfileScreenProps> = ({
               key={tab.id}
               type="button"
               onClick={() => handleSelectSection(tab.id as ProfileSectionId)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer border ${
-                activeSection === tab.id
-                  ? "bg-[#DB2F3C] text-white border-[#DB2F3C] shadow-xs"
-                  : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
-              }`}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer border ${activeSection === tab.id
+                ? "bg-[#DB2F3C] text-white border-[#DB2F3C] shadow-xs"
+                : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
+                }`}
             >
               {tab.label}
             </button>
@@ -602,14 +587,14 @@ const EditProfileScreenComponent: React.FC<EditProfileScreenProps> = ({
             {(activeSection === "location" ||
               activeSection === "email" ||
               activeSection === "contact_number") && (
-              <EditProfileContactSection
-                subType={activeSection}
-                data={profileData.contactDetails}
-                onChange={handleContactChange}
-                onSave={() => handleSaveSection("Contact Details")}
-                isSaving={isSaving}
-              />
-            )}
+                <EditProfileContactSection
+                  subType={activeSection}
+                  data={profileData.contactDetails}
+                  onChange={handleContactChange}
+                  onSave={() => handleSaveSection("Contact Details")}
+                  isSaving={isSaving}
+                />
+              )}
 
             {activeSection === "photos" && (
               <EditProfileEnhanceSection
@@ -641,12 +626,12 @@ const EditProfileScreenComponent: React.FC<EditProfileScreenProps> = ({
 
             {(activeSection === "identity_badge" ||
               activeSection === "professional_badge") && (
-              <EditProfileTrustBadgeSection
-                subType={activeSection}
-                trustBadge={profileData.trustBadge}
-                onUploadDocument={handleUploadDocument}
-              />
-            )}
+                <EditProfileTrustBadgeSection
+                  subType={activeSection}
+                  trustBadge={profileData.trustBadge}
+                  onUploadDocument={handleUploadDocument}
+                />
+              )}
           </div>
         </div>
       </main>
