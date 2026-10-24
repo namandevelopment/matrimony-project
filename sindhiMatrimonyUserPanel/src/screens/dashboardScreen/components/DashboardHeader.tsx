@@ -7,11 +7,12 @@ import { MatrimonyHeartLogo } from "@/screens/landingScreen/components/Icons";
 import { DashboardNav } from "./DashboardNav";
 import { ProfileDropdown } from "./ProfileDropdown";
 import { useGlobalModal } from "@/customModals";
-import type { DashboardNavTab } from "../types";
+import type { DashboardNavTab, UserProfile } from "../types";
 
 import { useDashboardNav } from "../context/DashboardNavContext";
 
 export interface DashboardHeaderProps {
+  user?: UserProfile;
   activeTab?: DashboardNavTab["id"];
   onTabChange?: (tabId: DashboardNavTab["id"]) => void;
   onLogout?: () => void;
