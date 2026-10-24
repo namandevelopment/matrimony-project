@@ -21,6 +21,7 @@ import {
   ProfileContactModal,
   BranchesModal,
   ViewProfileScrollTopButton,
+  ViewProfileSkeleton,
 } from "./components";
 import { ViewProfileScreenProps, ViewUserProfile } from "./types";
 import { mapBackendToViewProfile } from "./viewProfileMapper";
@@ -72,8 +73,25 @@ const ViewProfileScreenComponent: React.FC<ViewProfileScreenProps> = ({
     return mapBackendToViewProfile(rawData);
   }, [initialProfileId, candidateApiResponse, selfApiResponse]);
 
-  // Current active profile directly from live API
-  const currentProfile: ViewUserProfile | null = liveBackendProfile;
+  // Check whether candidate data matches the currently requested initialProfileId
+  const isCandidateDataMatching = useMemo(() => {
+    if (!initialProfileId) return Boolean(selfApiResponse);
+    if (!liveBackendProfile) return false;
+    const cleanId = initialProfileId.trim().toLowerCase();
+    const mid = String(liveBackendProfile.id || "").toLowerCase();
+    const mMat = String(liveBackendProfile.matrimonyId || "").toLowerCase();
+    return mid === cleanId || mMat === cleanId || mid.includes(cleanId) || cleanId.includes(mid);
+  }, [initialProfileId, liveBackendProfile, selfApiResponse]);
+
+  // Current active profile directly from live API (only when matching current target ID)
+  const currentProfile: ViewUserProfile | null = isCandidateDataMatching ? liveBackendProfile : null;
+
+  // Profile-only loading flag (triggers shimmer in profile column only)
+  const isProfileLoading = Boolean(
+    initialProfileId
+      ? isCandidateLoading || !isCandidateDataMatching
+      : isSelfLoading && !liveBackendProfile
+  );
 
   // Current match index in matches feed
   const currentMatchIndex = useMemo(() => {
@@ -369,61 +387,23 @@ const ViewProfileScreenComponent: React.FC<ViewProfileScreenProps> = ({
     });
   }, [matchesFeed, currentProfile?.id, currentProfile?.matrimonyId, initialProfileId]);
 
-  if (isCandidateLoading && !liveBackendProfile && initialProfileId) {
-    return (
-      <div className={`min-h-screen flex flex-col bg-[#F5F7F9] text-stone-900 ${className}`}>
-        <DashboardHeader
-
-          activeTab="matches"
-          onUpgradeClick={onUpgradeClick || (() => setUpgradeField("premium features"))}
-        />
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col items-center justify-center">
-          <div className="w-10 h-10 border-4 border-rose-200 border-t-rose-600 rounded-full animate-spin mb-4" />
-          <p className="text-stone-500 font-medium text-sm">Loading verified profile...</p>
-        </main>
-        <DashboardFooter />
-      </div>
-    );
-  }
-
-  if (!currentProfile) {
-    return (
-      <div className={`min-h-screen flex flex-col bg-[#F5F7F9] text-stone-900 ${className}`}>
-        <DashboardHeader
-          activeTab="matches"
-          onUpgradeClick={onUpgradeClick || (() => setUpgradeField("premium features"))}
-        />
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col items-center justify-center text-center">
-          <div className="w-16 h-16 rounded-full bg-rose-50 text-[#DB2F3C] flex items-center justify-center font-bold text-2xl mb-4">
-            !
-          </div>
-          <h2 className="text-xl font-bold text-stone-900 mb-2">Profile Not Available</h2>
-          <p className="text-stone-500 text-sm mb-6 max-w-md">
-            This profile could not be loaded from the server or may no longer be active.
-          </p>
-          <button
-            type="button"
-            onClick={handleBackToMatches}
-            className="px-6 py-2.5 rounded-full bg-[#DB2F3C] text-white text-sm font-semibold hover:bg-[#B71F2A] transition-colors cursor-pointer shadow-xs"
-          >
-            Explore All Matches
-          </button>
-        </main>
-        <DashboardFooter />
-      </div>
-    );
-  }
-
   const isShortlisted =
-    shortlistedIds.has(currentProfile.id) ||
-    (currentProfile.matrimonyId ? shortlistedIds.has(currentProfile.matrimonyId) : false) ||
-    Boolean(initialProfileId && shortlistedIds.has(initialProfileId));
+    Boolean(
+      currentProfile && (
+        shortlistedIds.has(currentProfile.id) ||
+        (currentProfile.matrimonyId ? shortlistedIds.has(currentProfile.matrimonyId) : false)
+      )
+    ) || Boolean(initialProfileId && shortlistedIds.has(initialProfileId));
 
   const interestSent =
-    interestSentIds.has(currentProfile.id) ||
-    (currentProfile.matrimonyId ? interestSentIds.has(currentProfile.matrimonyId) : false) ||
+    Boolean(
+      currentProfile && (
+        interestSentIds.has(currentProfile.id) ||
+        (currentProfile.matrimonyId ? interestSentIds.has(currentProfile.matrimonyId) : false) ||
+        currentProfile.interestSent
+      )
+    ) ||
     Boolean(initialProfileId && interestSentIds.has(initialProfileId)) ||
-    Boolean(currentProfile.interestSent) ||
     Boolean(matchedFeedItem?.interestSent || matchedFeedItem?.sendIntrestSended);
 
   return (
@@ -435,16 +415,18 @@ const ViewProfileScreenComponent: React.FC<ViewProfileScreenProps> = ({
       />
 
       {/* 2. Sticky Subheader (Slides down when scrolling past hero card) */}
-      <ViewProfileStickyHeader
-        profile={currentProfile}
-        interestSent={interestSent}
-        isVisible={isStickyHeaderVisible}
-        nextProfilePhotoUrl={nextProfileInfo.photoUrl}
-        nextProfileName={nextProfileInfo.name}
-        onSendInterest={handleSendInterest}
-        onDontShow={handleDontShow}
-        onNext={handleNextProfile}
-      />
+      {currentProfile && (
+        <ViewProfileStickyHeader
+          profile={currentProfile}
+          interestSent={interestSent}
+          isVisible={isStickyHeaderVisible}
+          nextProfilePhotoUrl={nextProfileInfo.photoUrl}
+          nextProfileName={nextProfileInfo.name}
+          onSendInterest={handleSendInterest}
+          onDontShow={handleDontShow}
+          onNext={handleNextProfile}
+        />
+      )}
 
       {/* 3. Main Content Container */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
@@ -463,67 +445,90 @@ const ViewProfileScreenComponent: React.FC<ViewProfileScreenProps> = ({
         <div className="flex flex-col lg:flex-row items-start gap-6 lg:gap-8 pt-2">
           {/* Left / Main Profile Column */}
           <div className="flex-1 w-full min-w-0 space-y-6">
-            {/* Main Profile Hero Card */}
-            <ViewProfileHeroCard
-              profile={currentProfile}
-              isShortlisted={isShortlisted}
-              interestSent={interestSent}
-              onToggleShortlist={handleToggleShortlist}
-              onSendInterest={handleSendInterest}
-              onDontShow={handleDontShow}
-              onCallClick={handleCallClick}
-              onWhatsAppClick={handleWhatsAppClick}
-              onSendMessage={handleCallClick}
-              onPhotoClick={() => {
-                showToast(`Viewing photo 1 of ${currentProfile.photoUrls.length}`);
-              }}
-              onShareProfile={() => {
-                if (navigator.clipboard) {
-                  navigator.clipboard.writeText(window.location.href);
-                  showToast("Profile link copied to clipboard!");
-                }
-              }}
-              onReportProfile={() => {
-                showToast("Report submitted to trust & safety team.");
-              }}
-              onBlockProfile={() => {
-                handleDontShow(currentProfile.id);
-              }}
-            />
+            {isProfileLoading ? (
+              <ViewProfileSkeleton />
+            ) : currentProfile ? (
+              <>
+                {/* Main Profile Hero Card */}
+                <ViewProfileHeroCard
+                  profile={currentProfile}
+                  isShortlisted={isShortlisted}
+                  interestSent={interestSent}
+                  onToggleShortlist={handleToggleShortlist}
+                  onSendInterest={handleSendInterest}
+                  onDontShow={handleDontShow}
+                  onCallClick={handleCallClick}
+                  onWhatsAppClick={handleWhatsAppClick}
+                  onSendMessage={handleCallClick}
+                  onPhotoClick={() => {
+                    showToast(`Viewing photo 1 of ${currentProfile.photoUrls.length}`);
+                  }}
+                  onShareProfile={() => {
+                    if (navigator.clipboard) {
+                      navigator.clipboard.writeText(window.location.href);
+                      showToast("Profile link copied to clipboard!");
+                    }
+                  }}
+                  onReportProfile={() => {
+                    showToast("Report submitted to trust & safety team.");
+                  }}
+                  onBlockProfile={() => {
+                    handleDontShow(currentProfile.id);
+                  }}
+                />
 
-            {/* Personal Information Section */}
-            <ViewProfilePersonalInfoSection
-              personalInfo={currentProfile.personalInfo}
-              onUpgradeClick={handleUpgradeField}
-              onHoroscopeRequestClick={handleHoroscopeRequest}
-            />
+                {/* Personal Information Section */}
+                <ViewProfilePersonalInfoSection
+                  personalInfo={currentProfile.personalInfo}
+                  onUpgradeClick={handleUpgradeField}
+                  onHoroscopeRequestClick={handleHoroscopeRequest}
+                />
 
-            {/* Contact Information Section */}
-            <ViewProfileContactInfoSection
-              contactInfo={currentProfile.contactInfo}
-              onUpgradeClick={() => handleUpgradeField("contact details")}
-            />
+                {/* Contact Information Section */}
+                <ViewProfileContactInfoSection
+                  contactInfo={currentProfile.contactInfo}
+                  onUpgradeClick={() => handleUpgradeField("contact details")}
+                />
 
-            {/* About Myself Section */}
-            <ViewProfileAboutSection
-              name={currentProfile.name}
-              aboutText={currentProfile.aboutText}
-            />
+                {/* About Myself Section */}
+                <ViewProfileAboutSection
+                  name={currentProfile.name}
+                  aboutText={currentProfile.aboutText}
+                />
 
-            {/* Her Partner Preferences Section */}
-            <ViewProfilePreferencesSection
-              preferences={currentProfile.partnerPreferences}
-              prospectPhotoUrl={currentProfile.photoUrls?.[0]}
-              prospectName={currentProfile.name}
-              prospectGender={currentProfile.gender}
-            />
+                {/* Her Partner Preferences Section */}
+                <ViewProfilePreferencesSection
+                  preferences={currentProfile.partnerPreferences}
+                  prospectPhotoUrl={currentProfile.photoUrls?.[0]}
+                  prospectName={currentProfile.name}
+                  prospectGender={currentProfile.gender}
+                />
 
-            {/* Assisted Service Banner matching Screenshot 5 */}
-            <AssistedServiceBanner
-              onGetAssistedService={() => {
-                handleUpgradeField("Dedicated Relationship Manager");
-              }}
-            />
+                {/* Assisted Service Banner matching Screenshot 5 */}
+                <AssistedServiceBanner
+                  onGetAssistedService={() => {
+                    handleUpgradeField("Dedicated Relationship Manager");
+                  }}
+                />
+              </>
+            ) : (
+              <div className="w-full bg-white rounded-2xl border border-stone-200 p-8 sm:p-12 text-center shadow-2xs">
+                <div className="w-16 h-16 rounded-full bg-rose-50 text-[#DB2F3C] flex items-center justify-center font-bold text-2xl mx-auto mb-4">
+                  !
+                </div>
+                <h2 className="text-xl font-bold text-stone-900 mb-2">Profile Not Available</h2>
+                <p className="text-stone-500 text-sm mb-6 max-w-md mx-auto">
+                  This profile could not be loaded from the server or may no longer be active.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleBackToMatches}
+                  className="px-6 py-2.5 rounded-full bg-[#DB2F3C] text-white text-sm font-semibold hover:bg-[#B71F2A] transition-colors cursor-pointer shadow-xs"
+                >
+                  Explore All Matches
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Right Sidebar Column (Sticky) */}
@@ -549,9 +554,9 @@ const ViewProfileScreenComponent: React.FC<ViewProfileScreenProps> = ({
       <UpgradeModal
         isOpen={Boolean(upgradeField)}
         targetField={upgradeField || "contact details"}
-        prospectName={currentProfile.name}
-        prospectPhotoUrl={currentProfile.photoUrls?.[0]}
-        maskedPhone={currentProfile.contactInfo?.phoneMasked || "+91 77XXXXXXXX"}
+        prospectName={currentProfile?.name || "Sindhi Member"}
+        prospectPhotoUrl={currentProfile?.photoUrls?.[0]}
+        maskedPhone={currentProfile?.contactInfo?.phoneMasked || "+91 77XXXXXXXX"}
         onClose={() => setUpgradeField(null)}
         onUpgradeNow={() => {
           if (onUpgradeClick) onUpgradeClick();
@@ -562,13 +567,13 @@ const ViewProfileScreenComponent: React.FC<ViewProfileScreenProps> = ({
       <HoroscopeRequestModal
         isOpen={isHoroscopeModalOpen}
         isSent={isHoroscopeSent}
-        prospectName={currentProfile.name}
+        prospectName={currentProfile?.name || "profile"}
         onClose={() => setIsHoroscopeModalOpen(false)}
         onConfirmSend={handleConfirmHoroscopeSend}
       />
 
       <ProfileContactModal
-        isOpen={Boolean(contactModalType)}
+        isOpen={Boolean(contactModalType && currentProfile)}
         type={contactModalType}
         profile={currentProfile}
         onClose={() => setContactModalType(null)}

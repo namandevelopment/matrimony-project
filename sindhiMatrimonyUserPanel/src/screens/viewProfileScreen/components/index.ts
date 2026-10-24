@@ -9,5 +9,6 @@ export * from "./ViewProfilePreferencesSection";
 export * from "./ViewProfileSidebar";
 export * from "./ViewProfileModals";
 export * from "./ViewProfileScrollTopButton";
+export * from "./ViewProfileSkeleton";
 export { AssistedServiceBanner } from "@/screens/dashboardScreen/components/AssistedServiceBanner";
 
