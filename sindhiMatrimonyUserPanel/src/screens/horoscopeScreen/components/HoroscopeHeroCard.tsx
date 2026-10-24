@@ -74,17 +74,17 @@ const HoroscopeHeroCardComponent: React.FC<HoroscopeHeroCardProps> = ({
             <div className="space-y-1.5 pt-1 text-[14.5px] text-stone-600">
               <div className="flex items-center gap-2.5">
                 <User className="w-4 h-4 text-stone-400 shrink-0" />
-                <span>{data.basicDetails.age}, {data.height}</span>
+                <span>{[data.basicDetails?.age, data.height].filter(Boolean).join(", ") || "Age & Height not specified"}</span>
               </div>
 
               <div className="flex items-center gap-2.5">
                 <GraduationCap className="w-4 h-4 text-stone-400 shrink-0" />
-                <span>{data.education}</span>
+                <span>{data.education || "Education not specified"}</span>
               </div>
 
               <div className="flex items-center gap-2.5">
                 <MapPin className="w-4 h-4 text-stone-400 shrink-0" />
-                <span>{data.location}</span>
+                <span>{data.location || "Location not specified"}</span>
               </div>
             </div>
           </div>

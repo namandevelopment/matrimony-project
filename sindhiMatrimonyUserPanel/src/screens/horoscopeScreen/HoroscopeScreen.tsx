@@ -32,17 +32,49 @@ const HoroscopeScreenComponent: React.FC<HoroscopeScreenProps> = ({
   className = "",
 }) => {
   const router = useRouter();
-  const { data: profileRes } = useProfileQuery();
-  const userDoc = (profileRes as any)?.profile || (profileRes as any)?.data?.profile || (profileRes as any)?.data || profileRes;
-  const partnerPref = (profileRes as any)?.partnerPreference || (profileRes as any)?.data?.partnerPreference || {};
+  const { data: profileRes, isLoading } = useProfileQuery();
+  const rawProfile =
+    (profileRes as any)?.profile ||
+    (profileRes as any)?.data?.profile ||
+    (profileRes as any)?.data;
+  const userDoc =
+    rawProfile && typeof rawProfile === "object" && !rawProfile.error && (rawProfile._id || rawProfile.matrimonyId || rawProfile.name)
+      ? rawProfile
+      : null;
+  const partnerPref =
+    (profileRes as any)?.partnerPreference ||
+    (profileRes as any)?.data?.partnerPreference ||
+    {};
 
   const liveData: HoroscopeProfileData = useMemo(() => {
+    const safeJoin = (val: any, fallback = "Any"): string => {
+      if (Array.isArray(val)) {
+        const filtered = val.filter(Boolean);
+        return filtered.length > 0 ? filtered.join(", ") : fallback;
+      }
+      if (typeof val === "string" && val.trim().length > 0) {
+        return val.trim();
+      }
+      return fallback;
+    };
+
+    const safeFormatDob = (dobInput?: any): string => {
+      if (!dobInput) return "Not Specified";
+      try {
+        const d = new Date(dobInput);
+        if (isNaN(d.getTime())) return "Not Specified";
+        return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+      } catch {
+        return "Not Specified";
+      }
+    };
+
     if (!userDoc) {
       return (
         initialData || {
-          matrimonyId: "",
+          matrimonyId: "Not Assigned",
           profileCreatedFor: "Self",
-          name: "",
+          name: "Member Profile",
           age: 0,
           height: "",
           heightCm: 0,
@@ -51,14 +83,14 @@ const HoroscopeScreenComponent: React.FC<HoroscopeScreenProps> = ({
           location: "",
           mobileNumber: "",
           aboutMe: "",
-          basicDetails: { profileCreatedFor: "Self", name: "", age: "", height: "", gender: "", maritalStatus: "", motherTongue: "", physicalStatus: "Normal" },
-          religiousInfo: { subcaste: "", casteDivision: "", star: "", raasi: "", gothram: "" },
+          basicDetails: { profileCreatedFor: "Self", name: "Member Profile", age: "", height: "", gender: "", maritalStatus: "Unmarried", motherTongue: "Sindhi", physicalStatus: "Normal" },
+          religiousInfo: { subcaste: "Sindhi", casteDivision: "Sindhi", star: "Not Specified", raasi: "Not Specified", gothram: "Not Specified" },
           professionalInfo: { education: "", educationDetail: "", occupation: "" },
-          locationInfo: { country: "", state: "", city: "", citizenship: "" },
-          horoscopeInfo: { name: "", dateOfBirth: "", timeOfBirth: "", timeZone: "", timeCorrection: "", placeOfBirth: "" },
-          familyDetails: { familyStatus: "" },
-          lifestyleInfo: { eatingHabits: "", drinkingHabits: "", smokingHabits: "" },
-          partnerPreference: { maritalStatus: "", haveChildren: "", age: "", height: "", motherTongue: "", physicalStatus: "", eatingHabits: "", drinkingHabits: "", smokingHabits: "", casteDivision: "", subcaste: "", star: "", manglik: "", education: "" },
+          locationInfo: { country: "India", state: "", city: "", citizenship: "India" },
+          horoscopeInfo: { name: "Member Profile", dateOfBirth: "Not Specified", timeOfBirth: "Not Specified", timeZone: "(Hrs. Mins): 05.30E", timeCorrection: "Standard Time", placeOfBirth: "Not Specified" },
+          familyDetails: { familyStatus: "Middle class" },
+          lifestyleInfo: { eatingHabits: "Vegetarian", drinkingHabits: "Non-drinker", smokingHabits: "Non-smoker" },
+          partnerPreference: { maritalStatus: "Never Married", haveChildren: "No", age: "21 - 35 yrs", height: "150 cm - 195 cm", motherTongue: "Sindhi", physicalStatus: "Normal", eatingHabits: "Vegetarian", drinkingHabits: "Non-drinker", smokingHabits: "Non-smoker", casteDivision: "Sindhi", subcaste: "Any", star: "Any", manglik: "Any", education: "Any" },
         }
       );
     }
@@ -67,6 +99,18 @@ const HoroscopeScreenComponent: React.FC<HoroscopeScreenProps> = ({
     const prof = userDoc.profession || {};
     const edu = userDoc.education || {};
     const fam = userDoc.family || {};
+
+    const ageRangeStr = partnerPref.ageRange
+      ? `${partnerPref.ageRange[0]} - ${partnerPref.ageRange[1]} yrs`
+      : partnerPref.ageMin && partnerPref.ageMax
+      ? `${partnerPref.ageMin} - ${partnerPref.ageMax} yrs`
+      : "Not Specified";
+
+    const heightRangeStr = partnerPref.heightRange
+      ? `${partnerPref.heightRange[0]} - ${partnerPref.heightRange[1]}`
+      : partnerPref.heightMin && partnerPref.heightMax
+      ? `${partnerPref.heightMin} cm - ${partnerPref.heightMax} cm`
+      : "Not Specified";
 
     return {
       matrimonyId: userDoc.matrimonyId || "",
@@ -112,7 +156,7 @@ const HoroscopeScreenComponent: React.FC<HoroscopeScreenProps> = ({
       },
       horoscopeInfo: {
         name: userDoc.name || "",
-        dateOfBirth: userDoc.dob ? new Date(userDoc.dob).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "",
+        dateOfBirth: safeFormatDob(userDoc.dob),
         timeOfBirth: h.birthTime || "Not Specified",
         timeZone: "(Hrs. Mins): 05.30E",
         timeCorrection: "Standard Time",
@@ -134,20 +178,20 @@ const HoroscopeScreenComponent: React.FC<HoroscopeScreenProps> = ({
         smokingHabits: userDoc.smokingHabits || "Non-smoker",
       },
       partnerPreference: {
-        maritalStatus: (partnerPref.maritalStatus || []).join(", ") || "Never Married",
+        maritalStatus: safeJoin(partnerPref.maritalStatus, "Never Married"),
         haveChildren: "No",
-        age: partnerPref.ageRange ? `${partnerPref.ageRange[0]} - ${partnerPref.ageRange[1]} yrs` : "",
-        height: partnerPref.heightRange ? `${partnerPref.heightRange[0]} - ${partnerPref.heightRange[1]}` : "",
-        motherTongue: (partnerPref.motherTongue || ["Sindhi"]).join(", "),
+        age: ageRangeStr,
+        height: heightRangeStr,
+        motherTongue: safeJoin(partnerPref.motherTongue, "Sindhi"),
         physicalStatus: "Normal",
         eatingHabits: "Vegetarian",
         drinkingHabits: "Non-drinker",
         smokingHabits: "Non-smoker",
         casteDivision: "Sindhi",
-        subcaste: partnerPref.subcaste || "Any",
+        subcaste: safeJoin(partnerPref.subcastes || partnerPref.subcaste, "Any"),
         star: "Any",
-        manglik: partnerPref.manglik || "Any",
-        education: (partnerPref.education || []).join(", ") || "Any",
+        manglik: safeJoin(partnerPref.manglikPreference || partnerPref.manglik, "Any"),
+        education: safeJoin(partnerPref.education, "Any"),
       },
     };
   }, [userDoc, partnerPref, initialData]);
@@ -193,6 +237,37 @@ const HoroscopeScreenComponent: React.FC<HoroscopeScreenProps> = ({
     completenessScore: 85,
     avatarUrl: data.photoUrl,
   };
+
+  if (isLoading && !initialData) {
+    return (
+      <div className={`min-h-screen bg-[#F5F7F9] text-stone-900 flex flex-col ${className}`}>
+        <DashboardHeader />
+        <main className="flex-1 max-w-5xl w-full mx-auto px-3 sm:px-6 py-6 sm:py-8 space-y-6">
+          <div className="w-full bg-white rounded-xl border border-stone-200/90 p-6 animate-pulse space-y-4">
+            <div className="h-5 bg-stone-200 rounded w-48" />
+            <div className="flex flex-col sm:flex-row gap-6 pt-2">
+              <div className="w-36 h-40 bg-stone-200 rounded-lg shrink-0" />
+              <div className="flex-1 space-y-3 pt-2">
+                <div className="h-6 bg-stone-200 rounded w-1/3" />
+                <div className="h-4 bg-stone-100 rounded w-1/2" />
+                <div className="h-4 bg-stone-100 rounded w-2/5" />
+                <div className="h-10 bg-stone-100 rounded mt-4" />
+              </div>
+            </div>
+          </div>
+          <div className="w-full bg-white rounded-xl border border-stone-200/90 p-6 animate-pulse space-y-4">
+            <div className="h-5 bg-stone-200 rounded w-36" />
+            <div className="space-y-3 pt-2">
+              <div className="h-4 bg-stone-100 rounded w-full" />
+              <div className="h-4 bg-stone-100 rounded w-3/4" />
+              <div className="h-4 bg-stone-100 rounded w-5/6" />
+            </div>
+          </div>
+        </main>
+        <DashboardFooter />
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen bg-[#F5F7F9] text-stone-900 flex flex-col ${className}`}>

@@ -81,7 +81,7 @@ const HoroscopePartnerSectionComponent: React.FC<HoroscopePartnerSectionProps> =
             </span>
             <span className="hidden sm:inline text-stone-400">-</span>
             <span className="font-semibold text-stone-800 text-[14px]">
-              {preferences[row.key] || "Any"}
+              {preferences?.[row.key] || "Any"}
             </span>
           </div>
         ))}
