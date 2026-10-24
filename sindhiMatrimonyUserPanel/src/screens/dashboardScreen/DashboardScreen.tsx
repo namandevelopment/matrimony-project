@@ -31,11 +31,11 @@ import type {
 } from "./types";
 
 const defaultUserProfile: UserProfile = {
-  name: "Naman",
-  matrimonyId: "SM4517087",
+  name: "",
+  matrimonyId: "",
   community: "SindhiMatrimony",
   membershipStatus: "Free member",
-  completenessScore: 42,
+  completenessScore: 0,
 };
 
 const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
@@ -61,7 +61,7 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
             matrimonyId: parsed.matrimonyId || parsed.id || initialUser.matrimonyId,
             community: parsed.community || "SindhiMatrimony",
             membershipStatus: parsed.membershipStatus || (parsed.plan ? "Paid member" : "Free member"),
-            completenessScore: parsed.completenessScore ?? 42,
+            completenessScore: parsed.completenessScore ?? 0,
             avatarUrl: parsed.avatar || parsed.avatarUrl || parsed.photoUrl || "",
           };
         }
@@ -108,11 +108,11 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
     if (d.user) {
       setUser((prev) => {
         const next = {
-          name: d.user.name || prev.name || "Member",
-          matrimonyId: d.user.matrimonyId || prev.matrimonyId || "SM4517087",
+          name: d.user.name || prev.name || "",
+          matrimonyId: d.user.matrimonyId || prev.matrimonyId || "",
           community: d.user.community || prev.community || "SindhiMatrimony",
           membershipStatus: d.user.membershipStatus || prev.membershipStatus || "Free member",
-          completenessScore: d.completeness?.score ?? d.user.completenessScore ?? prev.completenessScore ?? 42,
+          completenessScore: d.completeness?.score ?? d.user.completenessScore ?? prev.completenessScore ?? 0,
           avatarUrl: d.user.avatarUrl || d.user.avatar || prev.avatarUrl || "",
         };
         return isDeepEqual(prev, next) ? prev : next;

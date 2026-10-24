@@ -5,7 +5,6 @@ import { Shield, Bell, User } from "lucide-react";
 import { createMetadata } from "@/metadata";
 import { DashboardHeader } from "@/screens/dashboardScreen/components/DashboardHeader";
 import { DashboardFooter } from "@/screens/dashboardScreen/components/DashboardFooter";
-import type { UserProfile } from "@/screens/dashboardScreen/types";
 
 interface Props {
   params: Promise<{ tab: string }>;
@@ -31,19 +30,10 @@ export default async function SettingsPage({ params }: Props) {
   const { tab } = await params;
   const activeTab = tab || "account";
 
-  const user: UserProfile = {
-    name: "Naman",
-    matrimonyId: "SM4517087",
-    community: "Sindhi",
-    membershipStatus: "Free member",
-    completenessScore: 85,
-    avatarUrl: undefined,
-  };
-
   return (
     <div className="min-h-screen bg-[#F5F7F9] text-[#1A1A1A] flex flex-col justify-between">
       {/* 1. Global Platform Dashboard Header */}
-      <DashboardHeader user={user} />
+      <DashboardHeader />
 
       {/* 2. Main Settings Container */}
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-4">
