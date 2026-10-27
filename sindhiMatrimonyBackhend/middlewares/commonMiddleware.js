@@ -89,6 +89,9 @@ export const verifyTokenInRedis = async (req, res, next) => {
  * Normalizes URL route parameters and query strings directly into req.body
  */
 export const mergeParamsToBody = (req, res, next) => {
+  if (Array.isArray(req.body)) {
+    return next();
+  }
   if (req.params && typeof req.params === "object") {
     req.body = { ...req.params, ...(req.body || {}) };
   }

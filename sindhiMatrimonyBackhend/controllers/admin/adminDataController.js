@@ -303,11 +303,17 @@ export const createMember = asyncHandler(async (req, res) => {
 });
 
 export const bulkAddMember = asyncHandler(async (req, res) => {
-  const rawList = Array.isArray(req.body)
-    ? req.body
-    : Array.isArray(req.body?.members)
-    ? req.body.members
-    : null;
+  let rawList = null;
+  if (Array.isArray(req.body)) {
+    rawList = req.body;
+  } else if (Array.isArray(req.body?.members)) {
+    rawList = req.body.members;
+  } else if (req.body && typeof req.body === "object") {
+    const values = Object.values(req.body).filter((item) => item && typeof item === "object" && item.name);
+    if (values.length > 0) {
+      rawList = values;
+    }
+  }
 
   if (!rawList || !rawList.length) {
     return apiHTTPResponse(
