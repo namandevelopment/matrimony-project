@@ -59,13 +59,33 @@ export const getPublicReviews = asyncHandler(async (req, res) => {
     breakdown[star] = (breakdown[star] || 0) + 1;
   });
 
+  // Pagination
+  const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
+  const total = totalReviews;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const paginated = reviews.slice((page - 1) * limit, (page - 1) * limit + limit);
+
   return apiHTTPResponse(
     req,
     res,
     HTTP_OK,
     "Public approved reviews retrieved successfully.",
     {
-      reviews,
+      reviews: paginated,
+      list: paginated,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
       stats: {
         totalReviews,
         averageRating: Number(averageRating),
@@ -210,13 +230,32 @@ export const getAdminReviews = asyncHandler(async (req, res) => {
   const approvedCount = allReviews.filter((r) => r.status === "APPROVED").length;
   const rejectedCount = allReviews.filter((r) => r.status === "REJECTED").length;
 
+  const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const paginated = filtered.slice((page - 1) * limit, (page - 1) * limit + limit);
+
   return apiHTTPResponse(
     req,
     res,
     HTTP_OK,
     "Admin reviews retrieved successfully.",
     {
-      reviews: filtered,
+      reviews: paginated,
+      list: paginated,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
       counts: {
         total: allReviews.length,
         pending: pendingCount,

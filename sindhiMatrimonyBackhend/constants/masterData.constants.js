@@ -67,6 +67,89 @@ export const SINDHI_SUBCASTES = [
   },
 ];
 
+// 1b. Sindhi Subcaste by Caste Mapping Dictionary
+export const SINDHI_SUBCASTE_MAP = {
+  "Sindhi - Bhaiband": [
+    "Hyderabadi Bhaiband",
+    "Karachi Bhaiband",
+    "Sukkur Bhaiband",
+    "Larkana Bhaiband",
+    "Shikarpuri Bhaiband",
+    "Nawabshah",
+    "Dadu",
+    "Others",
+    "Don't wish to specify",
+  ],
+  "Sindhi - Amil": [
+    "Hyderabadi Amil",
+    "Karachi Amil",
+    "Khudabadi Amil",
+    "Sukkur Amil",
+    "Others",
+    "Don't wish to specify",
+  ],
+  "Sindhi - Lohana": [
+    "Chhapru Lohana",
+    "Kutchi Lohana",
+    "Halai Lohana",
+    "Ghoghari Lohana",
+    "Others",
+    "Don't wish to specify",
+  ],
+  "Sindhi - Sahiti": [
+    "Kandiaro",
+    "Bhiria",
+    "Tharu Shah",
+    "Darbelo",
+    "Others",
+    "Don't wish to specify",
+  ],
+  "Sindhi - Brahmins (Pokharna, Saraswat)": [
+    "Pokharna",
+    "Pushkarna",
+    "Saraswat",
+    "Shrimali",
+    "Others",
+    "Don't wish to specify",
+  ],
+};
+
+// 1c. Generic Default Subcastes fallback list
+export const DEFAULT_SUBCASTES = [
+  "Don't wish to specify",
+  "Hyderabadi",
+  "Sukkur",
+  "Larkana",
+  "Karachi",
+  "Shikarpuri",
+  "Sahiti",
+  "Kutchi",
+  "Others",
+];
+
+// 1d. Standard Vedic & Sindhi Gotras
+export const GOTHRA_OPTIONS = [
+  "Don't wish to specify",
+  "Kashyap",
+  "Bharadwaj",
+  "Vashishta",
+  "Gautam",
+  "Sandilya",
+  "Parashar",
+  "Agastya",
+  "Haritasya",
+  "Kaundinya",
+  "Vishwamitra",
+  "Angirasa",
+  "Jamadagni",
+  "Atri",
+  "Garg",
+  "Mudgal",
+  "Upamanyu",
+  "Srivatsa",
+  "Others",
+];
+
 // 2. Sindhi Surnames, Gotras and Subcaste Mapping (Smart Auto-Detection)
 export const SINDHI_SURNAMES_MAPPING = [
   // Amil Lineage

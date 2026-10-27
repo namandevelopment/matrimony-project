@@ -50,6 +50,9 @@ export const QUERY_KEYS = {
 
   // 8. Membership & Plans
   plans: ['plans', 'all'] as const,
+
+  // 9. Help & Support Content
+  helpSupport: ['content', 'help-support'] as const,
 };
 
 export default QUERY_KEYS;

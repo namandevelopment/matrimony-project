@@ -35,71 +35,6 @@ interface AllMatchesSectionProps {
   containerStyle?: StyleProp<ViewStyle>;
 }
 
-// -----------------------------------------------------------------------------
-// 2. CURATED DUMMY DATA (Matching User's Reference Screenshot)
-// -----------------------------------------------------------------------------
-export const DUMMY_ALL_MATCHES: MatchProfile[] = [
-  {
-    id: 'match_1',
-    name: 'Vishakha Parekar',
-    age: 30,
-    height: `5'1"`,
-    location: 'Mumbai, Maharashtra',
-    profession: 'Software Consultant',
-    imageUrl:
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'match_2',
-    name: 'Prajkta Deshmukh',
-    age: 24,
-    height: `5'5"`,
-    location: 'Pune, Maharashtra',
-    profession: 'Fashion Designer',
-    imageUrl:
-      'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'match_3',
-    name: 'Prajakta Anand',
-    age: 28,
-    height: `5'0"`,
-    location: 'Ahmedabad, Gujarat',
-    profession: 'Chartered Accountant',
-    imageUrl:
-      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'match_4',
-    name: 'Dr. Sneha Hingorani',
-    age: 27,
-    height: `5'3"`,
-    location: 'Jaipur, Rajasthan',
-    profession: 'BDS Doctor',
-    imageUrl:
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'match_5',
-    name: 'Divya Advani',
-    age: 26,
-    height: `5'4"`,
-    location: 'Bengaluru, Karnataka',
-    profession: 'Product Manager',
-    imageUrl:
-      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'match_6',
-    name: 'Kajal Mirchandani',
-    age: 29,
-    height: `5'2"`,
-    location: 'Delhi NCR',
-    profession: 'Architect',
-    imageUrl:
-      'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=500&auto=format&fit=crop&q=80',
-  },
-];
 
 // -----------------------------------------------------------------------------
 // 3. MEMOIZED MATCH CARD COMPONENT
@@ -156,8 +91,8 @@ MatchCard.displayName = 'MatchCard';
 // -----------------------------------------------------------------------------
 const AllMatchesSection: React.FC<AllMatchesSectionProps> = React.memo(
   ({
-    data = DUMMY_ALL_MATCHES,
-    matchCount = 497,
+    data = [],
+    matchCount = data.length,
     onProfilePress,
     onViewAll,
     containerStyle,

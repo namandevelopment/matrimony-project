@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import { asyncHandler, apiHTTPResponse, logMessage, cleanEntity } from "../../utils/globalFunction.js";
 import * as CONSTANTS from "../../utils/constants.js";
 import { SEED_MATCH_CANDIDATES } from "./matchmakingController.js";
-import { SEED_INTERESTS } from "../../constants/seedCandidateData.js";
 import { addNotification } from "../notifications/notificationController.js";
 import { findProfileByIdInMemory } from "../../services/realDataService.js";
 
@@ -41,8 +40,6 @@ export const isInterestSentToCandidate = (candidateId, userId) => {
   return false;
 };
 
-// Initialize initial seed interests from realistic dataset
-SEED_INTERESTS.forEach((item) => inMemoryInterests.set(item._id, { ...item }));
 
 /**
  * 💌 Send Interest / Express Rishta Connect
@@ -255,7 +252,7 @@ export const declineInterest = asyncHandler(async (req, res) => {
  */
 
 export const getReceivedInterests = asyncHandler(async (req, res) => {
-  const { status = "ALL", page = 1, limit = 20, search = "" } = req.query;
+  const { status = "ALL", page = req.query.pageNo || 1, limit = req.query.pageSize || 20, search = "" } = req.query;
 
   let list = Array.from(inMemoryInterests.values()).filter(i => i.direction !== "SENT");
   if (status && status !== "ALL") {
@@ -281,6 +278,8 @@ export const getReceivedInterests = asyncHandler(async (req, res) => {
 
   const pageNum = Math.max(1, Number(page) || 1);
   const limitNum = Math.min(50, Math.max(1, Number(limit) || 20));
+  const total = list.length;
+  const totalPages = Math.ceil(total / limitNum) || 1;
   const startIdx = (pageNum - 1) * limitNum;
   const paginated = list.slice(startIdx, startIdx + limitNum);
 
@@ -291,11 +290,21 @@ export const getReceivedInterests = asyncHandler(async (req, res) => {
     "Received interests retrieved successfully.",
     {
       status,
-      totalReceived: list.length,
-      totalPages: Math.ceil(list.length / limitNum),
+      totalReceived: total,
+      total,
+      totalPages,
       page: pageNum,
       limit: limitNum,
+      hasMore: pageNum < totalPages,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages,
+        hasMore: pageNum < totalPages,
+      },
       interests: paginated,
+      list: paginated,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -307,7 +316,7 @@ export const getReceivedInterests = asyncHandler(async (req, res) => {
  * GET /api/v1/matchmaking/interests/sent?status=ALL&page=1&limit=20&search=...
  */
 export const getSentInterests = asyncHandler(async (req, res) => {
-  const { status = "ALL", page = 1, limit = 20, search = "" } = req.query;
+  const { status = "ALL", page = req.query.pageNo || 1, limit = req.query.pageSize || 20, search = "" } = req.query;
 
   let sentList = Array.from(inMemoryInterests.values()).filter(i => i.direction === "SENT");
   if (status && status !== "ALL") {
@@ -333,6 +342,8 @@ export const getSentInterests = asyncHandler(async (req, res) => {
 
   const pageNum = Math.max(1, Number(page) || 1);
   const limitNum = Math.min(50, Math.max(1, Number(limit) || 20));
+  const total = sentList.length;
+  const totalPages = Math.ceil(total / limitNum) || 1;
   const startIdx = (pageNum - 1) * limitNum;
   const paginated = sentList.slice(startIdx, startIdx + limitNum);
 
@@ -343,11 +354,21 @@ export const getSentInterests = asyncHandler(async (req, res) => {
     "Sent interests tracking retrieved successfully.",
     {
       status,
-      totalSent: sentList.length,
-      totalPages: Math.ceil(sentList.length / limitNum),
+      totalSent: total,
+      total,
+      totalPages,
       page: pageNum,
       limit: limitNum,
+      hasMore: pageNum < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: pageNum < totalPages,
+      },
       interests: paginated,
+      list: paginated,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE

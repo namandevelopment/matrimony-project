@@ -12,12 +12,6 @@ export interface EditProfilePhotoModalProps {
   className?: string;
 }
 
-const SAMPLE_AVATARS = [
-  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600",
-  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=600",
-  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=600",
-  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=600",
-];
 
 const EditProfilePhotoModalComponent: React.FC<EditProfilePhotoModalProps> = ({
   isOpen,
@@ -38,9 +32,6 @@ const EditProfilePhotoModalComponent: React.FC<EditProfilePhotoModalProps> = ({
     }
   };
 
-  const handleSelectSample = (url: string) => {
-    setSelectedPreview(url);
-  };
 
   const handleSavePhoto = () => {
     if (!selectedPreview) return;
@@ -128,39 +119,6 @@ const EditProfilePhotoModalComponent: React.FC<EditProfilePhotoModalProps> = ({
             </div>
           )}
 
-          {/* Quick Sample Avatars for Instant Testing */}
-          <div>
-            <p className="text-xs font-semibold text-stone-700 mb-2">
-              Or pick a sample photo for demonstration:
-            </p>
-            <div className="flex items-center gap-3 justify-center">
-              {SAMPLE_AVATARS.map((url, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => handleSelectSample(url)}
-                  className={`relative w-14 h-16 rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
-                    selectedPreview === url
-                      ? "border-[#DB2F3C] scale-105 shadow-md"
-                      : "border-stone-200 hover:border-stone-400"
-                  }`}
-                >
-                  <Image
-                    src={url}
-                    alt={`Sample ${i + 1}`}
-                    fill
-                    unoptimized
-                    className="object-cover"
-                  />
-                  {selectedPreview === url && (
-                    <div className="absolute inset-0 bg-[#DB2F3C]/30 flex items-center justify-center">
-                      <Check className="w-4 h-4 text-white" />
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Photo Guidelines Tip Box */}
           <div className="bg-amber-50/60 border border-amber-200/80 rounded-lg p-3 text-[11px] text-amber-900 space-y-1">

@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, memo } from "react";
-import { useSearchParams } from "next/navigation";
-import dynamic from "next/dynamic";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Header } from "./components/Header";
 import { HeroSection } from "./components/HeroSection";
 import { TrustBadges } from "./components/TrustBadges";
@@ -11,26 +10,38 @@ import { ReviewsSection } from "./components/ReviewsSection";
 import { AboutSection } from "./components/AboutSection";
 import { Footer } from "./components/Footer";
 import { FloatingChatWidget } from "@/components";
+import { Storage } from "@/storage";
+import { LoginModal } from "./components/LoginModal";
 
-// Dynamically import LoginModal to reduce critical initial bundle size
-const LoginModal = dynamic(
-  () => import("./components/LoginModal").then((mod) => mod.LoginModal),
-  { ssr: false }
-);
-
-const LandingScreenComponent: React.FC = () => {
+function SearchParamsSync({ onOpenLogin }: { onOpenLogin: (mobile: string) => void }) {
   const searchParams = useSearchParams();
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [loginMobile, setLoginMobile] = useState("");
-
   useEffect(() => {
     const shouldOpenLogin = searchParams.get("login") === "true";
     const mobileParam = searchParams.get("mobile");
     if (shouldOpenLogin) {
-      if (mobileParam) setLoginMobile(mobileParam);
-      setIsLoginModalOpen(true);
+      onOpenLogin(mobileParam || "");
     }
-  }, [searchParams]);
+  }, [searchParams, onOpenLogin]);
+  return null;
+}
+
+const LandingScreenComponent: React.FC = () => {
+  const router = useRouter();
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [loginMobile, setLoginMobile] = useState("");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const user = Storage.getItemSync<any>("user");
+    if (user?.isOnboardingComplete) {
+      router.replace("/dashboard");
+    }
+  }, [router]);
+
+  const handleAutoOpenLogin = useCallback((mobile: string) => {
+    if (mobile) setLoginMobile(mobile);
+    setIsLoginModalOpen(true);
+  }, []);
 
   const handleOpenLoginModal = useCallback(() => {
     setIsLoginModalOpen(true);
@@ -42,6 +53,9 @@ const LandingScreenComponent: React.FC = () => {
 
   return (
     <div className="relative min-h-screen flex flex-col bg-white text-[#1A1A1A] selection:bg-red-100 selection:text-red-900">
+      <React.Suspense fallback={null}>
+        <SearchParamsSync onOpenLogin={handleAutoOpenLogin} />
+      </React.Suspense>
       {/* 1. Header (Sticky & Responsive) */}
       <Header onLoginClick={handleOpenLoginModal} />
 

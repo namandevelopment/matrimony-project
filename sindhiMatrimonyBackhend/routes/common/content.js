@@ -32,11 +32,6 @@ router.get("/help-support", (req, res) => {
   return getContent(req, res);
 });
 
-router.get("/our-process", (req, res) => {
-  req.query.type = "our-process";
-  return getContent(req, res);
-});
-
 /**
  * 🎫 Submit Customer Support Ticket via Content router
  * POST /api/v1/content/ticket

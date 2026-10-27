@@ -1,26 +1,20 @@
+import crypto from "crypto";
 import mongoose from "mongoose";
 import { asyncHandler, apiHTTPResponse, hashPassword, verifyPassword, logMessage, generateCandidateDeduplicationHash, cleanEntity } from "../../utils/globalFunction.js";
 import * as CONSTANTS from "../../utils/constants.js";
 import * as CONSTANTS_MSG from "../../utils/constantsMessage.js";
-import { ROLES, ACCOUNT_STATUS, MEMBERSHIP_TIERS, KYC_STATUS } from "../../utils/variables.js";
+import { ROLES, ACCOUNT_STATUS, MEMBERSHIP_TIERS, KYC_STATUS, REGISTRATION_STATUS } from "../../utils/variables.js";
 import { User, Profile, PartnerPreference, ProfileAccessGrant, ACCESS_ROLES } from "../../models/index.js";
 import serviceOTP from "../../services/serviceOTP.js";
+import otpService from "../../services/otpService.js";
+import onboardingService from "../../services/onboardingService.js";
+import { normalizePhoneNumber } from "../../utils/phoneNormalizer.js";
 import { sendMultiChannelNotification } from "../../services/serviceNotifications.js";
 import { signToken, generateRefreshToken, verifyRefreshToken, verifyToken, signResetToken, verifyResetToken } from "../../utils/jwtTokenUtils.js";
 import { setKeyWithTime, getKey, removeKey } from "../../services/serviceRedis.js";
 import { invalidateTokenInRedis } from "../../utils/logoutUtils.js";
 import { registerCandidateInMemory, findUserByPhoneInMemory } from "../../services/realDataService.js";
 
-// In-memory candidate registry for serverless / offline fallback
-const inMemoryTestUsers = new Map();
-inMemoryTestUsers.set("9829012345", {
-  phone: "9829012345",
-  password: "Password123@",
-  name: "Rohan Advani",
-  role: 1,
-  userId: "6ad7243f16be9e632d077eca",
-  activeProfileId: "6ad7243f16be9e632d077ecb",
-});
 
 /**
  * 📲 Send OTP to Candidate Mobile (Mobile App & Web Registration)
@@ -31,7 +25,8 @@ inMemoryTestUsers.set("9829012345", {
  * 2. Login phone + password se hota hai, login ke liye OTP ki zaroorat nahi hai.
  */
 export const sendOtp = asyncHandler(async (req, res) => {
-  const { phone, countryCode = "+91", purpose = "REGISTER" } = req.body;
+  const { phone, mobile, countryCode = "+91", purpose = "REGISTER", name, profileFor, step = 1 } = req.body;
+  const targetPhone = phone || mobile;
   const upperPurpose = String(purpose).trim().toUpperCase();
 
   // If someone requests OTP for login, inform them that login is password-based
@@ -47,29 +42,33 @@ export const sendOtp = asyncHandler(async (req, res) => {
     );
   }
 
-  // Offline / standalone test mode
-  if (mongoose.connection.readyState !== 1) {
+  // 1. Canonical E.164 phone normalization
+  const normalized = normalizePhoneNumber(targetPhone, countryCode);
+  if (!normalized.isValid) {
     return apiHTTPResponse(
       req,
       res,
-      CONSTANTS.HTTP_OK,
-      CONSTANTS_MSG.OTP_SENT_PHONE,
-      {
-        phone,
-        countryCode,
-        isExistingUser: false,
-        purpose: upperPurpose,
-      },
-      CONSTANTS.OK,
-      CONSTANTS.ERROR_FALSE
+      CONSTANTS.HTTP_BAD_REQUEST,
+      normalized.error || "Invalid mobile number provided.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.BAD_REQUEST,
+      CONSTANTS.ERROR_TRUE
     );
   }
+  // 2. Database check for existing candidate account
+  let existingUser = null;
 
-  // 1. Fast indexed check for candidate account
-  const existingUser = await User.findOne({ phone, isDeleted: false })
-    .select("status role")
-    .lean();
+  if (mongoose.connection.readyState === 1) {
 
+    existingUser = await User.findOne({
+      $or: [{ phone: normalized.national }, { phone: normalized.e164 }],
+      isDeleted: false,
+    }).select("status role isOnboardingComplete registrationStatus password isPhoneVerified");
+  } else {
+    existingUser = findUserByPhoneInMemory(normalized.national);
+  }
+
+  console.log('existingUserexistingUserexistingUser', existingUser)
   if (existingUser && existingUser.status === ACCOUNT_STATUS.SUSPENDED) {
     return apiHTTPResponse(
       req,
@@ -82,28 +81,70 @@ export const sendOtp = asyncHandler(async (req, res) => {
     );
   }
 
-  // 2. Anti-waste check: If purpose is explicitly REGISTER and user exists, fail fast
-  if (upperPurpose === "REGISTER" && existingUser) {
+  // If already registered with a password or complete, guide to login
+  if (upperPurpose === "REGISTER" && existingUser && (existingUser.isOnboardingComplete || existingUser.password)) {
     return apiHTTPResponse(
       req,
       res,
       CONSTANTS.HTTP_CONFLICT,
-      "An account with this mobile number already exists. Please log in directly.",
-      { phone, countryCode, isExistingUser: true },
+      "An account with this mobile number already exists. Please log in directly with your password.",
+      { phone: normalized.national, countryCode: normalized.countryCode, isExistingUser: true },
       CONSTANTS.CONFLICT,
       CONSTANTS.ERROR_TRUE
     );
   }
 
-  // 3. Generate 4-digit OTP and store with 10-minute expiry
-  const otp = await serviceOTP.generateAndStoreOtp(phone, upperPurpose);
+  // Persist draft in MongoDB if account does not exist
+  let targetUser = existingUser;
+  if (!targetUser) {
+    if (mongoose.connection.readyState === 1) {
+      targetUser = await User.create({
+        phone: normalized.national,
+        countryCode: normalized.countryCode,
+        name: name ? String(name).trim() : "Candidate",
+        status: ACCOUNT_STATUS.ACTIVE,
+        registrationStatus: REGISTRATION_STATUS.DRAFT,
+        isPhoneVerified: false,
+        isOnboardingComplete: false,
+        onboardingStep: 1,
+      });
+    } else {
+      targetUser = {
+        _id: "6ad3c0ff51bbaafbad99f010",
+        phone: normalized.national,
+        countryCode: normalized.countryCode,
+        name: name ? String(name).trim() : "Candidate",
+        status: ACCOUNT_STATUS.ACTIVE,
+        registrationStatus: REGISTRATION_STATUS.DRAFT,
+        isPhoneVerified: false,
+        isOnboardingComplete: false,
+        onboardingStep: 1,
+      };
+    }
+  }
 
-  // 4. Dispatch SMS / WhatsApp alert in background (non-blocking for sub-20ms latency)
+  // 3. Generate cryptographic 4-digit OTP challenge with keyed HMAC in Redis
+  let challenge;
+  try {
+    challenge = await otpService.createChallenge(normalized.e164, upperPurpose);
+  } catch (rateErr) {
+    return apiHTTPResponse(
+      req,
+      res,
+      rateErr.statusCode || CONSTANTS.HTTP_BAD_REQUEST,
+      rateErr.message || "Failed to generate verification challenge.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.BAD_REQUEST,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  // 4. Dispatch SMS / WhatsApp alert in background (never log raw OTP)
   sendMultiChannelNotification({
-    phone: `${countryCode}${phone}`,
+    phone: normalized.e164,
     channels: ["SMS", "WHATSAPP"],
     title: "Sindhi Matrimony Verification Code",
-    body: `Your 4-digit Sindhi Matrimony verification code is ${otp}. Valid for 10 minutes. Please do not share this OTP with anyone.`,
+    body: `Your 4-digit Sindhi Matrimony verification code is ${challenge.rawOtp}. Valid for 10 minutes. Please do not share this OTP with anyone.`,
   }).catch((err) => {
     logMessage("Non-blocking OTP notification dispatch error:", err, "warn");
   });
@@ -114,10 +155,16 @@ export const sendOtp = asyncHandler(async (req, res) => {
     CONSTANTS.HTTP_OK,
     CONSTANTS_MSG.OTP_SENT_PHONE,
     {
-      phone,
-      countryCode,
-      isExistingUser: Boolean(existingUser),
+      challengeId: challenge.challengeId,
+      phone: normalized.national,
+      countryCode: normalized.countryCode,
+      isExistingUser: Boolean(existingUser && existingUser.isOnboardingComplete),
       purpose: upperPurpose,
+      name: name ? String(name).trim() : undefined,
+      profileFor: profileFor ? String(profileFor).trim() : undefined,
+      step: 2,
+      nextStep: "OTP_VERIFICATION",
+      nextRoute: "/registration/otp",
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -139,6 +186,7 @@ export const register = asyncHandler(async (req, res) => {
   const {
     phone,
     otp,
+    token: regSessionToken,
     name,
     profileFor = "MYSELF",
     gender,
@@ -197,14 +245,6 @@ export const register = asyncHandler(async (req, res) => {
     );
     const mockUserId = regUser._id;
     const mockProfileId = regProfile._id;
-    inMemoryTestUsers.set(cleanNum, {
-      phone: cleanNum,
-      password: password || "Password123@",
-      name: regUser.name,
-      role: 1,
-      userId: mockUserId,
-      activeProfileId: mockProfileId,
-    });
     const tokenPayload = {
       userId: mockUserId,
       role: ROLES.USER,
@@ -238,10 +278,27 @@ export const register = asyncHandler(async (req, res) => {
     );
   }
 
-  // 1. Fast indexed check: user already exists AND OTP verification run in parallel
+  // 1. Fast indexed check: user already exists AND OTP / Session Token verification
+  const cleanPhone = String(phone).replace(/\D/g, "").slice(-10);
+  let isOtpValid = false;
+  if (regSessionToken) {
+    const verifiedDataStr = await getKey(`reg_verified:${regSessionToken}`).catch(() => null);
+    if (verifiedDataStr) {
+      try {
+        const parsed = typeof verifiedDataStr === "string" ? JSON.parse(verifiedDataStr) : verifiedDataStr;
+        const verifiedPhone = String(parsed?.phone || "").replace(/\D/g, "").slice(-10);
+        if (parsed?.verified && cleanPhone === verifiedPhone) {
+          isOtpValid = true;
+        }
+      } catch { }
+    }
+  }
+
   const [existingUser, otpResult] = await Promise.all([
     User.findOne({ phone, isDeleted: false }).select("_id").lean(),
-    serviceOTP.verifyOtpAnyPurpose(phone, otp, ["REGISTER", "LOGIN"]),
+    (!isOtpValid && otp)
+      ? serviceOTP.verifyOtpAnyPurpose(phone, otp, ["REGISTER", "LOGIN"])
+      : Promise.resolve({ isValid: isOtpValid }),
   ]);
 
   if (existingUser) {
@@ -256,12 +313,12 @@ export const register = asyncHandler(async (req, res) => {
     );
   }
 
-  if (!otpResult.isValid) {
+  if (!isOtpValid && !otpResult.isValid) {
     return apiHTTPResponse(
       req,
       res,
       CONSTANTS.HTTP_BAD_REQUEST,
-      otpResult.message || CONSTANTS_MSG.INVALID_OTP,
+      otpResult.message || "Registration session or OTP has expired. Please verify again.",
       CONSTANTS.DATA_NULL,
       CONSTANTS.BAD_REQUEST,
       CONSTANTS.ERROR_TRUE
@@ -392,7 +449,7 @@ export const register = asyncHandler(async (req, res) => {
     await user.save();
   } catch (creationError) {
     // Rollback: delete orphaned User document to preserve database consistency
-    await User.deleteOne({ _id: user._id }).catch(() => {});
+    await User.deleteOne({ _id: user._id }).catch(() => { });
     logMessage("Profile creation failed, rolled back newly created User record:", creationError, "error");
     throw creationError;
   }
@@ -419,6 +476,10 @@ export const register = asyncHandler(async (req, res) => {
   }).catch((err) => logMessage("Non-blocking welcome notification error:", err, "warn"));
 
   logMessage(`🎉 New Matrimonial Candidate Registered: ${name} (${phone}) on ${normalizedPlatform}`, null, "info");
+
+  // Invalidate registration session token once registered
+  if (regSessionToken) removeKey(`reg_verified:${regSessionToken}`).catch(() => { });
+  removeKey(`reg_verified_phone:${cleanPhone}`).catch(() => { });
 
   return apiHTTPResponse(
     req,
@@ -457,6 +518,236 @@ export const register = asyncHandler(async (req, res) => {
   );
 });
 
+export const registerStep = asyncHandler(async (req, res) => {
+  const {
+    phone,
+    mobile,
+    countryCode = "+91",
+    step = 3,
+    token,
+    regSessionToken,
+  } = req.body;
+
+  const currentStep = Number(step) || 3;
+  const targetPhone = phone || mobile;
+  let user = null;
+
+  // 1. If Step 3 with temporary regSessionToken (from OTP verification)
+  if (currentStep === 3 && regSessionToken) {
+    const sessionDataStr = await getKey(`reg_session:${regSessionToken}`).catch(() => null);
+    if (!sessionDataStr) {
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_UNAUTHORIZED,
+        "Registration session has expired or is invalid. Please verify mobile again.",
+        CONSTANTS.DATA_NULL,
+        CONSTANTS.UNAUTHORIZED,
+        CONSTANTS.ERROR_TRUE
+      );
+    }
+
+    const sessionData = typeof sessionDataStr === "string" ? JSON.parse(sessionDataStr) : sessionDataStr;
+    const cleanSessionPhone = String(sessionData.phone || "").replace(/\D/g, "").slice(-10);
+    const cleanTargetPhone = String(targetPhone || "").replace(/\D/g, "").slice(-10);
+
+    if (cleanTargetPhone && cleanTargetPhone !== cleanSessionPhone) {
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_FORBIDDEN,
+        "Mobile number does not match verified session.",
+        CONSTANTS.DATA_NULL,
+        CONSTANTS.FORBIDDEN,
+        CONSTANTS.ERROR_TRUE
+      );
+    }
+
+    const effectivePhone = cleanSessionPhone || cleanTargetPhone;
+    const normalized = normalizePhoneNumber(effectivePhone, countryCode);
+
+    if (mongoose.connection.readyState === 1) {
+      user = await User.findOne({
+        $or: [{ phone: normalized.national }, { phone: normalized.e164 }],
+        isDeleted: false,
+      });
+
+      if (user && user.password) {
+        return apiHTTPResponse(
+          req,
+          res,
+          CONSTANTS.HTTP_CONFLICT,
+          "An account with this mobile number already exists. Please log in directly with your password.",
+          CONSTANTS.DATA_NULL,
+          CONSTANTS.CONFLICT,
+          CONSTANTS.ERROR_TRUE
+        );
+      }
+
+      if (!user) {
+        user = await User.create({
+          phone: normalized.national,
+          countryCode: normalized.countryCode || "+91",
+          status: ACCOUNT_STATUS.ACTIVE,
+          registrationStatus: REGISTRATION_STATUS.ONBOARDING_IN_PROGRESS,
+          isPhoneVerified: true,
+          isOnboardingComplete: false,
+          onboardingStep: 3,
+        });
+      } else {
+        user.isPhoneVerified = true;
+        user.registrationStatus = REGISTRATION_STATUS.ONBOARDING_IN_PROGRESS;
+        await user.save();
+      }
+    } else {
+      user = findUserByPhoneInMemory(normalized.national) || {
+        _id: "6ad3c0ff51bbaafbad99f010",
+        phone: normalized.national,
+        countryCode: normalized.countryCode || "+91",
+        isPhoneVerified: true,
+        registrationStatus: REGISTRATION_STATUS.ONBOARDING_IN_PROGRESS,
+        isOnboardingComplete: false,
+        onboardingStep: 3,
+      };
+    }
+  } else {
+    // Standard Authenticated Bearer flow for Steps 4, 5, 6, etc.
+    const authHeader = req.headers.authorization;
+    const rawToken = token || (authHeader && authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null);
+
+    if (!rawToken) {
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_UNAUTHORIZED,
+        "Registration session token is required to save registration progress.",
+        CONSTANTS.DATA_NULL,
+        CONSTANTS.UNAUTHORIZED,
+        CONSTANTS.ERROR_TRUE
+      );
+    }
+
+    let decoded;
+    try {
+      decoded = verifyToken(rawToken);
+    } catch {
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_UNAUTHORIZED,
+        "Registration session has expired or is invalid. Please verify mobile or login to resume.",
+        CONSTANTS.DATA_NULL,
+        CONSTANTS.UNAUTHORIZED,
+        CONSTANTS.ERROR_TRUE
+      );
+    }
+
+    const tokenScope = decoded.scope || decoded.data?.scope;
+    if (tokenScope !== "ONBOARDING" && tokenScope !== "FULL_ACCESS") {
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_FORBIDDEN,
+        "Forbidden: Invalid token scope for registration onboarding.",
+        CONSTANTS.DATA_NULL,
+        CONSTANTS.FORBIDDEN,
+        CONSTANTS.ERROR_TRUE
+      );
+    }
+
+    const userId = decoded.id || decoded.userId;
+    if (mongoose.connection.readyState === 1) {
+      user = await User.findById(userId);
+    } else {
+      user = findUserByPhoneInMemory(decoded.phone || "9829012345") || {
+        _id: userId || "6ad3c0ff51bbaafbad99f010",
+        phone: decoded.phone || "9829012345",
+        isPhoneVerified: true,
+        registrationStatus: REGISTRATION_STATUS.PHONE_VERIFIED,
+        isOnboardingComplete: false,
+        onboardingStep: 3,
+      };
+    }
+  }
+
+  if (!user) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      "Registration session not found. Please verify your mobile number first.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  // 2. Enforce predecessor state (phone must be verified before saving basic details)
+  if (!user.isPhoneVerified) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_FORBIDDEN,
+      "Mobile number verification is required before completing profile details.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.FORBIDDEN,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  // 3. Persist step payload atomically into MongoDB User & Profile models
+  try {
+    const progress = await onboardingService.saveRegistrationStep(user, currentStep, req.body);
+
+    // If Step 3 was completed, burn the temporary regSessionToken and issue the official BEARER TOKEN
+    let authToken = undefined;
+    let refreshToken = undefined;
+    if (currentStep === 3) {
+      if (regSessionToken) {
+        removeKey(`reg_session:${regSessionToken}`).catch(() => {});
+      }
+      const primaryProfile = await Profile.findOne({ userId: user._id, isPrimary: true }).catch(() => null);
+      const tokenPayload = {
+        userId: user._id.toString(),
+        id: user._id.toString(),
+        role: user.role || ROLES.USER,
+        phone: user.phone,
+        profileId: primaryProfile ? primaryProfile._id.toString() : "",
+        activeProfileId: primaryProfile ? primaryProfile._id.toString() : "",
+        profileRole: "OWNER",
+        purpose: "ONBOARDING",
+        scope: "ONBOARDING",
+      };
+      authToken = signToken(tokenPayload, "2d");
+      refreshToken = generateRefreshToken(tokenPayload, "30d");
+    }
+
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_OK,
+      `Step ${currentStep} details saved successfully.`,
+      {
+        ...(authToken ? { token: authToken, refreshToken } : {}),
+        ...progress,
+        nextStep: currentStep + 1,
+      },
+      CONSTANTS.OK,
+      CONSTANTS.ERROR_FALSE
+    );
+  } catch (err) {
+    return apiHTTPResponse(
+      req,
+      res,
+      err.statusCode || CONSTANTS.HTTP_BAD_REQUEST,
+      err.message || "Failed to save registration step.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.BAD_REQUEST,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+});
+
 /**
  * 🔐 Login with Mobile Number and Password
  * Unified High-Speed Authentication Endpoint for Web Panel & Mobile App
@@ -473,7 +764,7 @@ export const loginWithPassword = asyncHandler(async (req, res) => {
     clientPlatform,
   } = req.body;
 
-  // 1. Sanitize & extract 10-digit mobile number from whichever field was supplied
+  // 1. Sanitize & extract mobile number from whichever field was supplied
   const rawPhone = phone || mobileNumber || mobile || identifier;
   if (!rawPhone || typeof rawPhone !== "string" || !rawPhone.trim()) {
     return apiHTTPResponse(
@@ -487,65 +778,66 @@ export const loginWithPassword = asyncHandler(async (req, res) => {
     );
   }
 
-  let cleanPhone = rawPhone.trim().replace(/[\s+\-().]/g, "");
-  if (cleanPhone.startsWith("91") && cleanPhone.length === 12) {
-    cleanPhone = cleanPhone.slice(2);
-  } else if (cleanPhone.startsWith("0") && cleanPhone.length === 11) {
-    cleanPhone = cleanPhone.slice(1);
-  }
+  const normalized = normalizePhoneNumber(rawPhone, "+91");
+  const cleanPhone = normalized.isValid ? normalized.national : String(rawPhone).trim().replace(/[\s+\-().]/g, "").slice(-10);
 
   const effectivePlatform = String(
     clientPlatform || req.clientInfo?.platform || "WEB"
   ).toUpperCase();
 
-  // Test & Offline Isolation: If MongoDB is disconnected (e.g. during standalone test suites)
+  // Offline / standalone test mode
   if (mongoose.connection.readyState !== 1) {
-    const matchedUser = findUserByPhoneInMemory(cleanPhone) || inMemoryTestUsers.get(cleanPhone);
-    if (matchedUser && (!matchedUser.password || matchedUser.password === password || password === "Password123@")) {
-      const mockUserId = matchedUser.userId || matchedUser._id || new mongoose.Types.ObjectId().toString();
-      const mockProfileId = matchedUser.activeProfileId || new mongoose.Types.ObjectId().toString();
+    const memUser = findUserByPhoneInMemory(cleanPhone);
+    if (!memUser) {
       return apiHTTPResponse(
         req,
         res,
-        CONSTANTS.HTTP_OK,
-        "Logged in successfully.",
-        {
-          token: signToken({
-            id: mockUserId,
-            userId: mockUserId,
-            phone: cleanPhone,
-            role: 1,
-            activeProfileId: mockProfileId,
-          }),
-          refreshToken: generateRefreshToken({ id: mockUserId }),
-          user: {
-            _id: mockUserId,
-            phone: cleanPhone,
-            name: matchedUser.name,
-            role: 1,
-            status: "ACTIVE",
-            activeProfileId: mockProfileId,
-          },
-        },
-        CONSTANTS.OK,
-        CONSTANTS.ERROR_FALSE
+        CONSTANTS.HTTP_NOT_FOUND,
+        "No registered account found with this mobile number. Please register first.",
+        CONSTANTS.DATA_NULL,
+        CONSTANTS.NOT_FOUND,
+        CONSTANTS.ERROR_TRUE
       );
     }
+    const tokenPayload = {
+      id: memUser._id.toString(),
+      userId: memUser._id.toString(),
+      role: memUser.role || 1,
+      phone: memUser.phone,
+      profileId: memUser.activeProfileId,
+      activeProfileId: memUser.activeProfileId,
+      profileRole: "OWNER",
+      scope: "FULL_ACCESS",
+      clientPlatform: effectivePlatform,
+    };
     return apiHTTPResponse(
       req,
       res,
-      CONSTANTS.HTTP_NOT_FOUND,
-      "No registered account found with this mobile number. Please register first.",
-      CONSTANTS.DATA_NULL,
-      CONSTANTS.NOT_FOUND,
-      CONSTANTS.ERROR_TRUE
+      CONSTANTS.HTTP_OK,
+      "Logged in successfully.",
+      {
+        token: signToken(tokenPayload, "2d"),
+        refreshToken: generateRefreshToken(tokenPayload, "30d"),
+        user: {
+          _id: memUser._id.toString(),
+          phone: memUser.phone,
+          name: memUser.name,
+          role: memUser.role || 1,
+          status: memUser.status || "ACTIVE",
+          activeProfileId: memUser.activeProfileId,
+          isOnboardingComplete: true,
+        },
+      },
+      CONSTANTS.OK,
+      CONSTANTS.ERROR_FALSE
     );
   }
 
-  // 2. Fetch User with lean query on indexed { phone: 1, isDeleted: 1 } for sub-millisecond execution
-  const user = await User.findOne({ phone: cleanPhone, isDeleted: false })
-    .select("+password")
-    .lean();
+  // 2. Fetch User with lean query on indexed phone
+  const user = await User.findOne({
+    $or: [{ phone: cleanPhone }, { phone: normalized.e164 }],
+    isDeleted: false,
+  }).select("+password");
 
   if (!user) {
     return apiHTTPResponse(
@@ -572,16 +864,24 @@ export const loginWithPassword = asyncHandler(async (req, res) => {
     );
   }
 
-  // 4. Password Verification
+  // 4. Password-Missing Recovery Flow (Case B)
   if (!user.password) {
     return apiHTTPResponse(
       req,
       res,
-      CONSTANTS.HTTP_BAD_REQUEST,
-      "No password is set on this account. Please use 'Forgot Password' to create your password.",
-      CONSTANTS.DATA_NULL,
-      CONSTANTS.BAD_REQUEST,
-      CONSTANTS.ERROR_TRUE
+      CONSTANTS.HTTP_OK,
+      "Mobile number is verified but password is not yet created. OTP verification required to resume registration.",
+      {
+        action: "REQUIRE_OTP_RESUME",
+        phone: user.phone,
+        countryCode: user.countryCode || "+91",
+        isPhoneVerified: user.isPhoneVerified,
+        hasPassword: false,
+        nextStep: "OTP_VERIFICATION",
+        nextRoute: "/registration/otp",
+      },
+      CONSTANTS.OK,
+      CONSTANTS.ERROR_FALSE
     );
   }
 
@@ -598,22 +898,42 @@ export const loginWithPassword = asyncHandler(async (req, res) => {
     );
   }
 
-  // 5. Resolve activeProfileId with maximum speed (0 queries if already present on user)
-  let activeProfileId = user.activeProfileId ? user.activeProfileId.toString() : "";
-  if (!activeProfileId) {
-    const candidateProfile = await Profile.findOne({
-      userId: user._id,
-      isDeleted: false,
-    })
-      .select("_id")
-      .sort({ isPrimary: -1, createdAt: 1 })
-      .lean();
-    if (candidateProfile) {
-      activeProfileId = candidateProfile._id.toString();
-    }
+  // 5. Check Onboarding Progress & Scope
+  const profile = await Profile.findOne({
+    userId: user._id,
+    isDeleted: false,
+  });
+
+  const progress = onboardingService.getRegistrationProgress(user, profile);
+
+  // If onboarding is incomplete, issue strictly scoped ONBOARDING token
+  if (!user.isOnboardingComplete || progress.registrationStatus !== REGISTRATION_STATUS.COMPLETE) {
+    const resumeToken = signToken({
+      id: user._id.toString(),
+      userId: user._id.toString(),
+      phone: user.phone,
+      role: ROLES.USER,
+      purpose: "ONBOARDING",
+      scope: "ONBOARDING",
+    }, "30m");
+
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_OK,
+      "Authentication successful. Registration incomplete, redirecting to next step.",
+      {
+        token: resumeToken,
+        ...progress,
+      },
+      CONSTANTS.OK,
+      CONSTANTS.ERROR_FALSE
+    );
   }
 
-  // 6. Asynchronous non-blocking session & telemetry persistence
+  // 6. Complete User: Resolve activeProfileId and issue full application access
+  let activeProfileId = user.activeProfileId ? user.activeProfileId.toString() : (profile ? profile._id.toString() : "");
+
   const updateQuery = {
     $set: {
       lastLoginAt: Date.now(),
@@ -632,7 +952,6 @@ export const loginWithPassword = asyncHandler(async (req, res) => {
       logMessage("Background login session update error:", err, "warn");
     });
 
-  // 7. Sign high-security JWT access token & refresh token
   const tokenPayload = {
     id: user._id.toString(),
     userId: user._id.toString(),
@@ -641,19 +960,13 @@ export const loginWithPassword = asyncHandler(async (req, res) => {
     profileId: activeProfileId,
     activeProfileId: activeProfileId,
     profileRole: "OWNER",
+    scope: "FULL_ACCESS",
     clientPlatform: effectivePlatform,
   };
 
   const token = signToken(tokenPayload, "2d");
   const refreshToken = generateRefreshToken(tokenPayload, "30d");
 
-  logMessage(
-    `🔐 Login successful for candidate (${user.phone}) on ${effectivePlatform}`,
-    null,
-    "info"
-  );
-
-  // 8. Return ultra-fast lightweight response (only token, refreshToken, and essential user context)
   return apiHTTPResponse(
     req,
     res,
@@ -668,6 +981,7 @@ export const loginWithPassword = asyncHandler(async (req, res) => {
         role: user.role || 1,
         status: user.status || "ACTIVE",
         activeProfileId: activeProfileId,
+        isOnboardingComplete: true,
       },
     },
     CONSTANTS.OK,
@@ -684,7 +998,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 
   // Offline / standalone test mode
   if (mongoose.connection.readyState !== 1) {
-    await serviceOTP.generateAndStoreOtp(phone, "RESET_PASSWORD").catch(() => {});
+    await serviceOTP.generateAndStoreOtp(phone, "RESET_PASSWORD").catch(() => { });
     return apiHTTPResponse(
       req,
       res,
@@ -857,12 +1171,116 @@ export const resetPassword = asyncHandler(async (req, res) => {
  * POST /api/v1/auth/users/verify-otp (or /api/v1/auth/verify-otp)
  */
 export const verifyLoginOtp = asyncHandler(async (req, res) => {
-  const { phone, otp, purpose = "LOGIN", countryCode = "+91", fcmToken, clientPlatform = "WEB" } = req.body;
+  const { phone, otp, challengeId: rawChallengeId, token: bodyToken, purpose = "REGISTER", countryCode = "+91", fcmToken, clientPlatform = "WEB", step = 2 } = req.body;
+  const challengeId = rawChallengeId || bodyToken;
   const upperPurpose = String(purpose).trim().toUpperCase();
 
-  // Reset Password OTP Verification flow: Validates OTP and returns purpose-restricted reset credential
+  // 1. Phone normalization
+  const normalized = normalizePhoneNumber(phone, countryCode);
+  const canonicalE164 = normalized.isValid ? normalized.e164 : `${countryCode}${phone}`;
+  const nationalPhone = normalized.isValid ? normalized.national : String(phone).replace(/\D/g, "").slice(-10);
+
+  // Reset Password OTP Verification flow
   if (upperPurpose === "RESET_PASSWORD") {
-    const otpResult = await serviceOTP.verifyOtp(phone, otp, "RESET_PASSWORD");
+    let isValid = false;
+    let message = "";
+    if (challengeId) {
+      const lockRes = await otpService.verifyAndLockChallenge(challengeId, otp, "RESET_PASSWORD", canonicalE164);
+      isValid = lockRes.isValid;
+      message = lockRes.message;
+      if (isValid) {
+        await otpService.commitChallenge(challengeId);
+      }
+    } else {
+      const legacyRes = await serviceOTP.verifyOtp(phone, otp, "RESET_PASSWORD");
+      isValid = legacyRes.isValid;
+      message = legacyRes.message;
+    }
+
+    if (!isValid) {
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_BAD_REQUEST,
+        message || CONSTANTS_MSG.INVALID_OTP,
+        CONSTANTS.DATA_NULL,
+        CONSTANTS.BAD_REQUEST,
+        CONSTANTS.ERROR_TRUE
+      );
+    }
+
+    const resetToken = signResetToken({ phone: nationalPhone, countryCode: normalized.countryCode, purpose: "RESET_PASSWORD" }, "10m");
+    await setKeyWithTime(`reset_token:${nationalPhone}`, resetToken, 600);
+
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_OK,
+      "OTP verified successfully. You can now reset your password.",
+      {
+        phone: nationalPhone,
+        countryCode: normalized.countryCode,
+        purpose: "RESET_PASSWORD",
+        resetToken,
+        token: resetToken,
+      },
+      CONSTANTS.OK,
+      CONSTANTS.ERROR_FALSE
+    );
+  }
+
+  // Register / Resume Onboarding OTP Verification flow
+  if (upperPurpose === "REGISTER" || upperPurpose === "RESUME_ONBOARDING") {
+    if (challengeId) {
+      const lockResult = await otpService.verifyAndLockChallenge(challengeId, otp, upperPurpose, canonicalE164);
+      if (!lockResult.isValid) {
+        return apiHTTPResponse(
+          req,
+          res,
+          lockResult.statusCode || CONSTANTS.HTTP_BAD_REQUEST,
+          lockResult.message || CONSTANTS_MSG.INVALID_OTP,
+          CONSTANTS.DATA_NULL,
+          CONSTANTS.BAD_REQUEST,
+          CONSTANTS.ERROR_TRUE
+        );
+      }
+
+      // Commit Redis challenge
+      await otpService.commitChallenge(challengeId);
+
+      // Generate temporary registration session token in Redis (30 mins TTL)
+      const regSessionToken = crypto.randomUUID();
+      await setKeyWithTime(
+        `reg_session:${regSessionToken}`,
+        JSON.stringify({
+          phone: nationalPhone,
+          countryCode: normalized.countryCode || "+91",
+          verified: true,
+          verifiedAt: Date.now(),
+        }),
+        1800
+      );
+
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_OK,
+        "OTP verified successfully.",
+        {
+          isPhoneVerified: true,
+          regSessionToken,
+          phone: nationalPhone,
+          countryCode: normalized.countryCode || "+91",
+          nextStep: 3,
+          nextRoute: "/registration/basic-info",
+        },
+        CONSTANTS.OK,
+        CONSTANTS.ERROR_FALSE
+      );
+    }
+
+    // Fallback if challengeId is missing in legacy client
+    const otpResult = await serviceOTP.verifyOtp(phone, otp, upperPurpose);
     if (!otpResult.isValid) {
       return apiHTTPResponse(
         req,
@@ -875,21 +1293,30 @@ export const verifyLoginOtp = asyncHandler(async (req, res) => {
       );
     }
 
-    // Issue isolated, purpose-restricted 10m reset credential
-    const resetToken = signResetToken({ phone, countryCode, purpose: "RESET_PASSWORD" }, "10m");
-    await setKeyWithTime(`reset_token:${phone}`, resetToken, 600);
+    const fallbackSessionToken = crypto.randomUUID();
+    await setKeyWithTime(
+      `reg_session:${fallbackSessionToken}`,
+      JSON.stringify({
+        phone: nationalPhone,
+        countryCode: normalized.countryCode || "+91",
+        verified: true,
+        verifiedAt: Date.now(),
+      }),
+      1800
+    );
 
     return apiHTTPResponse(
       req,
       res,
       CONSTANTS.HTTP_OK,
-      "OTP verified successfully. You can now reset your password.",
+      "OTP verified successfully.",
       {
-        phone,
-        countryCode,
-        purpose: "RESET_PASSWORD",
-        resetToken,
-        token: resetToken,
+        isPhoneVerified: true,
+        regSessionToken: fallbackSessionToken,
+        phone: nationalPhone,
+        countryCode: normalized.countryCode || "+91",
+        nextStep: 3,
+        nextRoute: "/registration/basic-info",
       },
       CONSTANTS.OK,
       CONSTANTS.ERROR_FALSE
@@ -1092,6 +1519,147 @@ export const checkPhoneExists = asyncHandler(async (req, res) => {
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
+});
+
+/**
+ * ⚡ Registration Session Status Check (Authoritative Progress Evaluator)
+ * POST /api/v1/auth/registration-status or GET /api/v1/auth/registration-status
+ */
+export const checkRegistrationStatus = asyncHandler(async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = req.body?.token || (authHeader && authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null);
+
+  if (!token) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_UNAUTHORIZED,
+      "Valid registration session token is required to inspect registration status.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.UNAUTHORIZED,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  let decoded;
+  try {
+    decoded = verifyToken(token);
+  } catch {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_UNAUTHORIZED,
+      "Registration session has expired or is invalid. Please verify mobile to resume.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.UNAUTHORIZED,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const userId = decoded.id || decoded.userId;
+  let user = null;
+  let profile = null;
+
+  if (mongoose.connection.readyState === 1) {
+    user = await User.findById(userId);
+    if (user) {
+      profile = await Profile.findOne({ userId: user._id, isDeleted: false });
+    }
+  } else {
+    user = findUserByPhoneInMemory(decoded.phone || "9829012345") || {
+      _id: userId,
+      phone: decoded.phone || "9829012345",
+      isPhoneVerified: true,
+      registrationStatus: REGISTRATION_STATUS.PHONE_VERIFIED,
+      isOnboardingComplete: false,
+      onboardingStep: 2,
+    };
+  }
+
+  if (!user) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      "User record not found for this registration session.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const progress = onboardingService.getRegistrationProgress(user, profile);
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    "Registration progress retrieved successfully.",
+    progress,
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+/**
+ * 💍 Atomic Final Registration Completion
+ * POST /api/v1/auth/complete-registration (or /api/v1/auth/users/complete-registration)
+ */
+export const completeRegistration = asyncHandler(async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = req.body?.token || (authHeader && authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null);
+
+  if (!token) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_UNAUTHORIZED,
+      "Registration session token is required to complete registration.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.UNAUTHORIZED,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  let decoded;
+  try {
+    decoded = verifyToken(token);
+  } catch {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_UNAUTHORIZED,
+      "Registration session expired. Please verify mobile to resume.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.UNAUTHORIZED,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const userId = decoded.id || decoded.userId;
+
+  try {
+    const result = await onboardingService.completeRegistration(userId);
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_OK,
+      "Registration completed successfully! Welcome to Sindhi Matrimony.",
+      result,
+      CONSTANTS.OK,
+      CONSTANTS.ERROR_FALSE
+    );
+  } catch (err) {
+    return apiHTTPResponse(
+      req,
+      res,
+      err.statusCode || CONSTANTS.HTTP_BAD_REQUEST,
+      err.message || "Failed to complete registration.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.BAD_REQUEST,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
 });
 
 /**
@@ -2090,9 +2658,12 @@ export const refreshToken = refreshTokenHandler;
 export default {
   sendOtp,
   register,
+  registerStep,
   verifyLoginOtp,
   resendOtp,
   checkPhoneExists,
+  checkRegistrationStatus,
+  completeRegistration,
   logout,
   createSecondaryProfile,
   getMyProfiles,

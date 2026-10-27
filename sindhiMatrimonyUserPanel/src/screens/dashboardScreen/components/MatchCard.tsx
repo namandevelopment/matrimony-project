@@ -56,19 +56,17 @@ const MatchCardComponent: React.FC<MatchCardProps> = ({ profile, className = "" 
           type="button"
           onClick={handleToggleHeart}
           aria-label={isShortlisted ? "Remove from shortlist" : "Add to shortlist"}
-          className={`absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-white/90 backdrop-blur-md hover:bg-white shadow-2xs flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer ${
-            isShortlisted ? "text-[#DB2F3C]" : "text-stone-400 hover:text-[#DB2F3C]"
-          }`}
+          className={`absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-white/90 backdrop-blur-md hover:bg-white shadow-2xs flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer ${isShortlisted ? "text-[#DB2F3C]" : "text-stone-400 hover:text-[#DB2F3C]"
+            }`}
         >
           <Heart
-            className={`w-3 h-3 transition-colors ${
-              isShortlisted ? "fill-[#DB2F3C] text-[#DB2F3C]" : "fill-none"
-            }`}
+            className={`w-3 h-3 transition-colors ${isShortlisted ? "fill-[#DB2F3C] text-[#DB2F3C]" : "fill-none"
+              }`}
           />
         </button>
 
         {/* Photo Image or Classic Silhouette Avatar */}
-        {profile.photoUrl ? (
+        {profile?.photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={profile.photoUrl}
@@ -103,26 +101,29 @@ const MatchCardComponent: React.FC<MatchCardProps> = ({ profile, className = "" 
           </p>
 
           {/* Community / Caste */}
-          <p className="text-[11px] sm:text-[11.5px] text-stone-500 font-medium truncate">
-            {profile.caste || "Brahmin - Saraswat"}
-          </p>
+          {profile.caste && (
+            <p className="text-[11px] sm:text-[11.5px] text-stone-500 font-medium truncate">
+              {profile.caste}
+            </p>
+          )}
 
           {/* City & Country */}
-          <p className="text-[10.5px] sm:text-[11px] text-stone-400 font-medium truncate flex items-center gap-1">
-            <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
-            <span>{profile.city || "Mumbai"}, India</span>
-          </p>
+          {profile.city && (
+            <p className="text-[10.5px] sm:text-[11px] text-stone-400 font-medium truncate flex items-center gap-1">
+              <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
+              <span>{profile.city}</span>
+            </p>
+          )}
         </div>
 
         {/* 3. Connect CTA Button */}
         <button
           type="button"
           onClick={handleConnect}
-          className={`mt-1.5 w-full py-1.5 px-3 rounded-full text-[11.5px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs group/btn cursor-pointer ${
-            interestSent
+          className={`mt-1.5 w-full py-1.5 px-3 rounded-full text-[11.5px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs group/btn cursor-pointer ${interestSent
               ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
               : "bg-[#FFF0F2] hover:bg-gradient-to-r hover:from-[#FF4D5A] hover:via-[#DB2F3C] hover:to-[#B71F2A] text-[#DB2F3C] hover:text-white border border-[#FDCED3] hover:border-transparent hover:shadow-xs active:scale-[0.98]"
-          }`}
+            }`}
         >
           {interestSent ? (
             <>

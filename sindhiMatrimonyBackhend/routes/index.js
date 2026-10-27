@@ -123,10 +123,6 @@ router.get("/help-support", (req, res) => {
   req.query.type = "help-support";
   return getContent(req, res);
 });
-router.get("/our-process", (req, res) => {
-  req.query.type = "our-process";
-  return getContent(req, res);
-});
 
 // 14. Dev API Tracker (under /api/v1/dev)
 if (process.env.NODE_ENV !== "production") {

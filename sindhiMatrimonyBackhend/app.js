@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 import morgan from "morgan";
 import errorHandler from "./middlewares/errorHandler.js";
 import maintenance from "./middlewares/maintenance.js";
@@ -65,8 +66,28 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev"));
-  // Mount Dev Tracker Dashboard & Metrics
-  app.use("/dev", devApiTrackerRoutes);
+  // Mount Dev Tracker Dashboard & Metrics (Blocks onboarding tokens)
+  app.use(
+    "/dev",
+    (req, res, next) => {
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith("Bearer ")) {
+        try {
+          const decoded = jwtLib.decode(authHeader.split(" ")[1]);
+          if (decoded && typeof decoded === "object" && decoded.scope === "ONBOARDING") {
+            return res.status(403).json({
+              message: "Forbidden: Onboarding session token cannot access dev tracker endpoints.",
+              code: 1403,
+              error: true,
+              data: { scope: "ONBOARDING", requiredScope: "FULL_ACCESS" },
+            });
+          }
+        } catch (_) {}
+      }
+      next();
+    },
+    devApiTrackerRoutes
+  );
 }
 
 // Request Filter & Authorization Chain
@@ -93,6 +114,75 @@ app.use(verifyTokenInRedis);
 app.use(checkDisableUser);
 app.use(mergeParamsToBody);
 app.use(ipClientAdd);
+
+// Explicit safe allowlist for onboarding-scoped tokens (Method:Path)
+const ONBOARDING_ALLOWED_OPERATIONS = new Set([
+  "POST:/api/v1/auth/send-otp",
+  "POST:/api/v1/auth/sendotp",
+  "POST:/api/v1/auth/users/send-otp",
+  "POST:/api/v1/auth/users/sendotp",
+  "POST:/api/v1/auth/verify-otp",
+  "POST:/api/v1/auth/users/verify-otp",
+  "POST:/api/v1/auth/resend-otp",
+  "POST:/api/v1/auth/resendotp",
+  "POST:/api/v1/auth/users/resend-otp",
+  "POST:/api/v1/auth/users/resendotp",
+  "POST:/api/v1/auth/check-phone",
+  "POST:/api/v1/auth/users/check-phone",
+  "POST:/api/v1/auth/register-step",
+  "POST:/api/v1/auth/registerstep",
+  "POST:/api/v1/auth/users/register-step",
+  "POST:/api/v1/auth/users/registerstep",
+  "POST:/api/v1/auth/register",
+  "POST:/api/v1/auth/users/register",
+  "POST:/api/v1/auth/complete-registration",
+  "POST:/api/v1/auth/completeregistration",
+  "POST:/api/v1/auth/users/complete-registration",
+  "POST:/api/v1/auth/users/completeregistration",
+  "POST:/api/v1/auth/logout",
+  "POST:/api/v1/auth/userlogout",
+  "POST:/api/v1/auth/users/logout",
+  "GET:/api/v1/common/dropdowns",
+  "GET:/api/v1/master/dropdowns",
+  "GET:/api/v1/plans",
+  "GET:/api/v1/plans/public-list",
+  "GET:/health",
+  "GET:/",
+]);
+
+// Read-only GET regex for dynamic master dropdown routes (e.g. /api/v1/master/cities, /api/v1/master/castes)
+const ONBOARDING_ALLOWED_MASTER_GET_REGEX = /^\/api\/v1\/master(\/[a-z0-9_-]+)*$/i;
+
+// Scoped Token Route Guard: Strictly enforces explicit allowlist for onboarding tokens
+app.use((req, res, next) => {
+  const auth = req.auth || req.user;
+  if (auth?.scope === "ONBOARDING") {
+    // Normalize path safely against traversal (..), multiple slashes, and trailing slashes
+    const rawPath = (req.originalUrl || req.url || "").split("?")[0];
+    const normalizedPath = path.posix.normalize(rawPath).replace(/\/+$/, "") || "/";
+    const method = req.method.toUpperCase();
+    const routeKey = `${method}:${normalizedPath}`;
+
+    const isExplicitlyAllowed =
+      ONBOARDING_ALLOWED_OPERATIONS.has(routeKey) ||
+      (method === "GET" && ONBOARDING_ALLOWED_MASTER_GET_REGEX.test(normalizedPath));
+
+    if (!isExplicitlyAllowed) {
+      return res.status(403).json({
+        message: "Forbidden: Onboarding session token is restricted to registration wizard endpoints. Complete registration to unlock full member features.",
+        code: 1403,
+        error: true,
+        data: {
+          scope: "ONBOARDING",
+          requiredScope: "FULL_ACCESS",
+          attemptedRoute: normalizedPath,
+          attemptedMethod: method,
+        },
+      });
+    }
+  }
+  next();
+});
 
 // Mount Master API Gateway
 app.use(API_END_POINT_V1, routes);

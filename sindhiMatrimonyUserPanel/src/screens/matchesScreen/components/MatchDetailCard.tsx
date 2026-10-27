@@ -157,7 +157,7 @@ const MatchDetailCardComponent: React.FC<MatchDetailCardProps> = ({
             <div className="flex items-center gap-1.5 truncate">
               <span className="text-[11px] text-stone-400 w-19 shrink-0">Community:</span>
               <span className="font-medium text-stone-800 truncate">
-                {profile.caste || "Brahmin / Sindhi"}
+                {profile.caste || "Sindhi"}
               </span>
             </div>
             <div className="flex items-center gap-1.5 truncate">

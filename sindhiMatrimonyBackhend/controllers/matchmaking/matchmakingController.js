@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import { asyncHandler, apiHTTPResponse, logMessage, cleanEntity } from "../../utils/globalFunction.js";
 import * as CONSTANTS from "../../utils/constants.js";
 import { Profile, PartnerPreference, User } from "../../models/index.js";
-import { SEED_CANDIDATE_POOL } from "../../constants/seedCandidateData.js";
 
 const getUserId = (req) =>
   req.user?.id ||
@@ -16,16 +15,16 @@ const getUserId = (req) =>
 const inMemoryShortlists = new Map();
 const inMemoryViews = new Map();
 
-// 150+ High-fidelity Sindhi candidate pool for matchmaking recommendations & search
-export const SEED_MATCH_CANDIDATES = SEED_CANDIDATE_POOL;
+// Static dummy candidate pool cleared - real DB queries used
+export const SEED_MATCH_CANDIDATES = [];
 
 /**
  * 🎯 Daily Smart Matchmaking Recommendations Feed
  * GET /api/v1/matchmaking/feed?page=1&limit=20
  */
 export const getMatchmakingFeed = asyncHandler(async (req, res) => {
-  const page = Math.max(1, Number(req.query.page) || 1);
-  const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+  const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
   const userId = getUserId(req);
 
   // If live Mongo is ready, we query the Profile collection
@@ -68,8 +67,18 @@ export const getMatchmakingFeed = asyncHandler(async (req, res) => {
             page,
             limit,
             totalMatches: total,
+            total,
             totalPages: Math.ceil(total / limit),
+            hasMore: page < Math.ceil(total / limit),
+            pagination: {
+              page,
+              limit,
+              total,
+              totalPages: Math.ceil(total / limit),
+              hasMore: page < Math.ceil(total / limit),
+            },
             matches,
+            list: matches,
           },
           CONSTANTS.OK,
           CONSTANTS.ERROR_FALSE
@@ -99,8 +108,18 @@ export const getMatchmakingFeed = asyncHandler(async (req, res) => {
       page,
       limit,
       totalMatches: enriched.length,
+      total: enriched.length,
       totalPages: Math.ceil(enriched.length / limit),
+      hasMore: page < Math.ceil(enriched.length / limit),
+      pagination: {
+        page,
+        limit,
+        total: enriched.length,
+        totalPages: Math.ceil(enriched.length / limit),
+        hasMore: page < Math.ceil(enriched.length / limit),
+      },
       matches: paginatedMatches,
+      list: paginatedMatches,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -262,10 +281,23 @@ export const searchCandidates = asyncHandler(async (req, res) => {
     `Search completed: found ${results.length} matching candidate profiles.`,
     {
       totalResults: results.length,
+      total: results.length,
       totalPages: Math.ceil(results.length / limitNum),
       page: pageNum,
       limit: limitNum,
+      hasMore: pageNum < Math.ceil(results.length / limitNum),
+      pagination: {
+        total: results.length,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(results.length / limitNum),
+        hasMore: pageNum < Math.ceil(results.length / limitNum),
+      },
       candidates: paginatedResults.map((c) => ({
+        ...c,
+        isShortlisted: shortlists.has(c._id),
+      })),
+      list: paginatedResults.map((c) => ({
         ...c,
         isShortlisted: shortlists.has(c._id),
       })),
@@ -280,7 +312,7 @@ export const searchCandidates = asyncHandler(async (req, res) => {
  * GET /api/v1/matchmaking/quick-search
  */
 export const quickSearch = asyncHandler(async (req, res) => {
-  const { subcaste, ageMin = 21, ageMax = 35, photoOnly, page = 1, limit = 20 } = req.query;
+  const { subcaste, ageMin = 21, ageMax = 35, photoOnly, page = req.query.pageNo || 1, limit = req.query.pageSize || 20 } = req.query;
 
   const pageNum = Math.max(1, Number(page) || 1);
   const limitNum = Math.min(50, Math.max(1, Number(limit) || 20));
@@ -296,6 +328,8 @@ export const quickSearch = asyncHandler(async (req, res) => {
     results = results.filter((c) => Boolean(c.avatar || (c.photos && c.photos.length > 0)));
   }
 
+  const total = results.length;
+  const totalPages = Math.ceil(total / limitNum) || 1;
   const startIdx = (pageNum - 1) * limitNum;
   const paginated = results.slice(startIdx, startIdx + limitNum);
 
@@ -305,11 +339,21 @@ export const quickSearch = asyncHandler(async (req, res) => {
     CONSTANTS.HTTP_OK,
     `Quick search found ${results.length} profiles.`,
     {
-      totalResults: results.length,
-      totalPages: Math.ceil(results.length / limitNum),
+      totalResults: total,
+      total,
+      totalPages,
       page: pageNum,
       limit: limitNum,
+      hasMore: pageNum < totalPages,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages,
+        hasMore: pageNum < totalPages,
+      },
       candidates: paginated,
+      list: paginated,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -321,11 +365,19 @@ export const quickSearch = asyncHandler(async (req, res) => {
  * GET /api/v1/matchmaking/viewed-my-profile
  */
 export const getViewedMyProfile = asyncHandler(async (req, res) => {
-  const visitors = SEED_MATCH_CANDIDATES.slice(0, 12).map((c, idx) => ({
+  const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
+
+  const allVisitors = SEED_MATCH_CANDIDATES.slice(0, 12).map((c, idx) => ({
     ...c,
     viewedAt: Date.now() - 3600000 * (idx * 3 + 1),
     viewCount: 1 + (idx % 4),
   }));
+
+  const total = allVisitors.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const startIdx = (page - 1) * limit;
+  const paginated = allVisitors.slice(startIdx, startIdx + limit);
 
   return apiHTTPResponse(
     req,
@@ -333,8 +385,21 @@ export const getViewedMyProfile = asyncHandler(async (req, res) => {
     CONSTANTS.HTTP_OK,
     "Profile visitors retrieved successfully.",
     {
-      totalVisitors: visitors.length,
-      visitors,
+      totalVisitors: total,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+      visitors: paginated,
+      list: paginated,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -382,14 +447,19 @@ export const toggleShortlist = asyncHandler(async (req, res) => {
  */
 export const getMyShortlist = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
-  const userList = inMemoryShortlists.get(userId) || new Set([SEED_MATCH_CANDIDATES[0]._id, SEED_MATCH_CANDIDATES[1]._id]);
+  const userList = inMemoryShortlists.get(userId) || new Set();
 
   const shortlistedCandidates = SEED_MATCH_CANDIDATES.filter((c) => userList.has(c._id)).map((c) => ({
     ...c,
     isShortlisted: true,
   }));
 
-  const candidates = shortlistedCandidates.length > 0 ? shortlistedCandidates : [SEED_MATCH_CANDIDATES[0], SEED_MATCH_CANDIDATES[1]];
+  const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
+  const total = shortlistedCandidates.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const startIdx = (page - 1) * limit;
+  const paginated = shortlistedCandidates.slice(startIdx, startIdx + limit);
 
   return apiHTTPResponse(
     req,
@@ -397,8 +467,21 @@ export const getMyShortlist = asyncHandler(async (req, res) => {
     CONSTANTS.HTTP_OK,
     "Shortlisted candidates retrieved successfully.",
     {
-      totalShortlisted: candidates.length,
-      candidates,
+      totalShortlisted: total,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+      candidates: paginated,
+      list: paginated,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -410,7 +493,10 @@ export const getMyShortlist = asyncHandler(async (req, res) => {
  * GET /api/v1/matchmaking/mutual-matches
  */
 export const getMutualMatches = asyncHandler(async (req, res) => {
-  const mutuals = SEED_MATCH_CANDIDATES.slice(0, 8).map((c, idx) => ({
+  const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
+
+  const allMutuals = SEED_MATCH_CANDIDATES.slice(0, 8).map((c, idx) => ({
     _id: c._id,
     name: c.name,
     age: c.age,
@@ -424,14 +510,32 @@ export const getMutualMatches = asyncHandler(async (req, res) => {
     unlockedAt: Date.now() - 3600000 * (idx * 6 + 2),
   }));
 
+  const total = allMutuals.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const startIdx = (page - 1) * limit;
+  const paginated = allMutuals.slice(startIdx, startIdx + limit);
+
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Mutual matches retrieved successfully.",
     {
-      totalMutualMatches: mutuals.length,
-      matches: mutuals,
+      totalMutualMatches: total,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+      matches: paginated,
+      list: paginated,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE

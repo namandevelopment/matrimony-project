@@ -2,6 +2,8 @@
 
 import React, { memo } from "react";
 import Link from "next/link";
+import { useProfileQuery } from "@/tanstackQuery";
+import { isDeepEqual } from "@/utils";
 import {
   AddPhotoTileIcon,
   FamilyDetailsTileIcon,
@@ -37,9 +39,12 @@ const ActionTile = memo<ActionTileProps>(({ icon, label, href }) => {
 ActionTile.displayName = "ActionTile";
 
 const ProfileCompletenessCardComponent: React.FC<ProfileCompletenessCardProps> = ({
-  score = 42,
+  score: propScore,
   className = "",
 }) => {
+  const { data: profileRes } = useProfileQuery();
+  const p = (profileRes as any)?.profile || (profileRes as any)?.data?.profile;
+  const score = propScore !== undefined ? propScore : (p?.completenessScore ?? 42);
   return (
     <section
       aria-label="Profile Completeness Section"
@@ -88,6 +93,9 @@ const ProfileCompletenessCardComponent: React.FC<ProfileCompletenessCardProps> =
   );
 };
 
-export const ProfileCompletenessCard = memo(ProfileCompletenessCardComponent);
+export const ProfileCompletenessCard = memo(
+  ProfileCompletenessCardComponent,
+  (prev, next) => isDeepEqual(prev, next)
+);
 ProfileCompletenessCard.displayName = "ProfileCompletenessCard";
 export default ProfileCompletenessCard;

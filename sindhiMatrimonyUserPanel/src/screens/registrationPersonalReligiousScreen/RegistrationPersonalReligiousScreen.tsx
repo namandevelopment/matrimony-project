@@ -1,9 +1,18 @@
 "use client";
 
-import React, { useState, useCallback, memo, useMemo } from "react";
+import React, { useState, useCallback, memo, useMemo, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSelector } from "react-redux";
 import { Loader2 } from "lucide-react";
 import { Header, CustomDropDown, CustomButton } from "@/components";
+import { selectMasterDropdowns } from "@/redux/useSelector";
+import {
+  getRegistrationDraft,
+  saveRegistrationDraft,
+  verifyRegistrationSessionWithBackend,
+  getToken,
+} from "@/storage";
+import apiFetch, { ApiURL, showToast } from "@/redux/apiService";
 import {
   PersonalReligiousHeader,
   PhysicalStatusSelect,
@@ -17,142 +26,20 @@ import {
   FormErrors,
 } from "./types";
 
-const HEIGHT_OPTIONS: string[] = [
-  "4 ft 6 in (137 cm)",
-  "4 ft 7 in (140 cm)",
-  "4 ft 8 in (142 cm)",
-  "4 ft 9 in (145 cm)",
-  "4 ft 10 in (147 cm)",
-  "4 ft 11 in (150 cm)",
-  "5 ft (152 cm)",
-  "5 ft 1 in (155 cm)",
-  "5 ft 2 in (157 cm)",
-  "5 ft 3 in (160 cm)",
-  "5 ft 4 in (162 cm)",
-  "5 ft 5 in (165 cm)",
-  "5 ft 6 in (167 cm)",
-  "5 ft 7 in (170 cm)",
-  "5 ft 8 in (172 cm)",
-  "5 ft 9 in (175 cm)",
-  "5 ft 10 in (177 cm)",
-  "5 ft 11 in (180 cm)",
-  "6 ft (182 cm)",
-  "6 ft 1 in (185 cm)",
-  "6 ft 2 in (187 cm)",
-  "6 ft 3 in (190 cm)",
-  "6 ft 4 in (193 cm)",
-  "6 ft 5 in (195 cm)",
-  "6 ft 6 in (198 cm)",
-  "6 ft 7 in (200 cm)",
-  "6 ft 8 in (203 cm)",
-  "6 ft 9 in (205 cm)",
-  "6 ft 10 in (208 cm)",
-  "6 ft 11 in (210 cm)",
-  "7 ft (213 cm)",
-];
-
-const SINDHI_CASTES: string[] = [
-  "Sindhi - Bhaiband",
-  "Sindhi - Amil",
-  "Sindhi - Lohana",
-  "Sindhi - Sahiti",
-  "Sindhi - Larkana",
-  "Sindhi - Sakhar",
-  "Sindhi - Dadu",
-  "Sindhi - Shikarpuri",
-  "Sindhi - Thari",
-  "Sindhi - Sehwani",
-  "Sindhi - Hyderabadi",
-  "Sindhi - Bhatia",
-  "Sindhi - Brahmins (Pokharna, Saraswat)",
-  "Sindhi - Chhapru",
-  "Sindhi - Others",
-  "Caste No Bar",
-];
-
-const SUBCASTE_MAP: Record<string, string[]> = {
-  "Sindhi - Bhaiband": [
-    "Hyderabadi Bhaiband",
-    "Karachi Bhaiband",
-    "Sukkur Bhaiband",
-    "Larkana Bhaiband",
-    "Shikarpuri Bhaiband",
-    "Nawabshah",
-    "Dadu",
-    "Others",
-    "Don't wish to specify",
-  ],
-  "Sindhi - Amil": [
-    "Hyderabadi Amil",
-    "Karachi Amil",
-    "Khudabadi Amil",
-    "Sukkur Amil",
-    "Others",
-    "Don't wish to specify",
-  ],
-  "Sindhi - Lohana": [
-    "Chhapru Lohana",
-    "Kutchi Lohana",
-    "Halai Lohana",
-    "Ghoghari Lohana",
-    "Others",
-    "Don't wish to specify",
-  ],
-  "Sindhi - Sahiti": [
-    "Kandiaro",
-    "Bhiria",
-    "Tharu Shah",
-    "Darbelo",
-    "Others",
-    "Don't wish to specify",
-  ],
-  "Sindhi - Brahmins (Pokharna, Saraswat)": [
-    "Pokharna",
-    "Pushkarna",
-    "Saraswat",
-    "Shrimali",
-    "Others",
-    "Don't wish to specify",
-  ],
-};
-
-const DEFAULT_SUBCASTES: string[] = [
-  "Don't wish to specify",
-  "Hyderabadi",
-  "Sukkur",
-  "Larkana",
-  "Karachi",
-  "Shikarpuri",
-  "Sahiti",
-  "Kutchi",
-  "Others",
-];
-
-const GOTHRA_OPTIONS: string[] = [
-  "Don't wish to specify",
-  "Kashyap",
-  "Bharadwaj",
-  "Vashishta",
-  "Gautam",
-  "Sandilya",
-  "Parashar",
-  "Agastya",
-  "Haritasya",
-  "Kaundinya",
-  "Vishwamitra",
-  "Angirasa",
-  "Jamadagni",
-  "Atri",
-  "Garg",
-  "Mudgal",
-  "Upamanyu",
-  "Srivatsa",
-  "Others",
-];
-
 const RegistrationPersonalReligiousScreenComponent: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const masterDropdowns = useSelector(selectMasterDropdowns);
+  const activeHeights = useMemo(() => masterDropdowns?.heights || [], [masterDropdowns]);
+  const activeCastes = useMemo(() => {
+    if (masterDropdowns?.castes?.length) {
+      return masterDropdowns.castes.map((c: any) => (typeof c === "string" ? c : (c.label || c.name || c.id)));
+    }
+    return [];
+  }, [masterDropdowns]);
+  const activeDefaultSubcastes = useMemo(() => masterDropdowns?.defaultSubcastes || [], [masterDropdowns]);
+  const activeGothras = useMemo(() => masterDropdowns?.gothras || [], [masterDropdowns]);
 
   // Search parameters from previous steps
   const mobile = searchParams.get("mobile") || "";
@@ -174,6 +61,45 @@ const RegistrationPersonalReligiousScreenComponent: React.FC = () => {
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Recovery & draft restoration
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const draft = getRegistrationDraft();
+    const targetMobile = mobile || draft?.phone || draft?.mobileNumber;
+    const targetToken = searchParams.get("token") || draft?.token;
+
+    if (!targetMobile) {
+      router.replace("/");
+      return;
+    }
+
+    verifyRegistrationSessionWithBackend(targetMobile, targetToken).then((res) => {
+      if (res.isRegistered) {
+        router.replace("/dashboard");
+        return;
+      }
+      if (!res.isOtpVerified && (res.status === "OTP_PENDING" || res.status === "EXPIRED")) {
+        showToast({
+          type: "error",
+          message: "Registration session has expired. Please verify your mobile number.",
+        });
+        router.replace(`/registration/otp?mobile=${targetMobile}`);
+        return;
+      }
+
+      if (draft?.personalReligious) {
+        setFormData((prev) => ({
+          ...prev,
+          height: draft.personalReligious?.height || prev.height,
+          maritalStatus: (draft.personalReligious?.maritalStatus as MaritalStatus) || prev.maritalStatus,
+          caste: draft.personalReligious?.caste || prev.caste,
+          subcaste: draft.personalReligious?.subcaste || prev.subcaste,
+        }));
+      }
+    });
+  }, [mobile, router, searchParams]);
 
   // Field change handlers
   const handleHeightChange = useCallback((height: string) => {
@@ -210,11 +136,12 @@ const RegistrationPersonalReligiousScreenComponent: React.FC = () => {
     setFormData((prev) => ({ ...prev, gothra }));
   }, []);
 
-  // Dynamic Subcaste list based on selected caste
+  // Dynamic Subcaste list based on selected caste from backend Redux store
   const subcasteOptions = useMemo(() => {
-    if (!formData.caste) return DEFAULT_SUBCASTES;
-    return SUBCASTE_MAP[formData.caste] || DEFAULT_SUBCASTES;
-  }, [formData.caste]);
+    if (!formData.caste) return activeDefaultSubcastes;
+    const map = masterDropdowns?.subcasteMap || {};
+    return map[formData.caste] || activeDefaultSubcastes;
+  }, [formData.caste, masterDropdowns, activeDefaultSubcastes]);
 
   // Form Validation
   const validateForm = useCallback((): boolean => {
@@ -234,32 +161,56 @@ const RegistrationPersonalReligiousScreenComponent: React.FC = () => {
 
   // Handle Form Submit
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
       if (!validateForm()) return;
 
       setIsSubmitting(true);
 
-      // Save draft state
-      if (typeof window !== "undefined") {
-        try {
-          sessionStorage.setItem(
-            "sindhi_reg_step2_draft",
-            JSON.stringify({ ...formData, mobile, name, profileFor })
-          );
-        } catch {
-          // Ignore storage issues
-        }
-      }
+      const heightMatch = formData.height?.match(/\((\d+)\s*cm\)/);
+      const heightInCm = heightMatch ? parseInt(heightMatch[1], 10) : parseInt(formData.height, 10) || 165;
 
-      // Proceed to Next Step 3/4 (Location and Professional Details)
-      setTimeout(() => {
+      try {
+        const res = await apiFetch({
+          url: ApiURL.registerStep,
+          method: "POST",
+          data: {
+            step: 4,
+            height: heightInCm,
+            maritalStatus: formData.maritalStatus,
+            caste: formData.caste,
+            subcaste: formData.subcaste,
+            gotra: formData.gothra,
+            manglik: formData.dosh === "Yes" ? "MANGLIK" : formData.dosh === "No" ? "NON_MANGLIK" : "DONT_KNOW",
+          },
+        });
+
         setIsSubmitting(false);
+
+        if (res.error) {
+          showToast({ type: "error", message: res.message || "Failed to save personal details." });
+          return;
+        }
+
+        saveRegistrationDraft({
+          currentStep: "location-professional-info",
+          personalReligious: {
+            height: formData.height,
+            maritalStatus: formData.maritalStatus,
+            caste: formData.caste,
+            subcaste: formData.subcaste,
+          },
+        });
+
+        const nextRoute = res.data?.nextRoute || "/registration/location-professional-info";
         const params = new URLSearchParams(window.location.search);
-        router.push(`/registration/location-professional-info?${params.toString()}`);
-      }, 350);
+        router.push(`${nextRoute}?${params.toString()}`);
+      } catch (err: any) {
+        setIsSubmitting(false);
+        showToast({ type: "error", message: err?.message || "Network error. Please try again." });
+      }
     },
-    [validateForm, formData, mobile, name, profileFor, router]
+    [validateForm, formData, router]
   );
 
   const handleBack = useCallback(() => {
@@ -293,7 +244,7 @@ const RegistrationPersonalReligiousScreenComponent: React.FC = () => {
                   placeholder="Select your height"
                   value={formData.height}
                   onChange={handleHeightChange}
-                  options={HEIGHT_OPTIONS}
+                  options={activeHeights}
                   error={errors.height}
                 />
 
@@ -333,7 +284,7 @@ const RegistrationPersonalReligiousScreenComponent: React.FC = () => {
                   placeholder="Select your caste"
                   value={formData.caste}
                   onChange={handleCasteChange}
-                  options={SINDHI_CASTES}
+                  options={activeCastes}
                   searchable
                   searchPlaceholder="Search caste"
                   error={errors.caste}
@@ -382,7 +333,7 @@ const RegistrationPersonalReligiousScreenComponent: React.FC = () => {
                       placeholder="Select your gothra(m)"
                       value={formData.gothra}
                       onChange={handleGothraChange}
-                      options={GOTHRA_OPTIONS}
+                      options={activeGothras}
                       searchable
                       searchPlaceholder="Search gothra"
                     />

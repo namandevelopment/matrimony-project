@@ -170,7 +170,15 @@ export const getPlans = asyncHandler(async (req, res) => {
     };
   });
 
-  const finalPlans = formattedPlans.length > 0 ? formattedPlans : MEMBERSHIP_PLANS;
+  const hasPageParam = Boolean(req.query?.page || req.query?.pageNo || req.query?.limit || req.query?.pageSize);
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query?.pageSize || req.query?.limit, 10) || (hasPageParam ? 10 : 100)));
+
+  const finalPlans = formattedPlans;
+  const total = finalPlans.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const startIdx = (page - 1) * limit;
+  const paginatedPlans = finalPlans.slice(startIdx, startIdx + limit);
 
   return apiHTTPResponse(
     req,
@@ -180,8 +188,21 @@ export const getPlans = asyncHandler(async (req, res) => {
     {
       currency: "INR",
       currencySymbol: "₹",
-      totalPlans: finalPlans.length,
-      plans: finalPlans,
+      totalPlans: total,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+      plans: paginatedPlans,
+      list: paginatedPlans,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE

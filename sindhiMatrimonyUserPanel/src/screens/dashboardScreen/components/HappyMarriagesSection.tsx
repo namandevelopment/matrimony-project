@@ -27,6 +27,7 @@ import type { MarriageSuccessStory } from "../types";
 import { apiFetch, ApiURL } from "@/redux/apiService";
 import { useSuccessStoriesQuery } from "@/tanstackQuery";
 import { useQueryClient } from "@tanstack/react-query";
+import { isDeepEqual } from "@/utils";
 
 export interface HappyMarriagesSectionProps {
   stories?: MarriageSuccessStory[];
@@ -781,6 +782,9 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
   );
 };
 
-export const HappyMarriagesSection = memo(HappyMarriagesSectionComponent);
+export const HappyMarriagesSection = memo(
+  HappyMarriagesSectionComponent,
+  (prev, next) => isDeepEqual(prev, next)
+);
 HappyMarriagesSection.displayName = "HappyMarriagesSection";
 export default HappyMarriagesSection;

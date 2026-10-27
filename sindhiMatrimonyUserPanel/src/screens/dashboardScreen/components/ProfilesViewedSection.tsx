@@ -2,6 +2,8 @@
 
 import React, { memo } from "react";
 import Link from "next/link";
+import { useProfilesYouViewedQuery } from "@/tanstackQuery";
+import { isDeepEqual } from "@/utils";
 import type { ViewedProfile } from "../types";
 
 export interface ProfilesViewedSectionProps {
@@ -47,10 +49,11 @@ const ViewedProfileCard = memo<{ profile: ViewedProfile }>(({ profile }) => {
 ViewedProfileCard.displayName = "ViewedProfileCard";
 
 const ProfilesViewedSectionComponent: React.FC<ProfilesViewedSectionProps> = ({
-  profiles = [],
+  profiles: propProfiles,
   className = "",
 }: any) => {
-  console.log("profilesprofilesprofilesprofilesuiuiuiu,", profiles);
+  const { profiles: queryProfiles } = useProfilesYouViewedQuery();
+  const profiles = (propProfiles && propProfiles.length > 0) ? propProfiles : (queryProfiles || []);
   return (
     <section
       aria-label="Profiles You Viewed Section"
@@ -76,6 +79,9 @@ const ProfilesViewedSectionComponent: React.FC<ProfilesViewedSectionProps> = ({
   );
 };
 
-export const ProfilesViewedSection = memo(ProfilesViewedSectionComponent);
+export const ProfilesViewedSection = memo(
+  ProfilesViewedSectionComponent,
+  (prev, next) => isDeepEqual(prev, next)
+);
 ProfilesViewedSection.displayName = "ProfilesViewedSection";
 export default ProfilesViewedSection;

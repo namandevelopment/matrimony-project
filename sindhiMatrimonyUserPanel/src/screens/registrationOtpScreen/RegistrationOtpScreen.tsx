@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, memo } from "react";
+import React, { useState, useCallback, memo, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Pencil, Loader2, Lock, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Header, CustomButton, CustomTextInput } from "@/components";
@@ -12,7 +12,12 @@ import {
   OtpEditPhoneModal,
 } from "./components";
 import { VerificationStatus, ResendChannel } from "./types";
-import apiFetch, { ApiURL, showToast } from "@/redux/apiService";
+import apiFetch, { ApiURL, showToast, setToken } from "@/redux/apiService";
+import {
+  getRegistrationDraft,
+  saveRegistrationDraft,
+  verifyRegistrationSessionWithBackend,
+} from "@/storage";
 
 const RegistrationOtpScreenComponent: React.FC = () => {
   const searchParams = useSearchParams();
@@ -32,11 +37,12 @@ const RegistrationOtpScreenComponent: React.FC = () => {
   const [overrideMobile, setOverrideMobile] = useState<string | null>(null);
   const [overrideCode, setOverrideCode] = useState<string | null>(null);
 
-  // Derived state without cascading renders
-  const mobile = overrideMobile ?? qMobile ?? "9829012345";
-  const countryCode = overrideCode ?? qCode ?? "+91";
-  const name = qName ?? "Sindhi Member";
-  const profileFor = qFor ?? "Myself";
+  const draft = typeof window !== "undefined" ? getRegistrationDraft() : null;
+  const mobile = overrideMobile ?? qMobile ?? draft?.phone ?? "";
+  const countryCode = overrideCode ?? qCode ?? draft?.countryCode ?? "+91";
+  const name = qName ?? draft?.name ?? "";
+  const profileFor = qFor ?? draft?.profileFor ?? "Myself";
+  const challengeId = searchParams.get("challengeId") || searchParams.get("token") || draft?.token || "";
 
   // OTP inputs state (4 digits matching unified backend OTP contract)
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", ""]);
@@ -55,6 +61,22 @@ const RegistrationOtpScreenComponent: React.FC = () => {
 
   // Edit Phone Modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Auto-resume guard: Check server authoritative verification status
+  useEffect(() => {
+    if (isResetPassword || typeof window === "undefined") return;
+    const draft = getRegistrationDraft();
+    const targetPhone = mobile || draft?.phone || draft?.mobileNumber;
+    if (!targetPhone) return;
+
+    verifyRegistrationSessionWithBackend(targetPhone, draft?.token).then((res) => {
+      if (res.isOtpVerified) {
+        router.replace(
+          `/registration/basic-info?mobile=${targetPhone}&token=${res.token || draft?.token || ""}`
+        );
+      }
+    });
+  }, [mobile, isResetPassword, router]);
 
   const isOtpComplete = otpDigits.every((d) => d.trim().length === 1);
 
@@ -112,31 +134,70 @@ const RegistrationOtpScreenComponent: React.FC = () => {
     }
 
     // Normal Registration flow:
-    if (typeof window !== "undefined") {
-      try {
-        sessionStorage.setItem("sindhi_reg_otp", enteredCode);
-        const existing = sessionStorage.getItem("sindhi_reg_draft");
-        if (existing) {
-          const parsed = JSON.parse(existing);
-          parsed.otp = enteredCode;
-          sessionStorage.setItem("sindhi_reg_draft", JSON.stringify(parsed));
+    const regToken =
+      searchParams.get("token") ||
+      (typeof window !== "undefined" ? sessionStorage.getItem("sindhi_reg_token") : null) ||
+      undefined;
+
+    apiFetch<{ token?: string; nextRoute?: string; [key: string]: any }>({
+      url: ApiURL.verifyOtp,
+      method: "POST",
+      data: {
+        phone: mobile,
+        otp: enteredCode,
+        challengeId: challengeId || undefined,
+        purpose: "REGISTER",
+        countryCode,
+        step: 2,
+      },
+    })
+      .then((res) => {
+        setStatus("idle");
+        if (res.error) {
+          const msg = res.message || "Invalid or expired verification code.";
+          setErrorMessage(msg);
+          setStatus("error");
+          showToast({ type: "error", message: msg });
+          return;
         }
-      } catch {
-        // Safe fallback
-      }
-    }
 
-    showToast({
-      type: "success",
-      message: "Verification code confirmed! Next, fill basic details.",
-    });
+        const regSessionToken = res.data?.regSessionToken;
+        if (typeof window !== "undefined" && regSessionToken) {
+          sessionStorage.setItem("sindhi_reg_session_token", regSessionToken);
+        }
 
-    setTimeout(() => {
-      const params = new URLSearchParams(window.location.search);
-      params.set("otp", enteredCode);
-      router.push(`/registration/basic-info?${params.toString()}`);
-    }, 400);
-  }, [otpDigits, isResetPassword, mobile, countryCode, router]);
+        saveRegistrationDraft({
+          phone: mobile,
+          mobileNumber: mobile,
+          countryCode,
+          isOtpVerified: true,
+          token: regSessionToken,
+          currentStep: "basic-info",
+        });
+
+        showToast({
+          type: "success",
+          message: "Verification code confirmed! Next, fill basic details.",
+        });
+
+        const nextRoute = res.data?.nextRoute || "/registration/basic-info";
+        setTimeout(() => {
+          const params = new URLSearchParams(window.location.search);
+          params.delete("otp");
+          if (regSessionToken) params.set("regSessionToken", regSessionToken);
+          router.replace(`${nextRoute}?${params.toString()}`);
+        }, 400);
+      })
+      .catch(() => {
+        setStatus("error");
+        const errorMsg = "Unable to verify code. Please check your connection and try again.";
+        setErrorMessage(errorMsg);
+        showToast({
+          type: "error",
+          message: errorMsg,
+        });
+      });
+  }, [otpDigits, isResetPassword, mobile, countryCode, router, searchParams]);
 
   // Reset Password Submit Handler
   const handleResetPasswordSubmit = useCallback(
@@ -159,7 +220,7 @@ const RegistrationOtpScreenComponent: React.FC = () => {
         method: "POST",
         data: {
           phone: mobile,
-          otp: savedOtp || otpDigits.join("") || "1234",
+          otp: savedOtp || otpDigits.join(""),
           newPassword,
           countryCode,
         },
@@ -275,20 +336,10 @@ const RegistrationOtpScreenComponent: React.FC = () => {
     router.replace(`/registration/otp?${params.toString()}`);
   }, [router]);
 
-  // Simulate Missed Call verification
+  // Missed Call verification handler - Triggers official SMS resend channel
   const handleSimulateMissedCall = useCallback(() => {
-    setStatus("verifying");
-    setErrorMessage(null);
-    setTimeout(() => {
-      setOtpDigits(["1", "2", "3", "4"]);
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("sindhi_reg_otp", "1234");
-      }
-      const params = new URLSearchParams(window.location.search);
-      params.set("otp", "1234");
-      router.push(`/registration/basic-info?${params.toString()}`);
-    }, 600);
-  }, [router]);
+    handleResend("sms");
+  }, [handleResend]);
 
   return (
     <div className="flex-1 w-full flex flex-col">
@@ -453,22 +504,6 @@ const RegistrationOtpScreenComponent: React.FC = () => {
                 >
                   Submit
                 </CustomButton>
-              </div>
-
-              {/* Demo Hint */}
-              <div className="mt-4 text-[11px] text-stone-400">
-                <span>Demo Hint: Enter any 4 digits (e.g. </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOtpDigits(["1", "2", "3", "4"]);
-                    setErrorMessage(null);
-                  }}
-                  className="font-bold text-[#DB2F3C] hover:underline cursor-pointer"
-                >
-                  1234
-                </button>
-                <span>) or click Submit to test.</span>
               </div>
             </div>
           )}

@@ -1,6 +1,7 @@
 import Joi from "joi";
 import {
   phoneValidation,
+  optionalPhoneValidation,
   requiredString,
   optionalString,
   optionalEmailValidator,
@@ -12,22 +13,28 @@ import {
 
 // Send OTP Request Schema (Strictly for Registration and Password Reset)
 export const sendOtpSchema = Joi.object({
-  phone: phoneValidation(),
+  phone: optionalPhoneValidation(),
+  mobile: optionalPhoneValidation(),
   countryCode: optionalString(2, 6).default("+91"),
   purpose: Joi.string()
     .trim()
     .uppercase()
     .valid("REGISTER", "RESET_PASSWORD", "LOGIN")
     .default("REGISTER"),
-});
+  name: optionalString(2, 100),
+  profileFor: optionalString(2, 50),
+})
+  .or("phone", "mobile")
+  .unknown(true);
 
 // Full Registration Request Schema (Mobile Quick Register, Web Landing, & Wizard Form)
 export const registerUserSchema = Joi.object({
   phone: phoneValidation(),
-  otp: requiredString(4, 6).messages({
+  otp: requiredString(4, 32).messages({
     "string.empty": "Verification code (OTP) is required.",
     "any.required": "Verification code (OTP) is required.",
   }),
+  token: optionalString(8, 128),
   password: requiredString(6, 50).messages({
     "string.empty": "Password is required for registration.",
     "any.required": "Password is required for registration.",
@@ -160,12 +167,13 @@ export const verifyOtpSchema = Joi.object({
     .default("LOGIN"),
   countryCode: optionalString(2, 6).default("+91"),
   fcmToken: optionalString(10, 500),
+  token: optionalString(10, 1000),
   clientPlatform: Joi.string()
     .trim()
     .uppercase()
     .valid("MOBILE", "WEB")
     .default("WEB"),
-});
+}).unknown(true);
 
 // Resend OTP Schema
 export const resendOtpSchema = Joi.object({
@@ -182,6 +190,13 @@ export const resendOtpSchema = Joi.object({
 export const checkPhoneSchema = Joi.object({
   phone: phoneValidation(),
   countryCode: optionalString(2, 6).default("+91"),
+});
+
+// Fast Registration Session Status Schema
+export const registrationStatusSchema = Joi.object({
+  phone: phoneValidation(),
+  countryCode: optionalString(2, 6).default("+91"),
+  token: optionalString(8, 128),
 });
 
 // Create Secondary Profile Schema (For adding sibling, child, self under same account)

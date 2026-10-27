@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 import { MatchCard } from "./MatchCard";
 import { useDashboardNav, defaultNavContext } from "../context/DashboardNavContext";
+import { useDashboardMatchesQuery } from "@/tanstackQuery";
+import { isDeepEqual } from "@/utils";
 import type { MatchProfile } from "../types";
 
 export interface DashboardMatchesSectionProps {
@@ -14,74 +16,17 @@ export interface DashboardMatchesSectionProps {
   className?: string;
 }
 
-const defaultMatches: MatchProfile[] = [
-  {
-    id: "SND4486236",
-    name: "Roshni Advani",
-    age: 24,
-    height: "5'3\"",
-    city: "Mumbai",
-    caste: "Sindhi - Bhaiband",
-    education: "B.Tech / Senior Software Eng.",
-    photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "SND4486237",
-    name: "Aisha Bhavnani",
-    age: 25,
-    height: "5'2\"",
-    city: "Pune",
-    caste: "Sindhi - Amil",
-    education: "MBA / Investment Banker",
-    photoUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "SND4486238",
-    name: "Simran Motwani",
-    age: 26,
-    height: "5'4\"",
-    city: "Bangalore",
-    caste: "Sindhi - Bhaiband",
-    education: "MS / Data Scientist",
-    photoUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "SND4486239",
-    name: "Kajal Mirchandani",
-    age: 24,
-    height: "5'1\"",
-    city: "Ahmedabad",
-    caste: "Sindhi - Lohana",
-    education: "CA / Financial Consultant",
-    photoUrl: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "SND4486240",
-    name: "Pooja Hingorani",
-    age: 25,
-    height: "5'3\"",
-    city: "Dubai, UAE",
-    caste: "Sindhi - Sahiti",
-    education: "B.Arch / Interior Architect",
-    photoUrl: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=500&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "SND4486241",
-    name: "Muskan Chawla",
-    age: 23,
-    height: "5'2\"",
-    city: "Jaipur",
-    caste: "Sindhi - Sakhrani",
-    education: "M.Com / Corporate HR",
-    photoUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80",
-  },
-];
-
 const DashboardMatchesSectionComponent: React.FC<DashboardMatchesSectionProps> = ({
-  matches = defaultMatches,
-  totalMatchesCount = 23,
+  matches: propMatches,
+  totalMatchesCount: propTotal,
   className = "",
 }) => {
+  const { data: matchesRes } = useDashboardMatchesQuery();
+  const matchesData = (matchesRes as any)?.data || matchesRes;
+  const matches = (propMatches && propMatches?.length > 0)
+    ? propMatches
+    : (matchesData?.items || matchesData?.list || (Array.isArray(matchesData) ? matchesData : []));
+  const totalMatchesCount = propTotal ?? matchesData?.totalMatchesCount ?? matchesData?.total ?? matches.length;
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const navContext = useDashboardNav();
@@ -151,9 +96,18 @@ const DashboardMatchesSectionComponent: React.FC<DashboardMatchesSectionProps> =
           className="flex items-stretch gap-3.5 sm:gap-4 overflow-x-auto pb-3 pt-1 px-0.5 scroll-smooth no-scrollbar"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
-          {matches.map((profile) => (
-            <MatchCard key={profile.id} profile={profile} />
-          ))}
+          {Array.isArray(matches) && matches?.length > 0 ? (
+            matches?.map((profile, index) => (
+              <MatchCard
+                key={profile?.id || (profile as any)?._id || (profile as any)?.matrimonyId || index}
+                profile={profile}
+              />
+            ))
+          ) : (
+            <div className="w-full py-6 text-center text-xs text-stone-400">
+              No matching profiles found
+            </div>
+          )}
         </div>
 
         {/* Right Scroll Button */}
@@ -181,6 +135,9 @@ const DashboardMatchesSectionComponent: React.FC<DashboardMatchesSectionProps> =
   );
 };
 
-export const DashboardMatchesSection = memo(DashboardMatchesSectionComponent);
+export const DashboardMatchesSection = memo(
+  DashboardMatchesSectionComponent,
+  (prev, next) => isDeepEqual(prev, next)
+);
 DashboardMatchesSection.displayName = "DashboardMatchesSection";
 export default DashboardMatchesSection;

@@ -15,12 +15,15 @@ import {
   Sparkles,
   ShieldCheck,
   X,
+  MessageSquare,
+  Headphones,
 } from 'lucide-react';
 import { toast } from '../../../utils/CustomToast';
 import { useInputs } from '../../../customHooks/useInputs';
 import { emailPattern, isSafeInput } from '../../../utils/ValidationsFuctions';
 import { CustomTextInput } from '../../../components/CustomTextInput';
 import { CustomDropDown } from '../../../components/CustomDropDown';
+import { apiFetch, ApiURL } from '../../../redux/apiService';
 import {
   casteReligionService,
   type ReligionMaster,
@@ -33,6 +36,8 @@ export interface AdminConfigValues {
   supportPhone: string;
   supportEmail: string;
   headquartersCity: string;
+  whatsappNumber: string;
+  enquiryNumber: string;
   enableOtpLogin: boolean;
   autoApproveProfiles: boolean;
   maintenanceMode: boolean;
@@ -134,6 +139,8 @@ export const AdminConfigSection: React.FC = () => {
       supportPhone: '+91 98765 43210',
       supportEmail: 'support@sindhimarriage.in',
       headquartersCity: 'Mumbai / Ahmedabad',
+      whatsappNumber: '+91 98765 43210',
+      enquiryNumber: '+91 8144-77-88-66',
       enableOtpLogin: true,
       autoApproveProfiles: false,
       maintenanceMode: false,
@@ -166,6 +173,20 @@ export const AdminConfigSection: React.FC = () => {
           errs.headquartersCity = 'Headquarters city is required.';
         }
 
+        const waDigits = (v.whatsappNumber || '').replace(/\D/g, '');
+        if (!v.whatsappNumber?.trim()) {
+          errs.whatsappNumber = 'WhatsApp number is required.';
+        } else if (waDigits.length < 10) {
+          errs.whatsappNumber = 'WhatsApp number must have at least 10 digits.';
+        }
+
+        const enqDigits = (v.enquiryNumber || '').replace(/\D/g, '');
+        if (!v.enquiryNumber?.trim()) {
+          errs.enquiryNumber = 'Enquiry phone number is required.';
+        } else if (enqDigits.length < 10) {
+          errs.enquiryNumber = 'Enquiry phone number must have at least 10 digits.';
+        }
+
         return errs;
       },
       validateOnChange: true,
@@ -173,25 +194,64 @@ export const AdminConfigSection: React.FC = () => {
     }
   );
 
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    apiFetch
+      .get<any>(ApiURL.systemConfig)
+      .then((res: any) => {
+        if (!isMounted || !res?.data) return;
+        const cfg = res.data;
+        if (cfg.siteName) setFieldValue('siteName', cfg.siteName);
+        if (cfg.supportPhone) setFieldValue('supportPhone', cfg.supportPhone);
+        if (cfg.supportEmail) setFieldValue('supportEmail', cfg.supportEmail);
+        if (cfg.headquartersCity) setFieldValue('headquartersCity', cfg.headquartersCity);
+        if (cfg.whatsappNumber) setFieldValue('whatsappNumber', cfg.whatsappNumber);
+        if (cfg.enquiryNumber) setFieldValue('enquiryNumber', cfg.enquiryNumber);
+        if (cfg.enableOtpLogin !== undefined) setFieldValue('enableOtpLogin', Boolean(cfg.enableOtpLogin));
+        if (cfg.autoApproveProfiles !== undefined) setFieldValue('autoApproveProfiles', Boolean(cfg.autoApproveProfiles));
+        if (cfg.maintenanceMode !== undefined) setFieldValue('maintenanceMode', Boolean(cfg.maintenanceMode));
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const getFieldError = (field: keyof AdminConfigValues) => {
     return touched[field] || submitted ? errors[field] : undefined;
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
 
     if (!validateForm()) {
-      const firstErr = errors.siteName || errors.supportPhone || errors.supportEmail || errors.headquartersCity;
+      const firstErr =
+        errors.siteName ||
+        errors.supportPhone ||
+        errors.supportEmail ||
+        errors.headquartersCity ||
+        errors.whatsappNumber ||
+        errors.enquiryNumber;
       if (firstErr) {
         toast.warning(firstErr);
       }
       return;
     }
 
-    setSaved(true);
-    toast.success('Admin portal configuration updated successfully!');
-    setTimeout(() => setSaved(false), 2000);
+    setIsSaving(true);
+    try {
+      await apiFetch.put(ApiURL.systemConfig, values);
+      setSaved(true);
+      toast.success('Admin portal configuration updated successfully!');
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update system configuration');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Filtered Religions
@@ -474,6 +534,34 @@ export const AdminConfigSection: React.FC = () => {
                 error={getFieldError('headquartersCity')}
                 size="sm"
               />
+
+              <CustomTextInput
+                label={
+                  <span className="flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-emerald-500" />
+                    WhatsApp Number
+                  </span>
+                }
+                value={values.whatsappNumber}
+                onChange={(e) => setFieldValue('whatsappNumber', e.target.value)}
+                error={getFieldError('whatsappNumber')}
+                placeholder="+91 98765 43210"
+                size="sm"
+              />
+
+              <CustomTextInput
+                label={
+                  <span className="flex items-center gap-1.5">
+                    <Headphones className="w-3.5 h-3.5 text-amber-500" />
+                    Enquiry Number
+                  </span>
+                }
+                value={values.enquiryNumber}
+                onChange={(e) => setFieldValue('enquiryNumber', e.target.value)}
+                error={getFieldError('enquiryNumber')}
+                placeholder="+91 8144-77-88-66"
+                size="sm"
+              />
             </div>
 
             <div className="pt-4 border-t border-slate-100 space-y-3">
@@ -523,10 +611,11 @@ export const AdminConfigSection: React.FC = () => {
             <div className="pt-4 border-t border-slate-100 flex items-center justify-end">
               <button
                 type="submit"
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#C81E28] hover:bg-[#a61720] text-white text-xs font-bold transition shadow-sm cursor-pointer"
+                disabled={isSaving}
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#C81E28] hover:bg-[#a61720] disabled:opacity-60 text-white text-xs font-bold transition shadow-sm cursor-pointer"
               >
                 {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                <span>{saved ? 'Saved Successfully' : 'Save Changes'}</span>
+                <span>{saved ? 'Saved Successfully' : isSaving ? 'Saving...' : 'Save Changes'}</span>
               </button>
             </div>
           </form>

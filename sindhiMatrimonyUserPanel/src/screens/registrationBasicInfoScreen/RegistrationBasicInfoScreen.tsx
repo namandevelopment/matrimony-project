@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, memo, useMemo } from "react";
+import React, { useState, useCallback, memo, useMemo, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Header, CustomTextInput, CustomButton } from "@/components";
@@ -10,6 +10,15 @@ import {
   BasicDetailsHeader,
 } from "./components";
 import { BasicInfoFormData, FormErrors, MonthAbbr } from "./types";
+import {
+  getRegistrationDraft,
+  saveRegistrationDraft,
+  verifyRegistrationSessionWithBackend,
+  getToken,
+  setToken,
+  setRefreshToken,
+} from "@/storage";
+import apiFetch, { ApiURL, showToast } from "@/redux/apiService";
 
 const MONTHS: MonthAbbr[] = [
   "Jan",
@@ -52,6 +61,47 @@ const RegistrationBasicInfoScreenComponent: React.FC = () => {
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Recovery & draft restoration
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const draft = getRegistrationDraft();
+    const targetMobile = mobile || draft?.phone || draft?.mobileNumber;
+    const targetToken = searchParams.get("token") || draft?.token;
+
+    if (!targetMobile) {
+      router.replace("/");
+      return;
+    }
+
+    verifyRegistrationSessionWithBackend(targetMobile, targetToken).then((res) => {
+      if (res.isRegistered) {
+        router.replace("/dashboard");
+        return;
+      }
+      if (!res.isOtpVerified && (res.status === "OTP_PENDING" || res.status === "EXPIRED")) {
+        showToast({
+          type: "error",
+          message: "Registration session has expired. Please verify your mobile number.",
+        });
+        router.replace(`/registration/otp?mobile=${targetMobile}`);
+        return;
+      }
+
+      if (draft?.basicInfo) {
+        setFormData((prev) => ({
+          ...prev,
+          day: draft.basicInfo?.day || prev.day,
+          month: draft.basicInfo?.month || prev.month,
+          year: draft.basicInfo?.year || prev.year,
+          gender: draft.basicInfo?.gender || prev.gender,
+          motherTongue: draft.basicInfo?.motherTongue || prev.motherTongue,
+          email: draft.basicInfo?.email || prev.email,
+        }));
+      }
+    });
+  }, [mobile, router, searchParams]);
 
   // Field change handlers
   const handleGenderChange = useCallback((gender: string) => {
@@ -145,29 +195,84 @@ const RegistrationBasicInfoScreenComponent: React.FC = () => {
 
       setIsSubmitting(true);
 
-      // Save draft state
-      if (typeof window !== "undefined") {
-        try {
-          sessionStorage.setItem(
-            "sindhi_reg_step1_draft",
-            JSON.stringify({ ...formData, calculatedAge, mobile, name, profileFor })
-          );
-        } catch {
-          // Ignore storage issues
-        }
-      }
+      const regSessionToken =
+        searchParams.get("regSessionToken") ||
+        (typeof window !== "undefined" ? sessionStorage.getItem("sindhi_reg_session_token") : null) ||
+        getRegistrationDraft()?.token;
 
-      // Save and navigate directly to Step 2/4 without modal
-      setTimeout(() => {
-        setIsSubmitting(false);
-        const params = new URLSearchParams(window.location.search);
-        if (formData.gender) {
-          params.set("gender", formData.gender);
-        }
-        router.push(`/registration/personal-religious-info?${params.toString()}`);
-      }, 400);
+      // Persist step 3 to backend API & receive permanent Bearer auth token
+      apiFetch<{ token?: string; refreshToken?: string; nextRoute?: string; [key: string]: any }>({
+        url: ApiURL.registerStep,
+        method: "POST",
+        data: {
+          phone: mobile,
+          mobile,
+          step: 3,
+          regSessionToken: regSessionToken || undefined,
+          gender: formData.gender,
+          day: formData.day,
+          month: formData.month,
+          year: formData.year,
+          dob: `${formData.year}-${formData.month}-${formData.day}`,
+          motherTongue: formData.motherTongue,
+          email: formData.email,
+          password: formData.password,
+          calculatedAge,
+          name,
+          profileFor,
+        },
+      })
+        .then((res) => {
+          setIsSubmitting(false);
+          if (res.error) {
+            const msg = res.message || "Failed to save basic details. Please check your input.";
+            showToast({ type: "error", message: msg });
+            return;
+          }
+
+          // ⭐ Bearer token is saved here upon password creation
+          if (res.data?.token) {
+            setToken(res.data.token);
+            if (res.data?.refreshToken) {
+              setRefreshToken(res.data.refreshToken);
+            }
+            if (typeof window !== "undefined") {
+              sessionStorage.removeItem("sindhi_reg_session_token");
+            }
+          }
+
+          // Save draft state
+          saveRegistrationDraft({
+            currentStep: "personal-religious-info",
+            token: res.data?.token,
+            basicInfo: {
+              gender: formData.gender,
+              day: formData.day,
+              month: formData.month,
+              year: formData.year,
+              calculatedAge,
+              motherTongue: formData.motherTongue,
+              email: formData.email,
+            },
+          });
+
+          const nextRoute = res.data?.nextRoute || "/registration/personal-religious-info";
+          const params = new URLSearchParams(window.location.search);
+          params.delete("regSessionToken");
+          if (formData.gender) {
+            params.set("gender", formData.gender);
+          }
+          router.push(`${nextRoute}?${params.toString()}`);
+        })
+        .catch(() => {
+          setIsSubmitting(false);
+          showToast({
+            type: "error",
+            message: "Unable to save details. Please check your internet connection.",
+          });
+        });
     },
-    [validateForm, formData, calculatedAge, mobile, name, profileFor, router]
+    [validateForm, formData, calculatedAge, mobile, name, profileFor, router, searchParams]
   );
 
   const handleBack = useCallback(() => {

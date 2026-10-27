@@ -129,7 +129,7 @@ const OnboardingScreenComponent: React.FC = () => {
         showHelpPhone
         helpPhoneText="Need help? Call"
         helpPhoneNumber="8144-77-88-66"
-        subtitle="From Matrimony.com Group"
+        subtitle="Powered by NeelimaMarriage.com"
         position="sticky"
       />
 

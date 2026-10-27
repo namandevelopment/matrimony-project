@@ -13,7 +13,14 @@ import {
 } from "./components";
 import { AdditionalInfoFormData, FamilyStatus, FormErrors } from "./types";
 import apiFetch, { ApiURL, setToken, setRefreshToken, showToast } from "@/redux/apiService";
-import { Storage } from "@/storage/Storage";
+import {
+  Storage,
+  getRegistrationDraft,
+  saveRegistrationDraft,
+  clearRegistrationDraft,
+  verifyRegistrationSessionWithBackend,
+  getToken,
+} from "@/storage";
 
 const INITIAL_FORM_DATA: AdditionalInfoFormData = {
   familyStatus: "Upper middle class",
@@ -66,6 +73,42 @@ const RegistrationAdditionalInfoScreenComponent: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
 
+  // Recovery & draft restoration
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const draft = getRegistrationDraft();
+    const targetMobile = searchParams.get("mobile") || draft?.phone || draft?.mobileNumber;
+    const targetToken = searchParams.get("token") || draft?.token;
+
+    if (!targetMobile) {
+      router.replace("/");
+      return;
+    }
+
+    verifyRegistrationSessionWithBackend(targetMobile, targetToken).then((res) => {
+      if (res.isRegistered) {
+        router.replace("/dashboard");
+        return;
+      }
+      if (!res.isOtpVerified && (res.status === "OTP_PENDING" || res.status === "EXPIRED")) {
+        showToast({
+          type: "error",
+          message: "Registration session has expired. Please verify your mobile number.",
+        });
+        router.replace(`/registration/otp?mobile=${targetMobile}`);
+        return;
+      }
+
+      if (draft?.additionalInfo?.aboutMyself) {
+        setFormData((prev) => ({
+          ...prev,
+          aboutMyself: draft.additionalInfo?.aboutMyself || prev.aboutMyself,
+        }));
+      }
+    });
+  }, [router, searchParams]);
+
   // Field change handlers
   const handleFamilyStatusChange = useCallback((familyStatus: FamilyStatus) => {
     setFormData((prev) => ({ ...prev, familyStatus }));
@@ -108,25 +151,22 @@ const RegistrationAdditionalInfoScreenComponent: React.FC = () => {
       setErrors((prev) => ({ ...prev, general: undefined }));
 
       // Retrieve all drafted registration data across the wizard
-      let draftQuick: any = {};
-      let step1: any = {};
-      let step2: any = {};
-      let step3: any = {};
-      let savedOtp = "1234";
+      const draft = getRegistrationDraft() || ({} as any);
+      let draftQuick: any = draft;
+      let step1: any = draft.basicInfo || {};
+      let step2: any = draft.personalReligious || {};
+      let step3: any = draft.locationProfessional || {};
 
       if (typeof window !== "undefined") {
         try {
-          draftQuick = JSON.parse(sessionStorage.getItem("sindhi_reg_draft") || "{}");
-          step1 = JSON.parse(sessionStorage.getItem("sindhi_reg_step1_draft") || "{}");
-          step2 = JSON.parse(sessionStorage.getItem("sindhi_reg_step2_draft") || "{}");
-          step3 = JSON.parse(sessionStorage.getItem("sindhi_reg_step3_draft") || "{}");
-          savedOtp =
-            sessionStorage.getItem("sindhi_reg_otp") ||
-            searchParams.get("otp") ||
-            draftQuick.otp ||
-            "1234";
+          const s1 = JSON.parse(sessionStorage.getItem("sindhi_reg_step1_draft") || "{}");
+          step1 = { ...step1, ...s1 };
+          const s2 = JSON.parse(sessionStorage.getItem("sindhi_reg_step2_draft") || "{}");
+          step2 = { ...step2, ...s2 };
+          const s3 = JSON.parse(sessionStorage.getItem("sindhi_reg_step3_draft") || "{}");
+          step3 = { ...step3, ...s3 };
         } catch {
-          // Fallback to empty objects
+          // Fallback
         }
       }
 
@@ -135,14 +175,14 @@ const RegistrationAdditionalInfoScreenComponent: React.FC = () => {
         draftQuick.mobileNumber ||
         mobile ||
         searchParams.get("mobile") ||
-        "9829012345";
+        "";
       const cleanPhone = String(rawPhone).replace(/\D/g, "");
 
       const candidateName = (
         draftQuick.name ||
         name ||
         searchParams.get("name") ||
-        "Sindhi Member"
+        "Candidate"
       ).trim();
       const rawProfileFor = (
         draftQuick.profileFor ||
@@ -228,41 +268,34 @@ const RegistrationAdditionalInfoScreenComponent: React.FC = () => {
         }
       }
 
-      const registerPayload = {
-        phone: cleanPhone,
-        otp: savedOtp,
-        password: step1.password || "Password123@",
-        name: candidateName,
-        profileFor: resolvedProfileFor,
-        gender: resolvedGender,
-        countryCode: draftQuick.countryCode || "+91",
-        clientPlatform: "WEB",
-        email: step1.email || undefined,
-        subcaste: step2.subcaste || "Bhaiband",
-        dob: formattedDob,
-        maritalStatus: mappedMaritalStatus,
-        height: heightNum,
-        education: step3.education || education || "Graduate",
-        profession: step3.occupation || occupation || "Professional",
-        occupation: step3.occupation || occupation || "Professional",
-        annualIncome: annualIncomeNum,
-        city: step3.residingCity || city || "Jaipur",
-        state: step3.residingState || "Rajasthan",
-        nativePlace: step3.residingCity || city || "Jaipur",
-        aboutMe: formData.aboutMyself.trim(),
-        aboutMyself: formData.aboutMyself.trim(),
-      };
+      const regToken = draft.token || searchParams.get("token") || undefined;
 
       try {
+        // 1. Save step 6 bio if provided
+        if (formData.aboutMyself.trim()) {
+          await apiFetch({
+            url: ApiURL.registerStep,
+            method: "POST",
+            data: {
+              step: 6,
+              aboutMe: formData.aboutMyself.trim(),
+              token: regToken,
+            },
+          });
+        }
+
+        // 2. Complete registration atomically
         const response = await apiFetch<{
           token: string;
           refreshToken: string;
           user: any;
           profile: any;
         }>({
-          url: ApiURL.register,
+          url: ApiURL.completeRegistration,
           method: "POST",
-          data: registerPayload,
+          data: {
+            token: regToken,
+          },
         });
 
         setIsSubmitting(false);
@@ -304,13 +337,8 @@ const RegistrationAdditionalInfoScreenComponent: React.FC = () => {
             localStorage.setItem("sindhi_matrimony_user", JSON.stringify(userProfile));
             localStorage.setItem("sindhi_matrimony_is_authenticated", "true");
 
-            // Clean up registration drafts
-            sessionStorage.removeItem("sindhi_reg_draft");
-            sessionStorage.removeItem("sindhi_reg_otp");
-            sessionStorage.removeItem("sindhi_reg_step1_draft");
-            sessionStorage.removeItem("sindhi_reg_step2_draft");
-            sessionStorage.removeItem("sindhi_reg_step3_draft");
-            sessionStorage.setItem("sindhi_reg_step4_completed", "true");
+            // Clean up registration drafts completely
+            clearRegistrationDraft();
           } catch {
             // Ignore storage quota
           }

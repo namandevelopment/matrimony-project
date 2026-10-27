@@ -450,8 +450,8 @@ export const getAdminCampaigns = asyncHandler(async (req, res) => {
   });
 
   // Pagination slice
-  const parsedPage = Math.max(1, parseInt(page, 10) || 1);
-  const parsedLimit = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
+  const parsedPage = Math.max(1, parseInt(req.query?.pageNo || page, 10) || 1);
+  const parsedLimit = Math.max(1, Math.min(100, parseInt(req.query?.pageSize || limit, 10) || 10));
   const total = filtered.length;
   const totalPages = Math.ceil(total / parsedLimit) || 1;
   const startIndex = (parsedPage - 1) * parsedLimit;
@@ -476,11 +476,18 @@ export const getAdminCampaigns = asyncHandler(async (req, res) => {
     "Marketing campaigns retrieved successfully.",
     {
       campaigns: paginatedCampaigns,
+      list: paginatedCampaigns,
+      total,
+      totalPages,
+      page: parsedPage,
+      limit: parsedLimit,
+      hasMore: parsedPage < totalPages,
       pagination: {
         total,
         page: parsedPage,
         limit: parsedLimit,
         totalPages,
+        hasMore: parsedPage < totalPages,
         hasNextPage: parsedPage < totalPages,
         hasPrevPage: parsedPage > 1,
       },
@@ -1066,13 +1073,34 @@ export const getAdminCampaignPopups = asyncHandler(async (req, res) => {
   const totalClicks = adminPopupsStore.reduce((acc, p) => acc + (p.clicks || 0), 0);
   const totalConversions = adminPopupsStore.reduce((acc, p) => acc + (p.conversions || 0), 0);
 
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query?.pageSize || req.query?.limit, 10) || 10));
+
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const startIndex = (page - 1) * limit;
+  const paginatedPopups = filtered.slice(startIndex, startIndex + limit);
+
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Promotional popups retrieved successfully.",
     {
-      popups: filtered,
+      popups: paginatedPopups,
+      list: paginatedPopups,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
       summary: {
         totalPopups,
         activePopups,

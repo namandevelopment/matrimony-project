@@ -35,37 +35,43 @@ const LogoutModalComponent: React.FC<LogoutModalProps> = ({
   isLoading: externalLoading = false,
 }) => {
   const router = useRouter();
+
   const [internalLoading, setInternalLoading] = useState(false);
   const isLoading = externalLoading || internalLoading;
 
   // Retrieve current authenticated user profile dynamically from live API, Redux or Storage
-  const { data: profileRes } = useProfileQuery(isOpen);
+  const { data: profileRes } = useProfileQuery(Boolean(isOpen));
   const liveProfile =
     (profileRes as any)?.profile ||
     (profileRes as any)?.data?.profile ||
+    (profileRes as any)?.candidate ||
     (profileRes as any)?.data;
   const liveUser = (profileRes as any)?.user || (profileRes as any)?.data?.user;
 
   const storedUser = getStoredUser();
   const displayName =
-    userName ||
     liveProfile?.name ||
+    liveProfile?.fullName ||
+    liveUser?.fullName ||
     liveUser?.name ||
+    userName ||
     storedUser?.fullName ||
     storedUser?.name ||
     'Sindhi Matrimony Member';
   const displayId =
-    userMatrimonyId ||
     liveProfile?.matrimonyId ||
+    liveProfile?.id ||
     liveUser?.matrimonyId ||
+    userMatrimonyId ||
     storedUser?.matrimonyId ||
     storedUser?.memberId ||
     (liveProfile?.subcaste ? `${liveProfile.subcaste} • Verified Member` : 'Verified Member');
   const avatarSrc =
-    userAvatar ||
     liveProfile?.avatar ||
-    liveProfile?.photos?.[0] ||
+    liveProfile?.photos?.[0]?.url ||
+    (typeof liveProfile?.photos?.[0] === 'string' ? liveProfile?.photos?.[0] : '') ||
     liveProfile?.photoUrl ||
+    userAvatar ||
     storedUser?.avatarUrl ||
     storedUser?.photoUrl ||
     '';
@@ -109,7 +115,7 @@ const LogoutModalComponent: React.FC<LogoutModalProps> = ({
             method: 'POST',
             showErrorToast: false,
           });
-        } catch (_) {}
+        } catch (_) { }
 
         // 2. Thoroughly purge all LocalStorage, SessionStorage, Tokens and Cookies
         clearAllUserStorage();
@@ -117,12 +123,12 @@ const LogoutModalComponent: React.FC<LogoutModalProps> = ({
         // 3. Clear TanStack Query Cache completely
         try {
           queryClient.clear();
-        } catch (_) {}
+        } catch (_) { }
 
         // 4. Reset Redux Store state completely
         try {
-          store.dispatch(resetEntireStore());
-        } catch (_) {}
+          await store.dispatch(resetEntireStore());
+        } catch (_) { }
 
         // 5. Toast Feedback
         toast.info('You have been logged out securely.');

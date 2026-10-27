@@ -43,18 +43,10 @@ export const mapBackendToViewProfile = (backendData: any): ViewUserProfile | nul
   if (profile.avatar && !photoUrls.includes(profile.avatar)) {
     photoUrls.unshift(profile.avatar);
   }
-  if (photoUrls.length === 0) {
-    photoUrls.push(
-      gender === "female"
-        ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600"
-        : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=600"
-    );
-  }
-
-  const city = profile.location?.city || "Mumbai";
-  const state = profile.location?.state || "Maharashtra";
-  const educationStr = profile.education?.degree || profile.education || "Graduate";
-  const occupationStr = profile.profession?.occupation || profile.occupation || "Professional";
+  const city = profile.location?.city || profile.city || "";
+  const state = profile.location?.state || profile.state || "";
+  const educationStr = profile.education?.degree || profile.education || "";
+  const occupationStr = profile.profession?.occupation || profile.occupation || "";
 
   return {
     id,

@@ -18,6 +18,7 @@ import {
   verifyOtpSchema,
   resendOtpSchema,
   checkPhoneSchema,
+  registrationStatusSchema,
   createSecondaryProfileSchema,
   switchProfileSchema,
   refreshTokenSchema,
@@ -25,12 +26,14 @@ import {
 import {
   sendOtp,
   register,
+  registerStep,
   loginWithPassword,
   forgotPassword,
   resetPassword,
   verifyLoginOtp,
   resendOtp,
   checkPhoneExists,
+  completeRegistration,
   logout,
   createSecondaryProfile,
   getMyProfiles,
@@ -52,6 +55,8 @@ router.post("/login", authRateLimiter, validationMiddleware(loginWithPasswordSch
 router.post("/send-otp", otpRateLimiter, validationMiddleware(sendOtpSchema), sendOtp);
 router.post("/sendOtp", otpRateLimiter, validationMiddleware(sendOtpSchema), sendOtp); // Legacy camelCase support
 router.post("/register", registerRateLimiter, validationMiddleware(registerUserSchema), register);
+router.post("/register-step", registerRateLimiter, registerStep);
+router.post("/registerStep", registerRateLimiter, registerStep);
 
 // Password Reset Flow (Forgot Password & Reset)
 router.post("/forgot-password", otpRateLimiter, validationMiddleware(forgotPasswordSchema), forgotPassword);
@@ -62,6 +67,8 @@ router.post("/verify-otp", authRateLimiter, validationMiddleware(verifyOtpSchema
 router.post("/resend-otp", otpRateLimiter, validationMiddleware(resendOtpSchema), resendOtp);
 router.post("/reSendOtp", otpRateLimiter, validationMiddleware(resendOtpSchema), resendOtp); // Legacy camelCase support
 router.post("/check-phone", validationMiddleware(checkPhoneSchema), checkPhoneExists);
+router.post("/complete-registration", registerRateLimiter, completeRegistration);
+router.post("/completeRegistration", registerRateLimiter, completeRegistration);
 router.post("/refresh-token", validationMiddleware(refreshTokenSchema), refreshTokenHandler);
 router.post("/refreshToken", validationMiddleware(refreshTokenSchema), refreshTokenHandler);
 router.post("/logout", logout);

@@ -11,6 +11,7 @@ import {
   verifyOtpSchema,
   resendOtpSchema,
   checkPhoneSchema,
+  registrationStatusSchema,
   createSecondaryProfileSchema,
   switchProfileSchema,
   updateProfileStatusSchema,
@@ -24,12 +25,14 @@ import {
 import {
   sendOtp,
   register,
+  registerStep,
   loginWithPassword,
   forgotPassword,
   resetPassword,
   verifyLoginOtp,
   resendOtp,
   checkPhoneExists,
+  completeRegistration,
   logout,
   createSecondaryProfile,
   getMyProfiles,
@@ -72,6 +75,8 @@ router.post("/send-otp", otpRateLimiter, validationMiddleware(sendOtpSchema), se
  * @access  Public
  */
 router.post("/register", registerRateLimiter, validationMiddleware(registerUserSchema), register);
+router.post("/register-step", registerRateLimiter, registerStep);
+router.post("/registerStep", registerRateLimiter, registerStep);
 
 /**
  * @route   POST /api/v1/auth/users/forgot-password
@@ -107,6 +112,9 @@ router.post("/resend-otp", otpRateLimiter, validationMiddleware(resendOtpSchema)
  * @access  Public
  */
 router.post("/check-phone", validationMiddleware(checkPhoneSchema), checkPhoneExists);
+
+router.post("/complete-registration", registerRateLimiter, completeRegistration);
+router.post("/completeRegistration", registerRateLimiter, completeRegistration);
 
 /**
  * @route   POST /api/v1/auth/users/logout

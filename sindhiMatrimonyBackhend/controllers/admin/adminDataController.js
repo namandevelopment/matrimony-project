@@ -34,8 +34,8 @@ import {
 
 export const getMembersList = asyncHandler(async (req, res) => {
   const {
-    page = 1,
-    limit = 20,
+    page = req.query.pageNo || 1,
+    limit = req.query.pageSize || 20,
     search = "",
     status = "ALL",
     isVerified,
@@ -396,8 +396,8 @@ export const updateMember = asyncHandler(async (req, res) => {
 
 export const getLeadsList = asyncHandler(async (req, res) => {
   const {
-    page = 1,
-    limit = 20,
+    page = req.query.pageNo || 1,
+    limit = req.query.pageSize || 20,
     search = "",
     view = "ALL",
     status = "ALL",
@@ -745,15 +745,33 @@ export const getTodaysFollowups = asyncHandler(async (req, res) => {
 // ============================================================================
 
 export const getPendingVerifications = asyncHandler(async (req, res) => {
+  const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
   const pending = IN_MEMORY_VERIFICATIONS.filter((v) => v.status === "PENDING");
+  const total = pending.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const paginated = pending.slice((page - 1) * limit, (page - 1) * limit + limit);
+
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Pending verifications retrieved.",
     {
-      verifications: pending,
-      total: pending.length,
+      verifications: paginated,
+      list: paginated,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -815,18 +833,31 @@ export const rejectVerification = asyncHandler(async (req, res) => {
 // ============================================================================
 
 export const getEmployeesList = asyncHandler(async (req, res) => {
+  const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
+  const total = STAFF_EMPLOYEES.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const paginated = STAFF_EMPLOYEES.slice((page - 1) * limit, (page - 1) * limit + limit);
+
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Employees fetched successfully.",
     {
-      employees: STAFF_EMPLOYEES,
+      employees: paginated,
+      list: paginated,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
       pagination: {
-        total: STAFF_EMPLOYEES.length,
-        page: 1,
-        limit: 20,
-        totalPages: 1,
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
       },
     },
     CONSTANTS.OK,
@@ -908,14 +939,32 @@ export const getFinanceSummary = asyncHandler(async (req, res) => {
 });
 
 export const getTransactionsList = asyncHandler(async (req, res) => {
+  const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
+  const total = IN_MEMORY_TRANSACTIONS.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const paginated = IN_MEMORY_TRANSACTIONS.slice((page - 1) * limit, (page - 1) * limit + limit);
+
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Transaction ledger retrieved.",
     {
-      transactions: IN_MEMORY_TRANSACTIONS,
-      total: IN_MEMORY_TRANSACTIONS.length,
+      transactions: paginated,
+      list: paginated,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -979,12 +1028,33 @@ export const getPlansList = asyncHandler(async (req, res) => {
     },
   ];
 
+  const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
+  const total = plans.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const paginated = plans.slice((page - 1) * limit, (page - 1) * limit + limit);
+
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Plans retrieved successfully.",
-    { plans },
+    {
+      plans: paginated,
+      list: paginated,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+    },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );

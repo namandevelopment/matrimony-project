@@ -62,6 +62,17 @@ export const ACCOUNT_STATUS = {
   DELETED: "DELETED",
 };
 
+// Registration & Onboarding Lifecycle Status
+export const REGISTRATION_STATUS = {
+  DRAFT: "DRAFT",
+  OTP_PENDING: "OTP_PENDING",
+  PHONE_VERIFIED: "PHONE_VERIFIED",
+  ONBOARDING_IN_PROGRESS: "ONBOARDING_IN_PROGRESS",
+  COMPLETE: "COMPLETE",
+  SUSPENDED: "SUSPENDED",
+  DELETED: "DELETED",
+};
+
 // Mutual Matchmaking Express Interest Status
 export const INTEREST_STATUS = {
   PENDING: "PENDING",

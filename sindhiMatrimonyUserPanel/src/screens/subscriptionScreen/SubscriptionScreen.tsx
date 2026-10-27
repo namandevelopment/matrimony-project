@@ -18,6 +18,7 @@ import {
   Zap,
 } from "lucide-react";
 import { apiFetch, ApiURL, showToast } from "@/redux/apiService";
+import { Header } from "@/components/Header";
 import { PlanCard } from "./components";
 import { PlanItem, PlanTab, SubscriptionScreenProps } from "./types";
 
@@ -250,26 +251,14 @@ const SubscriptionScreenComponent: React.FC<SubscriptionScreenProps> = ({
 
   return (
     <div className={`min-h-screen bg-[#F8F9FA] text-[#1A1A1A] pb-16 ${className}`}>
-      {/* Top Banner Navigation */}
-      <div className="bg-white border-b border-stone-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-stone-600 hover:text-stone-900 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back</span>
-          </button>
-
-          {/* <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs font-bold text-stone-700">
-              Special Festive Offer • Flat up to 58% Off
-            </span>
-          </div> */}
-        </div>
-      </div>
+      {/* Standard Header with Brand Logo, Back Navigation & Help Phone */}
+      <Header
+        position="sticky"
+        showBack
+        onBackClick={() => router.back()}
+        backHref="/dashboard"
+        showHelpPhone
+      />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12">
         {/* Header Title Section */}

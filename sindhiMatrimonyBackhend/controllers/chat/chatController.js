@@ -5,7 +5,6 @@ import { User, Profile, UserConversation, UserMessage } from "../../models/index
 import { getChatQuotaStatus, verifyAndConsumeChatQuota, FREE_TRIAL_MESSAGE_LIMIT } from "../../services/chatQuotaService.js";
 import { MEMBERSHIP_PLANS } from "../plans/plansController.js";
 import { getIO } from "../../socket/socket.js";
-import { SEED_CONVERSATIONS } from "../../constants/seedCandidateData.js";
 
 const getUserId = (req) =>
   req.user?.id ||
@@ -23,12 +22,9 @@ const getActiveProfileId = (req) =>
   req.auth?.activeProfileId ||
   req.currentProfile?._id;
 
-// In-memory fallback stores for test/isolated environments
-const inMemoryConversations = SEED_CONVERSATIONS.map((c) => ({ ...c }));
+// In-memory fallback stores for test/isolated environments (static dummy data cleared)
+const inMemoryConversations = [];
 const inMemoryMessages = {};
-SEED_CONVERSATIONS.forEach((c) => {
-  inMemoryMessages[c._id] = c.messages ? [...c.messages] : [];
-});
 
 /**
  * 📊 Get User Chat Quota Status & Remaining Free Trial Messages
@@ -121,14 +117,35 @@ export const getConversations = asyncHandler(async (req, res) => {
     conversations = inMemoryConversations;
   }
 
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query?.pageSize || req.query?.limit, 10) || 20));
+
+  const total = conversations.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const startIdx = (page - 1) * limit;
+  const paginatedConversations = conversations.slice(startIdx, startIdx + limit);
+
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Chat conversations retrieved successfully.",
     {
-      totalConversations: conversations.length,
-      conversations,
+      totalConversations: total,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+      conversations: paginatedConversations,
+      list: paginatedConversations,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -292,6 +309,10 @@ export const getMessages = asyncHandler(async (req, res) => {
     ];
   }
 
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const total = messages.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+
   return apiHTTPResponse(
     req,
     res,
@@ -299,9 +320,21 @@ export const getMessages = asyncHandler(async (req, res) => {
     "Messages retrieved successfully.",
     {
       conversationId,
-      totalMessages: messages.length,
+      totalMessages: total,
+      total,
+      totalPages,
+      page,
       limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
       messages,
+      list: messages,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE

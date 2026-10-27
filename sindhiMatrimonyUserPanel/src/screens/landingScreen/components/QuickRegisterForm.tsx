@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ChevronDown, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { QuickRegisterFormData } from "../types";
 import apiFetch, { ApiURL, showToast } from "@/redux/apiService";
+import { saveRegistrationDraft } from "@/storage";
 
 interface QuickRegisterFormProps {
   variant: "desktop" | "mobile";
@@ -87,16 +88,14 @@ const ProfileForDropdown = memo<ProfileForDropdownProps>(({
         </span>
         <div className="flex items-center justify-between mt-0.5 pr-1">
           <span
-            className={`text-sm font-semibold truncate ${
-              value ? "text-[#1A1A1A]" : "text-stone-500"
-            }`}
+            className={`text-sm font-semibold truncate ${value ? "text-[#1A1A1A]" : "text-stone-500"
+              }`}
           >
             {value || "Select Profile"}
           </span>
           <ChevronDown
-            className={`w-4 h-4 text-stone-500 transition-transform duration-300 ease-out shrink-0 ml-1.5 ${
-              isOpen ? "rotate-180 text-[#DB2F3C]" : "rotate-0"
-            }`}
+            className={`w-4 h-4 text-stone-500 transition-transform duration-300 ease-out shrink-0 ml-1.5 ${isOpen ? "rotate-180 text-[#DB2F3C]" : "rotate-0"
+              }`}
           />
         </div>
         {error && (
@@ -105,11 +104,10 @@ const ProfileForDropdown = memo<ProfileForDropdownProps>(({
 
         {/* Smooth Animated Dropdown Menu (3-Column Layout) */}
         <div
-          className={`absolute top-[calc(100%+6px)] left-0 w-[350px] sm:w-[370px] bg-white rounded-xl shadow-2xl border border-stone-200/90 p-4 z-50 transition-all duration-200 ease-out origin-top-left ${
-            isOpen
-              ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
-              : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
-          }`}
+          className={`absolute top-[calc(100%+6px)] left-0 w-[350px] sm:w-[370px] bg-white rounded-xl shadow-2xl border border-stone-200/90 p-4 z-50 transition-all duration-200 ease-out origin-top-left ${isOpen
+            ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
+            : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
+            }`}
           onClick={(e) => e.stopPropagation()}
           role="listbox"
         >
@@ -124,11 +122,10 @@ const ProfileForDropdown = memo<ProfileForDropdownProps>(({
                     onChange(opt.value);
                     setIsOpen(false);
                   }}
-                  className={`text-left px-2.5 py-1.5 text-sm font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
-                    isSelected
-                      ? "text-[#DB2F3C] font-bold bg-rose-50"
-                      : "text-[#1A1A1A] hover:text-[#DB2F3C] hover:bg-stone-100/80"
-                  }`}
+                  className={`text-left px-2.5 py-1.5 text-sm font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${isSelected
+                    ? "text-[#DB2F3C] font-bold bg-rose-50"
+                    : "text-[#1A1A1A] hover:text-[#DB2F3C] hover:bg-stone-100/80"
+                    }`}
                   role="option"
                   aria-selected={isSelected}
                 >
@@ -157,35 +154,31 @@ const ProfileForDropdown = memo<ProfileForDropdownProps>(({
         }}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className={`relative border rounded-lg bg-stone-50/60 px-4 py-3.5 flex items-center justify-between cursor-pointer transition-all select-none ${
-          error
-            ? "border-red-500 ring-1 ring-red-500"
-            : isOpen
+        className={`relative border rounded-lg bg-stone-50/60 px-4 py-3.5 flex items-center justify-between cursor-pointer transition-all select-none ${error
+          ? "border-red-500 ring-1 ring-red-500"
+          : isOpen
             ? "border-[#DB2F3C] ring-1 ring-[#DB2F3C]"
             : "border-stone-300 hover:border-stone-400"
-        }`}
+          }`}
       >
         <span
-          className={`text-sm font-semibold truncate ${
-            value ? "text-[#1A1A1A]" : "text-stone-500"
-          }`}
+          className={`text-sm font-semibold truncate ${value ? "text-[#1A1A1A]" : "text-stone-500"
+            }`}
         >
           {value || "Select Profile"}
         </span>
         <ChevronDown
-          className={`w-5 h-5 text-stone-500 transition-transform duration-300 ease-out shrink-0 ml-1.5 ${
-            isOpen ? "rotate-180 text-[#DB2F3C]" : "rotate-0"
-          }`}
+          className={`w-5 h-5 text-stone-500 transition-transform duration-300 ease-out shrink-0 ml-1.5 ${isOpen ? "rotate-180 text-[#DB2F3C]" : "rotate-0"
+            }`}
         />
       </div>
 
       {/* Smooth Animated Dropdown Menu for Mobile */}
       <div
-        className={`absolute top-[calc(100%+6px)] left-0 right-0 bg-white rounded-xl shadow-2xl border border-stone-200/90 p-4 z-50 transition-all duration-200 ease-out origin-top ${
-          isOpen
-            ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
-        }`}
+        className={`absolute top-[calc(100%+6px)] left-0 right-0 bg-white rounded-xl shadow-2xl border border-stone-200/90 p-4 z-50 transition-all duration-200 ease-out origin-top ${isOpen
+          ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
+          : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
+          }`}
         onClick={(e) => e.stopPropagation()}
         role="listbox"
       >
@@ -200,11 +193,10 @@ const ProfileForDropdown = memo<ProfileForDropdownProps>(({
                   onChange(opt.value);
                   setIsOpen(false);
                 }}
-                className={`text-center sm:text-left px-2.5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
-                  isSelected
-                    ? "text-[#DB2F3C] font-bold bg-rose-50"
-                    : "text-[#1A1A1A] hover:text-[#DB2F3C] hover:bg-stone-100/80"
-                }`}
+                className={`text-center sm:text-left px-2.5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${isSelected
+                  ? "text-[#DB2F3C] font-bold bg-rose-50"
+                  : "text-[#1A1A1A] hover:text-[#DB2F3C] hover:bg-stone-100/80"
+                  }`}
                 role="option"
                 aria-selected={isSelected}
               >
@@ -260,10 +252,13 @@ const QuickRegisterFormComponent: React.FC<QuickRegisterFormProps> = ({
       errs.profileFor = "Please select profile";
     }
 
-    if (!formData.name.trim()) {
+    const trimmedName = formData.name.trim();
+    if (!trimmedName) {
       errs.name = "Please enter name";
-    } else if (formData.name.trim().length < 2) {
+    } else if (trimmedName.length < 2) {
       errs.name = "Name must be at least 2 characters";
+    } else if (!/^[a-zA-Z\s'.]+$/.test(trimmedName)) {
+      errs.name = "Name should contain letters only";
     }
 
     const cleanNumber = formData.mobileNumber.replace(/\D/g, "");
@@ -271,6 +266,8 @@ const QuickRegisterFormComponent: React.FC<QuickRegisterFormProps> = ({
       errs.mobile = "Please enter mobile number";
     } else if (cleanNumber.length !== 10) {
       errs.mobile = "Please enter valid 10-digit number";
+    } else if (!/^[6-9]\d{9}$/.test(cleanNumber)) {
+      errs.mobile = "Please enter valid 10-digit mobile number starting with 6-9";
     }
 
     setErrors(errs);
@@ -284,13 +281,16 @@ const QuickRegisterFormComponent: React.FC<QuickRegisterFormProps> = ({
     const cleanNumber = formData.mobileNumber.replace(/\D/g, "");
     setIsLoading(true);
 
-    apiFetch<{ otpSent?: boolean }>({
-      url: ApiURL.sendOtp,
+    apiFetch<{ token?: string; verificationToken?: string;[key: string]: any }>({
+      url: ApiURL.registerApi,
       method: "POST",
       data: {
-        phone: cleanNumber,
+        mobile: cleanNumber,
         countryCode: formData.countryCode || "+91",
         purpose: "REGISTER",
+        name: formData.name.trim(),
+        profileFor: formData.profileFor.trim(),
+        step: 1,
       },
     })
       .then((res) => {
@@ -306,37 +306,50 @@ const QuickRegisterFormComponent: React.FC<QuickRegisterFormProps> = ({
           return;
         }
 
+        const resData = (res.data || {}) as Record<string, any>;
+        const verificationToken =
+          resData.token || resData.verificationToken || resData.otpToken || (res as any).token || "";
+
         showToast({
           type: "success",
           message: res.message || "Verification code sent to your mobile number!",
         });
 
-        // Persist registration draft in sessionStorage for reliability
-        if (typeof window !== "undefined") {
-          try {
-            sessionStorage.setItem(
-              "sindhi_reg_draft",
-              JSON.stringify({
-                ...formData,
-                phone: cleanNumber,
-                countryCode: formData.countryCode || "+91",
-              })
-            );
-          } catch {
-            // Safe fallback
-          }
-        }
+        // Persist complete registration draft with safe manager
+        const isVerifiedAlready = Boolean(resData.isOtpVerified);
+        const challengeId = resData.challengeId || "";
+        saveRegistrationDraft({
+          name: (resData.name || formData.name).trim(),
+          profileFor: resData.profileFor || formData.profileFor,
+          countryCode: formData.countryCode || "+91",
+          mobileNumber: cleanNumber,
+          phone: cleanNumber,
+          token: verificationToken || undefined,
+          challengeId,
+          isOtpVerified: isVerifiedAlready,
+          currentStep: isVerifiedAlready ? "basic-info" : "otp",
+        });
 
         if (onSuccess) onSuccess(formData);
 
         const params = new URLSearchParams({
           mobile: cleanNumber,
           code: formData.countryCode || "+91",
-          name: formData.name.trim(),
-          for: formData.profileFor || "Myself",
+          name: (resData.name || formData.name).trim(),
+          for: resData.profileFor || formData.profileFor || "Myself",
         });
+        if (verificationToken) {
+          params.set("token", verificationToken);
+        }
+        if (challengeId) {
+          params.set("challengeId", challengeId);
+        }
 
-        router.push(`/registration/otp?${params.toString()}`);
+        if (isVerifiedAlready) {
+          router.push(`/registration/basic-info?${params.toString()}`);
+        } else {
+          router.push(`/registration/otp?${params.toString()}`);
+        }
       })
       .catch((err) => {
         setIsLoading(false);
@@ -529,11 +542,10 @@ const QuickRegisterFormComponent: React.FC<QuickRegisterFormProps> = ({
         {/* Field 2: Name */}
         <div>
           <div
-            className={`border rounded-lg bg-white transition-all ${
-              errors.name
-                ? "border-red-500 ring-1 ring-red-500"
-                : "border-stone-300 focus-within:border-[#DB2F3C] focus-within:ring-1 focus-within:ring-[#DB2F3C]"
-            }`}
+            className={`border rounded-lg bg-white transition-all ${errors.name
+              ? "border-red-500 ring-1 ring-red-500"
+              : "border-stone-300 focus-within:border-[#DB2F3C] focus-within:ring-1 focus-within:ring-[#DB2F3C]"
+              }`}
           >
             <input
               id="mobile-name"
@@ -561,11 +573,10 @@ const QuickRegisterFormComponent: React.FC<QuickRegisterFormProps> = ({
         {/* Field 3: Mobile Number */}
         <div>
           <div
-            className={`flex items-center border rounded-lg bg-white overflow-hidden transition-all ${
-              errors.mobile
-                ? "border-red-500 ring-1 ring-red-500"
-                : "border-stone-300 focus-within:border-[#DB2F3C] focus-within:ring-1 focus-within:ring-[#DB2F3C]"
-            }`}
+            className={`flex items-center border rounded-lg bg-white overflow-hidden transition-all ${errors.mobile
+              ? "border-red-500 ring-1 ring-red-500"
+              : "border-stone-300 focus-within:border-[#DB2F3C] focus-within:ring-1 focus-within:ring-[#DB2F3C]"
+              }`}
           >
             <div className="flex items-center gap-1.5 px-3.5 py-3.5 bg-stone-50 border-r border-stone-200 text-sm font-semibold text-[#1A1A1A] shrink-0">
               <span>+91</span>

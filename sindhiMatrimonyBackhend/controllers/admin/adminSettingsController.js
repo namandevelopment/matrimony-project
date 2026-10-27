@@ -1,6 +1,12 @@
 import { asyncHandler, apiHTTPResponse, hashPassword, verifyPassword } from "../../utils/globalFunction.js";
 import * as CONSTANTS from "../../utils/constants.js";
-import { SINDHI_SUBCASTES, SINDHI_SURNAMES_MAPPING } from "../../constants/masterData.constants.js";
+import {
+  SINDHI_SUBCASTES,
+  SINDHI_SURNAMES_MAPPING,
+  DEFAULT_SUBCASTES,
+  GOTHRA_OPTIONS,
+  CASTE_OPTIONS,
+} from "../../constants/masterData.constants.js";
 import { Employee } from "../../models/index.js";
 
 // ============================================================================
@@ -77,16 +83,20 @@ export let adminPlansStore = [
 ];
 
 // 1.2 Platform System Constants Store
-let systemConfigStore = {
+export let systemConfigStore = {
   general: {
-    siteName: "Sindhi Matrimony Global",
+    siteName: "Sindhi Matrimony Official",
     tagline: "Connecting Sindhi Hearts Across the World",
-    contactEmail: "support@sindhimatrimony.com",
-    supportPhone: "+91-98200-12345",
+    contactEmail: "support@sindhimarriage.in",
+    supportPhone: "+91 98765 43210",
+    whatsappNumber: "+91 98765 43210",
+    enquiryNumber: "+91 8144-77-88-66",
+    headquartersCity: "Mumbai / Ahmedabad",
     defaultCurrency: "INR",
     timezone: "Asia/Kolkata",
   },
   operations: {
+    enableOtpLogin: true,
     maintenanceMode: false,
     registrationOpen: true,
     autoApproveProfiles: false,
@@ -156,6 +166,23 @@ SINDHI_SURNAMES_MAPPING.forEach((item, idx) => {
     }
   }
 });
+
+GOTHRA_OPTIONS.forEach((g) => {
+  if (g && g !== "Don't wish to specify" && g !== "Others" && !initialGotrasMap.has(g)) {
+    initialGotrasMap.set(g, {
+      _id: `gotra_${initialGotrasMap.size + 1}`,
+      id: g.toLowerCase(),
+      gotraName: g,
+      subcaste: "General",
+      surnames: [g],
+      isActive: true,
+      displayOrder: initialGotrasMap.size + 1,
+      createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+      updatedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+  }
+});
+
 let masterGotrasStore = Array.from(initialGotrasMap.values());
 
 // ============================================================================
@@ -167,11 +194,17 @@ let masterGotrasStore = Array.from(initialGotrasMap.values());
  */
 export const getAdminPlans = asyncHandler(async (req, res) => {
   const { status = "ALL" } = req.query;
+  const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
 
   let plans = [...adminPlansStore];
   if (status && status.toUpperCase() !== "ALL") {
     plans = plans.filter((p) => p.status.toUpperCase() === status.toUpperCase());
   }
+
+  const total = plans.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const paginated = plans.slice((page - 1) * limit, (page - 1) * limit + limit);
 
   return apiHTTPResponse(
     req,
@@ -179,9 +212,22 @@ export const getAdminPlans = asyncHandler(async (req, res) => {
     CONSTANTS.HTTP_OK,
     "Subscription plans retrieved successfully.",
     {
-      plans,
-      totalPlans: plans.length,
+      plans: paginated,
+      list: paginated,
+      totalPlans: total,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
       activePlans: plans.filter((p) => p.status === "ACTIVE").length,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -539,23 +585,60 @@ export const adminChangePassword = asyncHandler(async (req, res) => {
 // ============================================================================
 
 export const getSystemConfig = asyncHandler(async (req, res) => {
+  const flattened = {
+    ...systemConfigStore,
+    siteName: systemConfigStore.general.siteName,
+    supportPhone: systemConfigStore.general.supportPhone,
+    supportEmail: systemConfigStore.general.contactEmail || systemConfigStore.general.supportEmail,
+    headquartersCity: systemConfigStore.general.headquartersCity,
+    whatsappNumber: systemConfigStore.general.whatsappNumber,
+    enquiryNumber: systemConfigStore.general.enquiryNumber,
+    enableOtpLogin: systemConfigStore.operations.enableOtpLogin,
+    autoApproveProfiles: systemConfigStore.operations.autoApproveProfiles,
+    maintenanceMode: systemConfigStore.operations.maintenanceMode,
+  };
+
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Platform system constants and configuration retrieved successfully.",
-    systemConfigStore,
+    flattened,
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
 });
 
 export const updateSystemConfig = asyncHandler(async (req, res) => {
-  const { general, operations, security, telephony, sla } = req.body;
+  const {
+    general,
+    operations,
+    security,
+    telephony,
+    sla,
+    siteName,
+    supportPhone,
+    supportEmail,
+    headquartersCity,
+    whatsappNumber,
+    enquiryNumber,
+    enableOtpLogin,
+    autoApproveProfiles,
+    maintenanceMode,
+  } = req.body;
 
   if (general && typeof general === "object") {
     systemConfigStore.general = { ...systemConfigStore.general, ...general };
   }
+  if (siteName !== undefined) systemConfigStore.general.siteName = siteName;
+  if (supportPhone !== undefined) systemConfigStore.general.supportPhone = supportPhone;
+  if (supportEmail !== undefined) {
+    systemConfigStore.general.contactEmail = supportEmail;
+    systemConfigStore.general.supportEmail = supportEmail;
+  }
+  if (headquartersCity !== undefined) systemConfigStore.general.headquartersCity = headquartersCity;
+  if (whatsappNumber !== undefined) systemConfigStore.general.whatsappNumber = whatsappNumber;
+  if (enquiryNumber !== undefined) systemConfigStore.general.enquiryNumber = enquiryNumber;
 
   if (operations && typeof operations === "object") {
     if (operations.freeContactViewsCount !== undefined) {
@@ -575,6 +658,9 @@ export const updateSystemConfig = asyncHandler(async (req, res) => {
     }
     systemConfigStore.operations = { ...systemConfigStore.operations, ...operations };
   }
+  if (enableOtpLogin !== undefined) systemConfigStore.operations.enableOtpLogin = Boolean(enableOtpLogin);
+  if (autoApproveProfiles !== undefined) systemConfigStore.operations.autoApproveProfiles = Boolean(autoApproveProfiles);
+  if (maintenanceMode !== undefined) systemConfigStore.operations.maintenanceMode = Boolean(maintenanceMode);
 
   if (security && typeof security === "object") {
     systemConfigStore.security = { ...systemConfigStore.security, ...security };
@@ -591,12 +677,25 @@ export const updateSystemConfig = asyncHandler(async (req, res) => {
   systemConfigStore.lastUpdated = new Date().toISOString();
   systemConfigStore.updatedBy = req.user?.name || "System Admin";
 
+  const flattened = {
+    ...systemConfigStore,
+    siteName: systemConfigStore.general.siteName,
+    supportPhone: systemConfigStore.general.supportPhone,
+    supportEmail: systemConfigStore.general.contactEmail || systemConfigStore.general.supportEmail,
+    headquartersCity: systemConfigStore.general.headquartersCity,
+    whatsappNumber: systemConfigStore.general.whatsappNumber,
+    enquiryNumber: systemConfigStore.general.enquiryNumber,
+    enableOtpLogin: systemConfigStore.operations.enableOtpLogin,
+    autoApproveProfiles: systemConfigStore.operations.autoApproveProfiles,
+    maintenanceMode: systemConfigStore.operations.maintenanceMode,
+  };
+
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Platform system constants updated successfully.",
-    systemConfigStore,
+    flattened,
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
@@ -607,15 +706,34 @@ export const updateSystemConfig = asyncHandler(async (req, res) => {
 // ============================================================================
 
 export const getAdminSubcastes = asyncHandler(async (req, res) => {
+  const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
+  const total = masterSubcastesStore.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const paginated = masterSubcastesStore.slice((page - 1) * limit, (page - 1) * limit + limit);
+
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Master subcastes retrieved successfully.",
     {
-      subcastes: masterSubcastesStore,
-      totalCount: masterSubcastesStore.length,
+      subcastes: paginated,
+      list: paginated,
+      totalCount: total,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
       activeCount: masterSubcastesStore.filter((s) => s.isActive).length,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -740,15 +858,34 @@ export const updateAdminSubcaste = asyncHandler(async (req, res) => {
 // ============================================================================
 
 export const getAdminGotras = asyncHandler(async (req, res) => {
+  const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
+  const total = masterGotrasStore.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const paginated = masterGotrasStore.slice((page - 1) * limit, (page - 1) * limit + limit);
+
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Master gotras and surnames catalog retrieved successfully.",
     {
-      gotras: masterGotrasStore,
-      totalGotras: masterGotrasStore.length,
+      gotras: paginated,
+      list: paginated,
+      totalGotras: total,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
       totalSurnamesMapped: masterGotrasStore.reduce((acc, g) => acc + g.surnames.length, 0),
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE

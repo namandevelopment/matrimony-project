@@ -39,3 +39,6 @@ export type { EditProfilePhotoModalProps } from "./EditProfilePhotoModal";
 
 export { EditProfilePreviewModal } from "./EditProfilePreviewModal";
 export type { EditProfilePreviewModalProps } from "./EditProfilePreviewModal";
+
+export { EditProfileAdsSection } from "./EditProfileAdsSection";
+export type { EditProfileAdsSectionProps } from "./EditProfileAdsSection";

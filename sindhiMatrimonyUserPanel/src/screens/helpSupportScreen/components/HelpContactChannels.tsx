@@ -4,8 +4,11 @@ import React, { memo } from "react";
 import { Phone, MessageSquare, Mail, ShieldCheck, Clock, ExternalLink } from "lucide-react";
 import { SUPPORT_CHANNELS } from "../data/helpData";
 import { SupportChannel } from "../types";
+interface HelpContactChannelsProps {
+  channels?: SupportChannel[];
+}
 
-export const HelpContactChannels: React.FC = memo(() => {
+export const HelpContactChannels: React.FC<HelpContactChannelsProps> = memo(({ channels = SUPPORT_CHANNELS }) => {
   const getIcon = (type: SupportChannel["iconType"]) => {
     switch (type) {
       case "phone":
@@ -48,7 +51,7 @@ export const HelpContactChannels: React.FC = memo(() => {
       className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 sm:-mt-8 relative z-20"
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        {SUPPORT_CHANNELS.map((channel) => (
+        {channels.map((channel) => (
           <div
             key={channel.id}
             className={`rounded-2xl p-5 sm:p-6 border transition-all duration-200 flex flex-col justify-between ${getCardTheme(

@@ -2,27 +2,30 @@ import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 import { User, Profile, PartnerPreference, ProfileView, SuccessStory } from "../../models/index.js";
-import { SEED_CANDIDATE_POOL, SEED_SUCCESS_STORIES } from "../../constants/seedCandidateData.js";
+import { generateCandidates, SEED_SUCCESS_STORIES } from "../../constants/seedCandidateData.js";
 import { logMessage } from "../../utils/globalFunction.js";
 
 /**
  * 🌱 Seed 150+ Realistic Sindhi Matrimonial Candidates into MongoDB
  */
-export async function seedCandidates() {
-  logMessage("Starting candidate profiles & users seeding...", null, "info");
+export async function seedCandidates(customCount) {
+  const count = Number(customCount) || parseInt(process.argv[2], 10) || 150;
+  logMessage(`Starting realistic candidates seeding (count: ${count})...`, null, "info");
 
+  const candidatesList = generateCandidates(count);
   const defaultHashedPassword = await bcrypt.hash("Password123@", 10);
 
   let createdUsers = 0;
   let createdProfiles = 0;
   let createdPreferences = 0;
 
-  for (const candidate of SEED_CANDIDATE_POOL) {
+  for (let idx = 0; idx < candidatesList.length; idx++) {
+    const candidate = candidatesList[idx];
     const candidateUserId = new mongoose.Types.ObjectId(candidate.userId);
     const candidateProfileId = new mongoose.Types.ObjectId(candidate._id);
 
     // 1. Upsert User Account
-    const phoneNum = `98290${candidate._id.slice(-5)}`;
+    const phoneNum = `9829${String(100000 + idx).slice(-6)}`;
     await User.findByIdAndUpdate(
       candidateUserId,
       {
@@ -136,11 +139,11 @@ export async function seedCandidates() {
 
   // 5. Seed Profile Views
   let createdViews = 0;
-  for (let i = 0; i < 40; i++) {
-    const viewerIdx = i % SEED_CANDIDATE_POOL.length;
-    const viewedIdx = (i + 5) % SEED_CANDIDATE_POOL.length;
-    const viewer = SEED_CANDIDATE_POOL[viewerIdx];
-    const viewed = SEED_CANDIDATE_POOL[viewedIdx];
+  for (let i = 0; i < Math.min(40, candidatesList.length); i++) {
+    const viewerIdx = i % candidatesList.length;
+    const viewedIdx = (i + 5) % candidatesList.length;
+    const viewer = candidatesList[viewerIdx];
+    const viewed = candidatesList[viewedIdx];
 
     await ProfileView.findOneAndUpdate(
       {
@@ -173,7 +176,8 @@ if (process.argv[1]?.includes("seedCandidates.js")) {
   mongoose
     .connect(DB_URI)
     .then(async () => {
-      await seedCandidates();
+      const count = parseInt(process.argv[2], 10) || 150;
+      await seedCandidates(count);
       await mongoose.disconnect();
       process.exit(0);
     })

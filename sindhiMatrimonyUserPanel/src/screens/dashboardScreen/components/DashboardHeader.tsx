@@ -22,7 +22,7 @@ export interface DashboardHeaderProps {
 }
 
 const HeaderLogo = memo<{ subtitle?: string; onLogoClick?: (e: React.MouseEvent) => void }>(
-  ({ subtitle = "From Matrimony.com Group", onLogoClick }) => {
+  ({ subtitle = "Powered by NeelimaMarriage.com", onLogoClick }) => {
     return (
       <Link
         href="/dashboard"
@@ -32,8 +32,8 @@ const HeaderLogo = memo<{ subtitle?: string; onLogoClick?: (e: React.MouseEvent)
       >
         <div className="shrink-0 transition-transform duration-200 group-hover:scale-105">
           <MatrimonyHeartLogo
-            size={38}
-            className="w-9 h-9 sm:w-10 sm:h-10"
+            size={40}
+            className="w-10 h-10"
             color="#DB2F3C"
           />
         </div>
@@ -56,7 +56,7 @@ const DashboardHeaderComponent: React.FC<DashboardHeaderProps> = ({
   onTabChange,
   onLogout,
   onUpgradeClick,
-  subtitle = "From Matrimony.com Group",
+  subtitle = "Powered by NeelimaMarriage.com",
   className = "",
 }) => {
   const context = useDashboardNav();
@@ -67,9 +67,27 @@ const DashboardHeaderComponent: React.FC<DashboardHeaderProps> = ({
   );
 
   const handleLogoClick = React.useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    window.location.reload();
-  }, []);
+    if (typeof window !== "undefined") {
+      const isDashboardTab =
+        window.location.pathname === "/dashboard" ||
+        window.location.pathname === "/matches" ||
+        window.location.pathname === "/interests" ||
+        window.location.pathname === "/messages" ||
+        window.location.pathname === "/search" ||
+        window.location.pathname === "/notifications";
+
+      if (isDashboardTab) {
+        e.preventDefault();
+        if (context.onTabChange) {
+          context.onTabChange("home");
+        }
+        if (window.location.pathname !== "/dashboard") {
+          window.history.pushState(null, "", "/dashboard");
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }
+  }, [context]);
 
   return (
     <header

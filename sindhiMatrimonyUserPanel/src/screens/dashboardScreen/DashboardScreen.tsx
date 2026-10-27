@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, memo } from "react";
+import React, { useState, useCallback, useEffect, useMemo, memo } from "react";
 import { isDeepEqual } from "@/utils";
 import { useRouter } from "next/navigation";
 import {
@@ -17,9 +17,8 @@ import { MailboxSearchInput } from "@/screens/interestsScreen/components";
 import { DashboardNavProvider } from "./context/DashboardNavContext";
 import { FloatingChatWidget } from "@/screens/matchesScreen/components";
 import { NotificationsScreen } from "@/screens/notificationsScreen";
-import { apiFetch, ApiURL } from "@/redux/apiService";
 import { useGlobalModal } from "@/customModals";
-import { useDashboardFeedQuery, useProfileQuery } from "@/tanstackQuery";
+import { useProfileQuery } from "@/tanstackQuery";
 import type {
   UserProfile,
   DashboardNavTab,
@@ -30,145 +29,37 @@ import type {
   MarriageSuccessStory,
 } from "./types";
 
-const defaultUserProfile: UserProfile = {
-  name: "",
-  matrimonyId: "",
-  community: "SindhiMatrimony",
-  membershipStatus: "Free member",
-  completenessScore: 0,
-};
 
 const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
   initialTab = "home",
-  initialUser = defaultUserProfile,
+  initialUser,
   initialMatches,
   initialViewedProfiles,
   initialSuccessStories,
   onLogout,
   onUpgradeClick,
   onAssistedServiceClick,
-}) => {
+}: any) => {
   const router = useRouter();
-  const [user, setUser] = useState<UserProfile>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("user");
-        console.log('storedstoredstoredstoredstored', stored)
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          return {
-            name: parsed.name || parsed.fullName || initialUser.name,
-            matrimonyId: parsed.matrimonyId || parsed.id || initialUser.matrimonyId,
-            community: parsed.community || "SindhiMatrimony",
-            membershipStatus: parsed.membershipStatus || (parsed.plan ? "Paid member" : "Free member"),
-            completenessScore: parsed.completenessScore ?? 0,
-            avatarUrl: parsed.avatar || parsed.avatarUrl || parsed.photoUrl || "",
-          };
-        }
-      } catch { }
-    }
-    return initialUser;
-  });
-
-  const [matches, setMatches] = useState<MatchProfile[]>(initialMatches || []);
-  const [viewedProfiles, setViewedProfiles] = useState<ViewedProfile[]>(initialViewedProfiles || []);
-  const [successStories, setSuccessStories] = useState<MarriageSuccessStory[]>(initialSuccessStories || []);
   const [activeTab, setActiveTab] = useState<DashboardNavTab["id"]>(initialTab);
   const [mode, setMode] = useState<DashboardMode>("regular");
   const [interestsSearchQuery, setInterestsSearchQuery] = useState("");
   const [messagesSearchQuery, setMessagesSearchQuery] = useState("");
 
-  // Live consolidated dashboard API integration via TanStack Query (cached 5 mins, zero duplicate flight)
-  const { data: dashboardRes } = useDashboardFeedQuery();
   const { data: profileRes } = useProfileQuery();
-  console.log('profileResprofileResprofileResprofileRes', profileRes)
-  // Sync profile data if profile query updates
-  useEffect(() => {
-    if (!profileRes) return;
-    const p = (profileRes as any)?.profile || (profileRes as any)?.data?.profile;
-    const u = (profileRes as any)?.user || (profileRes as any)?.data?.user;
-    if (p || u) {
-      setUser((prev) => {
-        const next = {
-          ...prev,
-          name: p?.name || u?.name || prev.name,
-          avatarUrl: p?.avatar || p?.photos?.[0]?.url || prev.avatarUrl,
-          community: p?.subcaste ? `Sindhi (${p.subcaste})` : prev.community,
-        };
-        return isDeepEqual(prev, next) ? prev : next;
-      });
-    }
-  }, [profileRes]);
+  const p = (profileRes as any)?.profile || (profileRes as any)?.data?.profile;
+  const u = (profileRes as any)?.user || (profileRes as any)?.data?.user;
 
-  useEffect(() => {
-    if (!dashboardRes) return;
-    const d = (dashboardRes as any)?.data || dashboardRes;
-
-    // 1. Sync User Profile
-    if (d.user) {
-      setUser((prev) => {
-        const next = {
-          name: d.user.name || prev.name || "",
-          matrimonyId: d.user.matrimonyId || prev.matrimonyId || "",
-          community: d.user.community || prev.community || "SindhiMatrimony",
-          membershipStatus: d.user.membershipStatus || prev.membershipStatus || "Free member",
-          completenessScore: d.completeness?.score ?? d.user.completenessScore ?? prev.completenessScore ?? 0,
-          avatarUrl: d.user.avatarUrl || d.user.avatar || prev.avatarUrl || "",
-        };
-        return isDeepEqual(prev, next) ? prev : next;
-      });
-    }
-
-    // 2. Sync Matches Carousel
-    const loadedMatches = d.matches?.items || (Array.isArray(d.matches) ? d.matches : []);
-    if (Array.isArray(loadedMatches) && loadedMatches.length > 0) {
-      const mappedMatches: MatchProfile[] = loadedMatches.map((m: any, idx: number) => ({
-        id: m.id || m._id || m.matrimonyId || `match_${idx}`,
-        name: m.name || "Sindhi Match",
-        age: Number(m.age) || 25,
-        height: m.height || m.heightFormatted || "5'4\"",
-        city: m.city || m.location?.city || "Mumbai",
-        caste: m.caste || m.subcaste || "Bhaiband",
-        education: m.education?.degree || m.education || "Graduate / Professional",
-        photoUrl: m.photoUrl || m.avatar || "",
-        isSilhouette: m.isSilhouette ?? !m.photoUrl,
-      }));
-      setMatches(mappedMatches);
-    }
-
-    // 3. Sync Viewed Profiles
-    if (Array.isArray(d.viewedProfiles) && d.viewedProfiles.length > 0) {
-      setViewedProfiles(
-        d.viewedProfiles.map((p: any, idx: number) => ({
-          id: p.id || p._id || `vp_${idx}`,
-          name: p.name || "Sindhi Member",
-          age: Number(p.age) || 25,
-          height: p.height || "5'4\"",
-          viewedDate: p.viewedDate || "Recently",
-          photoUrl: p.photoUrl || p.avatar || "",
-        }))
-      );
-    }
-
-    // 4. Sync Success Stories
-    const loadedStories = d.successStories || d.stories;
-    if (Array.isArray(loadedStories) && loadedStories.length > 0) {
-      setSuccessStories(
-        loadedStories.map((s: any, idx: number) => ({
-          id: s.id || s._id || `story_${idx}`,
-          coupleNames: s.coupleNames || s.coupleName || "Sindhi Couple",
-          photoUrl: s.photoUrl || s.imageUrl || "/images/dashboard/couple_1.jpg",
-          photoUrls: Array.isArray(s.photoUrls) ? s.photoUrls : [s.photoUrl || s.imageUrl || ""].filter(Boolean),
-          weddingDate: s.weddingDate || "Recently",
-          postedDate: s.postedDate || "Recently",
-          testimonial: s.testimonial || s.storySnippet || "Blessed union on SindhiMatrimony.",
-          location: s.location || (s.city ? `${s.city}, India` : "India"),
-          isVerified: s.isVerified !== false,
-          likesCount: Number(s.likesCount) || 120,
-        }))
-      );
-    }
-  }, [dashboardRes]);
+  const user: UserProfile = useMemo(() => {
+    return {
+      name: p?.name || u?.name || initialUser?.name || "",
+      matrimonyId: p?.matrimonyId || (p?._id ? `SM${p._id.toString().slice(-7).toUpperCase()}` : (initialUser?.matrimonyId || "")),
+      community: p?.subcaste ? `Sindhi (${p.subcaste})` : "SindhiMatrimony",
+      membershipStatus: p?.membershipTier ? "Paid member" : (initialUser?.membershipStatus || "Free member"),
+      completenessScore: p?.completenessScore ?? initialUser?.completenessScore ?? 0,
+      avatarUrl: p?.avatar || (typeof p?.photos?.[0] === "string" ? p.photos[0] : p?.photos?.[0]?.url) || initialUser?.avatarUrl || "",
+    };
+  }, [p, u, initialUser]);
 
   // Synchronize activeTab on browser back/forward buttons
   useEffect(() => {
@@ -292,10 +183,6 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
             />
           ) : (
             <DashboardHomeView
-              user={user}
-              initialMatches={matches.length > 0 ? matches : initialMatches}
-              initialViewedProfiles={viewedProfiles.length > 0 ? viewedProfiles : initialViewedProfiles}
-              initialSuccessStories={successStories.length > 0 ? successStories : initialSuccessStories}
               onUpgradeClick={handleUpgrade}
               onAssistedServiceClick={handleAssistedService}
             />

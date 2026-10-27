@@ -281,7 +281,12 @@ const LoginModalComponent: React.FC<LoginModalProps> = ({
 
         handleClose();
 
-        if (onSuccess) {
+        const nextRoute = (response.data as any)?.nextRoute;
+        const isOnboardingComplete = (response.data as any)?.isOnboardingComplete ?? (response.data as any)?.user?.isOnboardingComplete;
+
+        if (isOnboardingComplete === false && nextRoute && nextRoute !== "/dashboard") {
+          router.push(nextRoute);
+        } else if (onSuccess) {
           onSuccess();
         } else {
           router.push("/dashboard");

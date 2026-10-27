@@ -34,9 +34,7 @@ export default function Home() {
   return (
     <>
       <JsonLd data={[serviceSchema]} />
-      <Suspense fallback={null}>
-        <LandingScreen />
-      </Suspense>
+      <LandingScreen />
     </>
   );
 }

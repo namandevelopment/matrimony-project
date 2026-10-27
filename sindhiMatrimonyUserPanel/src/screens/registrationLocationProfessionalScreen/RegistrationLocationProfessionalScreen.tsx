@@ -3,6 +3,13 @@
 import React, { useState, useCallback, memo, useMemo, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Header, CustomDropDown, CustomButton } from "@/components";
+import {
+  getRegistrationDraft,
+  saveRegistrationDraft,
+  verifyRegistrationSessionWithBackend,
+  getToken,
+} from "@/storage";
+import apiFetch, { ApiURL, showToast } from "@/redux/apiService";
 import { LocationProfessionalHeader } from "./components";
 import {
   COUNTRY_OPTIONS,
@@ -58,12 +65,55 @@ const RegistrationLocationProfessionalScreenComponent: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Sync to localStorage
+  // Sync to safe centralized registration draft
   useEffect(() => {
     if (typeof window !== "undefined") {
-      localStorage.setItem("sindhi_matrimony_reg_step3", JSON.stringify(formData));
+      saveRegistrationDraft({ locationProfessional: formData });
     }
   }, [formData]);
+
+  // Recovery & draft restoration
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const draft = getRegistrationDraft();
+    const targetMobile = searchParams.get("mobile") || draft?.phone || draft?.mobileNumber;
+    const targetToken = searchParams.get("token") || draft?.token;
+
+    if (!targetMobile) {
+      router.replace("/");
+      return;
+    }
+
+    verifyRegistrationSessionWithBackend(targetMobile, targetToken).then((res) => {
+      if (res.isRegistered) {
+        router.replace("/dashboard");
+        return;
+      }
+      if (!res.isOtpVerified && (res.status === "OTP_PENDING" || res.status === "EXPIRED")) {
+        showToast({
+          type: "error",
+          message: "Registration session has expired. Please verify your mobile number.",
+        });
+        router.replace(`/registration/otp?mobile=${targetMobile}`);
+        return;
+      }
+
+      if (draft?.locationProfessional) {
+        setFormData((prev) => ({
+          ...prev,
+          residentCountry: draft.locationProfessional?.residentCountry || prev.residentCountry,
+          residingState: draft.locationProfessional?.residingState || prev.residingState,
+          residingCity: draft.locationProfessional?.residingCity || prev.residingCity,
+          citizenship: draft.locationProfessional?.citizenship || prev.citizenship,
+          education: draft.locationProfessional?.education || prev.education,
+          employmentType: (draft.locationProfessional?.employmentType as EmploymentType) || prev.employmentType,
+          occupation: draft.locationProfessional?.occupation || prev.occupation,
+          annualIncome: draft.locationProfessional?.annualIncome || prev.annualIncome,
+        }));
+      }
+    });
+  }, [router, searchParams]);
 
   // Dynamic Cities based on selected State
   const cityOptions = useMemo(() => {
@@ -206,31 +256,41 @@ const RegistrationLocationProfessionalScreenComponent: React.FC = () => {
 
       setIsSubmitting(true);
       try {
-        if (typeof window !== "undefined") {
-          try {
-            sessionStorage.setItem("sindhi_reg_step3_draft", JSON.stringify(formData));
-          } catch {
-            // Ignore
-          }
-        }
-        await new Promise((resolve) => setTimeout(resolve, 350));
-        const params = new URLSearchParams(searchParams.toString());
-        params.set("country", formData.residentCountry);
-        if (formData.residingCity) {
-          params.set("city", formData.residingCity);
-        }
-        params.set("education", formData.education);
-        params.set("employment", formData.employmentType);
-        params.set("occupation", formData.occupation);
-        if (formData.annualIncome) {
-          params.set("income", formData.annualIncome);
-        }
-        params.set("celebrate", "true");
+        const res = await apiFetch({
+          url: ApiURL.registerStep,
+          method: "POST",
+          data: {
+            step: 5,
+            country: formData.residentCountry,
+            state: formData.residingState,
+            city: formData.residingCity || formData.residingState,
+            highestEducation: formData.education,
+            occupation: formData.occupation,
+            profession: formData.occupation,
+            annualIncome: formData.annualIncome ? parseInt(formData.annualIncome.replace(/[^\d]/g, ""), 10) || 0 : 0,
+            companyName: "",
+          },
+        });
 
-        // Navigate to Step 4 with Congratulations celebration transition
-        router.push(`/registration/additional-info?${params.toString()}`);
-      } catch {
         setIsSubmitting(false);
+
+        if (res.error) {
+          showToast({ type: "error", message: res.message || "Failed to save location details." });
+          return;
+        }
+
+        saveRegistrationDraft({
+          currentStep: "additional-info",
+          locationProfessional: { ...formData },
+        });
+
+        const nextRoute = res.data?.nextRoute || "/registration/additional-info";
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("celebrate", "true");
+        router.push(`${nextRoute}?${params.toString()}`);
+      } catch (err: any) {
+        setIsSubmitting(false);
+        showToast({ type: "error", message: err?.message || "Network error. Please try again." });
       }
     },
     [formData, router, searchParams]

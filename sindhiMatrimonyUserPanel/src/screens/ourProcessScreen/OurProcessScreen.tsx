@@ -23,8 +23,6 @@ import {
   OurProcessContent,
   ProcessStep,
 } from "./data/ourProcessData";
-import { apiFetch } from "@/redux/apiService";
-import { ApiURL } from "@/redux/apiService/endpoint";
 
 const STEP_ICONS: Record<string, React.ElementType> = {
   UserPlus,
@@ -37,20 +35,6 @@ export const OurProcessScreen: React.FC = memo(() => {
   const [data, setData] = useState<OurProcessContent>(DEFAULT_OUR_PROCESS_DATA);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
-  useEffect(() => {
-    let isMounted = true;
-    apiFetch.get<any>(ApiURL.ourProcess)
-      .then((res) => {
-        if (isMounted && res?.data && res.data.steps && res.data.steps.length > 0) {
-          setData(res.data);
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-stone-50 text-[#1A1A1A] selection:bg-red-100 selection:text-red-900 font-sans">

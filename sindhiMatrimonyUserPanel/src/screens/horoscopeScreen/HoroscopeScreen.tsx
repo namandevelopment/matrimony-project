@@ -298,7 +298,7 @@ const HoroscopeScreenComponent: React.FC<HoroscopeScreenProps> = ({
 
           {/* Timeline Wrapper */}
           <div id="personal-information-section" className="p-4 sm:p-7 sm:pl-8">
-            {/* 1. A Few Lines About Naman */}
+            {/* 1. About Member Section */}
             <HoroscopeAboutSection
               name={data.name}
               aboutMe={data.aboutMe}

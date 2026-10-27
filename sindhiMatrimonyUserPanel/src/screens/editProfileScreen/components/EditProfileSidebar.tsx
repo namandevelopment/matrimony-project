@@ -2,6 +2,9 @@
 
 import React, { memo, useState, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { useDashboardAdsQuery } from "@/tanstackQuery";
+import { isDeepEqual } from "@/utils";
 import {
   ChevronDown,
   ChevronUp,
@@ -19,6 +22,7 @@ import {
   Sparkles,
   Lock,
   Zap,
+  ChevronRight,
 } from "lucide-react";
 import {
   ProfileSectionId,
@@ -97,6 +101,10 @@ const EditProfileSidebarComponent: React.FC<EditProfileSidebarProps> = ({
   avatarUrl,
   className = "",
 }) => {
+  const { data: adsRes } = useDashboardAdsQuery();
+  const adsData = (adsRes as any)?.data || adsRes;
+  const discount = adsData?.paidMember?.discountPercent ?? 71;
+
   // State for which accordion groups are open
   const [openGroups, setOpenGroups] = useState<Record<ProfileSectionGroup, boolean>>({
     profile_info: true,
@@ -247,11 +255,10 @@ const EditProfileSidebarComponent: React.FC<EditProfileSidebarProps> = ({
                       <div
                         key={item.id}
                         onClick={handleItemClick}
-                        className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs sm:text-[12.5px] cursor-pointer transition-all ${
-                          isActive
+                        className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs sm:text-[12.5px] cursor-pointer transition-all ${isActive
                             ? "bg-red-50 text-[#DB2F3C] font-semibold border-l-3 border-[#DB2F3C] pl-2.5"
                             : "text-stone-700 hover:bg-stone-50 hover:text-stone-900 border-l-3 border-transparent pl-2.5"
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-2 truncate">
                           <span
@@ -273,15 +280,14 @@ const EditProfileSidebarComponent: React.FC<EditProfileSidebarProps> = ({
                             e.stopPropagation();
                             handleItemClick();
                           }}
-                          className={`text-[11.5px] font-medium lowercase ml-2 cursor-pointer transition-colors ${
-                            item.actionText === "add"
+                          className={`text-[11.5px] font-medium lowercase ml-2 cursor-pointer transition-colors ${item.actionText === "add"
                               ? "text-[#1D68CD] hover:underline"
                               : item.actionText === "view"
-                              ? "text-[#1D68CD] hover:underline"
-                              : isActive
-                              ? "text-[#DB2F3C] font-bold"
-                              : "text-[#1D68CD] hover:underline"
-                          }`}
+                                ? "text-[#1D68CD] hover:underline"
+                                : isActive
+                                  ? "text-[#DB2F3C] font-bold"
+                                  : "text-[#1D68CD] hover:underline"
+                            }`}
                         >
                           {item.actionText}
                         </button>
@@ -294,9 +300,30 @@ const EditProfileSidebarComponent: React.FC<EditProfileSidebarProps> = ({
           );
         })}
       </div>
+
+      {/* API-Driven Promo Card */}
+      <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-[#FFF5F6] to-[#FCEAEF] border border-[#FDCED3] shadow-2xs">
+        <div className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider text-[#DB2F3C]">
+          <Sparkles className="w-3.5 h-3.5 text-[#DB2F3C]" />
+          <span>Special Offer • {discount}% OFF</span>
+        </div>
+        <p className="text-xs font-bold text-stone-900 mt-1.5 leading-snug">
+          Get Direct Verified Mobile Numbers & Unlimited Chat
+        </p>
+        <Link
+          href="/subscription"
+          className="mt-3 w-full py-2 px-3 rounded-lg bg-[#DB2F3C] hover:bg-[#B71F2A] active:scale-[0.98] text-white text-[11.5px] font-bold flex items-center justify-center gap-1 transition-all shadow-xs cursor-pointer"
+        >
+          <span>Upgrade Now</span>
+          <ChevronRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
     </aside>
   );
 };
 
-export const EditProfileSidebar = memo(EditProfileSidebarComponent);
+export const EditProfileSidebar = memo(
+  EditProfileSidebarComponent,
+  (prev, next) => isDeepEqual(prev, next)
+);
 EditProfileSidebar.displayName = "EditProfileSidebar";

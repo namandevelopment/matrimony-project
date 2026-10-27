@@ -21,8 +21,6 @@ import {
   OurProcessContent,
   ProcessStep,
 } from "../../ourProcessScreen/data/ourProcessData";
-import { apiFetch } from "@/redux/apiService";
-import { ApiURL } from "@/redux/apiService/endpoint";
 
 const STEP_ICONS: Record<string, React.ElementType> = {
   UserPlus,
@@ -42,23 +40,6 @@ export const OurProcessSection: React.FC = memo(() => {
   const [data, setData] = useState<OurProcessContent>(DEFAULT_OUR_PROCESS_DATA);
   const [activeStep, setActiveStep] = useState<number>(1);
 
-  // Fetch dynamic content from backend API with fallback
-  useEffect(() => {
-    let isMounted = true;
-    apiFetch.get<any>(ApiURL.ourProcess)
-      .then((res) => {
-        if (isMounted && res?.data && res.data.steps && res.data.steps.length > 0) {
-          setData(res.data);
-        }
-      })
-      .catch(() => {
-        // Fallback silently to pre-bundled DEFAULT_OUR_PROCESS_DATA
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   const currentStep =
     data.steps.find((s) => s.stepNumber === activeStep) || data.steps[0];
@@ -71,8 +52,8 @@ export const OurProcessSection: React.FC = memo(() => {
     >
       {/* Decorative Background Accents */}
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-stone-200 to-transparent pointer-events-none" />
-      <div className="absolute -top-32 -left-32 w-96 h-96 bg-red-100/40 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-amber-100/40 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-32 -left-32 w-96 h-96 bg-[radial-gradient(circle,rgba(254,226,226,0.45)_0%,transparent_70%)] rounded-full pointer-events-none" />
+      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-[radial-gradient(circle,rgba(254,243,199,0.45)_0%,transparent_70%)] rounded-full pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section Header */}

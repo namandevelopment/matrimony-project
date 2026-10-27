@@ -94,12 +94,35 @@ export const getStaffConversations = asyncHandler(async (req, res) => {
     return timeB - timeA;
   });
 
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query?.pageSize || req.query?.limit, 10) || 20));
+
+  const total = conversations.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const startIdx = (page - 1) * limit;
+  const paginatedConversations = conversations.slice(startIdx, startIdx + limit);
+
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Staff chat conversations retrieved successfully.",
-    conversations,
+    {
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+      conversations: paginatedConversations,
+      list: paginatedConversations,
+    },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
@@ -111,8 +134,8 @@ export const getStaffConversations = asyncHandler(async (req, res) => {
  */
 export const getStaffMessages = asyncHandler(async (req, res) => {
   const currentUserId = req.user?.id || req.user?.userId || "staff_001";
-  const { partnerId } = req.params;
-  const { limit = 50, page = 1 } = req.query;
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query?.pageSize || req.query?.limit, 10) || 50));
 
   if (!partnerId) {
     return apiHTTPResponse(
@@ -140,6 +163,11 @@ export const getStaffMessages = asyncHandler(async (req, res) => {
     role: "STAFF",
   };
 
+  const total = threadMessages.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const startIdx = (page - 1) * limit;
+  const paginatedMessages = threadMessages.slice(startIdx, startIdx + limit);
+
   return apiHTTPResponse(
     req,
     res,
@@ -152,8 +180,21 @@ export const getStaffMessages = asyncHandler(async (req, res) => {
         role: partnerInfo.role,
         status: partnerInfo.status,
       },
-      messages: threadMessages,
-      totalCount: threadMessages.length,
+      messages: paginatedMessages,
+      list: paginatedMessages,
+      totalCount: total,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE

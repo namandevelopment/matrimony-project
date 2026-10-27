@@ -16,6 +16,7 @@
 ### 2. Vercel Live Production
 # @baseUrl = https://sindhi-matrimony-backend.vercel.app/api/v1
 @authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhZGI3OGU3NDVkYWQ2ZDRhZTQ2ZjdkOSIsInVzZXJJZCI6IjZhZGI3OGU3NDVkYWQ2ZDRhZTQ2ZjdkOSIsInBob25lIjoiOTg4NzA4MTgwMCIsInJvbGUiOjEsImFjdGl2ZVByb2ZpbGVJZCI6IjZhZGI3OGU3NDVkYWQ2ZDRhZTQ2ZjdkYSIsImlhdCI6MTc5Mjc2ODM0MCwiZXhwIjoxNzkyOTQxMTQwfQ.0HJbXsRhJsO3L0K_CWI_yO4-hSRX8m7HWBT3lv_lLMw
+@refreshToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhZGI3OGU3NDVkYWQ2ZDRhZTQ2ZjdkOSIsInBob25lIjoiOTg4NzA4MTgwMCIsInJvbGUiOjEsInR5cGUiOiJyZWZyZXNoIn0.sample_refresh_token_hash
 @profileId = 6ad467f1c77f327e52a82dfc
 @grantId = 67b34a12c8e312a0f9000002
 @photoId = 67b34a12c8e312a0f9000003
@@ -35,15 +36,48 @@ Content-Type: application/json
 ### 2. AUTHENTICATION & REGISTRATION MODULE
 ### ============================================================================
 
-### 2.1 Send OTP (Registration Only)
-### Note: OTP is sent strictly during registration. Login uses Mobile + Password!
+### 2.1 Send OTP (Registration Step 1)
 POST {{baseUrl}}/auth/send-otp
 Content-Type: application/json
 
 {
-  "phone": "9876543210",
+  "mobile": "9876543210",
   "countryCode": "+91",
-  "purpose": "REGISTER"
+  "purpose": "REGISTER",
+  "name": "naman",
+  "profileFor": "Myself",
+  "step": 1
+}
+
+### 2.1.1 Verify OTP (Registration Step 2 - Returns Bearer Token)
+POST {{baseUrl}}/auth/verify-otp
+Content-Type: application/json
+
+{
+  "phone": "9509531768",
+  "otp": "1234",
+  "purpose": "REGISTER",
+  "countryCode": "+91",
+  "token": "8872c21b6e396ea7ee6b82c8",
+  "step": 2
+}
+
+### 2.1.2 Save Registration Step (Step 3 - Basic Details)
+POST {{baseUrl}}/auth/register-step
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "phone": "9509531768",
+  "step": 3,
+  "gender": "MALE",
+  "day": "15",
+  "month": "Jun",
+  "year": "1997",
+  "dob": "1997-06-15",
+  "motherTongue": "Sindhi",
+  "email": "naman@example.com",
+  "password": "Password123@"
 }
 
 ### 2.2 Complete Registration (Phone + OTP + Password + Profile Initialization)
@@ -78,7 +112,7 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "phone": "9887081800",
+  "phone": "9876543210",
   "password": "Password123@"
 }
 
@@ -152,6 +186,21 @@ Content-Type: application/json
 {
   "phone": "9876543210",
   "countryCode": "+91"
+}
+
+### 2.7.2 Complete Registration (Finalize Onboarding & Update Status to COMPLETE)
+POST {{baseUrl}}/auth/complete-registration
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{}
+
+### 2.7.3 Refresh Token (Silent JWT Renewal using Refresh Token)
+POST {{baseUrl}}/auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
 }
 
 ### 2.8 Logout (Blacklists JWT Token in Redis)
@@ -1621,3 +1670,55 @@ GET {{baseUrl}}/admin/tools/export-backup?format=encrypted&encrypt=true
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
+### ============================================================================
+### 22. REVIEWS & TESTIMONIALS MODERATION MODULE (`/reviews` & `/admin/reviews`)
+### ============================================================================
+
+### 22.1 Get Public Approved Reviews
+GET {{baseUrl}}/reviews/public-list
+Content-Type: application/json
+
+### 22.2 Submit Member Review & Rating
+POST {{baseUrl}}/reviews/submit
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "rating": 5,
+  "title": "Found my ideal life partner through Sindhi Matrimony!",
+  "review": "Wonderful experience, genuine verified profiles and supportive matchmaking team.",
+  "relationship": "SELF",
+  "partnerName": "Simran Vazirani",
+  "weddingDate": "2026-02-15"
+}
+
+### 22.3 Get Admin Reviews List (Moderation Queue)
+GET {{baseUrl}}/admin/reviews?page=1&limit=10&status=ALL
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 22.4 Moderate Review Status (Approve/Reject)
+POST {{baseUrl}}/admin/reviews/rev_004/moderation
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "APPROVED",
+  "moderationNote": "Verified story and wedding confirmation."
+}
+
+### 22.5 Update Review Content (Admin Edit)
+PUT {{baseUrl}}/admin/reviews/rev_004
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "rating": 5,
+  "title": "Exceptional Service & Genuine Community",
+  "review": "Truly authentic community platform for Sindhi families across India and UAE."
+}
+
+### 22.6 Delete Review (Admin)
+DELETE {{baseUrl}}/admin/reviews/rev_004
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json

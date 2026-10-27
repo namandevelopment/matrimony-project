@@ -54,12 +54,15 @@ export interface PartnerPreferences {
   maritalStatus: string[];
   religion: string;
   community: string;
+  subCastes?: string[];
   motherTongue: string[];
   country: string[];
   state: string[];
   education: string[];
   occupation: string[];
   annualIncome: string;
+  diet?: string[];
+  manglik?: string;
 }
 
 export interface MatchesScreenProps {
@@ -76,10 +79,13 @@ export const defaultPreferences: PartnerPreferences = {
   maritalStatus: ["Never Married"],
   religion: "Hindu",
   community: "Sindhi",
+  subCastes: ["All Sindhis", "Baibhand", "Amil", "Sahiti"],
   motherTongue: ["Sindhi", "Hindi", "English"],
   country: ["India", "United Arab Emirates"],
   state: ["Maharashtra", "Gujarat", "Rajasthan", "Karnataka", "Delhi", "Dubai"],
-  education: ["B.Tech.", "MBA", "Chartered Accountant (CA)", "MBBS", "M.S.", "B.Arch"],
-  occupation: ["Software Engineer", "Investment Banker", "Doctor", "Chartered Accountant", "Entrepreneur"],
+  education: ["B.Tech / Engineering", "MBA / Management", "CA / CS / CFA", "MBBS / Medical"],
+  occupation: ["Software / IT", "Business / Entrepreneur", "Banking & Finance", "Doctor / Healthcare"],
   annualIncome: "₹ 10 Lakh & above",
+  diet: ["Vegetarian", "Non-Vegetarian"],
+  manglik: "Doesn't Matter",
 };

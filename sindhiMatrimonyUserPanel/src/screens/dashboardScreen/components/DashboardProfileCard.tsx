@@ -94,14 +94,16 @@ const DashboardProfileCardComponent: React.FC<DashboardProfileCardProps> = ({
         <div className="flex items-center justify-center gap-1.5 mt-1">
           <MatrimonyHeartLogo size={18} className="w-4 h-4 shrink-0" color="#E53935" />
           <span className="text-[15px] font-semibold text-[#111827]">
-            {user?.community || "BrahminMatrimony"}
+            {user?.community || "SindhiMatrimony"}
           </span>
         </div>
 
         {/* Matrimony ID */}
-        <p className="mt-1 text-[17px] font-bold text-[#111827] tracking-normal">
-          {user?.matrimonyId || "BRH4517087"}
-        </p>
+        {user?.matrimonyId && (
+          <p className="mt-1 text-[17px] font-bold text-[#111827] tracking-normal">
+            {user.matrimonyId}
+          </p>
+        )}
 
         {/* Membership Tier */}
         <p className="mt-0.5 text-[14px] text-stone-500 font-normal">

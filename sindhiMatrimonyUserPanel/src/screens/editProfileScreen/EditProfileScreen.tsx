@@ -20,6 +20,7 @@ import {
   EditProfileTrustBadgeSection,
   EditProfilePhotoModal,
   EditProfilePreviewModal,
+  EditProfileAdsSection,
 } from "./components";
 import {
   EditProfileScreenProps,
@@ -632,6 +633,12 @@ const EditProfileScreenComponent: React.FC<EditProfileScreenProps> = ({
                   onUploadDocument={handleUploadDocument}
                 />
               )}
+
+            {/* 3.1 Live API-Driven Ads & Promotional Banner */}
+            <EditProfileAdsSection
+              className="mt-6"
+              onUpgradeClick={onUpgradeClick || (() => router.push("/subscription"))}
+            />
           </div>
         </div>
       </main>

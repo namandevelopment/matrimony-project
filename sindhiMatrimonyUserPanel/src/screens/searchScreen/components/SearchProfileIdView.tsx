@@ -40,7 +40,7 @@ const SearchProfileIdViewComponent: React.FC<SearchProfileIdViewProps> = ({
           type="text"
           value={profileId}
           onChange={(e) => setProfileId(e.target.value)}
-          placeholder="e.g. BRH4498447"
+          placeholder="e.g. SND4498447"
           className="flex-1 px-4 py-2.5 text-xs sm:text-[13px] border border-stone-300 rounded-full focus:outline-hidden focus:ring-1 focus:ring-[#DB2F3C] uppercase font-medium text-stone-800"
         />
         <button

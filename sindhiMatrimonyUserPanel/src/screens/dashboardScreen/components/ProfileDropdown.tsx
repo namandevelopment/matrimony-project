@@ -191,9 +191,11 @@ const ProfileDropdownComponent: React.FC<ProfileDropdownProps> = ({
                 {profile?.name}
               </h2>
 
-              <p className="mt-1 text-[15px] font-semibold text-stone-700 tracking-wide">
-                {profile?.matrimonyId || "BRH4517087"}
-              </p>
+              {profile?.matrimonyId && (
+                <p className="mt-1 text-[15px] font-semibold text-stone-700 tracking-wide">
+                  {profile.matrimonyId}
+                </p>
+              )}
 
               <p className="mt-0.5 text-[13px] text-stone-500 font-normal">
                 {profile?.membershipStatus || "Free member"}

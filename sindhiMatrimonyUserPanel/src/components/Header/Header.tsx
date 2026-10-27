@@ -4,6 +4,8 @@ import React, { memo } from "react";
 import Link from "next/link";
 import { Phone, ArrowLeft } from "lucide-react";
 import { MatrimonyHeartLogo } from "@/screens/landingScreen/components/Icons";
+import { useHelpSupportQuery } from "@/tanstackQuery";
+import { isDeepEqual } from "@/utils";
 
 export interface HeaderProps {
   /** Callback when Log In button is clicked */
@@ -46,6 +48,14 @@ const HeaderComponent: React.FC<HeaderProps> = ({
   position = "fixed",
   className = "",
 }) => {
+  const { data: helpRes } = useHelpSupportQuery(showHelpPhone);
+  const helpData = (helpRes as any)?.data || helpRes;
+  const activeHelpPhone =
+    helpData?.supportDesk?.enquiryNumber ||
+    helpData?.supportDesk?.tollFreeHelpline ||
+    helpData?.supportDesk?.whatsappDisplay ||
+    helpPhoneNumber;
+
   // Determine position class
   const positionClass =
     position === "sticky"
@@ -95,8 +105,13 @@ const HeaderComponent: React.FC<HeaderProps> = ({
           <Link
             href="/"
             onClick={(e) => {
-              e.preventDefault();
-              window.location.reload();
+              if (typeof window !== "undefined" && window.location.pathname === "/") {
+                e.preventDefault();
+                if (window.location.hash || window.location.search) {
+                  window.history.pushState(null, "", "/");
+                }
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
             }}
             className="flex items-center gap-3 group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#DB2F3C] rounded-lg p-1 transition-opacity hover:opacity-95 cursor-pointer"
             aria-label="Sindhi Matrimony Home"
@@ -124,12 +139,12 @@ const HeaderComponent: React.FC<HeaderProps> = ({
             <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-[#444444]">
               <span className="hidden sm:inline">{helpPhoneText}</span>
               <a
-                href={`tel:${helpPhoneNumber.replace(/[^0-9+]/g, "")}`}
+                href={`tel:${activeHelpPhone.replace(/[^0-9+]/g, "")}`}
                 className="inline-flex items-center gap-1 font-semibold text-[#DB2F3C] hover:underline"
-                aria-label={`${helpPhoneText} ${helpPhoneNumber}`}
+                aria-label={`${helpPhoneText} ${activeHelpPhone}`}
               >
                 <Phone className="w-3.5 h-3.5 fill-[#DB2F3C] text-[#DB2F3C]" />
-                <span className="tracking-wide">{helpPhoneNumber}</span>
+                <span className="tracking-wide">{activeHelpPhone}</span>
               </a>
             </div>
           ) : shouldShowLogin ? (
@@ -167,6 +182,9 @@ const HeaderComponent: React.FC<HeaderProps> = ({
   );
 };
 
-export const Header = memo(HeaderComponent);
+export const Header = memo(
+  HeaderComponent,
+  (prev, next) => isDeepEqual(prev, next)
+);
 Header.displayName = "Header";
 export default Header;

@@ -4,12 +4,18 @@ import React, { memo } from "react";
 import Link from "next/link";
 import { Phone, ArrowLeft, Headphones } from "lucide-react";
 import { MatrimonyHeartLogo } from "@/screens/landingScreen/components/Icons";
+import { useHelpSupportQuery } from "@/tanstackQuery";
+import { isDeepEqual } from "@/utils";
 
 interface OtpHeaderProps {
   onBackClick?: () => void;
 }
 
 const OtpHeaderComponent: React.FC<OtpHeaderProps> = ({ onBackClick }) => {
+  const { data: helpRes } = useHelpSupportQuery();
+  const helpData = (helpRes as any)?.data || helpRes;
+  const helpline = helpData?.supportDesk?.tollFreeHelpline || "8144-77-88-66";
+  const helplineRaw = helpData?.supportDesk?.tollFreeRaw || "+918144778866";
   return (
     <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-stone-200 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-18 flex items-center justify-between">
@@ -66,9 +72,9 @@ const OtpHeaderComponent: React.FC<OtpHeaderProps> = ({ onBackClick }) => {
           </div>
 
           <a
-            href="tel:+918144778866"
+            href={`tel:${helplineRaw}`}
             className="group flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-stone-50 hover:bg-rose-50 border border-stone-200 hover:border-red-200 transition-all text-[#1A1A1A] hover:text-[#DB2F3C] shadow-2xs"
-            aria-label="Call Customer Support at 8144-77-88-66"
+            aria-label={`Call Customer Support at ${helpline}`}
           >
             <div className="w-7 h-7 rounded-full bg-red-100 group-hover:bg-[#DB2F3C] text-[#DB2F3C] group-hover:text-white flex items-center justify-center transition-colors">
               <Phone className="w-3.5 h-3.5 fill-current" />
@@ -78,7 +84,7 @@ const OtpHeaderComponent: React.FC<OtpHeaderProps> = ({ onBackClick }) => {
                 Need help? Call
               </span>
               <span className="text-xs sm:text-sm font-bold text-[#DB2F3C] tracking-wide mt-0.5 leading-none">
-                8144-77-88-66
+                {helpline}
               </span>
             </div>
           </a>
@@ -88,5 +94,8 @@ const OtpHeaderComponent: React.FC<OtpHeaderProps> = ({ onBackClick }) => {
   );
 };
 
-export const OtpHeader = memo(OtpHeaderComponent);
+export const OtpHeader = memo(
+  OtpHeaderComponent,
+  (prev, next) => isDeepEqual(prev, next)
+);
 OtpHeader.displayName = "OtpHeader";

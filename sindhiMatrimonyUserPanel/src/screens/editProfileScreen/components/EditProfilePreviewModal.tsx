@@ -81,20 +81,23 @@ const EditProfilePreviewModalComponent: React.FC<EditProfilePreviewModalProps> =
             <div className="flex-1 space-y-2">
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-bold text-stone-900 capitalize font-heading">
-                  {basicInfo.name || "Naman"}
+                  {basicInfo.name || "Member Profile"}
                 </h2>
                 <span title="Verified Profile">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 </span>
               </div>
 
-              <p className="text-xs text-stone-500 font-mono">
-                ID: SM9842104 • Profile created by {basicInfo.profileCreatedBy}
-              </p>
+              {basicInfo.profileCreatedBy && (
+                <p className="text-xs text-stone-500 font-mono">
+                  Profile created by {basicInfo.profileCreatedBy}
+                </p>
+              )}
 
               <div className="space-y-1 text-xs text-stone-700">
                 <p>
-                  <span className="font-semibold">Age / Height:</span> 27 Yrs,{" "}
+                  <span className="font-semibold">Age / Height:</span>{" "}
+                  {basicInfo.dobYear ? `${new Date().getFullYear() - Number(basicInfo.dobYear)} Yrs, ` : ""}
                   {basicInfo.height}
                 </p>
                 <p>

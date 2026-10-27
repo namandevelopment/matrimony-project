@@ -17,6 +17,8 @@ export {
   useDashboardQuery,
   useDashboardFeedQuery,
   useDashboardMatchesQuery,
+  useDashboardAdsQuery,
+  useHelpSupportQuery,
   useSuccessStoriesQuery,
   useReviewsQuery,
   useHoroscopeQuery,

@@ -75,7 +75,7 @@ let callLogsStore = [
  * All call logs and audio records
  */
 export const getCallLogs = asyncHandler(async (req, res) => {
-  const { disposition = "ALL", staffId, search = "", page = 1, limit = 20 } = req.query;
+  const { disposition = "ALL", staffId, search = "" } = req.query;
 
   let filtered = [...callLogsStore];
 
@@ -98,14 +98,34 @@ export const getCallLogs = asyncHandler(async (req, res) => {
     );
   }
 
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query?.pageSize || req.query?.limit, 10) || 20));
+
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const startIdx = (page - 1) * limit;
+  const paginatedCalls = filtered.slice(startIdx, startIdx + limit);
+
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Call logs retrieved successfully.",
     {
-      total: filtered.length,
-      calls: filtered,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+      calls: paginatedCalls,
+      list: paginatedCalls,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE

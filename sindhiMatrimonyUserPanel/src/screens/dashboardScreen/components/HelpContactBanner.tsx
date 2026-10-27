@@ -2,6 +2,8 @@
 
 import React, { memo } from "react";
 import { Phone, MessageCircle } from "lucide-react";
+import { useHelpSupportQuery } from "@/tanstackQuery";
+import { isDeepEqual } from "@/utils";
 
 export interface HelpContactBannerProps {
   onCallClick?: () => void;
@@ -14,11 +16,17 @@ const HelpContactBannerComponent: React.FC<HelpContactBannerProps> = ({
   onChatClick,
   className = "",
 }) => {
+  const { data: helpRes } = useHelpSupportQuery();
+  const helpData = (helpRes as any)?.data || helpRes;
+  const tollFreeRaw = helpData?.supportDesk?.tollFreeRaw || helpData?.supportDesk?.enquiryNumber || "+918144778866";
+  const whatsappNumber = helpData?.supportDesk?.whatsappNumber || "918144778866";
+  const displayPhone = helpData?.supportDesk?.enquiryNumber || helpData?.supportDesk?.tollFreeHelpline || "8144-77-88-66";
+
   const handleCall = () => {
     if (onCallClick) {
       onCallClick();
     } else {
-      window.location.href = "tel:+918769530667";
+      window.location.href = `tel:${tollFreeRaw}`;
     }
   };
 
@@ -27,7 +35,7 @@ const HelpContactBannerComponent: React.FC<HelpContactBannerProps> = ({
       onChatClick();
     } else {
       window.open(
-        "https://wa.me/918769530667?text=Hello%20Sindhi%20Matrimony%2C%20I%20need%20help%20with%20my%20account",
+        `https://wa.me/${whatsappNumber}?text=Hello%20Sindhi%20Matrimony%2C%20I%20need%20help%20with%20my%20account`,
         "_blank"
       );
     }
@@ -74,6 +82,9 @@ const HelpContactBannerComponent: React.FC<HelpContactBannerProps> = ({
   );
 };
 
-export const HelpContactBanner = memo(HelpContactBannerComponent);
+export const HelpContactBanner = memo(
+  HelpContactBannerComponent,
+  (prev, next) => isDeepEqual(prev, next)
+);
 HelpContactBanner.displayName = "HelpContactBanner";
 export default HelpContactBanner;

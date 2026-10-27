@@ -1,5 +1,5 @@
 import { useQuery, useInfiniteQuery, UseQueryOptions, UseInfiniteQueryOptions } from '@tanstack/react-query';
-import { apiFetch, apiRequest } from '../../redux/apiService';
+import { apiFetch, apiRequest, getToken } from '../../redux/apiService';
 import { ApiURL } from '../../redux/apiService/endpoint';
 import { QUERY_KEYS } from '../keys';
 
@@ -112,10 +112,11 @@ export const useApiInfiniteQuery = <T = any>({
 
 /** 1. Current User Profile */
 export const useProfileQuery = (enabled = true) => {
+  const hasToken = typeof window !== 'undefined' ? Boolean(getToken()) : true;
   return useApiQuery({
     queryKey: QUERY_KEYS.profile,
     url: ApiURL.getProfile,
-    enabled,
+    enabled: Boolean(enabled && hasToken),
   });
 };
 
@@ -131,11 +132,12 @@ export const useCandidateProfileQuery = (candidateId?: string, enabled = true) =
 
 /** 2. Consolidated Web Dashboard Feed (sub-10ms single flight) */
 export const useDashboardFeedQuery = (rashi?: string, enabled = true) => {
+  const hasToken = typeof window !== 'undefined' ? Boolean(getToken()) : true;
   return useApiQuery({
     queryKey: QUERY_KEYS.dashboardFeed(rashi),
     url: ApiURL.dashboard,
     params: rashi ? { rashi } : undefined,
-    enabled,
+    enabled: Boolean(enabled && hasToken),
     staleTime: 1000 * 60 * 5, // 5 minutes cache
   });
 };
@@ -191,6 +193,28 @@ export const useDashboardQuery = (enabled = true) => {
     queryKey: QUERY_KEYS.dashboard,
     url: ApiURL.mobileHomeFeed,
     enabled,
+  });
+};
+
+/** 2.6 Dashboard Ads & Promotional Banners Feed */
+export const useDashboardAdsQuery = (enabled = true) => {
+  return useApiQuery({
+    queryKey: QUERY_KEYS.banners,
+    url: ApiURL.homeBanners,
+    isToken: false,
+    enabled,
+    staleTime: 1000 * 60 * 10,
+  });
+};
+
+/** 2.7 Help & Support Dynamic Admin Content */
+export const useHelpSupportQuery = (enabled = true) => {
+  return useApiQuery({
+    queryKey: QUERY_KEYS.helpSupport,
+    url: ApiURL.helpSupport,
+    isToken: false,
+    enabled,
+    staleTime: 1000 * 60 * 30, // 30 minutes cache
   });
 };
 

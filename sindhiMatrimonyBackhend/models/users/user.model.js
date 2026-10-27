@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { addTimeStamp } from "../../utils/globalFunction.js";
-import { ROLES, ACCOUNT_STATUS } from "../../utils/variables.js";
+import { ROLES, ACCOUNT_STATUS, REGISTRATION_STATUS } from "../../utils/variables.js";
 
 const { Schema } = mongoose;
 
@@ -10,7 +10,6 @@ const userSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      unique: true,
       index: true,
     },
     countryCode: {
@@ -60,7 +59,13 @@ const userSchema = new Schema(
     },
     isPhoneVerified: {
       type: Boolean,
-      default: true,
+      default: false,
+      index: true,
+    },
+    registrationStatus: {
+      type: String,
+      enum: Object.values(REGISTRATION_STATUS),
+      default: REGISTRATION_STATUS.DRAFT,
       index: true,
     },
     isEmailVerified: {
@@ -105,7 +110,11 @@ const userSchema = new Schema(
   }
 );
 
-// Compound indexes for ultra-fast query matching
+// Partial unique index: enforces phone uniqueness ONLY on non-deleted accounts
+userSchema.index(
+  { phone: 1 },
+  { unique: true, partialFilterExpression: { isDeleted: false } }
+);
 userSchema.index({ phone: 1, isDeleted: 1 });
 userSchema.index({ status: 1, isDeleted: 1 });
 

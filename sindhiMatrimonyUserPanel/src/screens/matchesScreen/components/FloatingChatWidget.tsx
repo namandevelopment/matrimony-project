@@ -5,6 +5,7 @@ import { MessageSquare, X, Send, User, ExternalLink } from "lucide-react";
 import englishTalks from "@/components/FloatingChatWidget/data/englishTalks.json";
 import { getBotResponse } from "@/components/FloatingChatWidget/chatBotEngine";
 import { memoWithDeepEqual } from "@/utils/isDeepEqual";
+import { MatrimonyHeartLogo } from "@/screens/landingScreen/components/Icons";
 
 export interface FloatingChatWidgetProps {
   className?: string;
@@ -151,8 +152,8 @@ const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
           <div className="px-4.5 py-3.5 bg-gradient-to-r from-[#DB2F3C] via-[#E23B48] to-[#B71F2A] text-white flex items-center justify-between shadow-xs">
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative shrink-0">
-                <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-xs ring-2 ring-white/30 flex items-center justify-center text-white shadow-2xs">
-                  <User className="w-5 h-5 text-white" />
+                <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-2xs overflow-hidden p-1">
+                  <MatrimonyHeartLogo size={24} className="w-6 h-6" color="#DB2F3C" />
                 </div>
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-white animate-pulse" />
               </div>

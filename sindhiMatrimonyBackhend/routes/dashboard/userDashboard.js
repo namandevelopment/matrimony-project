@@ -123,6 +123,7 @@ router.put("/success-stories/:id/like", toggleLikeSuccessStory);
  * @access  Public / Private
  */
 router.get("/banners", getHomeBanners);
+router.get("/ads", getHomeBanners);
 
 /**
  * @route   GET /api/v1/dashboard/support-info

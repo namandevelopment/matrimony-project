@@ -32,7 +32,7 @@ const NotificationsScreenComponent: React.FC<NotificationsScreenProps> = ({
 
   // Primary State
   const [notifications, setNotifications] =
-    useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+    useState<NotificationItem[]>([]);
   const [activeCategory, setActiveCategory] =
     useState<NotificationCategory>("all");
   const [currentFilter, setCurrentFilter] =

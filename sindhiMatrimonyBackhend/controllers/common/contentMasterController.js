@@ -9,6 +9,7 @@ import {
 } from "../../constants/legalContentSeed.js";
 import DEFAULT_OUR_PROCESS from "../../constants/ourProcessSeed.js";
 import { DEFAULT_HELP_SUPPORT_DATA } from "../../constants/helpSupportSeed.js";
+import { systemConfigStore } from "../admin/adminSettingsController.js";
 import {
   HTTP_OK,
   HTTP_CREATED,
@@ -140,6 +141,47 @@ export const fetchTermsAndConditions = async () => {
 export const fetchHelpSupport = async (options = {}) => {
   const { category, q } = options;
 
+  const gen = systemConfigStore?.general || {};
+  const enquiry = gen.enquiryNumber || "+91 8144-77-88-66";
+  const whatsapp = gen.whatsappNumber || "+91 98765 43210";
+  const helpline = gen.supportPhone || "+91 98765 43210";
+  const waClean = whatsapp.replace(/\D/g, "") || "918769530667";
+  const enqClean = enquiry.replace(/\s/g, "");
+
+  const supportDesk = {
+    enquiryNumber: enquiry,
+    whatsappNumber: waClean,
+    whatsappDisplay: whatsapp,
+    tollFreeHelpline: enquiry,
+    tollFreeRaw: enqClean,
+    supportPhone: helpline,
+    supportEmail: gen.contactEmail || gen.supportEmail || "support@sindhimarriage.in",
+    headquartersCity: gen.headquartersCity || "Mumbai / Ahmedabad",
+    siteName: gen.siteName || "Sindhi Matrimony Official",
+  };
+
+  const syncChannels = (channels) => {
+    return (channels || DEFAULT_HELP_SUPPORT_DATA.channels).map((ch) => {
+      if (ch.id === "phone-helpline") {
+        return {
+          ...ch,
+          value: enqClean,
+          displayValue: enquiry,
+          actionHref: `tel:${enqClean.replace(/[^0-9+]/g, "")}`,
+        };
+      }
+      if (ch.id === "whatsapp-chat") {
+        return {
+          ...ch,
+          value: waClean,
+          displayValue: whatsapp,
+          actionHref: `https://wa.me/${waClean}?text=Hi%20SindhiMatrimony%20Support,%20I%20need%20assistance%20with%20my%20account.`,
+        };
+      }
+      return ch;
+    });
+  };
+
   if (mongoose.connection.readyState !== 1) {
     let faqs = Array.isArray(DEFAULT_HELP_SUPPORT_DATA.faqs)
       ? [...DEFAULT_HELP_SUPPORT_DATA.faqs]
@@ -164,6 +206,8 @@ export const fetchHelpSupport = async (options = {}) => {
 
     return {
       ...DEFAULT_HELP_SUPPORT_DATA,
+      channels: syncChannels(DEFAULT_HELP_SUPPORT_DATA.channels),
+      supportDesk,
       faqs,
       totalFaqsCount: faqs.length,
     };
@@ -206,12 +250,18 @@ export const fetchHelpSupport = async (options = {}) => {
 
     return {
       ...doc,
+      channels: syncChannels(doc.channels),
+      supportDesk,
       faqs,
       totalFaqsCount: faqs.length,
     };
   } catch (err) {
     logMessage(`⚠️ Help Support fetch error: ${err.message}`, null, "warn");
-    return DEFAULT_HELP_SUPPORT_DATA;
+    return {
+      ...DEFAULT_HELP_SUPPORT_DATA,
+      channels: syncChannels(DEFAULT_HELP_SUPPORT_DATA.channels),
+      supportDesk,
+    };
   }
 };
 
@@ -485,6 +535,18 @@ export const updateContent = asyncHandler(async (req, res) => {
 
   if (normalized === "HELP_SUPPORT") {
     payload.lastUpdated = new Date();
+    if (mongoose.connection.readyState !== 1) {
+      Object.assign(DEFAULT_HELP_SUPPORT_DATA, payload);
+      return apiHTTPResponse(
+        req,
+        res,
+        HTTP_OK,
+        "Help & Support information updated successfully.",
+        DEFAULT_HELP_SUPPORT_DATA,
+        OK,
+        ERROR_FALSE
+      );
+    }
     const updated = await HelpSupport.findOneAndUpdate(
       { key: "DEFAULT_HELP_SUPPORT" },
       { $set: payload },
@@ -622,29 +684,70 @@ export const getMySupportTickets = asyncHandler(async (req, res) => {
     );
   }
 
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query?.pageSize || req.query?.limit, 10) || 20));
+
   if (mongoose.connection.readyState !== 1) {
     return apiHTTPResponse(
       req,
       res,
       HTTP_OK,
       "Support tickets retrieved successfully.",
-      [],
+      {
+        total: 0,
+        totalPages: 0,
+        page,
+        limit,
+        hasMore: false,
+        pagination: {
+          total: 0,
+          page,
+          limit,
+          totalPages: 0,
+          hasMore: false,
+        },
+        tickets: [],
+        list: [],
+      },
       OK,
       ERROR_FALSE
     );
   }
 
   const query = userId ? { userId } : { email: String(email).toLowerCase() };
-  const tickets = await SupportTicket.find(query)
-    .sort({ createdAt: -1 })
-    .lean();
+  const [tickets, count] = await Promise.all([
+    SupportTicket.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+    SupportTicket.countDocuments(query),
+  ]);
+
+  const total = count || tickets.length;
+  const totalPages = Math.ceil(total / limit) || 1;
 
   return apiHTTPResponse(
     req,
     res,
     HTTP_OK,
     "Support tickets retrieved successfully.",
-    tickets,
+    {
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+      tickets,
+      list: tickets,
+    },
     OK,
     ERROR_FALSE
   );

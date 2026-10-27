@@ -53,7 +53,9 @@ let blockedDevicesStore = [
  * Flagged member abuse reports queue
  */
 export const getSafetyReports = asyncHandler(async (req, res) => {
-  const { status = "ALL", severity = "ALL", page = 1, limit = 20 } = req.query;
+  const { status = "ALL", severity = "ALL" } = req.query;
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query?.pageSize || req.query?.limit, 10) || 20));
 
   let filtered = [...safetyReportsStore];
 
@@ -65,15 +67,32 @@ export const getSafetyReports = asyncHandler(async (req, res) => {
     filtered = filtered.filter((r) => r.severity === severity.toUpperCase());
   }
 
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const startIdx = (page - 1) * limit;
+  const paginatedReports = filtered.slice(startIdx, startIdx + limit);
+
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Safety abuse reports queue retrieved successfully.",
     {
-      total: filtered.length,
+      total,
       pendingCount: safetyReportsStore.filter((r) => r.status === "PENDING").length,
-      reports: filtered,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+      reports: paginatedReports,
+      list: paginatedReports,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE

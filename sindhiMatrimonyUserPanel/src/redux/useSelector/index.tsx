@@ -19,6 +19,15 @@ export const selectDashboardData = createSelector([selectDataState], (data: any)
 export const selectDashboardLoader = createSelector([selectDataState], (data: any) => !!data?.dashboardData?.loader);
 
 export const selectMasterDropdowns = createSelector([selectDataState], (data: any) => data?.masterDropdownsData?.data || {});
+export const selectMasterDropdownsLoader = createSelector([selectDataState], (data: any) => !!data?.masterDropdownsData?.loader);
+export const selectSubcastesDropdown = createSelector([selectMasterDropdowns], (d: any) => d?.subcastes || []);
+export const selectSubcasteMap = createSelector([selectMasterDropdowns], (d: any) => d?.subcasteMap || {});
+export const selectCastesDropdown = createSelector([selectMasterDropdowns], (d: any) => d?.castes || []);
+export const selectHeightsDropdown = createSelector([selectMasterDropdowns], (d: any) => d?.heights || []);
+export const selectMaritalStatusesDropdown = createSelector([selectMasterDropdowns], (d: any) => d?.maritalStatuses || []);
+export const selectDietsDropdown = createSelector([selectMasterDropdowns], (d: any) => d?.diets || []);
+export const selectStatesDropdown = createSelector([selectMasterDropdowns], (d: any) => d?.states || []);
+export const selectDiasporaCountriesDropdown = createSelector([selectMasterDropdowns], (d: any) => d?.diasporaCountries || []);
 export const selectMyProfiles = createSelector([selectDataState], (data: any) => data?.myProfilesData?.data || []);
 
 // =============================================================================

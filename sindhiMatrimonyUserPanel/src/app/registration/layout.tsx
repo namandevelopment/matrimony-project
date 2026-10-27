@@ -1,7 +1,8 @@
-import React from "react";
+import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { createMetadata } from "@/metadata";
+import { RegistrationRouteGuard } from "./components/RegistrationRouteGuard";
 
 export const metadata: Metadata = createMetadata({
   title: "Sindhi Matrimony Registration",
@@ -21,13 +22,15 @@ export default function RegistrationLayout({
         showHelpPhone
         helpPhoneText="Need help? Call"
         helpPhoneNumber="8144-77-88-66"
-        subtitle="From Matrimony.com Group"
+        subtitle="Powered by NeelimaMarriage.com"
         position="sticky"
       />
 
-      {/* Step Page Content */}
+      {/* Step Page Content guarded by authoritative server state */}
       <div className="flex-1 w-full flex flex-col">
-        {children}
+        <Suspense fallback={<div className="flex-1 w-full flex items-center justify-center p-8 text-stone-400">Loading...</div>}>
+          <RegistrationRouteGuard>{children}</RegistrationRouteGuard>
+        </Suspense>
       </div>
     </div>
   );

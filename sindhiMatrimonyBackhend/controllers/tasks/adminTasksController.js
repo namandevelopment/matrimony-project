@@ -108,6 +108,14 @@ export const getStaffTasks = asyncHandler(async (req, res) => {
     completed: staffTasksStore.filter((t) => t.status === "COMPLETED").length,
   };
 
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query?.pageSize || req.query?.limit, 10) || 10));
+
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const startIdx = (page - 1) * limit;
+  const paginatedTasks = filtered.slice(startIdx, startIdx + limit);
+
   return apiHTTPResponse(
     req,
     res,
@@ -115,7 +123,20 @@ export const getStaffTasks = asyncHandler(async (req, res) => {
     "Staff daily tasks registry retrieved successfully.",
     {
       counts,
-      tasks: filtered,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+      tasks: paginatedTasks,
+      list: paginatedTasks,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE

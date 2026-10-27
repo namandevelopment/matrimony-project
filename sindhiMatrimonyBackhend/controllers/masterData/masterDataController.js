@@ -3,6 +3,9 @@ import { asyncHandler, apiHTTPResponse } from "../../utils/globalFunction.js";
 import * as CONSTANTS from "../../utils/constants.js";
 import {
   SINDHI_SUBCASTES,
+  SINDHI_SUBCASTE_MAP,
+  DEFAULT_SUBCASTES,
+  GOTHRA_OPTIONS,
   SINDHI_SURNAMES_MAPPING,
   SINDHI_SAMPRADAYAS,
   PROFILE_FOR_OPTIONS,
@@ -35,12 +38,16 @@ import {
   DOCUMENT_TYPE_OPTIONS,
   EMPLOYEE_ROLE_OPTIONS,
 } from "../../constants/masterData.constants.js";
+import { systemConfigStore } from "../admin/adminSettingsController.js";
 
 // Pre-compute static bootstrap bundle and hash for instant Sub-1ms serving
 const BOOTSTRAP_PAYLOAD = {
   gender: GENDER_OPTIONS,
   subcastes: SINDHI_SUBCASTES,
+  defaultSubcastes: DEFAULT_SUBCASTES,
+  subcasteMap: SINDHI_SUBCASTE_MAP,
   castes: CASTE_OPTIONS,
+  gothras: GOTHRA_OPTIONS,
   religions: RELIGION_OPTIONS,
   sampradayas: SINDHI_SAMPRADAYAS,
   motherTongues: MOTHER_TONGUE_OPTIONS,
@@ -215,6 +222,19 @@ export const getDropdowns = asyncHandler(async (req, res) => {
       responseData.quickCities = BOOTSTRAP_PAYLOAD.quickCities;
     } else if (key === "degrees") {
       responseData.degrees = getFilteredDegreesList(category, activeSearch);
+    } else if (key === "portalConfig" || key === "contactConfig" || key === "config" || key === "systemConfig") {
+      responseData[key] = {
+        whatsappNumber: systemConfigStore?.general?.whatsappNumber || "+91 98765 43210",
+        enquiryNumber: systemConfigStore?.general?.enquiryNumber || "+91 8144-77-88-66",
+        supportPhone: systemConfigStore?.general?.supportPhone || "+91 98765 43210",
+        supportEmail: systemConfigStore?.general?.contactEmail || "support@sindhimarriage.in",
+        headquartersCity: systemConfigStore?.general?.headquartersCity || "Mumbai / Ahmedabad",
+        siteName: systemConfigStore?.general?.siteName || "Sindhi Matrimony Official",
+      };
+    } else if (key === "whatsapp" || key === "whatsappNumber") {
+      responseData[key] = systemConfigStore?.general?.whatsappNumber || "+91 98765 43210";
+    } else if (key === "enquiry" || key === "enquiryNumber") {
+      responseData[key] = systemConfigStore?.general?.enquiryNumber || "+91 8144-77-88-66";
     } else if (BOOTSTRAP_PAYLOAD[key] !== undefined) {
       responseData[key] = BOOTSTRAP_PAYLOAD[key];
     }

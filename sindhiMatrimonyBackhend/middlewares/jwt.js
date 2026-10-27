@@ -48,7 +48,7 @@ export const publicPaths = [
 
   // Public Dynamic Content, Policies & Support Gateway (Privacy Policy, Terms, Process, FAQs)
   /^\/api\/v1\/content(\/.*)?$/,
-  /^\/api\/v1\/(privacy-policy|terms-and-conditions|help-support|our-process)$/,
+  /^\/api\/v1\/(privacy-policy|terms-and-conditions|help-support)$/,
   /^\/api\/v1\/support(\/.*)?$/,
 
   // Dashboard & Mobile HomeScreen Resilient Endpoints (Sub-15ms Single Flight & Discovery)

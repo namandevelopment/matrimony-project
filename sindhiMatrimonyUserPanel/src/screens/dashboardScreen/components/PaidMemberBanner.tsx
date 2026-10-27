@@ -1,6 +1,8 @@
 "use client";
 
 import React, { memo } from "react";
+import { useDashboardAdsQuery } from "@/tanstackQuery";
+import { isDeepEqual } from "@/utils";
 import {
   CallWhatsAppFeatureIcon,
   UnlimitedMessagesFeatureIcon,
@@ -38,10 +40,13 @@ const PAID_FEATURES = [
 ];
 
 const PaidMemberBannerComponent: React.FC<PaidMemberBannerProps> = ({
-  discountPercent = 71,
+  discountPercent: propDiscount,
   onUpgradeClick,
   className = "",
 }) => {
+  const { data: adsRes } = useDashboardAdsQuery();
+  const adsData = (adsRes as any)?.data || adsRes;
+  const discountPercent = propDiscount !== undefined ? propDiscount : (adsData?.paidMember?.discountPercent ?? 71);
   return (
     <section
       aria-label="Become a Paid Member Benefits Banner"
@@ -101,6 +106,9 @@ const PaidMemberBannerComponent: React.FC<PaidMemberBannerProps> = ({
   );
 };
 
-export const PaidMemberBanner = memo(PaidMemberBannerComponent);
+export const PaidMemberBanner = memo(
+  PaidMemberBannerComponent,
+  (prev, next) => isDeepEqual(prev, next)
+);
 PaidMemberBanner.displayName = "PaidMemberBanner";
 export default PaidMemberBanner;

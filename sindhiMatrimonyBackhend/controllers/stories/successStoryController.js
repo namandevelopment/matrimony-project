@@ -100,8 +100,8 @@ const normalizeStory = (s, idx = 0) => {
  * Route: GET /api/v1/dashboard/success-stories
  */
 export const getPublicSuccessStories = asyncHandler(async (req, res) => {
-  const page = Math.max(1, parseInt(req.query?.page, 10) || 1);
-  const limit = Math.min(50, Math.max(1, parseInt(req.query?.limit, 10) || 12));
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(req.query?.limit || req.query?.pageSize, 10) || 12));
 
   let stories = [];
 
@@ -124,6 +124,7 @@ export const getPublicSuccessStories = asyncHandler(async (req, res) => {
   }
 
   const total = stories.length;
+  const totalPages = Math.ceil(total / limit) || 1;
   const startIdx = (page - 1) * limit;
   const paginated = stories.slice(startIdx, startIdx + limit);
 
@@ -134,9 +135,19 @@ export const getPublicSuccessStories = asyncHandler(async (req, res) => {
     "Success stories retrieved successfully.",
     {
       count: total,
-      totalPages: Math.ceil(total / limit) || 1,
+      total,
+      totalPages,
       page,
       limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+      list: paginated,
       items: paginated,
       stories: paginated, // Alias for convenient client binding
     },
@@ -359,13 +370,32 @@ export const getAdminSuccessStories = asyncHandler(async (req, res) => {
     );
   }
 
+  const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const paginated = filtered.slice((page - 1) * limit, (page - 1) * limit + limit);
+
   return apiHTTPResponse(
     req,
     res,
     HTTP_OK,
     "Admin success stories retrieved successfully.",
     {
-      stories: filtered,
+      stories: paginated,
+      list: paginated,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
       counts: {
         total: all.length,
         published: all.filter((s) => s.status === "PUBLISHED" || s.isActive).length,

@@ -15,6 +15,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { memoWithDeepEqual } from "@/utils";
+import { useHelpSupportQuery } from "@/tanstackQuery";
 import type { ChatMessage, QuickSuggestion, FloatingChatWidgetProps } from "./types";
 import englishTalks from "./data/englishTalks.json";
 
@@ -23,12 +24,16 @@ const DEFAULT_SUGGESTIONS: QuickSuggestion[] = englishTalks.quickSuggestions as 
 const FloatingChatWidgetComponent: React.FC<FloatingChatWidgetProps> = ({
   title = "Sindhi Matrimony Support",
   subtitle = "Typically replies in 1 minute • Online",
-  whatsappNumber = "918769530667",
+  whatsappNumber: propWhatsappNumber,
   supportEmail = "support@sindhimarriage.in",
   initialGreeting = "Namaste! 🙏 Welcome to Sindhi Matrimony. Looking for your perfect life partner or need help setting up your profile?",
   onOpen,
   onClose,
 }) => {
+  const { data: helpRes } = useHelpSupportQuery();
+  const helpData = (helpRes as any)?.data || helpRes;
+  const whatsappNumber = propWhatsappNumber || helpData?.supportDesk?.whatsappNumber || "918769530667";
+
   // Completely isolated local state - ensures 0 re-renders on the parent page
   const [isOpen, setIsOpen] = useState(false);
   const [isTeaserDismissed, setIsTeaserDismissed] = useState(false);

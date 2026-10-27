@@ -10,9 +10,17 @@ import {
   UserSubscription,
 } from "../../models/index.js";
 import { getKey, setKeyWithTime, removeKey } from "../../services/serviceRedis.js";
-import { SEED_CANDIDATE_POOL, SEED_SUCCESS_STORIES } from "../../constants/seedCandidateData.js";
 import { isInterestSentToCandidate } from "../matchmaking/interestsController.js";
-import { addNotification } from "../notifications/notificationController.js";
+import { addNotification, hasRecentProfileVisitNotification } from "../notifications/notificationController.js";
+import { SEED_CANDIDATE_POOL } from "../../constants/seedCandidateData.js";
+
+const getTodayDateString = () =>
+  new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
 const getUserId = (req) =>
   req.user?.id ||
@@ -24,329 +32,79 @@ const getUserId = (req) =>
 
 // 12 Authentic Vedic Zodiac Rashis for Matrimonial Horoscopes
 export const ZODIAC_RASIS = [
-  {
-    id: "aries",
-    nameEn: "Aries",
-    nameHi: "मेष (Mesh)",
-    dateRange: "Mar 21 - Apr 19",
-    symbol: "♈",
-    element: "Fire",
-    elementHi: "अग्नि तत्व",
-    rulingPlanet: "Mars",
-    rulingPlanetHi: "मंगल देव",
-    ratingStars: 4.5,
-    loveMarriageForecast:
-      "Venus and Moon align auspiciously. High possibility of pleasant conversations with matrimonial prospects. Mutual understanding and emotional connection will deepen today.",
-    careerFinanceForecast:
-      "Dynamic energy aids key negotiations and creative ideas. An unexpected financial opportunity through an acquaintance may arise.",
-    healthWellnessForecast:
-      "Vitality is strong. Maintain hydration and take evening leisure walks with family for restful sleep.",
-    luckyNumber: "9, 18",
-    luckyColor: "Crimson Red / केसरिया",
-    luckyColorHex: "#DB2F3C",
-    shubhMuhurat: "10:15 AM - 11:45 AM",
-    bestCompatSign: "Leo (सिंह) & Sagittarius (धनु)",
-    todayTip: "Be open and articulate in matrimonial communications today.",
-  },
-  {
-    id: "taurus",
-    nameEn: "Taurus",
-    nameHi: "वृषभ (Vrishabh)",
-    dateRange: "Apr 20 - May 20",
-    symbol: "♉",
-    element: "Earth",
-    elementHi: "पृथ्वी तत्व",
-    rulingPlanet: "Venus",
-    rulingPlanetHi: "शुक्र देव",
-    ratingStars: 5,
-    loveMarriageForecast:
-      "Ruled by Venus, today brings utmost romance and harmony. Elders in the family will enthusiastically support match proposals and horoscope compatibility discussions.",
-    careerFinanceForecast:
-      "Financial stability strengthens. Thoughtful long-term investments will yield favorable returns.",
-    healthWellnessForecast:
-      "Peaceful mental state. A serene atmosphere at home uplifts overall wellbeing.",
-    luckyNumber: "6, 15",
-    luckyColor: "Lotus Pink / गुलाबी",
-    luckyColorHex: "#E11D48",
-    shubhMuhurat: "02:30 PM - 04:00 PM",
-    bestCompatSign: "Virgo (कन्या) & Capricorn (मकर)",
-    todayTip: "Express your genuine expectations with prospective partners gently.",
-  },
-  {
-    id: "gemini",
-    nameEn: "Gemini",
-    nameHi: "मिथुन (Mithun)",
-    dateRange: "May 21 - Jun 20",
-    symbol: "♊",
-    element: "Air",
-    elementHi: "वायु तत्व",
-    rulingPlanet: "Mercury",
-    rulingPlanetHi: "बुध देव",
-    ratingStars: 4,
-    loveMarriageForecast:
-      "Your witty communication and charisma shine bright. An interesting matrimonial profile from an intellectual background might respond to your interest today.",
-    careerFinanceForecast:
-      "Productive multi-tasking day. Communication with overseas or distant clients will be very rewarding.",
-    healthWellnessForecast:
-      "Mind is active; practice 10 minutes of deep meditation to ease restlessness.",
-    luckyNumber: "5, 14",
-    luckyColor: "Emerald Green / पन्ना हरा",
-    luckyColorHex: "#059669",
-    shubhMuhurat: "09:00 AM - 10:30 AM",
-    bestCompatSign: "Libra (तुला) & Aquarius (कुंभ)",
-    todayTip: "Clear, transparent dialogue will resolve any partner preference doubts.",
-  },
-  {
-    id: "cancer",
-    nameEn: "Cancer",
-    nameHi: "कर्क (Kark)",
-    dateRange: "Jun 21 - Jul 22",
-    symbol: "♋",
-    element: "Water",
-    elementHi: "जल तत्व",
-    rulingPlanet: "Moon",
-    rulingPlanetHi: "चंद्रमा",
-    ratingStars: 4.5,
-    loveMarriageForecast:
-      "Emotional warmth prevails. Family discussions regarding marriage arrangements or horoscope matching will progress with deep mutual respect.",
-    careerFinanceForecast:
-      "Co-workers will be exceptionally supportive. Intuitive decisions at work prove accurate.",
-    healthWellnessForecast:
-      "Nourishing homemade food and bonding with close loved ones will restore your energy.",
-    luckyNumber: "2, 11",
-    luckyColor: "Pearl White / दूधिया सफेद",
-    luckyColorHex: "#F3F4F6",
-    shubhMuhurat: "04:15 PM - 05:45 PM",
-    bestCompatSign: "Scorpio (वृश्चिक) & Pisces (मीन)",
-    todayTip: "Trust your gut feeling when reviewing prospective profiles today.",
-  },
-  {
-    id: "leo",
-    nameEn: "Leo",
-    nameHi: "सिंह (Singh)",
-    dateRange: "Jul 23 - Aug 22",
-    symbol: "♌",
-    element: "Fire",
-    elementHi: "अग्नि तत्व",
-    rulingPlanet: "Sun",
-    rulingPlanetHi: "सूर्य देव",
-    ratingStars: 5,
-    loveMarriageForecast:
-      "Surya's radiant blessing brings immense charm. High match response rate expected. Profiles from respectable family traditions will appreciate your confidence and values.",
-    careerFinanceForecast:
-      "Leadership qualities will be recognized. Splendid day for presentations and pitching new initiatives.",
-    healthWellnessForecast:
-      "High stamina and glowing spirits throughout the day.",
-    luckyNumber: "1, 10",
-    luckyColor: "Golden Amber / सुनहरा",
-    luckyColorHex: "#D97706",
-    shubhMuhurat: "11:30 AM - 01:00 PM",
-    bestCompatSign: "Aries (मेष)",
-    todayTip: "Take the initiative to send interest or follow-up with shortlisted profiles.",
-  },
-  {
-    id: "virgo",
-    nameEn: "Virgo",
-    nameHi: "कन्या (Kanya)",
-    dateRange: "Aug 23 - Sep 22",
-    symbol: "♍",
-    element: "Earth",
-    elementHi: "पृथ्वी तत्व",
-    rulingPlanet: "Mercury",
-    rulingPlanetHi: "बुध देव",
-    ratingStars: 4.5,
-    loveMarriageForecast:
-      "Analytical clarity helps you prioritize what matters most in a life companion. Meaningful chats with a prospective candidate will clarify future goals.",
-    careerFinanceForecast:
-      "Attention to fine detail prevents an administrative oversight. Praises from seniors likely.",
-    healthWellnessForecast:
-      "Digestive comfort is key; prioritize light, fresh meals and herbal tea.",
-    luckyNumber: "5, 23",
-    luckyColor: "Olive Jade / गहरा हरा",
-    luckyColorHex: "#15803D",
-    shubhMuhurat: "08:15 AM - 09:45 AM",
-    bestCompatSign: "Taurus (वृषभ) & Capricorn (मकर)",
-    todayTip: "Do not overthink initial conversations; let natural chemistry unfold.",
-  },
-  {
-    id: "libra",
-    nameEn: "Libra",
-    nameHi: "तुला (Tula)",
-    dateRange: "Sep 23 - Oct 22",
-    symbol: "♎",
-    element: "Air",
-    elementHi: "वायु तत्व",
-    rulingPlanet: "Venus",
-    rulingPlanetHi: "शुक्र देव",
-    ratingStars: 5,
-    loveMarriageForecast:
-      "Venus brings charm and graceful diplomacy. Ideal time for first family introductions, kundli exchange, or video calls with shortlisted matches.",
-    careerFinanceForecast:
-      "Partnerships and collaborative ventures flourish. Joint decisions bring mutually advantageous outcomes.",
-    healthWellnessForecast:
-      "Balanced posture and evening relaxing music soothe the senses.",
-    luckyNumber: "6, 24",
-    luckyColor: "Sky Blue / आसमानी",
-    luckyColorHex: "#0284C7",
-    shubhMuhurat: "03:00 PM - 04:30 PM",
-    bestCompatSign: "Gemini (मिथुन) & Aquarius (कुंभ)",
-    todayTip: "Be decisive and follow through when genuine mutual interest is shown.",
-  },
-  {
-    id: "scorpio",
-    nameEn: "Scorpio",
-    nameHi: "वृश्चिक (Vrishchik)",
-    dateRange: "Oct 23 - Nov 21",
-    symbol: "♏",
-    element: "Water",
-    elementHi: "जल तत्व",
-    rulingPlanet: "Mars",
-    rulingPlanetHi: "मंगल देव",
-    ratingStars: 4,
-    loveMarriageForecast:
-      "Passionate depth and intuition guide you. You will easily sense sincerity in communication. A trustworthy connection begins to blossom.",
-    careerFinanceForecast:
-      "Deep research and confidential planning yield powerful leverage. Stay persistent.",
-    healthWellnessForecast:
-      "High emotional energy; channel it through physical fitness or yoga.",
-    luckyNumber: "9, 27",
-    luckyColor: "Maroon / गहरा लाल",
-    luckyColorHex: "#991B1B",
-    shubhMuhurat: "01:15 PM - 02:45 PM",
-    bestCompatSign: "Cancer (कर्क) & Pisces (मीन)",
-    todayTip: "Give others space to express themselves comfortably without grilling.",
-  },
-  {
-    id: "sagittarius",
-    nameEn: "Sagittarius",
-    nameHi: "धनु (Dhanu)",
-    dateRange: "Nov 22 - Dec 21",
-    symbol: "♐",
-    element: "Fire",
-    elementHi: "अग्नि तत्व",
-    rulingPlanet: "Jupiter",
-    rulingPlanetHi: "बृहस्पति देव",
-    ratingStars: 5,
-    loveMarriageForecast:
-      "Guru's benevolent blessing expands your matrimonial horizons. Cross-city or overseas Sindhi profiles show strong astrological alignment and enthusiasm.",
-    careerFinanceForecast:
-      "High optimism and luck favor major decisions. Good tidings in higher studies or career promotion.",
-    healthWellnessForecast:
-      "Energetic and upbeat. Outdoor sports or a nature walk will revitalize you.",
-    luckyNumber: "3, 12",
-    luckyColor: "Bright Saffron / पीला",
-    luckyColorHex: "#F59E0B",
-    shubhMuhurat: "10:30 AM - 12:00 PM",
-    bestCompatSign: "Aries (मेष) & Leo (सिंह)",
-    todayTip: "Share your life philosophy and travel aspirations freely with matches.",
-  },
-  {
-    id: "capricorn",
-    nameEn: "Capricorn",
-    nameHi: "मकर (Makar)",
-    dateRange: "Dec 22 - Jan 19",
-    symbol: "♑",
-    element: "Earth",
-    elementHi: "पृथ्वी तत्व",
-    rulingPlanet: "Saturn",
-    rulingPlanetHi: "शनि देव",
-    ratingStars: 4.5,
-    loveMarriageForecast:
-      "Steady, mature commitments take precedence. Family elders appreciate your grounded values, and prospective in-laws respect your traditional grounding.",
-    careerFinanceForecast:
-      "Long-term professional milestones are achieved. Recognition for diligent dedication arrives.",
-    healthWellnessForecast:
-      "Ensure adequate bone and joint health; take short stretch breaks during work hours.",
-    luckyNumber: "8, 17",
-    luckyColor: "Steel Grey / स्लेटी",
-    luckyColorHex: "#475569",
-    shubhMuhurat: "05:00 PM - 06:30 PM",
-    bestCompatSign: "Taurus (वृषभ) & Virgo (कन्या)",
-    todayTip: "Patience will reward you with an enduring, high-character life partner.",
-  },
-  {
-    id: "aquarius",
-    nameEn: "Aquarius",
-    nameHi: "कुंभ (Kumbh)",
-    dateRange: "Jan 20 - Feb 18",
-    symbol: "♒",
-    element: "Air",
-    elementHi: "वायु तत्व",
-    rulingPlanet: "Saturn",
-    rulingPlanetHi: "शनि देव",
-    ratingStars: 4,
-    loveMarriageForecast:
-      "Unconventional, progressive outlook attracts open-minded matrimonial prospects. You will connect deeply on humanitarian values and lifestyle vision.",
-    careerFinanceForecast:
-      "Innovative tech ideas or modern approaches earn praise. Great day for network building.",
-    healthWellnessForecast:
-      "Rest your eyes from screen glare; stay hydrated and take fresh air.",
-    luckyNumber: "4, 22",
-    luckyColor: "Electric Blue / नीला",
-    luckyColorHex: "#2563EB",
-    shubhMuhurat: "12:15 PM - 01:45 PM",
-    bestCompatSign: "Gemini (मिथुन) & Libra (तुला)",
-    todayTip: "Embrace uniqueness in prospective matches rather than standard molds.",
-  },
-  {
-    id: "pisces",
-    nameEn: "Pisces",
-    nameHi: "मीन (Meen)",
-    dateRange: "Feb 19 - Mar 20",
-    symbol: "♓",
-    element: "Water",
-    elementHi: "जल तत्व",
-    rulingPlanet: "Jupiter",
-    rulingPlanetHi: "बृहस्पति देव",
-    ratingStars: 5,
-    loveMarriageForecast:
-      "Spiritual compassion and empathy create soulful connections. Meaningful conversations today reveal heartfelt compatibility and harmonious family ideals.",
-    careerFinanceForecast:
-      "Creative and artistic talents shine. Trust your creative instincts in problem-solving.",
-    healthWellnessForecast:
-      "Deep inner peace. Restful, rejuvenating sleep restores your vitality.",
-    luckyNumber: "7, 16",
-    luckyColor: "Sea Green / समुद्री हरा",
-    luckyColorHex: "#0D9488",
-    shubhMuhurat: "03:30 PM - 05:00 PM",
-    bestCompatSign: "Cancer (कर्क) & Scorpio (वृश्चिक)",
-    todayTip: "Express your caring nature warmly; it will be deeply cherished.",
-  },
+  { id: "aries", nameEn: "Aries", nameHi: "मेष (Mesh)", dateRange: "Mar 21 - Apr 19", symbol: "♈", element: "Fire", rulingPlanet: "Mars" },
+  { id: "taurus", nameEn: "Taurus", nameHi: "वृषभ (Vrishabh)", dateRange: "Apr 20 - May 20", symbol: "♉", element: "Earth", rulingPlanet: "Venus" },
+  { id: "gemini", nameEn: "Gemini", nameHi: "मिथुन (Mithun)", dateRange: "May 21 - Jun 20", symbol: "♊", element: "Air", rulingPlanet: "Mercury" },
+  { id: "cancer", nameEn: "Cancer", nameHi: "कर्क (Kark)", dateRange: "Jun 21 - Jul 22", symbol: "♋", element: "Water", rulingPlanet: "Moon" },
+  { id: "leo", nameEn: "Leo", nameHi: "सिंह (Singh)", dateRange: "Jul 23 - Aug 22", symbol: "♌", element: "Fire", rulingPlanet: "Sun" },
+  { id: "virgo", nameEn: "Virgo", nameHi: "कन्या (Kanya)", dateRange: "Aug 23 - Sep 22", symbol: "♍", element: "Earth", rulingPlanet: "Mercury" },
+  { id: "libra", nameEn: "Libra", nameHi: "तुला (Tula)", dateRange: "Sep 23 - Oct 22", symbol: "♎", element: "Air", rulingPlanet: "Venus" },
+  { id: "scorpio", nameEn: "Scorpio", nameHi: "वृश्चिक (Vrishchik)", dateRange: "Oct 23 - Nov 21", symbol: "♏", element: "Water", rulingPlanet: "Mars" },
+  { id: "sagittarius", nameEn: "Sagittarius", nameHi: "धनु (Dhanu)", dateRange: "Nov 22 - Dec 21", symbol: "♐", element: "Fire", rulingPlanet: "Jupiter" },
+  { id: "capricorn", nameEn: "Capricorn", nameHi: "मकर (Makar)", dateRange: "Dec 22 - Jan 19", symbol: "♑", element: "Earth", rulingPlanet: "Saturn" },
+  { id: "aquarius", nameEn: "Aquarius", nameHi: "कुंभ (Kumbh)", dateRange: "Jan 20 - Feb 18", symbol: "♒", element: "Air", rulingPlanet: "Saturn" },
+  { id: "pisces", nameEn: "Pisces", nameHi: "मीन (Meen)", dateRange: "Feb 19 - Mar 20", symbol: "♓", element: "Water", rulingPlanet: "Jupiter" },
 ];
 
-// Curated rich candidate pool of 150 candidates matching partner preference
-const DEFAULT_MATCHES = SEED_CANDIDATE_POOL.map((c) => ({
-  _id: c._id,
-  name: c.name,
-  age: c.age,
-  height: c.heightFormatted || "5'4\"",
-  city: c.location?.city || "Mumbai",
-  caste: c.subcaste || "Bhaiband",
-  subcaste: c.subcaste || "Bhaiband",
-  education: `${c.education?.degree || "Graduate"} / ${c.profession?.occupation || "Professional"}`,
-  profession: c.profession?.occupation || "Professional",
-  photoUrl: c.avatar || "",
-  avatar: c.avatar || "",
-  isSilhouette: !c.avatar,
-  isVerified: Boolean(c.isVerified),
-  matrimonyId: c.matrimonyId,
-  matchScore: c.matchScore || c.compatibilityScore || 90,
-  badge: c.matchScore >= 95 ? `${c.matchScore}% Match` : c.membershipTier === "VIP" ? "VIP Match" : "Horoscope Match",
-  sendIntrestSended: false,
-}));
+export const resolveTargetGender = (profileDoc, req) => {
+  const userGender =
+    profileDoc?.gender ||
+    req?.user?.gender ||
+    req?.auth?.gender ||
+    req?.query?.gender ||
+    req?.query?.userGender ||
+    "MALE";
+  return String(userGender).toUpperCase() === "FEMALE" ? "MALE" : "FEMALE";
+};
 
-const DEFAULT_VIEWED_PROFILES = SEED_CANDIDATE_POOL.slice(0, 8).map((c, idx) => ({
-  _id: c._id,
-  name: c.name,
-  age: c.age,
-  height: c.heightFormatted || "5'4\"",
-  viewedDate: idx === 0 ? "Today, 10:15 AM" : idx === 1 ? "Today, 08:30 AM" : idx === 2 ? "Yesterday" : `${idx} days ago`,
-  photoUrl: c.avatar || "",
-  city: c.location?.city || "Mumbai",
-  profession: c.profession?.occupation || "Professional",
-}));
+export const getSeedMatchesByGender = (targetGender = "FEMALE") => {
+  const normTarget = String(targetGender).toUpperCase() === "MALE" ? "MALE" : "FEMALE";
+  const filtered = (SEED_CANDIDATE_POOL || []).filter(
+    (c) => String(c.gender).toUpperCase() === normTarget
+  );
+  return (filtered.length > 0 ? filtered : SEED_CANDIDATE_POOL).map((cand) => ({
+    _id: cand._id,
+    id: cand.matrimonyId || cand._id,
+    matrimonyId: cand.matrimonyId || `SM${cand._id.slice(-7).toUpperCase()}`,
+    name: cand.name,
+    gender: cand.gender,
+    age: cand.age || 24,
+    height: typeof cand.height === "number" ? `${Math.floor(cand.height / 30.48)}'${Math.round((cand.height % 30.48) / 2.54)}"` : (cand.height || "5'3\""),
+    city: cand.location?.city || cand.city || "Mumbai",
+    caste: cand.subcaste || cand.caste || "Sindhi - Bhaiband",
+    subcaste: cand.subcaste || cand.caste || "Sindhi - Bhaiband",
+    education: cand.education?.degree ? `${cand.education.degree} / ${cand.profession?.occupation || "Professional"}` : (cand.education || "Graduate"),
+    profession: cand.profession?.occupation || cand.profession || "Professional",
+    photoUrl: cand.avatar || cand.photoUrl || (normTarget === "MALE" ? "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600" : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600"),
+    avatar: cand.avatar || cand.photoUrl || (normTarget === "MALE" ? "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600" : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600"),
+    isSilhouette: cand.isSilhouette || false,
+    isVerified: cand.isVerified ?? true,
+    matchScore: cand.matchScore || 95,
+    badge: cand.badge || "98% Match",
+  }));
+};
 
-const DEFAULT_SUCCESS_STORIES = SEED_SUCCESS_STORIES;
+export const getSeedViewedProfilesByGender = (targetGender = "FEMALE") => {
+  const normTarget = String(targetGender).toUpperCase() === "MALE" ? "MALE" : "FEMALE";
+  const filtered = (SEED_CANDIDATE_POOL || []).filter(
+    (c) => String(c.gender).toUpperCase() === normTarget
+  );
+  return (filtered.length > 0 ? filtered : SEED_CANDIDATE_POOL).slice(0, 4).map((c, idx) => ({
+    _id: c._id,
+    id: c.matrimonyId || c._id,
+    matrimonyId: c.matrimonyId || `SM${c._id.slice(-7).toUpperCase()}`,
+    name: c.name,
+    gender: c.gender,
+    age: c.age || 24,
+    height: typeof c.height === "number" ? `${Math.floor(c.height / 30.48)}'${Math.round((c.height % 30.48) / 2.54)}"` : (c.height || "5'3\""),
+    photoUrl: c.avatar || c.photoUrl,
+    viewedDate: `${idx + 1} day${idx > 0 ? "s" : ""} ago`,
+  }));
+};
+
+const DEFAULT_MATCHES = getSeedMatchesByGender("FEMALE");
+const DEFAULT_VIEWED_PROFILES = getSeedViewedProfilesByGender("FEMALE");
+const DEFAULT_SUCCESS_STORIES = [];
 
 /**
  * Helper to calculate dynamic profile completeness score (0-100)
@@ -460,6 +218,9 @@ export const getDashboardData = asyncHandler(async (req, res) => {
     const selectedRashiObj =
       ZODIAC_RASIS.find((r) => r.id === selectedRashiId) ||
       ZODIAC_RASIS.find((r) => r.id === "leo");
+    const targetGender = resolveTargetGender(null, req);
+    const seedMatches = getSeedMatchesByGender(targetGender);
+    const seedViewed = getSeedViewedProfilesByGender(targetGender);
 
     return apiHTTPResponse(
       req,
@@ -481,12 +242,12 @@ export const getDashboardData = asyncHandler(async (req, res) => {
           actions: getDefaultActions(),
         },
         matches: {
-          totalMatchesCount: 23,
-          items: DEFAULT_MATCHES,
+          totalMatchesCount: seedMatches.length,
+          items: seedMatches.slice(0, 10),
         },
         horoscope: {
           todayForecast: {
-            date: "Sunday, 18 Oct 2026",
+            date: getTodayDateString(),
             guidance: "Vedic Astrological Guidance for Matrimony & Life",
             gunMilanUrl: "/horoscope/kundli-milan",
           },
@@ -500,7 +261,7 @@ export const getDashboardData = asyncHandler(async (req, res) => {
             element: r.element,
           })),
         },
-        viewedProfiles: DEFAULT_VIEWED_PROFILES,
+        viewedProfiles: seedViewed,
         successStories: DEFAULT_SUCCESS_STORIES,
         promos: {
           paidMember: {
@@ -551,10 +312,10 @@ export const getDashboardData = asyncHandler(async (req, res) => {
     PartnerPreference.findOne({ userId, isDeleted: false }).lean(),
   ]);
 
-  const candidateName = profileDoc?.name || "Naman";
+  const candidateName = profileDoc?.name || "";
   const matrimonyId = profileDoc?._id
     ? `SM${profileDoc._id.toString().slice(-7).toUpperCase()}`
-    : "SM4517087";
+    : "";
 
   const completeness = calculateCompleteness(profileDoc);
 
@@ -569,11 +330,11 @@ export const getDashboardData = asyncHandler(async (req, res) => {
     ZODIAC_RASIS.find((r) => r.id === "leo");
 
   // Fetch real matching candidate recommendations based on gender & partner preferences
-  let matchItems = DEFAULT_MATCHES;
-  let totalMatchesCount = 23;
+  const targetGender = resolveTargetGender(profileDoc, req);
+  let matchItems = [];
+  let totalMatchesCount = 0;
 
-  if (profileDoc) {
-    const targetGender = profileDoc.gender === "FEMALE" ? "MALE" : "FEMALE";
+  if (profileDoc && mongoose.connection.readyState === 1) {
     const matchQuery = {
       isDeleted: false,
       userId: { $ne: userId },
@@ -586,7 +347,7 @@ export const getDashboardData = asyncHandler(async (req, res) => {
 
     const [dbMatches, count] = await Promise.all([
       Profile.find(matchQuery)
-        .select("_id name age height location education profession avatar photos isVerified")
+        .select("_id name age height location education profession avatar photos isVerified gender")
         .sort({ isFeatured: -1, createdAt: -1 })
         .limit(10)
         .lean(),
@@ -597,6 +358,7 @@ export const getDashboardData = asyncHandler(async (req, res) => {
       matchItems = dbMatches.map((m) => ({
         _id: m._id.toString(),
         name: m.name,
+        gender: m.gender || targetGender,
         age: m.age || 25,
         height: m.height ? `${Math.floor(m.height / 30.48)}'${Math.round((m.height % 30.48) / 2.54)}"` : "5'2\"",
         city: m.location?.city || "Jaipur",
@@ -610,6 +372,13 @@ export const getDashboardData = asyncHandler(async (req, res) => {
       }));
       totalMatchesCount = count || matchItems.length;
     }
+  }
+
+  // Ensure dashboard ALWAYS returns opposite gender matches
+  if (!matchItems || matchItems.length === 0) {
+    const seedMatches = getSeedMatchesByGender(targetGender);
+    matchItems = seedMatches.slice(0, 10);
+    totalMatchesCount = seedMatches.length;
   }
 
   const finalDashboardPayload = {
@@ -629,7 +398,7 @@ export const getDashboardData = asyncHandler(async (req, res) => {
     },
     horoscope: {
       todayForecast: {
-        date: "Sunday, 18 Oct 2026",
+        date: getTodayDateString(),
         guidance: "Vedic Astrological Guidance for Matrimony & Life",
         gunMilanUrl: "/horoscope/kundli-milan",
       },
@@ -643,7 +412,7 @@ export const getDashboardData = asyncHandler(async (req, res) => {
         element: r.element,
       })),
     },
-    viewedProfiles: DEFAULT_VIEWED_PROFILES,
+    viewedProfiles: getSeedViewedProfilesByGender(targetGender),
     successStories: DEFAULT_SUCCESS_STORIES,
     promos: {
       paidMember: {
@@ -694,7 +463,7 @@ export const getDailyHoroscope = asyncHandler(async (req, res) => {
     "Daily horoscope retrieved successfully.",
     {
       todayForecast: {
-        date: "Sunday, 18 Oct 2026",
+        date: getTodayDateString(),
         guidance: "Vedic Astrological Guidance for Matrimony & Life",
         gunMilanUrl: "/horoscope/kundli-milan",
       },
@@ -776,12 +545,16 @@ export const saveUserRashi = asyncHandler(async (req, res) => {
  */
 export const getRecommendedMatches = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
-  const page = Math.max(1, parseInt(req.query?.page, 10) || 1);
-  const limit = Math.min(50, Math.max(1, parseInt(req.query?.limit, 10) || 10));
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(req.query?.limit || req.query?.pageSize, 10) || 10));
 
   if (mongoose.connection.readyState !== 1) {
+    const targetGender = resolveTargetGender(null, req);
+    const seedMatches = getSeedMatchesByGender(targetGender);
+    const total = seedMatches.length;
+    const totalPages = Math.ceil(total / limit) || 1;
     const startIdx = (page - 1) * limit;
-    const paginated = DEFAULT_MATCHES.slice(startIdx, startIdx + limit).map((m) => {
+    const paginated = seedMatches.slice(startIdx, startIdx + limit).map((m) => {
       const isSent = isInterestSentToCandidate(m._id, userId);
       return {
         ...m,
@@ -794,11 +567,21 @@ export const getRecommendedMatches = asyncHandler(async (req, res) => {
       CONSTANTS.HTTP_OK,
       "Recommended matches retrieved successfully.",
       {
-        totalMatchesCount: DEFAULT_MATCHES.length,
-        totalPages: Math.ceil(DEFAULT_MATCHES.length / limit),
+        totalMatchesCount: total,
+        total,
+        totalPages,
         page,
         limit,
+        hasMore: page < totalPages,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages,
+          hasMore: page < totalPages,
+        },
         items: paginated,
+        list: paginated,
       },
       CONSTANTS.OK,
       CONSTANTS.ERROR_FALSE
@@ -809,8 +592,10 @@ export const getRecommendedMatches = asyncHandler(async (req, res) => {
   const profileQuery = activeProfileId
     ? { _id: activeProfileId, isDeleted: false }
     : { userId, isDeleted: false };
-  const userProfile = await Profile.findOne(profileQuery).select("gender").lean();
-  const targetGender = userProfile?.gender === "FEMALE" ? "MALE" : "FEMALE";
+  const userProfile = mongoose.connection.readyState === 1
+    ? await Profile.findOne(profileQuery).select("gender").lean()
+    : null;
+  const targetGender = resolveTargetGender(userProfile, req);
 
   const query = {
     isDeleted: false,
@@ -818,21 +603,25 @@ export const getRecommendedMatches = asyncHandler(async (req, res) => {
     gender: targetGender,
   };
 
-  const [items, totalCount] = await Promise.all([
-    Profile.find(query)
-      .select("_id name age height location education profession avatar photos isVerified")
-      .sort({ isFeatured: -1, createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean(),
-    Profile.countDocuments(query),
-  ]);
+  const [items, totalCount] = mongoose.connection.readyState === 1
+    ? await Promise.all([
+        Profile.find(query)
+          .select("_id name age height location education profession avatar photos isVerified gender")
+          .sort({ isFeatured: -1, createdAt: -1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .lean(),
+        Profile.countDocuments(query),
+      ])
+    : [[], 0];
 
-  const formattedItems = (items.length > 0 ? items : DEFAULT_MATCHES).map((m) => {
+  const fallbackMatches = getSeedMatchesByGender(targetGender);
+  const formattedItems = (items.length > 0 ? items : fallbackMatches).map((m) => {
     const isSent = isInterestSentToCandidate(m._id, userId);
     return {
       _id: m._id.toString(),
       name: m.name,
+      gender: m.gender || targetGender,
       age: m.age || 25,
       height: m.height ? `${Math.floor(m.height / 30.48)}'${Math.round((m.height % 30.48) / 2.54)}"` : (m.heightFormatted || m.height || "5'2\""),
       city: m.location?.city || m.city || "Mumbai",
@@ -851,16 +640,30 @@ export const getRecommendedMatches = asyncHandler(async (req, res) => {
     };
   });
 
+  const total = totalCount || formattedItems.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Recommended matches retrieved successfully.",
     {
-      totalMatchesCount: totalCount || formattedItems.length,
+      totalMatchesCount: total,
+      total,
+      totalPages,
       page,
       limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
       items: formattedItems,
+      list: formattedItems,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -951,74 +754,22 @@ export const getMidnightCountdown = () => {
   };
 };
 
-// Curated authentic Sindhi profiles for offline resilience / mock testing
-export const DEFAULT_DAILY_RECOMMENDATIONS = SEED_CANDIDATE_POOL.slice(0, 12).map((c, idx) => ({
-  id: `rec_${idx + 1}`,
+// Static dummy candidate pools cleared - only real database records are served
+export const DEFAULT_DAILY_RECOMMENDATIONS = [];
+export const DEFAULT_NEW_MATCHES = [];
+export const DEFAULT_WHO_VIEWED_YOU = [];
+export const DEFAULT_PROFILES_YOU_VIEWED = (SEED_CANDIDATE_POOL || []).slice(3, 7).map((c, idx) => ({
+  _id: c._id,
+  id: c.matrimonyId || c._id,
+  matrimonyId: c.matrimonyId || `SM${c._id.slice(-7).toUpperCase()}`,
   name: c.name,
-  age: c.age,
-  height: c.heightFormatted || "5'4\"",
-  city: c.location?.city || "Mumbai",
-  caste: c.subcaste || "Bhaiband",
-  education: `${c.education?.degree || "Graduate"} / ${c.profession?.occupation || "Professional"}`,
-  profession: c.profession?.occupation || "Professional",
-  photoUrl: c.avatar,
-  isSilhouette: false,
-  isVerified: Boolean(c.isVerified),
-  matchScore: 98 - (idx % 8),
-  badge: idx === 0 ? "98% Match" : idx === 1 ? "Horoscope Match" : idx % 2 === 0 ? "New Today" : "Verified",
-  matrimonyId: c.matrimonyId,
+  age: c.age || 24,
+  height: typeof c.height === "number" ? `${Math.floor(c.height / 30.48)}'${Math.round((c.height % 30.48) / 2.54)}"` : (c.height || "5'3\""),
+  photoUrl: c.avatar || c.photoUrl,
+  viewedDate: `${idx + 1} day${idx > 0 ? "s" : ""} ago`,
 }));
 
-export const DEFAULT_NEW_MATCHES = SEED_CANDIDATE_POOL.slice(0, 15).map((c, idx) => ({
-  id: `new_${idx + 1}`,
-  name: c.name,
-  age: c.age,
-  height: c.heightFormatted || "5'4\"",
-  city: c.location?.city || "Pune",
-  caste: c.subcaste || "Bhaiband",
-  profession: c.profession?.occupation || "Professional",
-  photoUrl: c.avatar,
-  joinedDaysAgo: `Joined ${idx + 1} day${idx > 0 ? "s" : ""} ago`,
-  isVerified: Boolean(c.isVerified),
-  matrimonyId: c.matrimonyId,
-}));
-
-export const DEFAULT_WHO_VIEWED_YOU = SEED_CANDIDATE_POOL.slice(0, 12).map((c, idx) => ({
-  id: `viewed_you_${idx + 1}`,
-  name: c.name,
-  age: c.age,
-  height: c.heightFormatted || "5'4\"",
-  city: c.location?.city || "Delhi",
-  caste: c.subcaste || "Amil",
-  profession: c.profession?.occupation || "Professional",
-  photoUrl: c.avatar,
-  viewedAt: idx === 0 ? "Today, 10:15 AM" : idx === 1 ? "Today, 07:45 AM" : idx === 2 ? "Yesterday" : `${idx} days ago`,
-  viewCount: 1 + (idx % 4),
-  matrimonyId: c.matrimonyId,
-}));
-
-export const DEFAULT_PROFILES_YOU_VIEWED = SEED_CANDIDATE_POOL.slice(12, 27).map((c, idx) => ({
-  id: `you_viewed_${idx + 1}`,
-  name: c.name,
-  age: c.age,
-  height: c.heightFormatted || "5'4\"",
-  city: c.location?.city || "Lucknow",
-  profession: c.profession?.occupation || "Professional",
-  photoUrl: c.avatar,
-  viewedAt: idx === 0 ? "Today, 09:30 AM" : idx === 1 ? "Yesterday" : `${idx} days ago`,
-  matrimonyId: c.matrimonyId,
-}));
-
-export const DEFAULT_MOBILE_SUCCESS_STORIES = SEED_SUCCESS_STORIES.map((s, idx) => ({
-  id: `story_${idx + 1}`,
-  coupleName: s.coupleName,
-  postedOn: s.postedOn || "14 Oct 2026",
-  storySnippet: s.storySnippet,
-  imageUrl: s.imageUrl,
-  photoUrl: s.photoUrl,
-  badge: s.badge || "Just Married",
-  city: s.city || "Mumbai",
-}));
+export const DEFAULT_MOBILE_SUCCESS_STORIES = [];
 
 export const DEFAULT_MOBILE_BANNERS = {
   celebratingBanner: {
@@ -1058,6 +809,24 @@ export const DEFAULT_MOBILE_BANNERS = {
     subtitle: "Officially recognized for facilitating the maximum number of documented marriages",
     statText: "Over 2.8 Lakh+ Happy Sindhi Marriages",
     trustRating: "4.9 / 5",
+  },
+  paidMember: {
+    discountPercent: 71,
+    title: "Become a Paid Member & Save 71%",
+    subtitle: "Get up to 71% OFF on paid membership!",
+    perks: [
+      "Call/WhatsApp matches",
+      "Unlimited messages",
+      "Higher chances of response",
+      "View and match horoscopes",
+    ],
+    ctaText: "See membership plans",
+    upgradeUrl: "/subscription",
+  },
+  assistedService: {
+    title: "Assisted Service Luxury",
+    subtitle: "3X Faster with Dedicated Relationship Manager",
+    actionUrl: "/subscription?plan=assisted",
   },
 };
 
@@ -1135,6 +904,10 @@ export const getMobileHomeFeed = asyncHandler(async (req, res) => {
 
   // 2. OFFLINE / TEST DB ISOLATION FALLBACK
   if (mongoose.connection.readyState !== 1) {
+    const targetGender = resolveTargetGender(null, req);
+    const seedMatches = getSeedMatchesByGender(targetGender);
+    const seedViewed = getSeedViewedProfilesByGender(targetGender);
+
     const fallbackResponse = {
       profileTab: {
         userId: (userId || "6ad3c0ff51bbaafbad99f39b").toString(),
@@ -1153,27 +926,27 @@ export const getMobileHomeFeed = asyncHandler(async (req, res) => {
       },
       dailyRecommendations: {
         countdown: getMidnightCountdown(),
-        matchCount: DEFAULT_DAILY_RECOMMENDATIONS.length,
-        items: DEFAULT_DAILY_RECOMMENDATIONS,
+        matchCount: seedMatches.length,
+        items: seedMatches.slice(0, 6),
       },
       allMatches: {
-        matchCount: 497,
+        matchCount: seedMatches.length,
         subtitle: "Matches matching your partner preference",
-        items: DEFAULT_MATCHES,
+        items: seedMatches,
       },
       planAdBanner: DEFAULT_MOBILE_BANNERS.planAdBanner,
       newMatches: {
-        matchCount: 17,
-        items: DEFAULT_NEW_MATCHES,
+        matchCount: seedMatches.length,
+        items: seedMatches.slice(0, 10),
       },
       assistedServiceBanner: DEFAULT_MOBILE_BANNERS.assistedServiceBanner,
       whoViewedYou: {
-        count: 10,
-        items: DEFAULT_WHO_VIEWED_YOU,
+        count: seedViewed.length,
+        items: seedViewed,
       },
       profilesYouViewed: {
-        count: 27,
-        items: DEFAULT_PROFILES_YOU_VIEWED,
+        count: seedViewed.length,
+        items: seedViewed,
       },
       limcaRecordBanner: DEFAULT_MOBILE_BANNERS.limcaRecordBanner,
       successStories: {
@@ -1215,7 +988,7 @@ export const getMobileHomeFeed = asyncHandler(async (req, res) => {
     ? `SM${profileDoc._id.toString().slice(-7).toUpperCase()}`
     : "SM4517087";
   const completeness = calculateCompleteness(profileDoc);
-  const targetGender = profileDoc?.gender === "FEMALE" ? "MALE" : "FEMALE";
+  const targetGender = resolveTargetGender(profileDoc, req);
 
   // Matchmaking queries
   const baseMatchQuery = {
@@ -1309,7 +1082,7 @@ export const getMobileHomeFeed = asyncHandler(async (req, res) => {
           badge: idx === 0 ? "98% Match" : idx === 1 ? "Horoscope Match" : "New Today",
           matrimonyId: `SM${m._id.toString().slice(-7).toUpperCase()}`,
         }))
-      : DEFAULT_DAILY_RECOMMENDATIONS;
+      : getSeedMatchesByGender(targetGender);
 
   // Transform all matches
   const allMatchesItems =
@@ -1330,7 +1103,7 @@ export const getMobileHomeFeed = asyncHandler(async (req, res) => {
           isVerified: Boolean(m.isVerified || m.verificationBadge === "VERIFIED"),
           matrimonyId: `SM${m._id.toString().slice(-7).toUpperCase()}`,
         }))
-      : DEFAULT_MATCHES;
+      : getSeedMatchesByGender(targetGender);
 
   // Transform new matches
   const newMatchesItems =
@@ -1356,7 +1129,7 @@ export const getMobileHomeFeed = asyncHandler(async (req, res) => {
             matrimonyId: `SM${m._id.toString().slice(-7).toUpperCase()}`,
           };
         })
-      : DEFAULT_NEW_MATCHES;
+      : getSeedMatchesByGender(targetGender);
 
   // Transform Who Viewed You
   const whoViewedYouItems =
@@ -1379,7 +1152,7 @@ export const getMobileHomeFeed = asyncHandler(async (req, res) => {
             matrimonyId: p._id ? `SM${p._id.toString().slice(-7).toUpperCase()}` : "SM4517094",
           };
         })
-      : DEFAULT_WHO_VIEWED_YOU;
+      : getSeedViewedProfilesByGender(targetGender);
 
   // Transform Profiles You Viewed
   const profilesYouViewedItems =
@@ -1400,7 +1173,7 @@ export const getMobileHomeFeed = asyncHandler(async (req, res) => {
             matrimonyId: p._id ? `SM${p._id.toString().slice(-7).toUpperCase()}` : "SM4486236",
           };
         })
-      : DEFAULT_PROFILES_YOU_VIEWED;
+      : getSeedViewedProfilesByGender(targetGender);
 
   // Transform Success Stories
   const successStoriesItems =
@@ -1489,8 +1262,18 @@ export const getMobileHomeFeed = asyncHandler(async (req, res) => {
 export const getDailyRecommendationsFeed = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
   const countdown = getMidnightCountdown();
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(req.query?.limit || req.query?.pageSize, 10) || 10));
+
+  const targetGender = resolveTargetGender(null, req);
 
   if (mongoose.connection.readyState !== 1) {
+    const seedMatches = getSeedMatchesByGender(targetGender);
+    const total = seedMatches.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const startIdx = (page - 1) * limit;
+    const paginated = seedMatches.slice(startIdx, startIdx + limit);
+
     return apiHTTPResponse(
       req,
       res,
@@ -1498,8 +1281,21 @@ export const getDailyRecommendationsFeed = asyncHandler(async (req, res) => {
       "Daily recommendations retrieved successfully.",
       {
         countdown,
-        matchCount: DEFAULT_DAILY_RECOMMENDATIONS.length,
-        items: DEFAULT_DAILY_RECOMMENDATIONS,
+        matchCount: total,
+        total,
+        totalPages,
+        page,
+        limit,
+        hasMore: page < totalPages,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages,
+          hasMore: page < totalPages,
+        },
+        items: paginated,
+        list: paginated,
       },
       CONSTANTS.OK,
       CONSTANTS.ERROR_FALSE
@@ -1511,20 +1307,19 @@ export const getDailyRecommendationsFeed = asyncHandler(async (req, res) => {
     ? { _id: activeProfileId, isDeleted: false }
     : { userId, isDeleted: false };
   const profile = await Profile.findOne(profileQuery).select("gender").lean();
-  const targetGender = profile?.gender === "FEMALE" ? "MALE" : "FEMALE";
+  const resolvedTargetGender = resolveTargetGender(profile, req);
 
   const dbMatches = await Profile.find({
     isDeleted: false,
     status: "ACTIVE",
     userId: { $ne: userId },
-    gender: targetGender,
+    gender: resolvedTargetGender,
   })
     .select("_id name age height location education profession avatar photos isVerified subcaste")
     .sort({ isFeatured: -1, verificationBadge: -1, createdAt: -1 })
-    .limit(10)
     .lean();
 
-  const items =
+  const allItems =
     dbMatches && dbMatches.length > 0
       ? dbMatches.map((m, idx) => ({
           id: m._id.toString(),
@@ -1544,7 +1339,12 @@ export const getDailyRecommendationsFeed = asyncHandler(async (req, res) => {
           badge: idx === 0 ? "98% Match" : idx === 1 ? "Horoscope Match" : "New Today",
           matrimonyId: `SM${m._id.toString().slice(-7).toUpperCase()}`,
         }))
-      : DEFAULT_DAILY_RECOMMENDATIONS;
+      : getSeedMatchesByGender(resolvedTargetGender);
+
+  const total = allItems.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const startIdx = (page - 1) * limit;
+  const paginated = allItems.slice(startIdx, startIdx + limit);
 
   return apiHTTPResponse(
     req,
@@ -1553,8 +1353,21 @@ export const getDailyRecommendationsFeed = asyncHandler(async (req, res) => {
     "Daily recommendations retrieved successfully.",
     {
       countdown,
-      matchCount: items.length,
-      items,
+      matchCount: total,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+      items: paginated,
+      list: paginated,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -1567,18 +1380,21 @@ export const getDailyRecommendationsFeed = asyncHandler(async (req, res) => {
  */
 export const getAllMatchesFeed = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
-  const page = Math.max(1, parseInt(req.query?.page, 10) || 1);
-  const limit = Math.min(50, Math.max(1, parseInt(req.query?.limit, 10) || 10));
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(req.query?.limit || req.query?.pageSize, 10) || 10));
   const { caste, city, minAge, maxAge } = req.query;
 
+  const targetGender = resolveTargetGender(null, req);
+
   if (mongoose.connection.readyState !== 1) {
-    let pool = [...DEFAULT_MATCHES];
+    let pool = getSeedMatchesByGender(targetGender);
     if (caste) pool = pool.filter((m) => m.caste.toLowerCase() === String(caste).toLowerCase());
     if (city) pool = pool.filter((m) => m.city.toLowerCase() === String(city).toLowerCase());
     if (minAge) pool = pool.filter((m) => m.age >= Number(minAge));
     if (maxAge) pool = pool.filter((m) => m.age <= Number(maxAge));
 
     const total = pool.length;
+    const totalPages = Math.ceil(total / limit) || 1;
     const startIdx = (page - 1) * limit;
     const paginatedItems = pool.slice(startIdx, startIdx + limit);
 
@@ -1589,10 +1405,20 @@ export const getAllMatchesFeed = asyncHandler(async (req, res) => {
       "All matches retrieved successfully.",
       {
         matchCount: total,
-        totalPages: Math.ceil(total / limit),
+        total,
+        totalPages,
         page,
         limit,
+        hasMore: page < totalPages,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages,
+          hasMore: page < totalPages,
+        },
         items: paginatedItems,
+        list: paginatedItems,
       },
       CONSTANTS.OK,
       CONSTANTS.ERROR_FALSE
@@ -1603,14 +1429,16 @@ export const getAllMatchesFeed = asyncHandler(async (req, res) => {
   const profileQuery = activeProfileId
     ? { _id: activeProfileId, isDeleted: false }
     : { userId, isDeleted: false };
-  const profile = await Profile.findOne(profileQuery).select("gender").lean();
-  const targetGender = profile?.gender === "FEMALE" ? "MALE" : "FEMALE";
+  const profile = mongoose.connection.readyState === 1
+    ? await Profile.findOne(profileQuery).select("gender").lean()
+    : null;
+  const resolvedTargetGender = resolveTargetGender(profile, req);
 
   const query = {
     isDeleted: false,
     status: "ACTIVE",
     userId: { $ne: userId },
-    gender: targetGender,
+    gender: resolvedTargetGender,
   };
 
   if (caste) query.subcaste = caste;
@@ -1621,15 +1449,17 @@ export const getAllMatchesFeed = asyncHandler(async (req, res) => {
     if (maxAge) query.age.$lte = Number(maxAge);
   }
 
-  const [dbMatches, count] = await Promise.all([
-    Profile.find(query)
-      .select("_id name age height location education profession avatar photos isVerified subcaste")
-      .sort({ isFeatured: -1, createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean(),
-    Profile.countDocuments(query),
-  ]);
+  const [dbMatches, count] = mongoose.connection.readyState === 1
+    ? await Promise.all([
+        Profile.find(query)
+          .select("_id name age height location education profession avatar photos isVerified subcaste")
+          .sort({ isFeatured: -1, createdAt: -1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .lean(),
+        Profile.countDocuments(query),
+      ])
+    : [[], 0];
 
   const items =
     dbMatches && dbMatches.length > 0
@@ -1649,7 +1479,10 @@ export const getAllMatchesFeed = asyncHandler(async (req, res) => {
           isVerified: Boolean(m.isVerified || m.verificationBadge === "VERIFIED"),
           matrimonyId: `SM${m._id.toString().slice(-7).toUpperCase()}`,
         }))
-      : DEFAULT_MATCHES;
+      : getSeedMatchesByGender(resolvedTargetGender);
+
+  const total = count || items.length;
+  const totalPages = Math.ceil(total / limit) || 1;
 
   return apiHTTPResponse(
     req,
@@ -1657,10 +1490,21 @@ export const getAllMatchesFeed = asyncHandler(async (req, res) => {
     CONSTANTS.HTTP_OK,
     "All matches retrieved successfully.",
     {
-      matchCount: count || items.length,
+      matchCount: total,
+      total,
+      totalPages,
       page,
       limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
       items,
+      list: items,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -1673,15 +1517,19 @@ export const getAllMatchesFeed = asyncHandler(async (req, res) => {
  */
 export const getNewMatchesFeed = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
-  const page = Math.max(1, parseInt(req.query?.page, 10) || 1);
-  const limit = Math.min(50, Math.max(1, parseInt(req.query?.limit, 10) || 10));
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(req.query?.pageSize || req.query?.limit, 10) || 10));
   const maxDays = parseInt(req.query?.maxDays, 10) || 30;
   const sinceDate = new Date(Date.now() - maxDays * 24 * 60 * 60 * 1000);
 
+  const targetGender = resolveTargetGender(null, req);
+
   if (mongoose.connection.readyState !== 1) {
-    const total = DEFAULT_NEW_MATCHES.length;
+    const seedMatches = getSeedMatchesByGender(targetGender);
+    const total = seedMatches.length;
+    const totalPages = Math.ceil(total / limit) || 1;
     const startIdx = (page - 1) * limit;
-    const paginatedItems = DEFAULT_NEW_MATCHES.slice(startIdx, startIdx + limit);
+    const paginatedItems = seedMatches.slice(startIdx, startIdx + limit);
 
     return apiHTTPResponse(
       req,
@@ -1690,10 +1538,20 @@ export const getNewMatchesFeed = asyncHandler(async (req, res) => {
       "New matches retrieved successfully.",
       {
         matchCount: total,
-        totalPages: Math.ceil(total / limit),
+        total,
+        totalPages,
         page,
         limit,
+        hasMore: page < totalPages,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages,
+          hasMore: page < totalPages,
+        },
         items: paginatedItems,
+        list: paginatedItems,
       },
       CONSTANTS.OK,
       CONSTANTS.ERROR_FALSE
@@ -1705,13 +1563,13 @@ export const getNewMatchesFeed = asyncHandler(async (req, res) => {
     ? { _id: activeProfileId, isDeleted: false }
     : { userId, isDeleted: false };
   const profile = await Profile.findOne(profileQuery).select("gender").lean();
-  const targetGender = profile?.gender === "FEMALE" ? "MALE" : "FEMALE";
+  const resolvedTargetGender = resolveTargetGender(profile, req);
 
   const query = {
     isDeleted: false,
     status: "ACTIVE",
     userId: { $ne: userId },
-    gender: targetGender,
+    gender: resolvedTargetGender,
     createdAt: { $gte: sinceDate },
   };
 
@@ -1748,7 +1606,10 @@ export const getNewMatchesFeed = asyncHandler(async (req, res) => {
             matrimonyId: `SM${m._id.toString().slice(-7).toUpperCase()}`,
           };
         })
-      : DEFAULT_NEW_MATCHES;
+      : getSeedMatchesByGender(resolvedTargetGender);
+
+  const total = count || items.length;
+  const totalPages = Math.ceil(total / limit) || 1;
 
   return apiHTTPResponse(
     req,
@@ -1756,10 +1617,21 @@ export const getNewMatchesFeed = asyncHandler(async (req, res) => {
     CONSTANTS.HTTP_OK,
     "New matches retrieved successfully.",
     {
-      matchCount: count || items.length,
+      matchCount: total,
+      total,
+      totalPages,
       page,
       limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
       items,
+      list: items,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -1772,13 +1644,17 @@ export const getNewMatchesFeed = asyncHandler(async (req, res) => {
  */
 export const getWhoViewedYouFeed = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
-  const page = Math.max(1, parseInt(req.query?.page, 10) || 1);
-  const limit = Math.min(50, Math.max(1, parseInt(req.query?.limit, 10) || 10));
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(req.query?.pageSize || req.query?.limit, 10) || 10));
+
+  const targetGender = resolveTargetGender(null, req);
 
   if (mongoose.connection.readyState !== 1 || !userId) {
-    const total = DEFAULT_WHO_VIEWED_YOU.length;
+    const seedViewed = getSeedViewedProfilesByGender(targetGender);
+    const total = seedViewed.length;
+    const totalPages = Math.ceil(total / limit) || 1;
     const startIdx = (page - 1) * limit;
-    const paginatedItems = DEFAULT_WHO_VIEWED_YOU.slice(startIdx, startIdx + limit);
+    const paginatedItems = seedViewed.slice(startIdx, startIdx + limit);
 
     return apiHTTPResponse(
       req,
@@ -1787,10 +1663,20 @@ export const getWhoViewedYouFeed = asyncHandler(async (req, res) => {
       "Who viewed you retrieved successfully.",
       {
         count: total,
-        totalPages: Math.ceil(total / limit),
+        total,
+        totalPages,
         page,
         limit,
+        hasMore: page < totalPages,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages,
+          hasMore: page < totalPages,
+        },
         items: paginatedItems,
+        list: paginatedItems,
       },
       CONSTANTS.OK,
       CONSTANTS.ERROR_FALSE
@@ -1841,7 +1727,10 @@ export const getWhoViewedYouFeed = asyncHandler(async (req, res) => {
               : "SM******",
           };
         })
-      : DEFAULT_WHO_VIEWED_YOU;
+      : getSeedViewedProfilesByGender(targetGender);
+
+  const total = count || items.length;
+  const totalPages = Math.ceil(total / limit) || 1;
 
   return apiHTTPResponse(
     req,
@@ -1849,11 +1738,22 @@ export const getWhoViewedYouFeed = asyncHandler(async (req, res) => {
     CONSTANTS.HTTP_OK,
     "Who viewed you retrieved successfully.",
     {
-      count: count || items.length,
+      count: total,
+      total,
+      totalPages,
       page,
       limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
       isPaidSubscriber,
       items,
+      list: items,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -1866,13 +1766,17 @@ export const getWhoViewedYouFeed = asyncHandler(async (req, res) => {
  */
 export const getProfilesYouViewedFeed = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
-  const page = Math.max(1, parseInt(req.query?.page, 10) || 1);
-  const limit = Math.min(50, Math.max(1, parseInt(req.query?.limit, 10) || 10));
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(req.query?.pageSize || req.query?.limit, 10) || 10));
+
+  const targetGender = resolveTargetGender(null, req);
 
   if (mongoose.connection.readyState !== 1 || !userId) {
-    const total = DEFAULT_PROFILES_YOU_VIEWED.length;
+    const seedViewed = getSeedViewedProfilesByGender(targetGender);
+    const total = seedViewed.length;
+    const totalPages = Math.ceil(total / limit) || 1;
     const startIdx = (page - 1) * limit;
-    const paginatedItems = DEFAULT_PROFILES_YOU_VIEWED.slice(startIdx, startIdx + limit);
+    const paginatedItems = seedViewed.slice(startIdx, startIdx + limit);
 
     return apiHTTPResponse(
       req,
@@ -1881,10 +1785,20 @@ export const getProfilesYouViewedFeed = asyncHandler(async (req, res) => {
       "Profiles you viewed retrieved successfully.",
       {
         count: total,
-        totalPages: Math.ceil(total / limit),
+        total,
+        totalPages,
         page,
         limit,
+        hasMore: page < totalPages,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages,
+          hasMore: page < totalPages,
+        },
         items: paginatedItems,
+        list: paginatedItems,
       },
       CONSTANTS.OK,
       CONSTANTS.ERROR_FALSE
@@ -1922,7 +1836,10 @@ export const getProfilesYouViewedFeed = asyncHandler(async (req, res) => {
             matrimonyId: p._id ? `SM${p._id.toString().slice(-7).toUpperCase()}` : "SM4486236",
           };
         })
-      : DEFAULT_PROFILES_YOU_VIEWED;
+      : getSeedViewedProfilesByGender(targetGender);
+
+  const total = count || items.length;
+  const totalPages = Math.ceil(total / limit) || 1;
 
   return apiHTTPResponse(
     req,
@@ -1930,10 +1847,21 @@ export const getProfilesYouViewedFeed = asyncHandler(async (req, res) => {
     CONSTANTS.HTTP_OK,
     "Profiles you viewed retrieved successfully.",
     {
-      count: count || items.length,
+      count: total,
+      total,
+      totalPages,
       page,
       limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
       items,
+      list: items,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -1973,96 +1901,165 @@ export const trackProfileView = asyncHandler(async (req, res) => {
     );
   }
 
-  if (mongoose.connection.readyState === 1 && viewerUserId) {
-    let resolvedViewedUserId = viewedUserId;
+  if (viewerUserId) {
+    let resolvedViewedUserId = viewedUserId || viewedProfileId;
     const tokenActiveProfileId = req.user?.activeProfileId || req.auth?.activeProfileId;
     let resolvedViewerProfileId = tokenActiveProfileId || null;
+    let isRecentVisit = false;
+    let recipientSub = null;
+    let viewerProfile = null;
 
-    // Concurrently resolve missing target user ID and viewer profile ID if needed
-    const parallelLookups = [];
-    if (!resolvedViewedUserId && mongoose.Types.ObjectId.isValid(viewedProfileId)) {
-      parallelLookups.push(
-        Profile.findById(viewedProfileId)
-          .select("userId")
-          .lean()
-          .then((tp) => {
-            resolvedViewedUserId = tp?.userId;
-          })
-      );
-    }
-    if (!resolvedViewerProfileId) {
-      parallelLookups.push(
-        Profile.findOne({ userId: viewerUserId, isDeleted: false })
-          .select("_id")
-          .lean()
-          .then((vp) => {
-            resolvedViewerProfileId = vp?._id;
-          })
-      );
-    }
-    if (parallelLookups.length > 0) {
-      await Promise.all(parallelLookups);
+    if (mongoose.connection.readyState === 1) {
+      // Concurrently resolve missing target user ID and viewer profile ID if needed
+      const parallelLookups = [];
+      if (!viewedUserId && mongoose.Types.ObjectId.isValid(viewedProfileId)) {
+        parallelLookups.push(
+          Profile.findById(viewedProfileId)
+            .select("userId")
+            .lean()
+            .then((tp) => {
+              if (tp?.userId) resolvedViewedUserId = tp.userId;
+            })
+        );
+      }
+      if (!resolvedViewerProfileId) {
+        parallelLookups.push(
+          Profile.findOne({ userId: viewerUserId, isDeleted: false })
+            .select("_id")
+            .lean()
+            .then((vp) => {
+              resolvedViewerProfileId = vp?._id;
+            })
+        );
+      }
+      if (parallelLookups.length > 0) {
+        await Promise.all(parallelLookups);
+      }
+
+      if (resolvedViewedUserId) {
+        const DEDUPE_WINDOW = 24 * 60 * 60 * 1000;
+        const existingView = await ProfileView.findOne({
+          viewerUserId,
+          viewedProfileId,
+        }).lean();
+
+        isRecentVisit =
+          existingView &&
+          Date.now() - new Date(existingView.viewedAt).getTime() < DEDUPE_WINDOW;
+
+        await ProfileView.findOneAndUpdate(
+          {
+            viewerUserId,
+            viewedProfileId,
+          },
+          {
+            $set: {
+              viewerProfileId: resolvedViewerProfileId,
+              viewedUserId: resolvedViewedUserId,
+              viewedAt: new Date(),
+            },
+            $inc: { viewCount: 1 },
+          },
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
+        [recipientSub, viewerProfile] = await Promise.all([
+          UserSubscription.findOne({
+            userId: resolvedViewedUserId,
+            status: "ACTIVE",
+            expiresAt: { $gt: Date.now() },
+          }).lean(),
+          resolvedViewerProfileId
+            ? Profile.findById(resolvedViewerProfileId)
+                .select("name avatar photos age location profession subcaste")
+                .lean()
+            : null,
+        ]);
+      }
     }
 
     if (resolvedViewedUserId) {
-      const THIRTY_MINUTES = 30 * 60 * 1000;
-      const existingView = await ProfileView.findOne({
+      const DEDUPE_WINDOW = 24 * 60 * 60 * 1000;
+      const isDuplicateNotification = hasRecentProfileVisitNotification(
         viewerUserId,
-        viewedProfileId,
-      }).lean();
-
-      const isRecentVisit =
-        existingView &&
-        Date.now() - new Date(existingView.viewedAt).getTime() < THIRTY_MINUTES;
-
-      await ProfileView.findOneAndUpdate(
-        {
-          viewerUserId,
-          viewedProfileId,
-        },
-        {
-          $set: {
-            viewerProfileId: resolvedViewerProfileId,
-            viewedUserId: resolvedViewedUserId,
-            viewedAt: new Date(),
-          },
-          $inc: { viewCount: 1 },
-        },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
+        resolvedViewedUserId,
+        DEDUPE_WINDOW
       );
 
-      // Send In-App Profile Visit Notification to profile owner if not a duplicate recent visit
-      if (!isRecentVisit) {
-        const viewerProfile = resolvedViewerProfileId
-          ? await Profile.findById(resolvedViewerProfileId)
-              .select("name avatar photos age location profession")
-              .lean()
-          : null;
-
-        const visitorName = viewerProfile?.name || "A candidate";
-        const visitorCity = viewerProfile?.location?.city || "Mumbai";
+      // Send In-App Profile Visit Notification to profile owner only if not a duplicate
+      if (!isRecentVisit && !isDuplicateNotification) {
+        const seedMatch = SEED_CANDIDATE_POOL.find(
+          (c) => String(c.id || c._id) === String(viewerUserId)
+        );
+        const isPaidSubscriber = Boolean(recipientSub);
+        const visitorName = viewerProfile?.name || seedMatch?.name || req.user?.name || req.auth?.name || "A Sindhi candidate";
+        const visitorCity = viewerProfile?.location?.city || seedMatch?.city || "Mumbai";
         const visitorProfession =
-          viewerProfile?.profession?.occupation || "Professional";
+          viewerProfile?.profession?.occupation || seedMatch?.profession || "Professional";
+        const visitorAvatar =
+          viewerProfile?.avatar || viewerProfile?.photos?.[0]?.url || seedMatch?.photoUrl || "";
+        const visitorMatrimonyId = resolvedViewerProfileId
+          ? `SM${resolvedViewerProfileId.toString().slice(-7).toUpperCase()}`
+          : (seedMatch?.matrimonyId || "SM4517094");
 
         addNotification({
           _id: `notif_visit_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          recipientUserId: String(resolvedViewedUserId),
+          viewerUserId: String(viewerUserId),
           type: "PROFILE_VIEWED",
-          title: "Profile Visitor 👁️",
-          body: `${visitorName} (${visitorProfession}, ${visitorCity}) viewed your profile.`,
+          category: "matches",
+          title: isPaidSubscriber
+            ? "Profile Visitor 👁️"
+            : "Someone Viewed Your Profile 👁️",
+          body: isPaidSubscriber
+            ? `${visitorName} (${visitorProfession}, ${visitorCity}) viewed your profile.`
+            : `A verified Sindhi match from ${visitorCity} viewed your profile. Upgrade your plan to see who visited you.`,
+          avatar: isPaidSubscriber ? visitorAvatar : "",
+          isRead: false,
+          isLocked: !isPaidSubscriber,
+          upgradeRequired: !isPaidSubscriber,
+          actor: {
+            id: isPaidSubscriber
+              ? String(resolvedViewerProfileId || viewedProfileId)
+              : "",
+            matrimonyId: isPaidSubscriber ? visitorMatrimonyId : "SM******",
+            name: isPaidSubscriber ? visitorName : "Sindhi Member",
+            avatarUrl: isPaidSubscriber ? visitorAvatar : "",
+            city: visitorCity,
+            profession: isPaidSubscriber ? visitorProfession : "Locked (Premium)",
+            age: viewerProfile?.age || seedMatch?.age || 25,
+            caste: viewerProfile?.subcaste || seedMatch?.caste || "Sindhi",
+          },
+          primaryAction: isPaidSubscriber
+            ? {
+                label: "View Profile",
+                action: "view_profile",
+                variant: "secondary",
+              }
+            : {
+                label: "Upgrade to View Profile",
+                action: "upgrade_plan",
+                variant: "primary",
+              },
           data: {
             candidateId: String(resolvedViewerProfileId || viewedProfileId),
             viewerUserId: String(viewerUserId),
             viewedUserId: String(resolvedViewedUserId),
-            age: viewerProfile?.age || 25,
+            visitorName,
+            visitorAvatar,
+            visitorCity,
+            visitorProfession,
+            visitorMatrimonyId,
+            isRecipientPaid: isPaidSubscriber,
+            age: viewerProfile?.age || seedMatch?.age || 25,
             city: visitorCity,
             profession: visitorProfession,
             viewedAt: Date.now(),
           },
-          avatar: viewerProfile?.avatar || viewerProfile?.photos?.[0]?.url || "",
-          isRead: false,
-          createdAt: Date.now(),
+          createdAt: new Date().toISOString(),
         });
       }
+    }
 
       // Invalidate both users' home feed Redis cache for immediate real-time update
       try {
@@ -2074,7 +2071,6 @@ export const trackProfileView = asyncHandler(async (req, res) => {
         logMessage("Redis Cache Invalidation Non-fatal Warning:", cacheErr?.message || cacheErr, "warn");
       }
     }
-  }
 
   return apiHTTPResponse(
     req,

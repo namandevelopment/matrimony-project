@@ -6,6 +6,7 @@ import {
   HELP_CATEGORIES,
   HELP_GUIDELINES,
   HELP_FAQS,
+  SUPPORT_CHANNELS,
 } from "./data/helpData";
 import { HelpHeader } from "./components/HelpHeader";
 import { HelpBreadcrumb } from "./components/HelpBreadcrumb";
@@ -23,6 +24,7 @@ export const HelpSupportScreen: React.FC = React.memo(() => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<HelpCategoryId>("all");
   const [faqsList, setFaqsList] = useState([...HELP_FAQS]);
+  const [channelsList, setChannelsList] = useState([...SUPPORT_CHANNELS]);
 
   // Fetch dynamic FAQs and Help Desk updates from backend unified API
   useEffect(() => {
@@ -32,6 +34,9 @@ export const HelpSupportScreen: React.FC = React.memo(() => {
         if (!isMounted || !res?.data) return;
         if (Array.isArray(res.data.faqs) && res.data.faqs.length > 0) {
           setFaqsList(res.data.faqs);
+        }
+        if (Array.isArray(res.data.channels) && res.data.channels.length > 0) {
+          setChannelsList(res.data.channels);
         }
       })
       .catch(() => {
@@ -112,7 +117,7 @@ export const HelpSupportScreen: React.FC = React.memo(() => {
         />
 
         {/* 4 Actionable Support Channels */}
-        <HelpContactChannels />
+        <HelpContactChannels channels={channelsList} />
 
         {/* Step-by-Step Feature Guidelines & Community Rules */}
         <HelpGuidelinesSection

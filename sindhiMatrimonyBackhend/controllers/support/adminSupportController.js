@@ -48,7 +48,7 @@ let supportTicketsStore = [
  * Grievance & enquiry ticket queue
  */
 export const getSupportTickets = asyncHandler(async (req, res) => {
-  const { status = "ALL", category = "ALL", priority = "ALL", search = "", page = 1, limit = 20 } = req.query;
+  const { status = "ALL", category = "ALL", priority = "ALL", search = "" } = req.query;
 
   let filtered = [...supportTicketsStore];
 
@@ -81,6 +81,14 @@ export const getSupportTickets = asyncHandler(async (req, res) => {
     resolved: supportTicketsStore.filter((t) => t.status === "RESOLVED").length,
   };
 
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query?.pageSize || req.query?.limit, 10) || 20));
+
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / limit) || 1;
+  const startIdx = (page - 1) * limit;
+  const paginatedTickets = filtered.slice(startIdx, startIdx + limit);
+
   return apiHTTPResponse(
     req,
     res,
@@ -88,7 +96,20 @@ export const getSupportTickets = asyncHandler(async (req, res) => {
     "Support tickets queue retrieved successfully.",
     {
       counts,
-      tickets: filtered,
+      total,
+      totalPages,
+      page,
+      limit,
+      hasMore: page < totalPages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+      tickets: paginatedTickets,
+      list: paginatedTickets,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE

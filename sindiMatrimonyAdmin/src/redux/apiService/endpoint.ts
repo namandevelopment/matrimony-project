@@ -182,6 +182,7 @@ export const ApiURL = {
   adminSuccessStories: `${BASE_URL}/api/v1/admin/success-stories`,
   adminSuccessStoryDetail: (id: string) => `${BASE_URL}/api/v1/admin/success-stories/${id}`,
   publicSuccessStories: `${BASE_URL}/api/v1/dashboard/success-stories`,
+  systemConfig: `${BASE_URL}/api/v1/admin/settings/config`,
 };
 
 export default ApiURL;
