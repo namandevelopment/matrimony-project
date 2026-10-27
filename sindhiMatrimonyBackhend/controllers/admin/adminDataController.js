@@ -302,6 +302,173 @@ export const createMember = asyncHandler(async (req, res) => {
   );
 });
 
+export const bulkAddMember = asyncHandler(async (req, res) => {
+  const rawList = Array.isArray(req.body)
+    ? req.body
+    : Array.isArray(req.body?.members)
+    ? req.body.members
+    : null;
+
+  if (!rawList || !rawList.length) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_BAD_REQUEST,
+      "Validation Failed: Request body must be an array of candidate objects or contain a 'members' array.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.BAD_REQUEST,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const created = [];
+  const skipped = [];
+  const seenBatchPhones = new Set();
+
+  for (let idx = 0; idx < rawList.length; idx++) {
+    const item = rawList[idx];
+    const {
+      name,
+      gender,
+      phone,
+      mobile,
+      email,
+      dateOfBirth,
+      dob,
+      age,
+      height,
+      maritalStatus = "NEVER_MARRIED",
+      subcaste = "Bhaiband",
+      gotra = "Advani",
+      motherGotra = "Vaswani",
+      manglik = "NON_MANGLIK",
+      education = {},
+      profession = {},
+      location = {},
+      family = {},
+      partnerPreference = {},
+      aboutMe,
+      avatar,
+      image,
+      photo,
+      photos,
+      membershipTier = "FREE",
+      isVerified = false,
+    } = item || {};
+
+    if (!name || typeof name !== "string" || name.trim().length < 2) {
+      skipped.push({ index: idx, name: name || "Unknown", phone: phone || "N/A", reason: "Name is required and must have at least 2 characters." });
+      continue;
+    }
+
+    const candidateGender = (gender || "").toString().toUpperCase();
+    if (candidateGender !== "MALE" && candidateGender !== "FEMALE") {
+      skipped.push({ index: idx, name, phone: phone || "N/A", reason: "Gender must be either 'MALE' or 'FEMALE'." });
+      continue;
+    }
+
+    const rawPhone = phone || mobile || "";
+    const cleanPhone = String(rawPhone).replace(/\D/g, "");
+    if (cleanPhone.length < 10) {
+      skipped.push({ index: idx, name, phone: rawPhone, reason: "A valid 10-digit phone number is required." });
+      continue;
+    }
+
+    if (seenBatchPhones.has(cleanPhone)) {
+      skipped.push({ index: idx, name, phone: cleanPhone, reason: `Duplicate phone '${cleanPhone}' within this upload batch.` });
+      continue;
+    }
+
+    if (findUserByPhoneInMemory(cleanPhone)) {
+      skipped.push({ index: idx, name, phone: cleanPhone, reason: `Member with phone '${cleanPhone}' already exists in system.` });
+      continue;
+    }
+
+    seenBatchPhones.add(cleanPhone);
+
+    let calculatedAge = Number(age);
+    const resolvedDob = dateOfBirth || dob;
+    if (resolvedDob) {
+      const birthDate = new Date(resolvedDob);
+      if (!isNaN(birthDate.getTime())) {
+        const today = new Date();
+        let diffAge = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+          diffAge--;
+        }
+        calculatedAge = diffAge;
+      }
+    }
+
+    if (calculatedAge && calculatedAge < 18) {
+      skipped.push({ index: idx, name, phone: cleanPhone, reason: "Candidate must be at least 18 years old." });
+      continue;
+    }
+
+    const finalAge = calculatedAge || (candidateGender === "FEMALE" ? 25 : 28);
+
+    const userPayload = {
+      phone: cleanPhone,
+      name: name.trim(),
+      email: email || `${cleanPhone}@sindhimarriage.in`,
+      role: 1,
+      status: "ACTIVE",
+      isPhoneVerified: true,
+      isEmailVerified: Boolean(email),
+    };
+
+    const profilePayload = {
+      name: name.trim(),
+      gender: candidateGender,
+      dateOfBirth: resolvedDob || new Date(Date.now() - finalAge * 365.25 * 24 * 3600 * 1000).toISOString(),
+      age: finalAge,
+      height: Number(height) || (candidateGender === "FEMALE" ? 165 : 175),
+      maritalStatus: maritalStatus.toUpperCase(),
+      subcaste: subcaste.trim(),
+      gotra: gotra.trim(),
+      motherGotra: motherGotra.trim(),
+      manglik: manglik.toUpperCase(),
+      education: typeof education === "object" ? education : { degree: String(education), field: "General", college: "University" },
+      profession: typeof profession === "object" ? profession : { occupation: String(profession), companyName: "Business/Corporate", annualIncome: 1200000, currency: "INR" },
+      location: typeof location === "object" ? location : { city: String(location) || "Mumbai", state: "Maharashtra", country: "India" },
+      family: typeof family === "object" ? family : { familyType: "NUCLEAR", fatherOccupation: "Businessman", motherOccupation: "Homemaker" },
+      partnerPreference: typeof partnerPreference === "object" ? partnerPreference : {},
+      aboutMe: aboutMe || `Sindhi candidate looking for a compatible life partner.`,
+      avatar: avatar || image || photo || (candidateGender === "FEMALE" ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600" : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600"),
+      photos: Array.isArray(photos) ? photos : (avatar || image || photo ? [avatar || image || photo] : []),
+      membershipTier: membershipTier.toUpperCase(),
+      isVerified: Boolean(isVerified),
+    };
+
+    const { user: regUser, profile: regProfile } = registerCandidateInMemory(userPayload, profilePayload);
+    created.push({
+      id: regProfile._id,
+      matrimonyId: regProfile.matrimonyId,
+      name: regProfile.name,
+      phone: regUser.phone,
+      gender: regProfile.gender,
+      membershipTier: regProfile.membershipTier,
+    });
+  }
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_CREATED,
+    `Bulk registration complete: ${created.length} candidates added successfully, ${skipped.length} skipped.`,
+    {
+      totalSubmitted: rawList.length,
+      createdCount: created.length,
+      skippedCount: skipped.length,
+      created,
+      skipped,
+    },
+    CONSTANTS.CREATED,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
 export const updateMember = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const candidate = findProfileByIdInMemory(id);
@@ -1081,6 +1248,7 @@ export default {
   getMembersList,
   getMemberDetail,
   createMember,
+  bulkAddMember,
   updateMember,
   updateMemberStatus,
   verifyMember,

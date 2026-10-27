@@ -3,6 +3,7 @@ import {
   getMembersList,
   getMemberDetail,
   createMember,
+  bulkAddMember,
   updateMember,
   updateMemberStatus,
   verifyMember,
@@ -46,6 +47,7 @@ router.get("/dashboard/todays-followups", getTodaysFollowups);
 import { generateMemberBiodata } from "../../controllers/members/biodataController.js";
 router.get("/members", getMembersList);
 router.post("/members", createMember);
+router.post("/members/bulk", bulkAddMember);
 router.get("/members/:id", getMemberDetail);
 router.put("/members/:id", updateMember);
 router.put("/members/:id/status", updateMemberStatus);

@@ -998,7 +998,7 @@ Content-Type: application/json
 ### ============================================================================
 ### 14. ADMIN DASHBOARD & CRM MODULE (SUB-1MS IN-MEMORY SPEED)
 ### ============================================================================
-@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImVtcF8wMDEiLCJlbXBsb3llZUlkIjoiRU1QMDAxIiwiZW1haWwiOiJhZG1pbkBzaW5kaGltYXJyaWFnZS5pbiIsInJvbGUiOiJTVVBFUl9BRE1JTiIsInJvbGVDb2RlIjoxLCJpYXQiOjE3OTMwOTI1ODQsImV4cCI6MTc5MzI2NTM4NH0.YwukMf9FFUsbP3ViQ35p-P79dlLwO2nzdmx9pKJ5FNI
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImVtcF8wMDEiLCJlbXBsb3llZUlkIjoiRU1QMDAxIiwiZW1haWwiOiJhZG1pbkBzaW5kaGltYXJyaWFnZS5pbiIsInJvbGUiOiJTVVBFUl9BRE1JTiIsInJvbGVDb2RlIjoxLCJpYXQiOjE3OTMwOTQxODYsImV4cCI6MTc5MzI2Njk4Nn0.6Nk9SlstpcHUCoIMOL4Xw4cq4YWt4r4sqGbW-BL2H0M
 ### 14.1 Admin Super Admin Login (Generates adminToken)
 POST {{baseUrl}}/auth/admin/login
 Content-Type: application/json
@@ -1451,36 +1451,107 @@ POST {{baseUrl}}/admin/members
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
-{
-  "name": "Varun Chhabria",
-  "gender": "MALE",
-  "phone": "9820098765",
-  "email": "varun.chhabria@example.com",
-  "age": 29,
-  "dateOfBirth": "1997-04-12T00:00:00.000Z",
-  "height": 178,
-  "maritalStatus": "NEVER_MARRIED",
-  "subcaste": "Amil",
-  "gotra": "Chhabria",
-  "motherGotra": "Advani",
-  "manglik": "NON_MANGLIK",
-  "education": {
-    "degree": "B.Tech in Computer Science",
-    "college": "IIT Bombay"
+ {
+    "name": "Deepak Hingorani",
+    "gender": "MALE",
+    "image": "https://randomuser.me/api/portraits/men/6.jpg",
+    "phone": "9820010005",
+    "email": "deepak.hingorani5@example.com",
+    "age": 28,
+    "dateOfBirth": "1998-06-06T00:00:00.000Z",
+    "height": 175,
+    "maritalStatus": "NEVER_MARRIED",
+    "subcaste": "Amil",
+    "gotra": "Hingorani",
+    "motherGotra": "Lulla",
+    "manglik": "NON_MANGLIK",
+    "education": {
+      "degree": "M.S. in Data Science",
+      "college": "BITS Pilani"
+    },
+    "profession": {
+      "occupation": "Investment Banker",
+      "companyName": "Goldman Sachs",
+      "annualIncome": 4200000
+    },
+    "location": {
+      "city": "Delhi",
+      "state": "Delhi",
+      "country": "India"
+    },
+    "membershipTier": "SILVER",
+    "isVerified": true
+  }
+
+### 18.1.1 Staff Bulk Candidate Registration (Array of Objects)
+POST {{baseUrl}}/admin/members/bulk
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+[
+  {
+    "name": "Simran Vaswani",
+    "gender": "FEMALE",
+    "image": "https://randomuser.me/api/portraits/women/12.jpg",
+    "phone": "9820010020",
+    "email": "simran.vaswani20@example.com",
+    "age": 26,
+    "dateOfBirth": "2000-05-15T00:00:00.000Z",
+    "height": 165,
+    "maritalStatus": "NEVER_MARRIED",
+    "subcaste": "Amil",
+    "gotra": "Vaswani",
+    "motherGotra": "Chhabria",
+    "manglik": "NON_MANGLIK",
+    "education": {
+      "degree": "MBA in Finance",
+      "college": "IIM Ahmedabad"
+    },
+    "profession": {
+      "occupation": "Senior Financial Analyst",
+      "companyName": "Morgan Stanley",
+      "annualIncome": 2800000
+    },
+    "location": {
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "country": "India"
+    },
+    "membershipTier": "GOLD",
+    "isVerified": true
   },
-  "profession": {
-    "occupation": "Principal Software Architect",
-    "companyName": "Microsoft India",
-    "annualIncome": 3800000
-  },
-  "location": {
-    "city": "Bengaluru",
-    "state": "Karnataka",
-    "country": "India"
-  },
-  "membershipTier": "GOLD",
-  "isVerified": true
-}
+  {
+    "name": "Kunal Ahuja",
+    "gender": "MALE",
+    "image": "https://randomuser.me/api/portraits/men/24.jpg",
+    "phone": "9820010021",
+    "email": "kunal.ahuja21@example.com",
+    "age": 28,
+    "dateOfBirth": "1998-03-20T00:00:00.000Z",
+    "height": 178,
+    "maritalStatus": "NEVER_MARRIED",
+    "subcaste": "Bhaiband",
+    "gotra": "Ahuja",
+    "motherGotra": "Advani",
+    "manglik": "NON_MANGLIK",
+    "education": {
+      "degree": "B.Tech in Computer Science",
+      "college": "IIT Bombay"
+    },
+    "profession": {
+      "occupation": "Principal Software Architect",
+      "companyName": "Microsoft India",
+      "annualIncome": 3800000
+    },
+    "location": {
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "country": "India"
+    },
+    "membershipTier": "DIAMOND",
+    "isVerified": true
+  }
+]
 
 ### 18.2 Error Scenario: Candidate Registration Under 18 Years (Expect 400)
 POST {{baseUrl}}/admin/members
