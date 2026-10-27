@@ -12,10 +12,10 @@
 
 ### Base URLs:
 ### 1. Local Development (Port 5001)
-@baseUrl = http://localhost:5001/api/v1
+# @baseUrl = http://localhost:5001/api/v1
 ### 2. Vercel Live Production
-# @baseUrl = https://sindhi-matrimony-backend.vercel.app/api/v1
-@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhZGI3OGU3NDVkYWQ2ZDRhZTQ2ZjdkOSIsInVzZXJJZCI6IjZhZGI3OGU3NDVkYWQ2ZDRhZTQ2ZjdkOSIsInBob25lIjoiOTg4NzA4MTgwMCIsInJvbGUiOjEsImFjdGl2ZVByb2ZpbGVJZCI6IjZhZGI3OGU3NDVkYWQ2ZDRhZTQ2ZjdkYSIsImlhdCI6MTc5Mjc2ODM0MCwiZXhwIjoxNzkyOTQxMTQwfQ.0HJbXsRhJsO3L0K_CWI_yO4-hSRX8m7HWBT3lv_lLMw
+@baseUrl = https://sindhi-matrimony-backend.vercel.app/api/v1
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3YjM0YTEyYzhlMzEyYTBmOTAwMDNlOCIsInVzZXJJZCI6IjY3YjM0YTEyYzhlMzEyYTBmOTAwMDNlOCIsInJvbGUiOjEsInBob25lIjoiOTg3NjU0MzIxMCIsInByb2ZpbGVJZCI6IjY3YjM0YTEyYzhlMzEyYTBmOTAwMDAwYSIsImFjdGl2ZVByb2ZpbGVJZCI6IjY3YjM0YTEyYzhlMzEyYTBmOTAwMDAwYSIsInByb2ZpbGVSb2xlIjoiT1dORVIiLCJzY29wZSI6IkZVTExfQUNDRVNTIiwiY2xpZW50UGxhdGZvcm0iOiJXRUIiLCJpYXQiOjE3OTMwOTI0OTcsImV4cCI6MTc5MzI2NTI5N30.iGXmviPxCq2W1qcbvWHDvQ4KGmvOpr9U4orh-mGRIf8
 @refreshToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhZGI3OGU3NDVkYWQ2ZDRhZTQ2ZjdkOSIsInBob25lIjoiOTg4NzA4MTgwMCIsInJvbGUiOjEsInR5cGUiOiJyZWZyZXNoIn0.sample_refresh_token_hash
 @profileId = 6ad467f1c77f327e52a82dfc
 @grantId = 67b34a12c8e312a0f9000002
@@ -998,7 +998,7 @@ Content-Type: application/json
 ### ============================================================================
 ### 14. ADMIN DASHBOARD & CRM MODULE (SUB-1MS IN-MEMORY SPEED)
 ### ============================================================================
-@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImVtcF8wMDEiLCJlbXBsb3llZUlkIjoiRU1QMDAxIiwiZW1haWwiOiJhZG1pbkBzaW5kaGltYXJyaWFnZS5pbiIsInJvbGUiOiJTVVBFUl9BRE1JTiIsInJvbGVDb2RlIjoxLCJpYXQiOjE3OTI3NTI2NjIsImV4cCI6MTc5MjkyNTQ2Mn0.TKdzg9QeDQARG1ETikQmkJ58rCMUY8bTF6M-G6ORFLo
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImVtcF8wMDEiLCJlbXBsb3llZUlkIjoiRU1QMDAxIiwiZW1haWwiOiJhZG1pbkBzaW5kaGltYXJyaWFnZS5pbiIsInJvbGUiOiJTVVBFUl9BRE1JTiIsInJvbGVDb2RlIjoxLCJpYXQiOjE3OTMwOTI1ODQsImV4cCI6MTc5MzI2NTM4NH0.YwukMf9FFUsbP3ViQ35p-P79dlLwO2nzdmx9pKJ5FNI
 ### 14.1 Admin Super Admin Login (Generates adminToken)
 POST {{baseUrl}}/auth/admin/login
 Content-Type: application/json

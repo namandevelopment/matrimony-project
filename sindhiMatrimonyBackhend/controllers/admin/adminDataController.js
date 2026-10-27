@@ -26,6 +26,7 @@ import {
   getDashboardChartsDataInMemory,
   findProfileByIdInMemory,
   registerCandidateInMemory,
+  findUserByPhoneInMemory,
 } from "../../services/realDataService.js";
 
 // ============================================================================
@@ -168,6 +169,9 @@ export const createMember = asyncHandler(async (req, res) => {
     partnerPreference = {},
     aboutMe,
     avatar,
+    image,
+    photo,
+    photos,
     membershipTier = "FREE",
     isVerified = false,
   } = req.body;
@@ -207,6 +211,18 @@ export const createMember = asyncHandler(async (req, res) => {
       "Validation Failed: A valid 10-digit phone/mobile number is required.",
       CONSTANTS.DATA_NULL,
       CONSTANTS.BAD_REQUEST,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  if (findUserByPhoneInMemory(cleanPhone)) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_CONFLICT,
+      "Validation Failed: A member with this phone number already exists.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.CONFLICT,
       CONSTANTS.ERROR_TRUE
     );
   }
@@ -267,19 +283,20 @@ export const createMember = asyncHandler(async (req, res) => {
     family: typeof family === "object" ? family : { familyType: "NUCLEAR", fatherOccupation: "Businessman", motherOccupation: "Homemaker" },
     partnerPreference: typeof partnerPreference === "object" ? partnerPreference : {},
     aboutMe: aboutMe || `Sindhi candidate looking for a compatible life partner.`,
-    avatar: avatar || (candidateGender === "FEMALE" ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600" : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600"),
+    avatar: avatar || image || photo || (candidateGender === "FEMALE" ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600" : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600"),
+    photos: Array.isArray(photos) ? photos : (avatar || image || photo ? [avatar || image || photo] : []),
     membershipTier: membershipTier.toUpperCase(),
     isVerified: Boolean(isVerified),
   };
 
-  const registeredProfile = registerCandidateInMemory(userPayload, profilePayload);
+  const { user: registeredUser, profile: registeredProfile } = registerCandidateInMemory(userPayload, profilePayload);
 
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_CREATED,
     `Candidate '${registeredProfile.name}' registered successfully with ID ${registeredProfile.matrimonyId}.`,
-    registeredProfile,
+    { user: registeredUser, profile: registeredProfile },
     CONSTANTS.CREATED,
     CONSTANTS.ERROR_FALSE
   );
