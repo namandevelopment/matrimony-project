@@ -51,13 +51,13 @@ export const MembersScreen: React.FC = () => {
 
   // Sync live API members into state when available
   useEffect(() => {
-    if (apiMembers && apiMembers.length > 0) {
+    if (apiMembers && apiMembers?.length > 0) {
       const mapped: MatrimonialMember[] = apiMembers.map((m: any, idx: number) => ({
         id: String(m._id || m.id || idx + 101000),
         uniqueId: m.profileId || m.uniqueId || `S${idx + 1000}`,
         fullName: m.fullName || m.name || 'Sindhi Candidate',
         mobile: m.mobile || m.phone || '—',
-        gender: m.gender === 'Female' ? 'Female' : 'Male',
+        gender: String(m.gender).toUpperCase() === 'FEMALE' ? 'Female' : 'Male',
         age: Number(m.age) || 27,
         subcaste: m.subcaste || 'Amil',
         city: m.city || 'Mumbai',
@@ -67,10 +67,10 @@ export const MembersScreen: React.FC = () => {
         isVerified: Boolean(m.isVerified ?? m.isProfileVerified),
         created: m.createdAt
           ? new Date(m.createdAt).toLocaleDateString('en-IN', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric',
-            })
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          })
           : '10 Oct 2026',
         createdAtTimestamp: m.createdAt ? new Date(m.createdAt).getTime() : Date.now(),
         gotra: m.gotra,
@@ -169,15 +169,14 @@ export const MembersScreen: React.FC = () => {
       header: 'Plan Tier',
       render: (member) => (
         <span
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${
-            member.plan === 'PLATINUM'
-              ? 'bg-purple-100 text-purple-700'
-              : member.plan === 'GOLD'
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${member.plan === 'PLATINUM'
+            ? 'bg-purple-100 text-purple-700'
+            : member.plan === 'GOLD'
               ? 'bg-amber-100 text-amber-800'
               : member.plan === 'SILVER'
-              ? 'bg-sky-100 text-sky-800'
-              : 'bg-slate-100 text-slate-700'
-          }`}
+                ? 'bg-sky-100 text-sky-800'
+                : 'bg-slate-100 text-slate-700'
+            }`}
         >
           <Crown className="w-3 h-3" />
           {member.plan}
@@ -203,11 +202,10 @@ export const MembersScreen: React.FC = () => {
       header: 'Status',
       render: (member) => (
         <span
-          className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase ${
-            member.status === 'ACTIVE'
-              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-              : 'bg-rose-50 text-rose-700 border border-rose-200'
-          }`}
+          className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase ${member.status === 'ACTIVE'
+            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+            : 'bg-rose-50 text-rose-700 border border-rose-200'
+            }`}
         >
           {member.status}
         </span>
@@ -265,11 +263,10 @@ export const MembersScreen: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/members')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-              !genderQuery
-                ? 'bg-[#C81E28] text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${!genderQuery
+              ? 'bg-[#C81E28] text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
           >
             <Users className="w-4 h-4" />
             <span>All Members ({values.members.length})</span>
@@ -318,8 +315,8 @@ export const MembersScreen: React.FC = () => {
           genderQuery === 'male'
             ? 'Groom Profiles Directory'
             : genderQuery === 'female'
-            ? 'Bride Profiles Directory'
-            : 'Member Profiles Directory'
+              ? 'Bride Profiles Directory'
+              : 'Member Profiles Directory'
         }
         description="Manage registered brides, grooms, KYC verifications, and subscription tiers"
         actions={

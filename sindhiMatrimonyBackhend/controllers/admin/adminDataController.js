@@ -44,6 +44,7 @@ export const getMembersList = asyncHandler(async (req, res) => {
     gender = "ALL",
     city = "ALL",
     subcaste = "ALL",
+    filter = req.query.tab || req.query.type || "ALL",
   } = req.query;
 
   const result = getMembersInMemory({
@@ -56,6 +57,7 @@ export const getMembersList = asyncHandler(async (req, res) => {
     gender,
     city,
     subcaste,
+    filter,
   });
 
   return apiHTTPResponse(

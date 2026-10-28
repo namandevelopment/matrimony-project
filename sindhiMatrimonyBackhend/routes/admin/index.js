@@ -109,7 +109,9 @@ router.delete("/reviews/:id", deleteAdminReview);
 
 // 8. Success Stories Registry & Moderation
 router.get("/success-stories", getAdminSuccessStories);
+router.get("/get-success-stories", getAdminSuccessStories);
 router.post("/success-stories", createAdminSuccessStory);
+router.post("/add-success-stories", createAdminSuccessStory);
 router.put("/success-stories/:id", updateAdminSuccessStory);
 router.delete("/success-stories/:id", deleteAdminSuccessStory);
 

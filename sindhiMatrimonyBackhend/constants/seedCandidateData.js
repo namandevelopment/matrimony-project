@@ -312,7 +312,7 @@ export function generateCandidates(count = 150) {
       isVerified,
       membershipTier,
       isFeatured,
-      status: "ACTIVE",
+      status: i % 30 === 7 ? "INACTIVE" : "ACTIVE",
       compatibilityScore,
       matchScore: compatibilityScore,
       matrimonyId,

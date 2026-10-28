@@ -252,6 +252,8 @@ export function registerCandidateInMemory(userPayload, profilePayload) {
     _id: profileId,
     userId,
     name: userRecord.name,
+    phone: cleanPhone,
+    email: userRecord.email,
     profileFor: String(profilePayload.profileFor || "MYSELF").toUpperCase(),
     gender: String(profilePayload.gender || "MALE").toUpperCase(),
     dateOfBirth: profilePayload.dateOfBirth || profilePayload.dob || 866332800000,
@@ -651,7 +653,7 @@ export function findProfileByIdInMemory(id) {
 /**
  * Get all members with filters and pagination
  */
-export function getMembersInMemory({ search = "", status, isVerified, membershipTier, gender, city, subcaste, page = 1, limit = 20 }) {
+export function getMembersInMemory({ search = "", status, isVerified, membershipTier, filter = "ALL", gender, city, subcaste, page = 1, limit = 20 }) {
   // Combine custom registered profiles + seed candidates
   const allList = [...customProfilesMap.values(), ...SEED_CANDIDATE_POOL];
   // Deduplicate by _id
@@ -664,7 +666,14 @@ export function getMembersInMemory({ search = "", status, isVerified, membership
     }
   }
 
-  let filtered = uniqueList;
+  const allCount = uniqueList.length;
+  const paidCount = uniqueList.filter((m) => (m.membershipTier || "FREE").toUpperCase() !== "FREE" && (m.status || "ACTIVE") === "ACTIVE").length;
+  const inactiveCount = uniqueList.filter((m) => {
+    const s = (m.status || "ACTIVE").toUpperCase();
+    return s === "INACTIVE" || s === "SUSPENDED" || s === "EXPIRED";
+  }).length;
+
+  let filtered = uniqueList.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
   if (search) {
     const q = search.toLowerCase().trim();
@@ -677,17 +686,21 @@ export function getMembersInMemory({ search = "", status, isVerified, membership
     );
   }
 
-  if (status && status !== "ALL") {
-    filtered = filtered.filter((m) => (m.status || "ACTIVE") === status);
-  }
-
-  if (isVerified !== undefined && isVerified !== "") {
-    const boolVal = String(isVerified) === "true";
-    filtered = filtered.filter((m) => Boolean(m.isVerified) === boolVal);
-  }
-
-  if (membershipTier && membershipTier !== "ALL") {
-    filtered = filtered.filter((m) => (m.membershipTier || "FREE").toUpperCase() === membershipTier.toUpperCase());
+  const activeFilter = (filter || "").toUpperCase();
+  if (activeFilter === "PAID" || membershipTier === "PAID") {
+    filtered = filtered.filter((m) => (m.membershipTier || "FREE").toUpperCase() !== "FREE" && (m.status || "ACTIVE") === "ACTIVE");
+  } else if (activeFilter === "INACTIVE" || status === "INACTIVE") {
+    filtered = filtered.filter((m) => {
+      const s = (m.status || "ACTIVE").toUpperCase();
+      return s === "INACTIVE" || s === "SUSPENDED" || s === "EXPIRED";
+    });
+  } else {
+    if (status && status !== "ALL") {
+      filtered = filtered.filter((m) => (m.status || "ACTIVE") === status);
+    }
+    if (membershipTier && membershipTier !== "ALL") {
+      filtered = filtered.filter((m) => (m.membershipTier || "FREE").toUpperCase() === membershipTier.toUpperCase());
+    }
   }
 
   if (gender && gender !== "ALL") {
@@ -703,7 +716,7 @@ export function getMembersInMemory({ search = "", status, isVerified, membership
   }
 
   const pageNum = Math.max(1, Number(page || 1));
-  const limitNum = Math.min(100, Math.max(1, Number(limit || 20)));
+  const limitNum = Math.min(2000, Math.max(1, Number(limit || 20)));
   const total = filtered.length;
   const totalPages = Math.ceil(total / limitNum) || 1;
   const start = (pageNum - 1) * limitNum;
@@ -731,7 +744,11 @@ export function getMembersInMemory({ search = "", status, isVerified, membership
 
   return {
     members,
-    list: members,
+    counts: {
+      all: allCount,
+      paid: paidCount,
+      inactive: inactiveCount,
+    },
     total,
     totalPages,
     page: pageNum,
