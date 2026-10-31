@@ -1,0 +1,63 @@
+[
+  {
+    "id": "1",
+    "name": "Pratibha",
+    "profileId": "BRH4215590",
+    "lastSeen": "Last seen yesterday",
+    "age": 28,
+    "height": "5'3\"",
+    "education": "B.Sc. Nursing",
+    "profession": "Student",
+    "location": "Kotputli-Behror",
+    "verified": true,
+    "photoCount": 1,
+    "imageUrl": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&auto=format&fit=crop&q=80",
+    "isShortlisted": false
+  },
+  {
+    "id": "2",
+    "name": "Simran Chawla",
+    "profileId": "SIN9482103",
+    "lastSeen": "Online now",
+    "age": 26,
+    "height": "5'4\"",
+    "education": "B.Tech (CS)",
+    "profession": "Software Engineer",
+    "location": "Indore, MP",
+    "verified": true,
+    "photoCount": 3,
+    "imageUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80",
+    "isShortlisted": true
+  },
+  {
+    "id": "3",
+    "name": "Kareena Ahuja",
+    "profileId": "SIN7721094",
+    "lastSeen": "Last seen 2 hrs ago",
+    "age": 27,
+    "height": "5'5\"",
+    "education": "MBA Finance",
+    "profession": "Banking Manager",
+    "location": "Mumbai, Maharashtra",
+    "verified": true,
+    "photoCount": 4,
+    "imageUrl": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&auto=format&fit=crop&q=80",
+    "isShortlisted": false
+  },
+  {
+    "id": "4",
+    "name": "Divya Mirchandani",
+    "profileId": "SIN6621980",
+    "lastSeen": "Last seen today",
+    "age": 25,
+    "height": "5'2\"",
+    "education": "B.Des Fashion",
+    "profession": "Fashion Designer",
+    "location": "Jaipur, Rajasthan",
+    "verified": true,
+    "photoCount": 2,
+    "imageUrl": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&auto=format&fit=crop&q=80",
+    "isShortlisted": false
+  }
+]
+

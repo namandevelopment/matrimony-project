@@ -1,0 +1,266 @@
+{
+  "sections": [
+    {
+      "id": "basic",
+      "title": "Basic Details",
+      "fields": [
+        {
+          "id": "age",
+          "label": "Age",
+          "type": "range",
+          "title": "Select Age",
+          "defaultValue": { "from": 24, "to": 31 },
+          "unit": "Yrs",
+          "options": [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 42, 45, 50, 55, 60]
+        },
+        {
+          "id": "height",
+          "label": "Height",
+          "type": "range",
+          "title": "Select Height",
+          "defaultValue": { "from": "5'0\"", "to": "6'0\"" },
+          "options": ["4'6\"", "4'8\"", "4'10\"", "5'0\"", "5'2\"", "5'4\"", "5'6\"", "5'8\"", "5'10\"", "6'0\"", "6'2\"", "6'4\"", "6'6\""]
+        },
+        {
+          "id": "profileCreatedBy",
+          "label": "Profile created by",
+          "type": "select",
+          "title": "Select Profile Created By",
+          "defaultValue": "Any",
+          "options": ["Any", "Self", "Parent / Guardian", "Sibling", "Friend / Relative"]
+        },
+        {
+          "id": "maritalStatus",
+          "label": "Marital Status",
+          "type": "select",
+          "title": "Select Marital Status",
+          "defaultValue": "Never Married",
+          "options": ["Never Married", "Awaiting Divorce", "Divorced", "Widowed", "Any"]
+        },
+        {
+          "id": "motherTongue",
+          "label": "Mother Tongue",
+          "type": "select",
+          "title": "Select Mother Tongue",
+          "defaultValue": "Hindi",
+          "options": ["Hindi", "Sindhi", "English", "Gujarati", "Marathi", "Punjabi", "Any"]
+        },
+        {
+          "id": "physicalStatus",
+          "label": "Physical Status",
+          "type": "select",
+          "title": "Select Physical Status",
+          "defaultValue": "Normal",
+          "options": ["Normal", "Physically Challenged", "Doesn't Matter"]
+        }
+      ]
+    },
+    {
+      "id": "religious",
+      "title": "Religious Details",
+      "fields": [
+        {
+          "id": "caste",
+          "label": "Caste",
+          "type": "select",
+          "title": "Select Caste",
+          "defaultValue": "Any Caste",
+          "options": ["Any Caste", "Sindhi - Baibhand", "Sindhi - Amil", "Sindhi - Bhaiband", "Sindhi - Sahiti", "Sindhi - Larai", "Sindhi - Shikarpuri", "Sindhi - Dadu"]
+        },
+        {
+          "id": "matchesWithHoroscope",
+          "label": "Matches with horoscope",
+          "type": "checkbox",
+          "defaultValue": false
+        },
+        {
+          "id": "star",
+          "label": "Star",
+          "type": "select",
+          "title": "Select Star",
+          "defaultValue": "Any",
+          "options": ["Any", "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashirsha", "Ardra", "Punarvasu"]
+        },
+        {
+          "id": "manglik",
+          "label": "Manglik",
+          "type": "select",
+          "title": "Select Manglik",
+          "defaultValue": "Doesn't Matter",
+          "options": ["Doesn't Matter", "Yes", "No", "Partial"]
+        },
+        {
+          "id": "gothra",
+          "label": "Gothra(m)",
+          "type": "select",
+          "title": "Select Gothra(m)",
+          "defaultValue": "All Except My Gothra",
+          "options": ["All Except My Gothra", "Any", "Specific Gothra"]
+        }
+      ]
+    },
+    {
+      "id": "professional",
+      "title": "Professional Details",
+      "fields": [
+        {
+          "id": "occupation",
+          "label": "Occupation",
+          "type": "select",
+          "title": "Select Occupation",
+          "defaultValue": "Any",
+          "options": ["Any", "Software Professional", "Business / Entrepreneur", "Finance / Banking", "Doctor / Healthcare", "Civil Services", "Teacher / Professor"]
+        },
+        {
+          "id": "annualIncome",
+          "label": "Annual Income",
+          "type": "select",
+          "title": "Select Annual Income",
+          "defaultValue": "Any",
+          "options": ["Any", "Rs. 3 - 5 Lakhs", "Rs. 5 - 7 Lakhs", "Rs. 7 - 10 Lakhs", "Rs. 10 - 15 Lakhs", "Rs. 15 - 20 Lakhs", "Rs. 20 - 30 Lakhs", "Rs. 30 Lakhs+"]
+        },
+        {
+          "id": "employmentType",
+          "label": "Employment Type",
+          "type": "select",
+          "title": "Select Employment Type",
+          "defaultValue": "Any",
+          "options": ["Any", "Private Sector", "Government / Public Sector", "Business / Self-Employed", "Defence / Civil", "Not Working"]
+        },
+        {
+          "id": "education",
+          "label": "Education",
+          "type": "select",
+          "title": "Select Education",
+          "defaultValue": "Bachelor's - Engineering",
+          "options": ["Bachelor's - Engineering", "Master's - Management", "Bachelor's - Commerce", "Doctorate / Ph.D", "Chartered Accountant", "Any Degree"]
+        }
+      ]
+    },
+    {
+      "id": "location",
+      "title": "Location Details",
+      "fields": [
+        {
+          "id": "nearbyProfiles",
+          "label": "Nearby Profiles",
+          "subLabel": "Matches near your location",
+          "type": "checkbox",
+          "defaultValue": false
+        },
+        {
+          "id": "country",
+          "label": "Country",
+          "type": "select",
+          "title": "Select Country",
+          "defaultValue": "India",
+          "options": ["India", "United States", "United Arab Emirates", "Canada", "United Kingdom", "Australia", "Singapore"]
+        },
+        {
+          "id": "state",
+          "label": "State",
+          "type": "select",
+          "title": "Select State",
+          "defaultValue": "Madhya Pradesh",
+          "options": ["Madhya Pradesh", "Rajasthan", "Maharashtra", "Gujarat", "Delhi", "Uttar Pradesh", "Karnataka"]
+        },
+        {
+          "id": "city",
+          "label": "City/District",
+          "type": "select",
+          "title": "Select City/District",
+          "defaultValue": "Any",
+          "options": ["Any", "Indore", "Bhopal", "Jaipur", "Ahmedabad", "Mumbai", "Pune", "Delhi NCR", "Bangalore"]
+        }
+      ]
+    },
+    {
+      "id": "lifestyle",
+      "title": "Lifestyle",
+      "fields": [
+        {
+          "id": "eatingHabits",
+          "label": "Eating Habits",
+          "type": "select",
+          "title": "Select Eating Habits",
+          "defaultValue": "Vegetarian",
+          "options": ["Vegetarian", "Eggetarian", "Non-Vegetarian", "Vegan", "Doesn't Matter"]
+        },
+        {
+          "id": "drinkingHabits",
+          "label": "Drinking Habits",
+          "type": "select",
+          "title": "Select Drinking Habits",
+          "defaultValue": "Doesn't Matter",
+          "options": ["Doesn't Matter", "Never Drinks", "Drinks Socially", "Regular Drinker"]
+        },
+        {
+          "id": "smokingHabits",
+          "label": "Smoking Habits",
+          "type": "select",
+          "title": "Select Smoking Habits",
+          "defaultValue": "Doesn't Matter",
+          "options": ["Doesn't Matter", "Never Smokes", "Smokes Occasionally", "Regular Smoker"]
+        }
+      ]
+    },
+    {
+      "id": "family",
+      "title": "Family Details",
+      "fields": [
+        {
+          "id": "familyStatus",
+          "label": "Family Status",
+          "type": "select",
+          "title": "Select Family Status",
+          "defaultValue": "Any",
+          "options": ["Any", "Middle Class", "Upper Middle Class", "Rich / Affluent", "High Class"]
+        },
+        {
+          "id": "familyType",
+          "label": "Family Type",
+          "type": "select",
+          "title": "Select Family Type",
+          "defaultValue": "Any",
+          "options": ["Any", "Joint Family", "Nuclear Family"]
+        },
+        {
+          "id": "familyValue",
+          "label": "Family Value",
+          "type": "select",
+          "title": "Select Family Value",
+          "defaultValue": "Any",
+          "options": ["Any", "Traditional", "Moderate", "Liberal"]
+        }
+      ]
+    },
+    {
+      "id": "recentlyCreated",
+      "title": "Recently created profiles",
+      "fields": [
+        {
+          "id": "profileCreated",
+          "label": "Profile Created",
+          "subLabel": "Profiles based on created date",
+          "type": "chips",
+          "defaultValue": "All",
+          "options": ["All", "Today", "Last 3 days", "One week", "One month"]
+        }
+      ]
+    },
+    {
+      "id": "profileType",
+      "title": "Profile Type",
+      "fields": [
+        {
+          "id": "photoSettings",
+          "label": "Photo Settings",
+          "type": "select",
+          "title": "Select Photo Settings",
+          "defaultValue": "Visible to all",
+          "options": ["Visible to all", "Visible on request", "Protected"]
+        }
+      ]
+    }
+  ]
+}
