@@ -552,13 +552,49 @@ const EditProfile: React.FC = () => {
     }
 
     if (activeEditSection) {
+      const trimmed = editingValue.trim();
       setSavedValues(prev => {
-        const next = { ...prev, [activeEditSection]: editingValue };
+        const next = { ...prev, [activeEditSection]: trimmed };
         try {
           Storage.setItemSync('profileSavedValues', JSON.stringify(next));
         } catch (e) {}
         return next;
       });
+
+      // Construct API payload based on section name
+      let payload: Record<string, any> = {};
+      if (activeEditSection === 'A Few Lines About Myself') {
+        payload = { aboutMe: trimmed };
+      } else if (activeEditSection === 'Hobbies & Interests') {
+        payload = { hobbies: trimmed.split(',').map(s => s.trim()).filter(Boolean) };
+      } else if (activeEditSection === 'About my family') {
+        payload = { family: { ...(profile?.family || {}), aboutFamily: trimmed } };
+      } else {
+        payload = { [activeEditSection]: trimmed };
+      }
+
+      // Sync with backend API
+      apiFetch({
+        url: ApiURL.updateUserProfile,
+        method: 'POST',
+        payload,
+        showErrorToast: false,
+      }).catch(() => {});
+
+      // Also update local user profile
+      try {
+        const currentUser = Storage.getItemSync<any>('user') || {};
+        const currentProfile = currentUser.profile || currentUser;
+        Storage.setItemSync('user', {
+          ...currentUser,
+          ...payload,
+          profile: {
+            ...currentProfile,
+            ...payload,
+          },
+        });
+      } catch (e) {}
+
       showToast({
         type: 'success',
         message: `${activeEditSection} updated successfully`,

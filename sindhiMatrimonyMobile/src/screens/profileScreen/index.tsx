@@ -22,6 +22,7 @@ import { moderateScale, moderateVerticalScale } from '../../utils/Responsive';
 import { showToast } from '../../utils/CustomToast';
 import { Storage } from '../../storage/Storage';
 import { selectProfile } from '../../redux/useSelector';
+import { apiFetch, ApiURL } from '../../redux/apiService';
 
 // Palette constants matching the screenshots exactly
 const HEADER_COLOR = '#DB2F3C';
@@ -51,14 +52,35 @@ const ProfileScreen: React.FC = () => {
 
   const storedUser = Storage.getItemSync<any>('user') || {};
   const reduxProfile = useSelector(selectProfile);
-  const profile = reduxProfile || storedUser?.profile || storedUser || {};
+  const [liveProfile, setLiveProfile] = useState<any>(
+    () => reduxProfile || storedUser?.profile || storedUser || {},
+  );
+  const profile = liveProfile || reduxProfile || storedUser?.profile || storedUser || {};
 
   const animatedScore = useRef(new Animated.Value(0)).current;
   const [displayScore, setDisplayScore] = useState(0);
-  const targetScore = Number(profile?.profileScore || profile?.score) || 52;
+  const targetScore = Number(profile?.profileScore || profile?.score) || 68;
 
   useFocusEffect(
     useCallback(() => {
+      // Sync latest profile from backend
+      apiFetch({
+        url: ApiURL.getProfile,
+        method: 'GET',
+        showErrorToast: false,
+      })
+        .then((res: any) => {
+          const profileData = res?.data?.profile || res?.data;
+          if (profileData) {
+            setLiveProfile(profileData);
+            try {
+              const cur = Storage.getItemSync<any>('user') || {};
+              Storage.setItemSync('user', { ...cur, ...profileData, profile: profileData });
+            } catch (e) {}
+          }
+        })
+        .catch(() => {});
+
       animatedScore.setValue(0);
       setDisplayScore(0);
 
@@ -349,7 +371,7 @@ const ProfileScreen: React.FC = () => {
             {/* Name + Edit Icon */}
             <View style={styles.nameRow}>
               <Text style={styles.userName} numberOfLines={1}>
-                {profile?.name || storedUser?.fullName || storedUser?.name || 'Mayank Tamhankar'}
+                {profile?.name || storedUser?.fullName || storedUser?.name || 'Candidate Profile'}
               </Text>
               <TouchableOpacity
                 activeOpacity={0.6}
@@ -366,13 +388,18 @@ const ProfileScreen: React.FC = () => {
 
             {/* Matrimony ID */}
             <Text style={styles.userId}>
-              {profile?.matrimonyId || storedUser?.matrimonyId || profile?.profileId || 'BRH4164942'}
+              {profile?.matrimonyId ||
+                storedUser?.matrimonyId ||
+                profile?.profileId ||
+                (profile?._id ? `SM${String(profile._id).slice(-7).toUpperCase()}` : 'SM-PROFILE')}
             </Text>
 
             {/* Membership Line */}
             <View style={styles.membershipRow}>
               <Text style={styles.membershipLabel}>Membership - </Text>
-              <Text style={styles.membershipValue}>Free</Text>
+              <Text style={styles.membershipValue}>
+                {profile?.membershipTier || storedUser?.membershipTier || 'Free'}
+              </Text>
               <Text style={styles.membershipDivider}> | </Text>
               <TouchableOpacity activeOpacity={0.7} onPress={handleUpgradePress}>
                 <Text style={styles.upgradeLink}>Upgrade Now</Text>
