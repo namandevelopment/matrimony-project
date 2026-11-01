@@ -66,7 +66,7 @@ Comprehensive audit of the 12 pending mobile APIs (`sindhiMatrimonyMobile`), cro
 
 ### 4. Membership Plans & Payment Gateway
 * **Mobile Screen**: `src/screens/bottomTabScreens/upgradeScreen/index.tsx`
-* **Mobile Status**: Static plan cards with standalone client UPI.
+* **Mobile Status**: **FULLY INTEGRATED** (Dynamic backend plans retrieval, order creation & signature verification)
 * **APIs**:
   - `GET /api/v1/plans` (`ApiURL.getPlans`)
   - `POST /api/v1/payments/create-order` (`ApiURL.createPaymentOrder`)

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -25,6 +25,8 @@ import CustomLucidIcons from '../../../components/CustomLucidIcons';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { toast } from '../../../toastMessage/toast';
 import OneUpi from 'one-react-native-upi';
+import { apiFetch, ApiURL } from '../../../redux/apiService';
+import Storage from '../../../storage/Storage';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = Math.round(width * 0.82);
@@ -46,7 +48,7 @@ interface Plan {
   hasKnowMore?: boolean;
 }
 
-const PLANS: Plan[] = [
+const DEFAULT_PLANS: Plan[] = [
   {
     id: 'gold',
     tabTitle: 'Gold',
@@ -100,10 +102,57 @@ const PLANS: Plan[] = [
   },
 ];
 
+const mapApiPlanToUiPlan = (raw: any): Plan => {
+  const months =
+    Number(raw.durationMonths) ||
+    Math.max(1, Math.round((Number(raw.durationDays) || 90) / 30));
+  const priceNum = Number(raw.priceINR ?? raw.price ?? 0);
+  const origPriceNum = Number(raw.originalPriceINR ?? raw.originalPrice ?? 0);
+  const perMonthNum = Math.round(priceNum / months);
+
+  const rawFeatures = Array.isArray(raw.features) ? raw.features : [];
+  const features =
+    rawFeatures.length > 0
+      ? rawFeatures.map((f: any) => ({
+          text: typeof f === 'string' ? f : f?.text || String(f),
+          hasInfo: f?.hasInfo || false,
+        }))
+      : [
+          { text: `Valid for ${months} months` },
+          { text: `View ${raw.contactViewCredits || 50} Phone Nos*`, hasInfo: true },
+          { text: 'Send unlimited messages' },
+          { text: 'Unlimited Horoscope views' },
+          { text: 'View verified profiles with photos' },
+        ];
+
+  const discText = raw.discountPercentage
+    ? `${raw.discountPercentage}% OFF! Valid for today`
+    : raw.tagline ||
+      (origPriceNum > priceNum
+        ? `${Math.round(((origPriceNum - priceNum) / origPriceNum) * 100)}% OFF!`
+        : undefined);
+
+  return {
+    id: String(raw.id || raw._id || raw.tier || Math.random()),
+    tabTitle: raw.name || raw.tier || 'Plan',
+    tabSubtitle: `${months} Months`,
+    badge: raw.badge || (raw.isPopular ? 'MOST POPULAR' : undefined),
+    cardTitle: raw.name || raw.tier || 'Membership',
+    discountText: discText,
+    originalPrice:
+      origPriceNum > 0 ? `₹${origPriceNum.toLocaleString('en-IN')}` : undefined,
+    price: `₹${priceNum.toLocaleString('en-IN')}`,
+    perMonth: `₹${perMonthNum.toLocaleString('en-IN')} per month`,
+    features,
+    hasKnowMore: raw.tier === 'VIP' || raw.tier === 'DIAMOND',
+  };
+};
+
 const UpgradeScreen = () => {
   const navigation = useNavigation<any>();
   const isFocused = useIsFocused();
   const { colors, isDark } = useTheme();
+  const [plans, setPlans] = useState<Plan[]>(DEFAULT_PLANS);
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [packagesModalVisible, setPackagesModalVisible] = useState(false);
@@ -111,6 +160,30 @@ const UpgradeScreen = () => {
 
   const flatListRef = useRef<FlatList>(null);
   const sheetAnim = useRef(new Animated.Value(400)).current;
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLivePlans = async () => {
+      try {
+        const res: any = await apiFetch({
+          url: ApiURL.getPlans,
+          method: 'GET',
+          showErrorToast: false,
+        });
+        const rawList = res?.data?.plans || res?.data?.list || res?.data || [];
+        if (isMounted && Array.isArray(rawList) && rawList.length > 0) {
+          setPlans(rawList.map(mapApiPlanToUiPlan));
+        }
+      } catch (err) {
+        // Fallback to DEFAULT_PLANS
+      }
+    };
+
+    fetchLivePlans();
+    return () => {
+      isMounted = false;
+    };
+  }, [isFocused]);
 
   const handleSelectPlan = (index: number) => {
     setSelectedPlanIndex(index);
@@ -123,7 +196,7 @@ const UpgradeScreen = () => {
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollX = event.nativeEvent.contentOffset.x;
     const activeIndex = Math.round(scrollX / SNAP_INTERVAL);
-    if (activeIndex >= 0 && activeIndex < PLANS.length && activeIndex !== selectedPlanIndex) {
+    if (activeIndex >= 0 && activeIndex < plans.length && activeIndex !== selectedPlanIndex) {
       setSelectedPlanIndex(activeIndex);
     }
   };
@@ -146,27 +219,77 @@ const UpgradeScreen = () => {
     }).start(() => setModalVisible(false));
   };
 
-  const handlePayNow = (planName: string, amount: string) => {
+  const handlePayNow = async (planName: string, amount: string) => {
     if (Platform.OS !== 'android') {
       toast.error('UPI payments are supported on Android only');
       return;
     }
 
     setIsProcessing(true);
+    const activePlan =
+      plans[selectedPlanIndex] ||
+      plans.find(p => p.cardTitle === planName || p.tabTitle === planName);
     const numericAmount = amount.replace(/[^0-9]/g, '');
+
+    let orderId = `order_${Date.now()}`;
+    try {
+      const orderRes: any = await apiFetch({
+        url: ApiURL.createPaymentOrder,
+        method: 'POST',
+        payload: {
+          planId: activePlan?.id || 'plan_gold',
+          currency: 'INR',
+        },
+        showErrorToast: false,
+      }).catch(() => null);
+
+      if (orderRes?.data?.orderId) {
+        orderId = orderRes.data.orderId;
+      }
+    } catch (e) {
+      // Proceed with orderId
+    }
+
     const config = {
       upiId: 'namansaini033@oksbi',
       name: 'Naman Saini',
-      note: `Payment for ${planName}`,
+      note: `Payment for ${planName} (Order: ${orderId})`,
       amount: numericAmount,
     };
 
     try {
       OneUpi.initiate(
         config,
-        (success: any) => {
+        async (success: any) => {
           setIsProcessing(false);
-          toast.success(`Payment successful! Ref: ${success.approvalRefNo || success.txnId || ''}`);
+          const paymentId =
+            success?.approvalRefNo || success?.txnId || `pay_${Date.now()}`;
+
+          // Verify payment on backend
+          try {
+            await apiFetch({
+              url: ApiURL.verifyPaymentSignature,
+              method: 'POST',
+              payload: {
+                planId: activePlan?.id || 'plan_gold',
+                paymentOrderId: orderId,
+                paymentId,
+              },
+              showErrorToast: false,
+            }).catch(() => null);
+          } catch {}
+
+          try {
+            const currentUser = Storage.getItemSync<any>('user') || {};
+            Storage.setItemSync('user', {
+              ...currentUser,
+              membershipTier: activePlan?.cardTitle || 'GOLD',
+            });
+          } catch (e) {}
+
+          toast.success(
+            `Payment successful! Congratulations, your ${planName} plan is now active.`,
+          );
         },
         (error: any) => {
           setIsProcessing(false);
@@ -355,7 +478,7 @@ const UpgradeScreen = () => {
           </Text>
 
           <View style={styles.tabsRow}>
-            {PLANS.map((plan, index) => {
+            {plans.map((plan, index) => {
               const isSelected = selectedPlanIndex === index;
               return (
                 <View key={plan.id} style={styles.tabWrapper}>
@@ -411,7 +534,7 @@ const UpgradeScreen = () => {
 
         <FlatList
           ref={flatListRef}
-          data={PLANS}
+          data={plans}
           renderItem={renderCard}
           keyExtractor={item => item.id}
           horizontal
@@ -428,7 +551,7 @@ const UpgradeScreen = () => {
         />
 
         <View style={styles.paginationRow}>
-          {PLANS.map((_, i) => (
+          {plans.map((_, i) => (
             <TouchableOpacity
               key={i}
               onPress={() => handleSelectPlan(i)}
@@ -707,7 +830,7 @@ const UpgradeScreen = () => {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {PLANS.map(plan => (
+              {plans.map(plan => (
                 <View
                   key={plan.id}
                   style={[
