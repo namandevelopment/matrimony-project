@@ -87,7 +87,10 @@ const EditProfile: React.FC = () => {
   // Profile and photos state
   const storedUser = Storage.getItemSync<any>('user') || {};
   const reduxProfile = useSelector(selectProfile);
-  const profile = reduxProfile || storedUser?.profile || storedUser || {};
+  const [liveProfile, setLiveProfile] = useState<any>(
+    () => reduxProfile || storedUser?.profile || storedUser || {},
+  );
+  const profile = liveProfile || reduxProfile || storedUser?.profile || storedUser || {};
 
   const initialPhotos: string[] = React.useMemo(() => {
     const list: string[] = [];
@@ -348,6 +351,12 @@ const EditProfile: React.FC = () => {
         .then((res: any) => {
           const profileData = res?.data?.profile || res?.data;
           if (profileData) {
+            setLiveProfile(profileData);
+            try {
+              const curUser = Storage.getItemSync<any>('user') || {};
+              Storage.setItemSync('user', { ...curUser, ...profileData, profile: profileData });
+            } catch (e) {}
+
             if (profileData.alternatePhone !== undefined) {
               setAlternatePhone(profileData.alternatePhone || '');
               Storage.setItemSync('alternatePhone', profileData.alternatePhone || '');
@@ -355,6 +364,21 @@ const EditProfile: React.FC = () => {
             if (profileData.hasHoroscope || profileData.horoscope) {
               setHasHoroscope(true);
               Storage.setItemSync('hasHoroscope', 'true');
+            }
+            if (profileData.family) {
+              const fam = profileData.family;
+              setFamilyDetails({
+                familyValue: fam.familyValues || fam.familyValue || 'Moderate',
+                familyType: fam.familyType === 'NUCLEAR' ? 'Nuclear family' : fam.familyType === 'JOINT' ? 'Joint family' : fam.familyType || 'Nuclear family',
+                familyStatus: fam.familyStatus || 'Upper middle class',
+                fatherOccupation: fam.fatherOccupation || 'Passed Away',
+                motherOccupation: fam.motherOccupation || 'Homemaker',
+                familyOrigin: fam.origin || fam.familyOrigin || profileData.location?.state || 'Not Specified',
+                noOfBrothers: String(fam.brothersCount ?? fam.brothers ?? fam.noOfBrothers ?? 'None'),
+                noOfSisters: String(fam.sistersCount ?? fam.sisters ?? fam.noOfSisters ?? 'None'),
+                brothersMarried: String(fam.brothersMarried ?? 'None'),
+                sistersMarried: String(fam.sistersMarried ?? 'None'),
+              });
             }
           }
         })
@@ -901,10 +925,67 @@ const EditProfile: React.FC = () => {
           <View style={styles.subSectionBlock}>
             {renderSubSectionHeader('Basic Details')}
             {[
+              { label: 'Age', value: profile?.age ? `${profile.age} Yrs` : 'Not Specified' },
+              {
+                label: 'Height',
+                value: profile?.height
+                  ? `${Math.floor(Number(profile.height) / 30.48)} ft ${Math.round(
+                      (Number(profile.height) % 30.48) / 2.54,
+                    )} in`
+                  : 'Not Specified',
+              },
+              {
+                label: 'Marital Status',
+                value:
+                  profile?.maritalStatus === 'NEVER_MARRIED'
+                    ? 'Unmarried'
+                    : profile?.maritalStatus || 'Unmarried',
+              },
+              { label: 'Mother Tongue', value: profile?.motherTongue || 'Sindhi' },
               { label: 'Country', value: savedValues['Country'] || profile?.location?.country || profile?.country || 'India' },
               { label: 'State', value: savedValues['State'] || profile?.location?.state || profile?.state || 'Not Specified' },
               { label: 'City', value: savedValues['City'] || profile?.location?.city || profile?.city || 'Not Specified' },
               { label: 'Citizenship', value: savedValues['Citizenship'] || profile?.citizenship || profile?.location?.country || profile?.country || 'India' },
+            ].map(renderDetailRow)}
+          </View>
+
+          {/* Professional Details */}
+          <View style={styles.subSectionBlock}>
+            {renderSubSectionHeader('Professional Details')}
+            {[
+              {
+                label: 'Education',
+                value:
+                  savedValues['Education'] ||
+                  profile?.education?.degree ||
+                  profile?.education ||
+                  'Not Specified',
+              },
+              {
+                label: 'Occupation',
+                value:
+                  savedValues['Occupation'] ||
+                  profile?.profession?.occupation ||
+                  profile?.occupation ||
+                  'Not Specified',
+              },
+              {
+                label: 'Employed In',
+                value:
+                  savedValues['Employed In'] ||
+                  profile?.profession?.companyName ||
+                  'Not Specified',
+              },
+              {
+                label: 'Annual Income',
+                value:
+                  savedValues['Annual Income'] ||
+                  (typeof profile?.profession?.annualIncome === 'number'
+                    ? `₹${profile.profession.annualIncome / 100000} Lakhs`
+                    : profile?.profession?.annualIncome ||
+                      profile?.annualIncome ||
+                      'Not Specified'),
+              },
             ].map(renderDetailRow)}
           </View>
 
