@@ -1,4 +1,4 @@
-package com.sindhimatrimony
+package com.sindhimarriage
 
 import android.app.Application
 import com.facebook.react.PackageList

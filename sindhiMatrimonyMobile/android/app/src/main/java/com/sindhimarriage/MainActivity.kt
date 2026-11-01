@@ -1,4 +1,4 @@
-package com.sindhimatrimony
+package com.sindhimarriage
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
