@@ -109,12 +109,7 @@ export const getConversations = asyncHandler(async (req, res) => {
       });
     }
   } catch (err) {
-    logMessage("DB error in getConversations, falling back to memory:", err?.message, "warn");
-  }
-
-  // Graceful fallback to seed conversations if DB returned none
-  if (conversations.length === 0) {
-    conversations = inMemoryConversations;
+    logMessage("DB error in getConversations:", err?.message, "error");
   }
 
   const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);

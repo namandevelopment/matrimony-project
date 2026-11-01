@@ -34,7 +34,7 @@ const connectDB = async (url) => {
     logMessage(`✅ MongoDB Connected successfully in ${duration}ms`, null, "info");
     isConnected = true;
   } catch (err) {
-    logMessage(`⚠️ MongoDB Connection Error: ${err?.message || err}. (Running in offline/in-memory mode for Master Data & Dropdowns)`, null, "warn");
+    logMessage(`⚠️ MongoDB Connection Error: ${err?.message || err}`, null, "error");
   }
 };
 

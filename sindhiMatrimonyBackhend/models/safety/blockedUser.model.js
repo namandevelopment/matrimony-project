@@ -28,7 +28,6 @@ const blockedUserSchema = new Schema(
 );
 
 blockedUserSchema.index({ blockerUserId: 1, blockedUserId: 1 }, { unique: true });
-blockedUserSchema.index({ blockedUserId: 1 });
 
 const BlockedUser =
   mongoose.models.BlockedUser ||

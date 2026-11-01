@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { asyncHandler, apiHTTPResponse, logMessage } from "../../utils/globalFunction.js";
 import * as CONSTANTS from "../../utils/constants.js";
+import BlockedUser from "../../models/safety/blockedUser.model.js";
 
 const getUserId = (req) =>
   req.user?.id ||
@@ -9,9 +10,6 @@ const getUserId = (req) =>
   req.auth?._id ||
   req.user?.userId ||
   req.auth?.userId;
-
-// In-memory blocked candidates store
-const inMemoryBlockedProfiles = new Map();
 
 /**
  * 🆔 Upload Government ID Proof for Trust Badge Verification
@@ -168,10 +166,13 @@ export const blockCandidate = asyncHandler(async (req, res) => {
     );
   }
 
-  if (!inMemoryBlockedProfiles.has(userId)) {
-    inMemoryBlockedProfiles.set(userId, new Set());
+  if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(userId) && mongoose.Types.ObjectId.isValid(blockedProfileId)) {
+    await BlockedUser.findOneAndUpdate(
+      { blockerUserId: userId, blockedUserId: blockedProfileId },
+      { blockerUserId: userId, blockedUserId: blockedProfileId },
+      { upsert: true, new: true }
+    );
   }
-  inMemoryBlockedProfiles.get(userId).add(blockedProfileId);
 
   return apiHTTPResponse(
     req,
@@ -194,17 +195,13 @@ export const blockCandidate = asyncHandler(async (req, res) => {
  */
 export const getBlockedList = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
-  const userBlockedSet = inMemoryBlockedProfiles.get(userId) || new Set(["67b34a12c8e312a0f9000004"]);
+  let blockedCandidates = [];
 
-  const blockedCandidates = [
-    {
-      _id: "67b34a12c8e312a0f9000004",
-      name: "Blocked Candidate",
-      subcaste: "Bhaiband",
-      city: "Mumbai",
-      blockedAt: Date.now() - 3600000 * 48,
-    },
-  ];
+  if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(userId)) {
+    blockedCandidates = await BlockedUser.find({ blockerUserId: userId })
+      .populate("blockedUserId", "phone countryCode")
+      .lean();
+  }
 
   return apiHTTPResponse(
     req,

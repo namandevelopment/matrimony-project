@@ -61,50 +61,8 @@ export const resolveTargetGender = (profileDoc, req) => {
   return String(userGender).toUpperCase() === "FEMALE" ? "MALE" : "FEMALE";
 };
 
-export const getSeedMatchesByGender = (targetGender = "FEMALE") => {
-  const normTarget = String(targetGender).toUpperCase() === "MALE" ? "MALE" : "FEMALE";
-  const filtered = (SEED_CANDIDATE_POOL || []).filter(
-    (c) => String(c.gender).toUpperCase() === normTarget
-  );
-  return (filtered.length > 0 ? filtered : SEED_CANDIDATE_POOL).map((cand) => ({
-    _id: cand._id,
-    id: cand.matrimonyId || cand._id,
-    matrimonyId: cand.matrimonyId || `SM${cand._id.slice(-7).toUpperCase()}`,
-    name: cand.name,
-    gender: cand.gender,
-    age: cand.age || 24,
-    height: typeof cand.height === "number" ? `${Math.floor(cand.height / 30.48)}'${Math.round((cand.height % 30.48) / 2.54)}"` : (cand.height || "5'3\""),
-    city: cand.location?.city || cand.city || "Mumbai",
-    caste: cand.subcaste || cand.caste || "Sindhi - Bhaiband",
-    subcaste: cand.subcaste || cand.caste || "Sindhi - Bhaiband",
-    education: cand.education?.degree ? `${cand.education.degree} / ${cand.profession?.occupation || "Professional"}` : (cand.education || "Graduate"),
-    profession: cand.profession?.occupation || cand.profession || "Professional",
-    photoUrl: cand.avatar || cand.photoUrl || (normTarget === "MALE" ? "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600" : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600"),
-    avatar: cand.avatar || cand.photoUrl || (normTarget === "MALE" ? "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600" : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600"),
-    isSilhouette: cand.isSilhouette || false,
-    isVerified: cand.isVerified ?? true,
-    matchScore: cand.matchScore || 95,
-    badge: cand.badge || "98% Match",
-  }));
-};
-
-export const getSeedViewedProfilesByGender = (targetGender = "FEMALE") => {
-  const normTarget = String(targetGender).toUpperCase() === "MALE" ? "MALE" : "FEMALE";
-  const filtered = (SEED_CANDIDATE_POOL || []).filter(
-    (c) => String(c.gender).toUpperCase() === normTarget
-  );
-  return (filtered.length > 0 ? filtered : SEED_CANDIDATE_POOL).slice(0, 4).map((c, idx) => ({
-    _id: c._id,
-    id: c.matrimonyId || c._id,
-    matrimonyId: c.matrimonyId || `SM${c._id.slice(-7).toUpperCase()}`,
-    name: c.name,
-    gender: c.gender,
-    age: c.age || 24,
-    height: typeof c.height === "number" ? `${Math.floor(c.height / 30.48)}'${Math.round((c.height % 30.48) / 2.54)}"` : (c.height || "5'3\""),
-    photoUrl: c.avatar || c.photoUrl,
-    viewedDate: `${idx + 1} day${idx > 0 ? "s" : ""} ago`,
-  }));
-};
+export const getSeedMatchesByGender = () => [];
+export const getSeedViewedProfilesByGender = () => [];
 
 
 /**

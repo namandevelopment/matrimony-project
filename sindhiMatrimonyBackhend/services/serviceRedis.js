@@ -29,11 +29,22 @@ export const client = createClient(redisOptions);
 export const publisher = createClient(redisOptions);
 export const subscriber = createClient(redisOptions);
 
-client.on("error", (err) => logMessage("Redis Client Error:", err?.message || err, "warn"));
-publisher.on("error", (err) => logMessage("Redis Publisher Error:", err?.message || err, "warn"));
-subscriber.on("error", (err) => logMessage("Redis Subscriber Error:", err?.message || err, "warn"));
+client.on("error", (err) => {
+  if (isRedisInitialized && client.isReady) logMessage("Redis Client Error:", err?.message || err, "warn");
+});
+publisher.on("error", (err) => {
+  if (isRedisInitialized && publisher.isReady) logMessage("Redis Publisher Error:", err?.message || err, "warn");
+});
+subscriber.on("error", (err) => {
+  if (isRedisInitialized && subscriber.isReady) logMessage("Redis Subscriber Error:", err?.message || err, "warn");
+});
 
 export const initializeRedis = async () => {
+  if (!process.env.REDIS_HOST?.trim()) {
+    logMessage("ℹ️ Redis host not configured. Running in standalone in-memory mode.", null, "info");
+    return;
+  }
+
   try {
     if (isRedisInitialized && client.isReady) {
       logMessage("ℹ️ Redis already initialized", null, "info");

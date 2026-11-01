@@ -1,80 +1,9 @@
 import { asyncHandler, apiHTTPResponse } from "../../utils/globalFunction.js";
 import * as CONSTANTS from "../../utils/constants.js";
-import { findProfileByIdInMemory, SEED_CANDIDATE_POOL } from "../../services/realDataService.js";
+import { Profile } from "../../models/users/profile.model.js";
 
 // Store for assisted match proposals
-let assistedProposalsStore = [
-  {
-    _id: "prop_801",
-    proposalId: "AP-801",
-    candidate1: {
-      profileId: "SM10001",
-      name: "Kunal Ahuja",
-      gender: "MALE",
-      age: 29,
-      subcaste: "Amil",
-      city: "Pune",
-      occupation: "Senior Solutions Architect",
-    },
-    candidate2: {
-      profileId: "SM10002",
-      name: "Simran Chandnani",
-      gender: "FEMALE",
-      age: 26,
-      subcaste: "Amil",
-      city: "Mumbai",
-      occupation: "Chartered Accountant",
-    },
-    matchScore: 92,
-    compatibilityFactors: {
-      subcasteMatch: "SAME_SUBCASTE_HIGH",
-      ageDifferenceYears: 3,
-      cityProximity: "SAME_REGION",
-      educationScore: "COMPATIBLE",
-    },
-    status: "PROPOSED",
-    curatedBy: "Pooja Advani",
-    deliveryChannel: "WHATSAPP",
-    notes: "Both families from respected Amil background looking for well-settled professionals.",
-    createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-    updatedAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-  },
-  {
-    _id: "prop_802",
-    proposalId: "AP-802",
-    candidate1: {
-      profileId: "SM10003",
-      name: "Rohan Advani",
-      gender: "MALE",
-      age: 31,
-      subcaste: "Bhaiband",
-      city: "Ahmedabad",
-      occupation: "Business Owner",
-    },
-    candidate2: {
-      profileId: "SM10004",
-      name: "Ananya Wadhwa",
-      gender: "FEMALE",
-      age: 27,
-      subcaste: "Bhaiband",
-      city: "Vadodara",
-      occupation: "Fashion Merchandiser",
-    },
-    matchScore: 88,
-    compatibilityFactors: {
-      subcasteMatch: "SAME_SUBCASTE_HIGH",
-      ageDifferenceYears: 4,
-      cityProximity: "GUJARAT_CORRIDOR",
-      educationScore: "COMPATIBLE",
-    },
-    status: "ACCEPTED",
-    curatedBy: "Rajesh Vazirani",
-    deliveryChannel: "IN_APP",
-    notes: "Mutual interest expressed. Proceeding to family telephone conference.",
-    createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
-    updatedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-  },
-];
+let assistedProposalsStore = [];
 
 /**
  * 1. GET /api/v1/admin/matchmaking/proposals
@@ -172,10 +101,10 @@ export const sendAssistedProposal = asyncHandler(async (req, res) => {
     );
   }
 
-  const p1 = findProfileByIdInMemory(candidate1Id) ||
-    SEED_CANDIDATE_POOL.find((c) => c._id === candidate1Id || c.candidateId === candidate1Id);
-  const p2 = findProfileByIdInMemory(candidate2Id) ||
-    SEED_CANDIDATE_POOL.find((c) => c._id === candidate2Id || c.candidateId === candidate2Id);
+  const isObj1 = Boolean(candidate1Id && String(candidate1Id).match(/^[0-9a-fA-F]{24}$/));
+  const isObj2 = Boolean(candidate2Id && String(candidate2Id).match(/^[0-9a-fA-F]{24}$/));
+  const p1 = await Profile.findOne({ $or: [{ _id: isObj1 ? candidate1Id : null }, { matrimonyId: candidate1Id }] }).lean();
+  const p2 = await Profile.findOne({ $or: [{ _id: isObj2 ? candidate2Id : null }, { matrimonyId: candidate2Id }] }).lean();
 
   if (!p1 || !p2) {
     return apiHTTPResponse(
@@ -271,12 +200,10 @@ export const previewMatchCriteria = asyncHandler(async (req, res) => {
     );
   }
 
-  const p1 = findProfileByIdInMemory(id1) ||
-    SEED_CANDIDATE_POOL.find((c) => c._id === id1 || c.candidateId === id1) ||
-    SEED_CANDIDATE_POOL[0];
-  const p2 = findProfileByIdInMemory(id2) ||
-    SEED_CANDIDATE_POOL.find((c) => c._id === id2 || c.candidateId === id2) ||
-    SEED_CANDIDATE_POOL[1];
+  const isObj1 = Boolean(id1 && String(id1).match(/^[0-9a-fA-F]{24}$/));
+  const isObj2 = Boolean(id2 && String(id2).match(/^[0-9a-fA-F]{24}$/));
+  const p1 = (await Profile.findOne({ $or: [{ _id: isObj1 ? id1 : null }, { matrimonyId: id1 }] }).lean()) || {};
+  const p2 = (await Profile.findOne({ $or: [{ _id: isObj2 ? id2 : null }, { matrimonyId: id2 }] }).lean()) || {};
 
   const sameSubcaste = p1.subcaste && p2.subcaste && p1.subcaste.toLowerCase() === p2.subcaste.toLowerCase();
   const ageDiff = Math.abs((p1.age || 29) - (p2.age || 26));

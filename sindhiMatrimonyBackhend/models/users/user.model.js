@@ -10,7 +10,6 @@ const userSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      index: true,
     },
     countryCode: {
       type: String,

@@ -50,34 +50,8 @@ const FULL_SUPER_ADMIN_PERMISSIONS = {
   settings: { view: true, edit: true, manage: true },
 };
 
-// In-memory staff cache for offline/testing/serverless resiliency
+// In-memory staff cache
 const inMemoryStaff = new Map();
-
-// Hardcoded staff seed data cleared - real database records are used
-const seedStaffData = [];
-
-// Fallback super administrator for isolated / offline test environments
-inMemoryStaff.set("admin@sindhimarriage.in", {
-  id: "emp_001",
-  employeeId: "EMP001",
-  fullName: "Super Administrator",
-  email: "admin@sindhimarriage.in",
-  mobile: "+91 98200 11223",
-  password: "Admin@1234",
-  role: "SUPER_ADMIN",
-  roleCode: ROLES.SUPER_ADMIN,
-  department: "Executive Management",
-  designation: "Managing Director & Super Admin",
-  team: "Executive Leadership",
-  recordScope: "ALL",
-  permissions: FULL_SUPER_ADMIN_PERMISSIONS,
-  allowedSections: ALL_ADMIN_SECTIONS,
-  isActive: true,
-  isChatEnabled: true,
-  maxLeadCapacity: 100,
-  activeLeadsCount: 5,
-  isMfaEnabled: false,
-});
 
 // Helper: Seed or Ensure Super Admin in MongoDB
 let isSeededInMongo = false;
@@ -174,10 +148,6 @@ export const adminLogin = asyncHandler(async (req, res) => {
     } catch (dbErr) {
       logMessage("MongoDB query fallback to in-memory staff cache:", dbErr?.message, "warn");
     }
-  }
-
-  if (!employee) {
-    employee = inMemoryStaff.get(cleanEmail);
   }
 
   if (!employee) {
@@ -370,13 +340,16 @@ export const verifyAdminMfa = asyncHandler(async (req, res) => {
     } catch (_) {}
   }
 
-  if (!employee && decoded.email) {
-    employee = inMemoryStaff.get(decoded.email.toLowerCase());
-  }
-
   if (!employee) {
-    // Default fallback super admin
-    employee = inMemoryStaff.get("admin@sindhimarriage.in");
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_UNAUTHORIZED,
+      "Administrative account not found.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.UNAUTHORIZED,
+      CONSTANTS.ERROR_TRUE
+    );
   }
 
   const tokenPayload = {
@@ -423,12 +396,16 @@ export const getAdminProfile = asyncHandler(async (req, res) => {
     } catch (_) {}
   }
 
-  if (!employee && currentUserEmail) {
-    employee = inMemoryStaff.get(currentUserEmail.toLowerCase());
-  }
-
   if (!employee) {
-    employee = inMemoryStaff.get("admin@sindhimarriage.in");
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      "Admin profile not found.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
   }
 
   const formattedEmployee = formatEmployeeResponse(employee);

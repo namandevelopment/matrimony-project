@@ -16,7 +16,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { selectProfile, selectPartnerPreferences } from '../../redux/useSelector';
 import Storage from '../../storage/Storage';
-import { apiFetch, ApiURL } from '../../redux/apiService';
+import { apiFetch, ApiURL, uploadImage, pickImage } from '../../redux/apiService';
 import CustomHeader from '../../components/headers/CustomHeader';
 import CustomLucidIcons from '../../components/CustomLucidIcons';
 import fontFamily from '../../components/fontFamily';
@@ -396,36 +396,25 @@ const EditProfile: React.FC = () => {
         return;
       }
 
-      const ImageCropPicker = require('react-native-image-crop-picker').default;
-      let image: any;
-      try {
-        image = await ImageCropPicker.openCamera({
-          width: 800,
-          height: 800,
-          cropping: true,
-          cropperCircleOverlay: false,
-          compressImageQuality: 0.8,
-          cropperToolbarTitle: 'Crop Photo',
-        });
-      } catch (cropErr: any) {
-        if (cropErr?.code === 'E_PICKER_CANCELLED') return;
-        image = await ImageCropPicker.openCamera({
-          compressImageQuality: 0.8,
-        });
-      }
-
-      if (image?.path) {
+      const img = await pickImage({ fromCamera: true, showToast: false });
+      if (img?.uri) {
         setPhotos(prev => {
           if (targetSlotIndex !== null && targetSlotIndex < prev.length) {
             const updated = [...prev];
-            updated[targetSlotIndex] = image.path;
+            updated[targetSlotIndex] = img.uri;
             return updated;
           }
-          return [image.path, ...prev];
+          return [img.uri, ...prev];
         });
         setSelectedPhotoIndex(targetSlotIndex !== null ? targetSlotIndex : 0);
         setHasImageError(false);
-        showToast({ type: 'success', message: 'Photo uploaded successfully' });
+        showToast({ type: 'info', message: 'Uploading photo...' });
+
+        uploadImage(img, { showToast: false }).then(res => {
+          const remoteUrl = res?.data?.avatar || res?.data?.photos?.[0]?.url || (res?.data as any)?.url;
+          if (remoteUrl) setPhotos(prev => prev.map(p => (p === img.uri ? remoteUrl : p)));
+          showToast({ type: 'success', message: 'Photo uploaded successfully' });
+        }).catch(() => {});
       }
     } catch (err: any) {
       if (err?.code !== 'E_PICKER_CANCELLED') {
@@ -442,37 +431,25 @@ const EditProfile: React.FC = () => {
         return;
       }
 
-      const ImageCropPicker = require('react-native-image-crop-picker').default;
-      let image: any;
-      try {
-        image = await ImageCropPicker.openPicker({
-          width: 800,
-          height: 800,
-          cropping: true,
-          compressImageQuality: 0.8,
-          mediaType: 'photo',
-          cropperToolbarTitle: 'Crop Photo',
-        });
-      } catch (cropErr: any) {
-        if (cropErr?.code === 'E_PICKER_CANCELLED') return;
-        image = await ImageCropPicker.openPicker({
-          compressImageQuality: 0.8,
-          mediaType: 'photo',
-        });
-      }
-
-      if (image?.path) {
+      const img = await pickImage({ fromCamera: false, showToast: false });
+      if (img?.uri) {
         setPhotos(prev => {
           if (targetSlotIndex !== null && targetSlotIndex < prev.length) {
             const updated = [...prev];
-            updated[targetSlotIndex] = image.path;
+            updated[targetSlotIndex] = img.uri;
             return updated;
           }
-          return [...prev, image.path];
+          return [...prev, img.uri];
         });
         setSelectedPhotoIndex(targetSlotIndex !== null ? targetSlotIndex : photos.length);
         setHasImageError(false);
-        showToast({ type: 'success', message: 'Photo added successfully' });
+        showToast({ type: 'info', message: 'Uploading photo...' });
+
+        uploadImage(img, { showToast: false }).then(res => {
+          const remoteUrl = res?.data?.avatar || res?.data?.photos?.[0]?.url || (res?.data as any)?.url;
+          if (remoteUrl) setPhotos(prev => prev.map(p => (p === img.uri ? remoteUrl : p)));
+          showToast({ type: 'success', message: 'Photo uploaded successfully' });
+        }).catch(() => {});
       }
     } catch (err: any) {
       if (err?.code !== 'E_PICKER_CANCELLED') {

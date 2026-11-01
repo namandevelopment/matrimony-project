@@ -4,7 +4,6 @@ import * as CONSTANTS from "../../utils/constants.js";
 import * as CONSTANTS_MSG from "../../utils/constantsMessage.js";
 import { User, Profile, PartnerPreference } from "../../models/index.js";
 import { updateDocumentByQueryAndData } from "../../services/serviceGlobal.js";
-import { findProfileByIdInMemory } from "../../services/realDataService.js";
 import { isInterestSentToCandidate } from "../matchmaking/interestsController.js";
 
 const getUserId = (req) => req.user?.id || req.auth?.id || req.user?._id || req.auth?._id || req.user?.userId || req.auth?.userId;
@@ -51,132 +50,6 @@ export const getProfile = asyncHandler(async (req, res) => {
 
   const isSelf = !targetId || targetId === myUserId?.toString() || targetId === myActiveProfileId?.toString();
 
-  // Test & Offline Isolation: If MongoDB is disconnected (standalone test suites or local dev without Mongo)
-  if (mongoose.connection.readyState !== 1) {
-    const foundSelf = findProfileByIdInMemory(myActiveProfileId) || findProfileByIdInMemory(myUserId);
-    if (isSelf) {
-      const userPhone = req.auth?.phone || req.user?.phone || foundSelf?.phone || "9829012345";
-      const userName = foundSelf?.name || req.auth?.name || req.user?.name || "Simran Vaswani";
-      return apiHTTPResponse(
-        req,
-        res,
-        CONSTANTS.HTTP_OK,
-        "Profile fetched successfully.",
-        {
-          isSelf: true,
-          user: {
-            _id: (myUserId || foundSelf?.userId || "6ad3c0ff51bbaafbad99f39b").toString(),
-            phone: userPhone,
-            countryCode: "+91",
-            email: foundSelf?.email || "candidate@sindhimarriage.in",
-            role: req.auth?.role || req.user?.role || 1,
-            status: "ACTIVE",
-            isPhoneVerified: true,
-            isEmailVerified: true,
-            isKycVerified: Boolean(foundSelf?.isVerified ?? true),
-            onboardingStep: 7,
-            isOnboardingComplete: true,
-          },
-          profile: foundSelf ? cleanEntity(foundSelf, { stripUserId: true }) : {
-            _id: (myActiveProfileId || "6ad3c0ff51bbaafbad99f39c").toString(),
-            name: userName,
-            profileFor: "MYSELF",
-            gender: "FEMALE",
-            dateOfBirth: 866332800000,
-            age: 28,
-            height: 165,
-            maritalStatus: "NEVER_MARRIED",
-            subcaste: "Bhaiband",
-            gotra: "Vaswani",
-            motherGotra: "Advani",
-            manglik: "NON_MANGLIK",
-            education: { degree: "MBA", field: "Marketing", college: "IIM" },
-            profession: { occupation: "Product Manager", companyName: "Tech Corp", annualIncome: 1800000, currency: "INR" },
-            location: { city: "Mumbai", state: "Maharashtra", country: "India" },
-            family: { familyType: "NUCLEAR", fatherOccupation: "Businessman", motherOccupation: "Homemaker" },
-            aboutMe: "Sindhi professional looking for a life partner.",
-            avatar: "",
-            photos: [],
-            verificationBadge: "VERIFIED",
-            membershipTier: "FREE",
-            isFeatured: false,
-            isPrimary: true,
-            status: "ACTIVE",
-          },
-          partnerPreference: {
-            _id: "6ad3c0ff51bbaafbad99f39d",
-            ageRange: { min: 26, max: 32 },
-            heightRange: { min: 160, max: 185 },
-            maritalStatus: ["NEVER_MARRIED"],
-            subcastes: ["Bhaiband", "Amil", "Sahiti"],
-            manglik: "NON_MANGLIK",
-            education: "Graduate & Above",
-            occupation: "Professional",
-          },
-        },
-        CONSTANTS.OK,
-        CONSTANTS.ERROR_FALSE
-      );
-    } else {
-      // Offline mode viewing another candidate
-      const targetCandidate = findProfileByIdInMemory(targetId);
-      return apiHTTPResponse(
-        req,
-        res,
-        CONSTANTS.HTTP_OK,
-        "Profile fetched successfully.",
-        {
-          isSelf: false,
-          user: {
-            _id: (targetCandidate?.userId || targetId).toString(),
-            countryCode: "+91",
-            role: 1,
-            status: "ACTIVE",
-            isPhoneVerified: true,
-            isKycVerified: Boolean(targetCandidate?.isVerified ?? true),
-          },
-          profile: targetCandidate ? cleanEntity(targetCandidate, { stripUserId: true }) : {
-            _id: targetId,
-            name: "Rohan Advani",
-            profileFor: "MYSELF",
-            gender: "MALE",
-            dateOfBirth: 866332800000,
-            age: 29,
-            height: 178,
-            maritalStatus: "NEVER_MARRIED",
-            subcaste: "Bhaiband",
-            gotra: "Advani",
-            motherGotra: "Vaswani",
-            manglik: "NON_MANGLIK",
-            education: { degree: "B.Tech", field: "Computer Science", college: "IIT" },
-            profession: { occupation: "Senior Software Engineer", companyName: "MNC", annualIncome: 2400000, currency: "INR" },
-            location: { city: "Jaipur", state: "Rajasthan", country: "India" },
-            family: { familyType: "NUCLEAR", fatherOccupation: "Businessman", motherOccupation: "Homemaker" },
-            aboutMe: "Sindhi professional looking for an educated and caring life partner.",
-            avatar: "",
-            photos: [],
-            verificationBadge: "VERIFIED",
-            membershipTier: "PREMIUM",
-            isFeatured: false,
-            isPrimary: true,
-            status: "ACTIVE",
-          },
-          partnerPreference: {
-            _id: "6ad3c0ff51bbaafbad99f39e",
-            ageRange: { min: 24, max: 29 },
-            heightRange: { min: 155, max: 172 },
-            maritalStatus: ["NEVER_MARRIED"],
-            subcastes: ["Bhaiband", "Amil"],
-            manglik: "ANY",
-          },
-        },
-        CONSTANTS.OK,
-        CONSTANTS.ERROR_FALSE
-      );
-    }
-  }
-
-  // --- ONLINE DATABASE EXECUTION ---
   if (isSelf) {
     // 1. Fetch own complete profile using activeProfileId or primary profile
     const profileQuery = myActiveProfileId
@@ -237,45 +110,6 @@ export const getProfile = asyncHandler(async (req, res) => {
     .lean();
 
   if (!targetProfile) {
-    const memoryCandidate = findProfileByIdInMemory(targetId);
-    if (memoryCandidate) {
-      const isSent = Boolean(
-        isInterestSentToCandidate(targetId, myUserId) ||
-        (memoryCandidate.matrimonyId && isInterestSentToCandidate(memoryCandidate.matrimonyId, myUserId))
-      );
-      const cleanedProf = cleanEntity(memoryCandidate);
-      cleanedProf.sendIntrestSended = isSent;
-      return apiHTTPResponse(
-        req,
-        res,
-        CONSTANTS.HTTP_OK,
-        "Profile fetched successfully.",
-        {
-          isSelf: false,
-          user: {
-            _id: (memoryCandidate.userId || memoryCandidate._id || targetId).toString(),
-            countryCode: "+91",
-            role: 1,
-            status: "ACTIVE",
-            isPhoneVerified: true,
-            isKycVerified: Boolean(memoryCandidate.isVerified ?? true),
-          },
-          profile: cleanedProf,
-          sendIntrestSended: isSent,
-          partnerPreference: cleanEntity(memoryCandidate.partnerPreference || {
-            _id: "6ad3c0ff51bbaafbad99f39e",
-            ageRange: { min: 24, max: 32 },
-            heightRange: { min: 155, max: 180 },
-            maritalStatus: ["NEVER_MARRIED"],
-            subcastes: [memoryCandidate.subcaste || "Bhaiband", "Amil"],
-            manglik: "ANY",
-          }),
-        },
-        CONSTANTS.OK,
-        CONSTANTS.ERROR_FALSE
-      );
-    }
-
     return apiHTTPResponse(
       req,
       res,
@@ -413,59 +247,6 @@ export const editProfile = asyncHandler(async (req, res) => {
   delete updateData.userId;
   delete updateData.activeProfileId;
 
-  // Offline / Standalone mode
-  if (mongoose.connection.readyState !== 1) {
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_OK,
-      "Profile updated successfully.",
-      {
-        profile: cleanEntity({
-          _id: (activeProfileId || "6ad3c0ff51bbaafbad99f39c").toString(),
-          name: updateData.name || "Simran Vaswani",
-          aboutMe: updateData.aboutMe || "Sindhi professional looking for a life partner.",
-          gender: updateData.gender || "FEMALE",
-          dateOfBirth: updateData.dateOfBirth || 866332800000,
-          age: updateData.age || 28,
-          height: updateData.height || 165,
-          maritalStatus: updateData.maritalStatus || "NEVER_MARRIED",
-          subcaste: updateData.subcaste || "Bhaiband",
-          gotra: updateData.gotra || "Vaswani",
-          motherGotra: updateData.motherGotra || "Advani",
-          manglik: updateData.manglik || "NON_MANGLIK",
-          education: updateData.education || { degree: "MBA", field: "Marketing", college: "IIM" },
-          profession: updateData.profession || { occupation: "Product Manager", companyName: "Tech Corp", annualIncome: 1800000, currency: "INR" },
-          location: updateData.location || { city: "Mumbai", state: "Maharashtra", country: "India" },
-          family: updateData.family || { familyType: "NUCLEAR", fatherOccupation: "Businessman", motherOccupation: "Homemaker" },
-          avatar: "",
-          photos: [],
-          verificationBadge: "VERIFIED",
-          membershipTier: "FREE",
-          status: "ACTIVE",
-          ...updateData,
-        }),
-        partnerPreference: cleanEntity(
-          partnerPreferenceData
-            ? { _id: "6ad3c0ff51bbaafbad99f39d", ...partnerPreferenceData }
-            : {
-                _id: "6ad3c0ff51bbaafbad99f39d",
-                ageRange: { min: 26, max: 32 },
-                heightRange: { min: 160, max: 185 },
-                maritalStatus: ["NEVER_MARRIED"],
-                subcastes: ["Bhaiband", "Amil", "Sahiti"],
-                manglik: "NON_MANGLIK",
-                education: "Graduate & Above",
-                occupation: "Professional",
-              }
-        ),
-      },
-      CONSTANTS.OK,
-      CONSTANTS.ERROR_FALSE
-    );
-  }
-
-  // --- ONLINE DATABASE EXECUTION ---
   const profileQuery = getProfileQuery(req, userId);
   const profileResult = await updateDocumentByQueryAndData(
     Profile,
@@ -544,21 +325,6 @@ export const updateProfileBasic = asyncHandler(async (req, res) => {
     updateData.age = Math.floor(diffMs / (365.25 * 24 * 60 * 60 * 1000));
   }
 
-  if (mongoose.connection.readyState !== 1) {
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_OK,
-      CONSTANTS_MSG.PROFILE_UPDATED,
-      cleanEntity({
-        _id: "6ad3c0ff51bbaafbad99f39c",
-        ...updateData,
-      }),
-      CONSTANTS.OK,
-      CONSTANTS.ERROR_FALSE
-    );
-  }
-
   const result = await updateDocumentByQueryAndData(
     Profile,
     getProfileQuery(req, userId),
@@ -595,21 +361,6 @@ export const updateProfileBasic = asyncHandler(async (req, res) => {
 export const updateProfileEducationCareer = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
   const updateData = { ...req.body, updatedAt: Date.now() };
-
-  if (mongoose.connection.readyState !== 1) {
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_OK,
-      CONSTANTS_MSG.PROFILE_UPDATED,
-      cleanEntity({
-        _id: "6ad3c0ff51bbaafbad99f39c",
-        ...updateData,
-      }),
-      CONSTANTS.OK,
-      CONSTANTS.ERROR_FALSE
-    );
-  }
 
   const result = await updateDocumentByQueryAndData(
     Profile,
@@ -648,21 +399,6 @@ export const updateProfileFamily = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
   const updateData = { ...req.body, updatedAt: Date.now() };
 
-  if (mongoose.connection.readyState !== 1) {
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_OK,
-      CONSTANTS_MSG.PROFILE_UPDATED,
-      cleanEntity({
-        _id: "6ad3c0ff51bbaafbad99f39c",
-        ...updateData,
-      }),
-      CONSTANTS.OK,
-      CONSTANTS.ERROR_FALSE
-    );
-  }
-
   const result = await updateDocumentByQueryAndData(
     Profile,
     getProfileQuery(req, userId),
@@ -699,21 +435,6 @@ export const updateProfileFamily = asyncHandler(async (req, res) => {
 export const updateProfileHoroscope = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
   const updateData = { ...req.body, updatedAt: Date.now() };
-
-  if (mongoose.connection.readyState !== 1) {
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_OK,
-      CONSTANTS_MSG.PROFILE_UPDATED,
-      cleanEntity({
-        _id: "6ad3c0ff51bbaafbad99f39c",
-        ...updateData,
-      }),
-      CONSTANTS.OK,
-      CONSTANTS.ERROR_FALSE
-    );
-  }
 
   const result = await updateDocumentByQueryAndData(
     Profile,
@@ -753,21 +474,6 @@ export const updatePartnerPreferences = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
   const updateData = { ...req.body, updatedAt: Date.now() };
 
-  if (mongoose.connection.readyState !== 1) {
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_OK,
-      "Partner preferences updated successfully.",
-      cleanEntity({
-        _id: "6ad3c0ff51bbaafbad99f39d",
-        ...updateData,
-      }),
-      CONSTANTS.OK,
-      CONSTANTS.ERROR_FALSE
-    );
-  }
-
   // Update or upsert partner preferences
   let result = await updateDocumentByQueryAndData(
     PartnerPreference,
@@ -799,22 +505,6 @@ export const updatePartnerPreferences = asyncHandler(async (req, res) => {
 export const saveOnboardingStep = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
   const { step, data } = req.body;
-
-  // Offline / standalone test mode
-  if (mongoose.connection.readyState !== 1) {
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_OK,
-      `Onboarding Step ${step} saved successfully.`,
-      {
-        step: Number(step),
-        data: data || {},
-      },
-      CONSTANTS.OK,
-      CONSTANTS.ERROR_FALSE
-    );
-  }
 
   let updatedRecord = null;
 
@@ -903,43 +593,21 @@ export const saveOnboardingStep = asyncHandler(async (req, res) => {
  */
 export const uploadProfilePhoto = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
-  const { url, isMain = false } = req.body;
+  let { url, isMain = false } = req.body || {};
+
+  if (!url && req.file) {
+    url = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+  }
 
   if (!url) {
     return apiHTTPResponse(
       req,
       res,
       CONSTANTS.HTTP_BAD_REQUEST,
-      "Photo URL is required.",
+      "Photo file or URL is required.",
       CONSTANTS.DATA_NULL,
       CONSTANTS.BAD_REQUEST,
       CONSTANTS.ERROR_TRUE
-    );
-  }
-
-  // Offline / standalone test mode
-  if (mongoose.connection.readyState !== 1) {
-    const photoId = new mongoose.Types.ObjectId().toString();
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_OK,
-      "Photo uploaded successfully.",
-      {
-        _id: (req.user?.activeProfileId || "6ad3c0ff51bbaafbad99f39c").toString(),
-        avatar: url,
-        photos: [
-          {
-            _id: photoId,
-            url,
-            isMain: Boolean(isMain),
-            isApproved: true,
-            uploadedAt: Date.now(),
-          },
-        ],
-      },
-      CONSTANTS.OK,
-      CONSTANTS.ERROR_FALSE
     );
   }
 
@@ -996,22 +664,6 @@ export const uploadProfilePhoto = asyncHandler(async (req, res) => {
 export const deleteProfilePhoto = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
   const { photoId } = req.params;
-
-  // Offline / standalone test mode
-  if (mongoose.connection.readyState !== 1) {
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_OK,
-      "Photo deleted successfully.",
-      {
-        _id: (req.user?.activeProfileId || "6ad3c0ff51bbaafbad99f39c").toString(),
-        photos: [],
-      },
-      CONSTANTS.OK,
-      CONSTANTS.ERROR_FALSE
-    );
-  }
 
   const activeProfileId = req.user?.activeProfileId || req.auth?.activeProfileId;
   const profileQuery = activeProfileId

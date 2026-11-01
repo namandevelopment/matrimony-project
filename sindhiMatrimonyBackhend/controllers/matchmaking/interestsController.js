@@ -3,7 +3,6 @@ import { asyncHandler, apiHTTPResponse, logMessage, cleanEntity } from "../../ut
 import * as CONSTANTS from "../../utils/constants.js";
 import { SEED_MATCH_CANDIDATES } from "./matchmakingController.js";
 import { addNotification } from "../notifications/notificationController.js";
-import { findProfileByIdInMemory } from "../../services/realDataService.js";
 
 const getUserId = (req) =>
   req.user?.id ||
@@ -20,11 +19,7 @@ export const sentInterestReceiverIds = new Set();
 export const isInterestSentToCandidate = (candidateId, userId) => {
   if (!candidateId) return false;
   const idStr = candidateId.toString();
-  const cand = findProfileByIdInMemory(idStr);
   const allIds = [idStr];
-  if (cand?._id) allIds.push(cand._id.toString());
-  if (cand?.matrimonyId) allIds.push(cand.matrimonyId.toString());
-  if (cand?.userId) allIds.push(cand.userId.toString());
 
   for (const id of allIds) {
     if (sentInterestReceiverIds.has(id)) return true;
@@ -63,11 +58,7 @@ export const sendInterest = asyncHandler(async (req, res) => {
   }
 
   const idStr = targetId.toString();
-  const cand = findProfileByIdInMemory(idStr);
   const allIds = [idStr];
-  if (cand?._id) allIds.push(cand._id.toString());
-  if (cand?.matrimonyId) allIds.push(cand.matrimonyId.toString());
-  if (cand?.userId) allIds.push(cand.userId.toString());
 
   const isAlreadySent = isInterestSentToCandidate(idStr, userId);
 

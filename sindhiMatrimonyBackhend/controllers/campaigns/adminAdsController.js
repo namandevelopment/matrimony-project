@@ -32,14 +32,7 @@ const getPlatformDefaults = (platform = "Amazon") => {
   }
 };
 
-let inMemoryAds = DEFAULT_PARTNER_DEALS.map((d, i) => ({
-  ...d,
-  _id: `ad_mem_${i + 1}`,
-  clicks: 14 + i * 5,
-  impressions: 120 + i * 40,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-}));
+let inMemoryAds = [];
 
 /**
  * 🌟 Ensure database has seed ads on cold start if empty
@@ -529,7 +522,7 @@ export const getActiveAdvertisements = asyncHandler(async (req, res) => {
   }
 
   // Normalize shape to match SidebarPartnerDealsWidget GiftProduct interface
-  const formattedDeals = (ads.length > 0 ? ads : DEFAULT_PARTNER_DEALS).map((ad) => ({
+  const formattedDeals = ads.map((ad) => ({
     id: ad.adId || String(ad._id),
     _id: String(ad._id || ad.adId),
     name: ad.name,

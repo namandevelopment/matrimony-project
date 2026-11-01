@@ -159,7 +159,7 @@ IS_PRODUCTION=true
 API_END_POINT_V1=/api/v1/
 
 # Database (MongoDB Atlas)
-DB_STRING=mongodb+srv://<username>:<password>@cluster0.mongodb.net/sindhi_matrimony?retryWrites=true&w=majority
+DB_STRING=mongodb://<db_username>:j1OAW2teTXxgJpf0@ac-v8zcrtd-shard-00-00.lya73ao.mongodb.net:27017,ac-v8zcrtd-shard-00-01.lya73ao.mongodb.net:27017,ac-v8zcrtd-shard-00-02.lya73ao.mongodb.net:27017/?ssl=true&replicaSet=atlas-nrtlxb-shard-0&authSource=admin
 
 # Redis (Upstash / Cloud Redis)
 REDIS_HOST=...

@@ -1,6 +1,6 @@
 import { asyncHandler, apiHTTPResponse } from "../../utils/globalFunction.js";
 import * as CONSTANTS from "../../utils/constants.js";
-import { findProfileByIdInMemory } from "../../services/realDataService.js";
+import { Profile } from "../../models/users/profile.model.js";
 
 // Offline payment transactions store
 let offlinePaymentsStore = [];
@@ -89,7 +89,8 @@ export const recordOfflinePayment = asyncHandler(async (req, res) => {
     );
   }
 
-  const candidate = findProfileByIdInMemory(targetId) || {
+  const isObj = Boolean(targetId && String(targetId).match(/^[0-9a-fA-F]{24}$/));
+  const candidate = (await Profile.findOne({ $or: [{ _id: isObj ? targetId : null }, { matrimonyId: targetId }] }).lean()) || {
     name: "Registered Candidate",
     candidateId: targetId,
   };

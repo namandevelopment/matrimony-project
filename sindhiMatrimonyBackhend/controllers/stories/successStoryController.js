@@ -13,39 +13,7 @@ import {
 import { apiHTTPResponse, asyncHandler } from "../../utils/globalFunction.js";
 
 // In-memory runtime cache for serverless & offline resilience
-let inMemoryStories = SEED_SUCCESS_STORIES.map((s, idx) => ({
-  id: s._id || `story_${idx + 1}`,
-  storyId: `STORY-2026-${String(idx + 1).padStart(3, "0")}`,
-  groomName: s.groomName || s.coupleName?.split("&")?.[0]?.trim() || "Groom",
-  groomId: `SND${882000 + idx}`,
-  brideName: s.brideName || s.coupleName?.split("&")?.[1]?.trim() || "Bride",
-  brideId: `SND772000 + idx`,
-  coupleName: s.coupleName || `${s.groomName} & ${s.brideName}`,
-  coupleNames: s.coupleNames || s.coupleName || `${s.groomName} & ${s.brideName}`,
-  couplePhoto: s.imageUrl || s.photoUrl || "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800&auto=format&fit=crop&q=80",
-  photoUrl: s.imageUrl || s.photoUrl || "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800&auto=format&fit=crop&q=80",
-  photoUrls: [
-    s.imageUrl || s.photoUrl,
-    "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=800&auto=format&fit=crop&q=80",
-  ].filter(Boolean),
-  weddingDate: s.weddingDate || "14 Feb 2026",
-  engagementDate: s.engagementDate || "10 Dec 2025",
-  postedDate: s.postedOn || "14 Oct 2026",
-  city: s.city || "Mumbai",
-  location: s.location || `${s.city || "Mumbai"}, India`,
-  subcaste: s.subcaste || "Bhaiband",
-  storyTitle: s.badge || "A Blessed Sindhi Union",
-  storySnippet: s.storySnippet || "Found our soulmate through verified community matchmaking.",
-  testimonial: s.storySnippet || "Found our soulmate through verified community matchmaking.",
-  fullStory: s.fullStory || s.storySnippet,
-  badge: s.badge || "Verified Match",
-  likesCount: 120 + idx * 15,
-  isVerified: true,
-  status: s.isActive !== false ? "PUBLISHED" : "DRAFT",
-  isActive: s.isActive !== false,
-  featuredOnHome: s.isFeatured !== false,
-  createdAt: s.postedOn || "2026-02-15",
-}));
+let inMemoryStories = [];
 
 /**
  * Helper to normalize story object for frontend consumption
@@ -113,14 +81,8 @@ export const getPublicSuccessStories = asyncHandler(async (req, res) => {
 
       if (dbStories && dbStories.length > 0) {
         stories = dbStories.map((s, idx) => normalizeStory(s, idx));
-      } else {
-        stories = inMemoryStories.filter((s) => s.isActive !== false).map((s, idx) => normalizeStory(s, idx));
       }
-    } catch {
-      stories = inMemoryStories.filter((s) => s.isActive !== false).map((s, idx) => normalizeStory(s, idx));
-    }
-  } else {
-    stories = inMemoryStories.filter((s) => s.isActive !== false).map((s, idx) => normalizeStory(s, idx));
+    } catch (_) {}
   }
 
   const total = stories.length;

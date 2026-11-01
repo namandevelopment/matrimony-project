@@ -22,6 +22,7 @@ import {
   uploadProfilePhoto,
   deleteProfilePhoto,
 } from "../../controllers/members/profileController.js";
+import { upload } from "../../utils/multerConfig.js";
 
 const router = express.Router();
 
@@ -114,7 +115,7 @@ router.post(
  * @desc    Upload candidate profile photo
  * @access  Private
  */
-router.post("/photos", uploadProfilePhoto);
+router.post("/photos", upload.single("photo"), uploadProfilePhoto);
 
 /**
  * @route   DELETE /api/v1/profile/photos/:photoId

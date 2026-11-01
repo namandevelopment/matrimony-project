@@ -8,7 +8,7 @@ export async function runProfileOnboardingIntegrationTests() {
   const mockUserId = new mongoose.Types.ObjectId();
 
   // Baseline candidate profile representation in DB
-  const mockDbProfile = {
+  const sampleProfile = {
     _id: new mongoose.Types.ObjectId(),
     userId: mockUserId,
     name: "Roshni Advani",
@@ -82,7 +82,7 @@ export async function runProfileOnboardingIntegrationTests() {
       height: 165,
       maritalStatus: "NEVER_MARRIED",
     };
-    const isMemoized = isDeltaEqual(mockDbProfile, identicalPayload);
+    const isMemoized = isDeltaEqual(sampleProfile, identicalPayload);
     assert.isTrue(isMemoized, "Identical basic update must be memoized");
   });
 
@@ -104,7 +104,7 @@ export async function runProfileOnboardingIntegrationTests() {
         currency: "INR",
       },
     };
-    const isMemoized = isDeltaEqual(mockDbProfile, deltaPayload);
+    const isMemoized = isDeltaEqual(sampleProfile, deltaPayload);
     assert.isFalse(isMemoized, "Modified profession must return false to trigger DB save");
   });
 
@@ -174,7 +174,7 @@ export async function runProfileOnboardingIntegrationTests() {
       "photos",
     ];
     for (const key of requiredKeys) {
-      assert.isNotNull(mockDbProfile[key], `Profile must contain key: ${key}`);
+      assert.isNotNull(sampleProfile[key], `Profile must contain key: ${key}`);
     }
   });
 

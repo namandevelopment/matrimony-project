@@ -13,7 +13,6 @@ import { sendMultiChannelNotification } from "../../services/serviceNotification
 import { signToken, generateRefreshToken, verifyRefreshToken, verifyToken, signResetToken, verifyResetToken } from "../../utils/jwtTokenUtils.js";
 import { setKeyWithTime, getKey, removeKey } from "../../services/serviceRedis.js";
 import { invalidateTokenInRedis } from "../../utils/logoutUtils.js";
-import { registerCandidateInMemory, findUserByPhoneInMemory } from "../../services/realDataService.js";
 
 
 /**
@@ -59,13 +58,10 @@ export const sendOtp = asyncHandler(async (req, res) => {
   let existingUser = null;
 
   if (mongoose.connection.readyState === 1) {
-
     existingUser = await User.findOne({
       $or: [{ phone: normalized.national }, { phone: normalized.e164 }],
       isDeleted: false,
     }).select("status role isOnboardingComplete registrationStatus password isPhoneVerified");
-  } else {
-    existingUser = findUserByPhoneInMemory(normalized.national);
   }
 
   console.log('existingUserexistingUserexistingUser', existingUser)
@@ -211,72 +207,6 @@ export const register = asyncHandler(async (req, res) => {
     aboutMe,
     aboutMyself,
   } = req.body;
-
-  // Offline / standalone test mode
-  if (mongoose.connection.readyState !== 1) {
-    const cleanNum = String(phone).replace(/\D/g, "");
-    if (findUserByPhoneInMemory(cleanNum)) {
-      return apiHTTPResponse(
-        req,
-        res,
-        CONSTANTS.HTTP_CONFLICT,
-        "An account with this mobile number already exists. Please log in directly.",
-        CONSTANTS.DATA_NULL,
-        CONSTANTS.CONFLICT,
-        CONSTANTS.ERROR_TRUE
-      );
-    }
-    const { user: regUser, profile: regProfile } = registerCandidateInMemory(
-      { phone: cleanNum, countryCode, email, password: password || "Password123@", name: (name || "Sindhi Member").trim() },
-      {
-        name: (name || "Sindhi Member").trim(),
-        profileFor: String(profileFor || "MYSELF").toUpperCase(),
-        gender: String(gender || "MALE").toUpperCase(),
-        subcaste: subcaste || "Bhaiband",
-        dateOfBirth: dob || dateOfBirth,
-        maritalStatus,
-        height,
-        education,
-        profession: profession || occupation,
-        city,
-        state,
-        aboutMe: aboutMe || aboutMyself,
-      }
-    );
-    const mockUserId = regUser._id;
-    const mockProfileId = regProfile._id;
-    const tokenPayload = {
-      userId: mockUserId,
-      role: ROLES.USER,
-      phone: cleanNum,
-      profileId: mockProfileId,
-      activeProfileId: mockProfileId,
-      profileRole: "OWNER",
-    };
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_CREATED,
-      CONSTANTS_MSG.REGISTRATION_SUCCESS,
-      {
-        token: signToken(tokenPayload, "2d"),
-        refreshToken: generateRefreshToken(tokenPayload, "30d"),
-        user: {
-          _id: mockUserId,
-          phone: cleanNum,
-          name: regUser.name,
-          role: ROLES.USER,
-          activeProfileId: mockProfileId,
-          maxProfilesAllowed: 4,
-          onboardingStep: 4,
-          isOnboardingComplete: false,
-        },
-        profile: regProfile,
-      },
-      CONSTANTS.CREATED,
-      CONSTANTS.ERROR_FALSE
-    );
-  }
 
   // 1. Fast indexed check: user already exists AND OTP / Session Token verification
   const cleanPhone = String(phone).replace(/\D/g, "").slice(-10);
@@ -599,16 +529,6 @@ export const registerStep = asyncHandler(async (req, res) => {
         user.registrationStatus = REGISTRATION_STATUS.ONBOARDING_IN_PROGRESS;
         await user.save();
       }
-    } else {
-      user = findUserByPhoneInMemory(normalized.national) || {
-        _id: "6ad3c0ff51bbaafbad99f010",
-        phone: normalized.national,
-        countryCode: normalized.countryCode || "+91",
-        isPhoneVerified: true,
-        registrationStatus: REGISTRATION_STATUS.ONBOARDING_IN_PROGRESS,
-        isOnboardingComplete: false,
-        onboardingStep: 3,
-      };
     }
   } else {
     // Standard Authenticated Bearer flow for Steps 4, 5, 6, etc.
@@ -658,15 +578,6 @@ export const registerStep = asyncHandler(async (req, res) => {
     const userId = decoded.id || decoded.userId;
     if (mongoose.connection.readyState === 1) {
       user = await User.findById(userId);
-    } else {
-      user = findUserByPhoneInMemory(decoded.phone || "9829012345") || {
-        _id: userId || "6ad3c0ff51bbaafbad99f010",
-        phone: decoded.phone || "9829012345",
-        isPhoneVerified: true,
-        registrationStatus: REGISTRATION_STATUS.PHONE_VERIFIED,
-        isOnboardingComplete: false,
-        onboardingStep: 3,
-      };
     }
   }
 
@@ -784,66 +695,6 @@ export const loginWithPassword = asyncHandler(async (req, res) => {
   const effectivePlatform = String(
     clientPlatform || req.clientInfo?.platform || "WEB"
   ).toUpperCase();
-
-  // Offline / standalone test mode
-  if (mongoose.connection.readyState !== 1) {
-    const memUser = findUserByPhoneInMemory(cleanPhone);
-    if (!memUser) {
-      return apiHTTPResponse(
-        req,
-        res,
-        CONSTANTS.HTTP_NOT_FOUND,
-        "No registered account found with this mobile number. Please register first.",
-        CONSTANTS.DATA_NULL,
-        CONSTANTS.NOT_FOUND,
-        CONSTANTS.ERROR_TRUE
-      );
-    }
-    const isMemPasswordValid = await verifyPassword(memUser.password || "Password123@", password);
-    if (!isMemPasswordValid) {
-      return apiHTTPResponse(
-        req,
-        res,
-        CONSTANTS.HTTP_UNAUTHORIZED,
-        "Invalid password. Please check your password and try again.",
-        CONSTANTS.DATA_NULL,
-        CONSTANTS.UNAUTHORIZED,
-        CONSTANTS.ERROR_TRUE
-      );
-    }
-    const tokenPayload = {
-      id: memUser._id.toString(),
-      userId: memUser._id.toString(),
-      role: memUser.role || 1,
-      phone: memUser.phone,
-      profileId: memUser.activeProfileId,
-      activeProfileId: memUser.activeProfileId,
-      profileRole: "OWNER",
-      scope: "FULL_ACCESS",
-      clientPlatform: effectivePlatform,
-    };
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_OK,
-      "Logged in successfully.",
-      {
-        token: signToken(tokenPayload, "2d"),
-        refreshToken: generateRefreshToken(tokenPayload, "30d"),
-        user: {
-          _id: memUser._id.toString(),
-          phone: memUser.phone,
-          name: memUser.name,
-          role: memUser.role || 1,
-          status: memUser.status || "ACTIVE",
-          activeProfileId: memUser.activeProfileId,
-          isOnboardingComplete: true,
-        },
-      },
-      CONSTANTS.OK,
-      CONSTANTS.ERROR_FALSE
-    );
-  }
 
   // 2. Fetch User with lean query on indexed phone
   const user = await User.findOne({
@@ -1514,8 +1365,6 @@ export const checkPhoneExists = asyncHandler(async (req, res) => {
   let exists = false;
   if (mongoose.connection.readyState === 1) {
     exists = await User.exists({ $or: [{ phone }, { phone: cleanPhone }], isDeleted: false });
-  } else {
-    exists = Boolean(findUserByPhoneInMemory(cleanPhone));
   }
 
   return apiHTTPResponse(
@@ -1577,15 +1426,6 @@ export const checkRegistrationStatus = asyncHandler(async (req, res) => {
     if (user) {
       profile = await Profile.findOne({ userId: user._id, isDeleted: false });
     }
-  } else {
-    user = findUserByPhoneInMemory(decoded.phone || "9829012345") || {
-      _id: userId,
-      phone: decoded.phone || "9829012345",
-      isPhoneVerified: true,
-      registrationStatus: REGISTRATION_STATUS.PHONE_VERIFIED,
-      isOnboardingComplete: false,
-      onboardingStep: 2,
-    };
   }
 
   if (!user) {

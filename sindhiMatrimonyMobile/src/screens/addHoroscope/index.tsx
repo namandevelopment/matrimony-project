@@ -27,6 +27,7 @@ import TimeWheelPickerModal from '../../customModals/TimeWheelPickerModal';
 import { COUNTRIES } from '../../staticData/countryJsonData';
 import { showToast } from '../../utils/CustomToast';
 import { Storage } from '../../storage/Storage';
+import { uploadImage, pickImage } from '../../redux/apiService';
 import { moderateScale, moderateVerticalScale } from '../../utils/Responsive';
 
 // -----------------------------------------------------------------------------
@@ -257,19 +258,25 @@ const AddHoroscope: React.FC = () => {
       [
         {
           text: 'Take Photo',
-          onPress: () =>
-            showToast({
-              type: 'info',
-              message: 'Camera opened for horoscope scan',
-            }),
+          onPress: async () => {
+            const img = await pickImage({ fromCamera: true, showToast: false });
+            if (img?.uri) {
+              showToast({ type: 'info', message: 'Uploading horoscope scan...' });
+              await uploadImage(img, { showToast: false });
+              showToast({ type: 'success', message: 'Horoscope uploaded successfully' });
+            }
+          },
         },
         {
           text: 'Choose from Gallery',
-          onPress: () =>
-            showToast({
-              type: 'info',
-              message: 'Gallery opened for horoscope upload',
-            }),
+          onPress: async () => {
+            const img = await pickImage({ fromCamera: false, showToast: false });
+            if (img?.uri) {
+              showToast({ type: 'info', message: 'Uploading horoscope...' });
+              await uploadImage(img, { showToast: false });
+              showToast({ type: 'success', message: 'Horoscope uploaded successfully' });
+            }
+          },
         },
         {
           text: 'Upload PDF / Document',

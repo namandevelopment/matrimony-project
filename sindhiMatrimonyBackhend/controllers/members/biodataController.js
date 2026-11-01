@@ -1,6 +1,5 @@
 import { asyncHandler, apiHTTPResponse } from "../../utils/globalFunction.js";
 import * as CONSTANTS from "../../utils/constants.js";
-import { findProfileByIdInMemory } from "../../services/realDataService.js";
 import { Profile } from "../../models/users/profile.model.js";
 
 /**
@@ -387,20 +386,13 @@ export const generateMemberBiodata = asyncHandler(async (req, res) => {
     format = "ALL",
   } = { ...req.query, ...req.body };
 
-  // 1. Ultra-fast in-memory resolution (O(1) cached lookup)
-  let candidate = findProfileByIdInMemory(id);
-
-  // 2. Database fallback if not in mock store and MongoDB is active
-  if (!candidate) {
-    try {
-      const dbProfile = await Profile.findOne({
-        $or: [{ _id: id.match(/^[0-9a-fA-F]{24}$/) ? id : null }, { matrimonyId: id }],
-      }).lean();
-      if (dbProfile) candidate = dbProfile;
-    } catch (_) {
-      // Ignored for speed
-    }
-  }
+  let candidate = null;
+  try {
+    const isObjectId = Boolean(id && String(id).match(/^[0-9a-fA-F]{24}$/));
+    candidate = await Profile.findOne({
+      $or: [{ _id: isObjectId ? id : null }, { matrimonyId: id }],
+    }).lean();
+  } catch (_) {}
 
   if (!candidate) {
     return apiHTTPResponse(
