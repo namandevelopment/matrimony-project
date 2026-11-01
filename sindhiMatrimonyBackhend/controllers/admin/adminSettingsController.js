@@ -1009,7 +1009,7 @@ export const updateAdminGotra = asyncHandler(async (req, res) => {
 // 7. GLOBAL MASTER SETTINGS & TOGGLES (GET/PUT /api/v1/admin/master-settings)
 // ============================================================================
 
-let globalTogglesStore = {
+export let globalTogglesStore = {
   maintenanceMode: {
     enabled: false,
     message: "Sindhi Matrimony is undergoing scheduled server maintenance. We will be back online shortly.",
