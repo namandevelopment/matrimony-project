@@ -10,6 +10,14 @@ import VerifyYourProfile from '../screens/verifyYourProfile';
 import AddHoroscope from '../screens/addHoroscope';
 import HoroscopeView from '../screens/horoscopeView';
 import FamilyDetailsScreen from '../screens/familyDetails';
+import SupportChatScreen from '../screens/supportChatScreen';
+import SuccessStoryDetailScreen from '../screens/successStoryDetailScreen';
+import SuccessStoriesListScreen from '../screens/successStoriesListScreen';
+import TermsConditionsScreen from '../screens/termsAndConditions';
+import PrivacyPolicyScreen from '../screens/privacyPolicy';
+import PartnerPreferenceScreen from '../screens/partnerPreference';
+import PrivacySettingsScreen from '../screens/privacySettings';
+import AccountSettingsScreen from '../screens/accountSettings';
 
 export const screens = [
   {
@@ -52,6 +60,21 @@ export const screens = [
   },
 
   {
+    name: 'SupportChatScreen',
+    component: SupportChatScreen,
+  },
+
+  {
+    name: 'SuccessStoryDetailScreen',
+    component: SuccessStoryDetailScreen,
+  },
+
+  {
+    name: 'SuccessStoriesListScreen',
+    component: SuccessStoriesListScreen,
+  },
+
+  {
     name: 'VerifyYourProfile',
     component: VerifyYourProfile,
   },
@@ -74,6 +97,46 @@ export const screens = [
   {
     name: 'EditFamilyDetails',
     component: FamilyDetailsScreen,
+  },
+  {
+    name: 'TermsAndConditions',
+    component: TermsConditionsScreen,
+  },
+  {
+    name: 'TermsConditionsScreen',
+    component: TermsConditionsScreen,
+  },
+  {
+    name: 'PrivacyPolicy',
+    component: PrivacyPolicyScreen,
+  },
+  {
+    name: 'PrivacyPolicyScreen',
+    component: PrivacyPolicyScreen,
+  },
+  {
+    name: 'PartnerPreferenceScreen',
+    component: PartnerPreferenceScreen,
+  },
+  {
+    name: 'PartnerPreference',
+    component: PartnerPreferenceScreen,
+  },
+  {
+    name: 'PrivacySettings',
+    component: PrivacySettingsScreen,
+  },
+  {
+    name: 'PrivacySettingsScreen',
+    component: PrivacySettingsScreen,
+  },
+  {
+    name: 'AccountSettings',
+    component: AccountSettingsScreen,
+  },
+  {
+    name: 'AccountSettingsScreen',
+    component: AccountSettingsScreen,
   },
 ];
 

@@ -27,8 +27,8 @@ import {
 // NORMAL API DISPATCH HELPERS
 // =============================================================================
 
-export const get_Profile_Call = (dispatch: any) => {
-  return dispatch(getProfileCall({ url: ApiURL.getProfile, method: 'GET' }));
+export const get_Profile_Call = (dispatch: any, payload: any = {}) => {
+  return dispatch(getProfileCall({ url: ApiURL.getProfile, method: 'POST', data: payload }));
 };
 
 export const get_Dashboard_Call = (dispatch: any) => {
@@ -45,6 +45,11 @@ export const get_My_Profiles_Call = (dispatch: any) => {
 
 export const get_Countries_List_Call = (dispatch: any) => {
   return dispatch(getCountriesListCall({ url: ApiURL.countries, method: 'GET' }));
+};
+
+export const update_Partner_Preferences_Call = (dispatch: any, preferences: any) => {
+  dispatch(updateAnyState({ path: 'partnerPreferences', value: preferences }));
+  dispatch(updateAnyState({ path: 'getprofiledata.data.partnerPreferences', value: preferences }));
 };
 
 // =============================================================================

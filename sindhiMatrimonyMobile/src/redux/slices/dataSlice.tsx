@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import equal from 'fast-deep-equal';
+import isDataSame from '../../utils/isDataSame';
 import { optimisticReducers } from '../Action/optimisticUpdate';
 import {
   addApiReducer,
@@ -17,7 +17,7 @@ export const updateStateIfChanged = (
   key: string,
   newValue: any,
 ) => {
-  if (!equal(state[key], newValue)) {
+  if (!isDataSame(state[key], newValue)) {
     state[key] = newValue;
   }
 };
@@ -46,7 +46,9 @@ export const setDeepValue = (target: any, path: string, value: any) => {
 
   const lastKey = keys[keys.length - 1];
   if (current && typeof current === 'object') {
-    current[lastKey] = value;
+    if (!isDataSame(current[lastKey], value)) {
+      current[lastKey] = value;
+    }
   }
 };
 

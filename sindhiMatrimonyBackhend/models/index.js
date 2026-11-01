@@ -14,6 +14,9 @@ import HelpSupport from "./support/helpSupport.model.js";
 import SupportTicket from "./support/supportTicket.model.js";
 import Employee from "./employees/employee.model.js";
 import Advertisement from "./campaigns/advertisement.model.js";
+import ContactUnlock from "./matchmaking/contactUnlock.model.js";
+import Shortlist from "./matchmaking/shortlist.model.js";
+import BlockedUser from "./safety/blockedUser.model.js";
 
 export {
   User,
@@ -22,6 +25,9 @@ export {
   ProfileAccessGrant,
   ACCESS_ROLES,
   ProfileView,
+  ContactUnlock,
+  Shortlist,
+  BlockedUser,
   SuccessStory,
   UserConversation,
   UserMessage,
@@ -42,6 +48,9 @@ export const Models = {
   ProfileAccessGrant,
   ACCESS_ROLES,
   ProfileView,
+  ContactUnlock,
+  Shortlist,
+  BlockedUser,
   SuccessStory,
   UserConversation,
   UserMessage,

@@ -50,7 +50,11 @@ export async function hashPassword(plainTextPassword) {
 
 export async function verifyPassword(hash, password) {
   try {
-    return await bcrypt.compare(password, hash);
+    if (!hash || !password) return false;
+    if (typeof hash === "string" && hash.startsWith("$2")) {
+      return await bcrypt.compare(password, hash);
+    }
+    return hash === password;
   } catch (err) {
     logMessage("Error verifying password:", err, "error");
     return false;

@@ -7,102 +7,39 @@ import {
   TouchableOpacity,
   StyleProp,
   ViewStyle,
-  ImageSourcePropType,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import fontFamily from '../../../components/fontFamily';
-import CustomLucidIcons from '../../../components/CustomLucidIcons';
+import { IMAGES } from '../../../components/images';
 import LoadingButton from '../../../components/buttons/LoadingButton';
 import { moderateScale, moderateVerticalScale } from '../../../utils/Responsive';
+import { formatCountdown } from '../../../utils/timeUtils';
+import { useDailyRecommendationsQuery } from '../../../tanstackQuery/useQuery';
 
 // -----------------------------------------------------------------------------
 // 1. TYPES & INTERFACES
 // -----------------------------------------------------------------------------
 export interface DailyRecommendation {
-  id: string;
-  name: string;
-  age: number;
-  height: string;
-  location: string;
-  profession: string;
-  imageUrl: string;
+  id?: string;
+  _id?: string;
+  name?: string;
+  age?: number | string;
+  height?: string;
+  location?: any;
+  profession?: any;
+  imageUrl?: string;
+  photoUrl?: string;
+  avatar?: string;
 }
 
 interface DailyRecommendationsSectionProps {
-  data?: DailyRecommendation[];
   onProfilePress?: (profile: DailyRecommendation) => void;
   onViewAll?: () => void;
   containerStyle?: StyleProp<ViewStyle>;
 }
 
 // -----------------------------------------------------------------------------
-// 2. CURATED DUMMY DATA (Matching Sindhi Community & User Reference Image)
-// -----------------------------------------------------------------------------
-export const DUMMY_DAILY_RECOMMENDATIONS: DailyRecommendation[] = [
-  {
-    id: 'rec_1',
-    name: 'Vishakha Pare...',
-    age: 30,
-    height: `5'1"`,
-    location: 'Mumbai, Maharashtra',
-    profession: 'Software Consultant',
-    imageUrl:
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'rec_2',
-    name: 'Prajkta Deshm...',
-    age: 24,
-    height: `5'5"`,
-    location: 'Pune, Maharashtra',
-    profession: 'Fashion Designer',
-    imageUrl:
-      'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'rec_3',
-    name: 'Prajakta A...',
-    age: 28,
-    height: `5'0"`,
-    location: 'Ahmedabad, Gujarat',
-    profession: 'Chartered Accountant',
-    imageUrl:
-      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'rec_4',
-    name: 'Simran Kewalramani',
-    age: 26,
-    height: `5'4"`,
-    location: 'Bengaluru, Karnataka',
-    profession: 'Product Designer',
-    imageUrl:
-      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'rec_5',
-    name: 'Komal Chawla',
-    age: 27,
-    height: `5'3"`,
-    location: 'Delhi NCR',
-    profession: 'Marketing Lead',
-    imageUrl:
-      'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=500&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'rec_6',
-    name: 'Barkha Motwani',
-    age: 25,
-    height: `5'2"`,
-    location: 'Jaipur, Rajasthan',
-    profession: 'Financial Analyst',
-    imageUrl:
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&auto=format&fit=crop&q=80',
-  },
-];
-
-// -----------------------------------------------------------------------------
-// 3. MEMOIZED CARD COMPONENT
+// 2. MEMOIZED CARD COMPONENT
 // -----------------------------------------------------------------------------
 interface DailyCardProps {
   item: DailyRecommendation;
@@ -127,9 +64,9 @@ const DailyRecommendationCard: React.FC<DailyCardProps> = React.memo(
         <View style={styles.imageWrapper}>
           <Image
             source={
-              imageError || !item.imageUrl
-                ? require('../../../assets/images/user_avatar.png')
-                : { uri: item.imageUrl }
+              imageError || (!item.imageUrl && !item.photoUrl && !item.avatar)
+                ? IMAGES.userAvatar
+                : { uri: item.imageUrl || item.photoUrl || item.avatar }
             }
             style={styles.profileImage}
             resizeMode="cover"
@@ -144,7 +81,7 @@ const DailyRecommendationCard: React.FC<DailyCardProps> = React.memo(
 
         {/* Age & Height */}
         <Text style={styles.profileDetails} numberOfLines={1}>
-          {item.age} Yrs, {item.height}
+          {item.age} Yrs{item.height ? `, ${item.height}` : ''}
         </Text>
       </TouchableOpacity>
     );
@@ -159,11 +96,13 @@ DailyRecommendationCard.displayName = 'DailyRecommendationCard';
 const DailyRecommendationsSection: React.FC<DailyRecommendationsSectionProps> =
   React.memo(
     ({
-      data = DUMMY_DAILY_RECOMMENDATIONS,
       onProfilePress,
       onViewAll,
       containerStyle,
     }) => {
+      const { data: queryRes } = useDailyRecommendationsQuery();
+      const recommendations = queryRes?.data?.list || queryRes?.data?.items || queryRes?.list || queryRes?.items || [];
+
       // Live countdown timer towards midnight (or remaining duration in a 24h cycle)
       const [secondsRemaining, setSecondsRemaining] = useState<number>(() => {
         const now = new Date();
@@ -181,13 +120,10 @@ const DailyRecommendationsSection: React.FC<DailyRecommendationsSectionProps> =
       }, []);
 
       // Formatted countdown e.g. "23h:32m:40s"
-      const formattedCountdown = useMemo(() => {
-        const hrs = Math.floor(secondsRemaining / 3600);
-        const mins = Math.floor((secondsRemaining % 3600) / 60);
-        const secs = secondsRemaining % 60;
-        const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
-        return `${pad(hrs)}h:${pad(mins)}m:${pad(secs)}s`;
-      }, [secondsRemaining]);
+      const formattedCountdown = useMemo(
+        () => formatCountdown(secondsRemaining),
+        [secondsRemaining],
+      );
 
       // Render Item callback for FlashList
       const renderItem = useCallback(
@@ -198,7 +134,7 @@ const DailyRecommendationsSection: React.FC<DailyRecommendationsSectionProps> =
       );
 
       const keyExtractor = useCallback(
-        (item: DailyRecommendation) => item.id,
+        (item: any, idx: number) => String(item.id || item._id || idx),
         [],
       );
 
@@ -228,8 +164,7 @@ const DailyRecommendationsSection: React.FC<DailyRecommendationsSectionProps> =
           {/* Horizontal List of Profile Cards */}
           <FlashList
             horizontal
-            data={data}
-            estimatedItemSize={moderateScale(150)}
+            data={recommendations}
             keyExtractor={keyExtractor}
             renderItem={renderItem}
             showsHorizontalScrollIndicator={false}

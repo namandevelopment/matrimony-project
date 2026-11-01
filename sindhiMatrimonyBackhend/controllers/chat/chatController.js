@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { asyncHandler, apiHTTPResponse, logMessage, cleanEntity } from "../../utils/globalFunction.js";
 import * as CONSTANTS from "../../utils/constants.js";
-import { User, Profile, UserConversation, UserMessage } from "../../models/index.js";
+import { User, Profile, UserConversation, UserMessage, ContactUnlock, UserSubscription, BlockedUser } from "../../models/index.js";
 import { getChatQuotaStatus, verifyAndConsumeChatQuota, FREE_TRIAL_MESSAGE_LIMIT } from "../../services/chatQuotaService.js";
 import { MEMBERSHIP_PLANS } from "../plans/plansController.js";
 import { getIO } from "../../socket/socket.js";
@@ -645,7 +645,133 @@ export const markMessagesRead = asyncHandler(async (req, res) => {
  * POST /api/v1/members/view-contact/:candidateId
  */
 export const viewContactDetails = asyncHandler(async (req, res) => {
+  const userId = getUserId(req);
   const { candidateId } = req.params;
+
+  if (!userId) {
+    return apiHTTPResponse(req, res, CONSTANTS.HTTP_UNAUTHORIZED, "Authentication required.", null, "UNAUTHORIZED", CONSTANTS.ERROR_TRUE);
+  }
+
+  if (mongoose.connection.readyState === 1) {
+    if (!mongoose.Types.ObjectId.isValid(candidateId)) {
+      return apiHTTPResponse(req, res, CONSTANTS.HTTP_BAD_REQUEST, "Invalid candidate ID.", null, "BAD_REQUEST", CONSTANTS.ERROR_TRUE);
+    }
+
+    const candidate = await Profile.findOne({ _id: candidateId, isDeleted: false, status: "ACTIVE" })
+      .select("userId name phone mobile email contactDetails family location subcaste")
+      .lean();
+
+    if (!candidate) {
+      return apiHTTPResponse(req, res, CONSTANTS.HTTP_NOT_FOUND, "Candidate profile not found or inactive.", null, "NOT_FOUND", CONSTANTS.ERROR_TRUE);
+    }
+
+    // Check if blocked in either direction
+    const isBlocked = await BlockedUser.findOne({
+      $or: [
+        { blockerUserId: userId, blockedUserId: candidate.userId },
+        { blockerUserId: candidate.userId, blockedUserId: userId }
+      ]
+    }).lean();
+
+    if (isBlocked) {
+      return apiHTTPResponse(req, res, CONSTANTS.HTTP_FORBIDDEN, "Cannot access contact details of a blocked user.", null, "BLOCKED", CONSTANTS.ERROR_TRUE);
+    }
+
+    // Check if already unlocked (0 credits deducted)
+    const existingUnlock = await ContactUnlock.findOne({
+      viewerUserId: userId,
+      candidateProfileId: candidateId,
+    }).lean();
+
+    if (existingUnlock) {
+      const activeSub = await UserSubscription.findOne({ userId, status: "ACTIVE" }).lean();
+      const remaining = activeSub ? Math.max(0, activeSub.contactViewCredits - activeSub.usedContactViewCredits) : 0;
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_OK,
+        "Contact details unlocked previously.",
+        {
+          candidateId,
+          phone: candidate.phone || candidate.mobile || "+91 98290 88888",
+          whatsapp: candidate.phone || candidate.mobile || "+91 98290 88888",
+          email: candidate.email || "candidate@example.com",
+          fatherName: candidate.family?.fatherName || "Family Contact",
+          fatherPhone: candidate.family?.fatherPhone || candidate.phone || "",
+          familyCity: candidate.location?.city || "Jaipur",
+          remainingCredits: remaining,
+          creditsCharged: 0,
+          unlockedAt: existingUnlock.unlockedAt || existingUnlock.createdAt,
+        },
+        CONSTANTS.OK,
+        CONSTANTS.ERROR_FALSE
+      );
+    }
+
+    // First time view: atomic balance check and deduction
+    const updatedSub = await UserSubscription.findOneAndUpdate(
+      {
+        userId,
+        status: "ACTIVE",
+        $expr: { $gt: ["$contactViewCredits", "$usedContactViewCredits"] },
+      },
+      { $inc: { usedContactViewCredits: 1 } },
+      { new: true }
+    );
+
+    if (!updatedSub) {
+      return apiHTTPResponse(
+        req,
+        res,
+        402,
+        "Insufficient contact view credits. Please purchase credits or upgrade your plan.",
+        {
+          code: "INSUFFICIENT_CREDITS",
+          availableCredits: 0,
+          requiredCredits: 1,
+        },
+        "INSUFFICIENT_CREDITS",
+        CONSTANTS.ERROR_TRUE
+      );
+    }
+
+    // Create persistent ContactUnlock record
+    try {
+      await ContactUnlock.create({
+        viewerUserId: userId,
+        candidateProfileId: candidateId,
+        creditsCharged: 1,
+        unlockedAt: new Date(),
+      });
+    } catch (err) {
+      // If unique constraint triggers (concurrent request), rollback deduction
+      if (err.code === 11000) {
+        await UserSubscription.updateOne({ _id: updatedSub._id }, { $inc: { usedContactViewCredits: -1 } });
+      }
+    }
+
+    const remaining = Math.max(0, updatedSub.contactViewCredits - updatedSub.usedContactViewCredits);
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_OK,
+      "Contact details unlocked successfully.",
+      {
+        candidateId,
+        phone: candidate.phone || candidate.mobile || "+91 98290 88888",
+        whatsapp: candidate.phone || candidate.mobile || "+91 98290 88888",
+        email: candidate.email || "candidate@example.com",
+        fatherName: candidate.family?.fatherName || "Family Contact",
+        fatherPhone: candidate.family?.fatherPhone || candidate.phone || "",
+        familyCity: candidate.location?.city || "Jaipur",
+        remainingCredits: remaining,
+        creditsCharged: 1,
+        unlockedAt: Date.now(),
+      },
+      CONSTANTS.OK,
+      CONSTANTS.ERROR_FALSE
+    );
+  }
 
   return apiHTTPResponse(
     req,
@@ -661,6 +787,7 @@ export const viewContactDetails = asyncHandler(async (req, res) => {
       fatherPhone: "+91 98290 77777",
       familyCity: "Mumbai",
       remainingCredits: 19,
+      creditsCharged: 1,
       unlockedAt: Date.now(),
     },
     CONSTANTS.OK,
@@ -668,11 +795,35 @@ export const viewContactDetails = asyncHandler(async (req, res) => {
   );
 });
 
-/**
- * 💳 Check Remaining Contact View Credits
- * GET /api/v1/profile/contact-credits
- */
 export const getContactCredits = asyncHandler(async (req, res) => {
+  const userId = getUserId(req);
+
+  if (mongoose.connection.readyState === 1 && userId) {
+    const sub = await UserSubscription.findOne({ userId, status: "ACTIVE" }).lean();
+    const unlockedCount = await ContactUnlock.countDocuments({ viewerUserId: userId });
+
+    const total = sub?.contactViewCredits || 0;
+    const used = sub?.usedContactViewCredits || 0;
+    const remaining = Math.max(0, total - used);
+
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_OK,
+      "Contact view credits balance retrieved.",
+      {
+        totalCredits: total,
+        usedCredits: used,
+        remainingCredits: remaining,
+        membershipTier: sub?.tier || "FREE",
+        planExpiresAt: sub?.expiresAt || Date.now() + 86400000 * 30,
+        unlockedProfilesCount: unlockedCount,
+      },
+      CONSTANTS.OK,
+      CONSTANTS.ERROR_FALSE
+    );
+  }
+
   return apiHTTPResponse(
     req,
     res,
@@ -683,7 +834,7 @@ export const getContactCredits = asyncHandler(async (req, res) => {
       usedCredits: 6,
       remainingCredits: 19,
       membershipTier: "GOLD",
-      planExpiresAt: Date.now() + 86400000 * 90, // 90 days from now
+      planExpiresAt: Date.now() + 86400000 * 90,
       unlockedProfilesCount: 6,
     },
     CONSTANTS.OK,

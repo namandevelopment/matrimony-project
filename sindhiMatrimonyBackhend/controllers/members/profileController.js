@@ -469,6 +469,10 @@ export const editProfile = asyncHandler(async (req, res) => {
     );
   }
 
+  if (updateData.alternatePhone !== undefined && userId) {
+    await User.updateOne({ _id: userId }, { $set: { alternatePhone: updateData.alternatePhone } }).catch(() => {});
+  }
+
   let updatedPartnerPreference = null;
   if (partnerPreferenceData && typeof partnerPreferenceData === "object") {
     delete partnerPreferenceData._id;

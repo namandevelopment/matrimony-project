@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,10 +10,11 @@ import {
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import fontFamily from '../../../components/fontFamily';
-import CustomLucidIcons from '../../../components/CustomLucidIcons';
 import LoadingButton from '../../../components/buttons/LoadingButton';
 import { moderateScale, moderateVerticalScale } from '../../../utils/Responsive';
-import { apiFetch, ApiURL } from '../../../redux/apiService';
+import { ApiURL } from '../../../redux/apiService';
+import { useApiQuery } from '../../../tanstackQuery/useQuery';
+import { QUERY_KEYS } from '../../../tanstackQuery/keys';
 
 // -----------------------------------------------------------------------------
 // 1. TYPES & INTERFACES
@@ -31,54 +32,16 @@ export interface MatchProfile {
 }
 
 interface AllMatchesSectionProps {
-  data?: MatchProfile[];
+  matches?: MatchProfile[];
   matchCount?: number;
   onProfilePress?: (profile: MatchProfile) => void;
   onViewAll?: () => void;
   containerStyle?: StyleProp<ViewStyle>;
 }
 
-// -----------------------------------------------------------------------------
-// 2. FALLBACK SEED MATCHES
-// -----------------------------------------------------------------------------
-export const DEFAULT_ALL_MATCHES: MatchProfile[] = [
-  {
-    id: 'match_1',
-    name: 'Pooja Advani',
-    age: 26,
-    height: "5'3\"",
-    location: 'Mumbai',
-    profession: 'Software Engineer',
-    imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'match_2',
-    name: 'Kajal Chhabria',
-    age: 24,
-    height: "5'5\"",
-    location: 'Pune',
-    profession: 'Architect',
-    imageUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'match_3',
-    name: 'Roshni Rohra',
-    age: 27,
-    height: "5'4\"",
-    location: 'Ahmedabad',
-    profession: 'Chartered Accountant',
-    imageUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'match_4',
-    name: 'Simran Vazirani',
-    age: 25,
-    height: "5'2\"",
-    location: 'Jaipur',
-    profession: 'Financial Analyst',
-    imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&auto=format&fit=crop&q=80',
-  },
-];
+const ALL_MATCHES_PARAMS = { page: 1, limit: 20 };
+const ALL_MATCHES_QUERY_KEY = QUERY_KEYS.allMatches(ALL_MATCHES_PARAMS);
+const EMPTY_MATCHES: MatchProfile[] = [];
 
 // -----------------------------------------------------------------------------
 // 3. MEMOIZED MATCH CARD COMPONENT
@@ -95,7 +58,10 @@ const MatchCard: React.FC<MatchCardProps> = React.memo(({ item, onPress }) => {
     onPress?.(item);
   }, [item, onPress]);
 
-  const imageUri = item.imageUrl || item.photoUrl || item.avatar;
+  const imageUri = item.imageUrl || item.photoUrl || item.avatar || (item as any).photos?.[0]?.url;
+  const name = item.name || (item as any).fullName || ((item as any).firstName ? `${(item as any).firstName} ${(item as any).lastName || ''}`.trim() : 'Member');
+  const age = item.age || 25;
+  const height = item.height || "5'2\"";
 
   return (
     <TouchableOpacity
@@ -119,97 +85,74 @@ const MatchCard: React.FC<MatchCardProps> = React.memo(({ item, onPress }) => {
 
       {/* Profile Name */}
       <Text style={styles.profileName} numberOfLines={1} ellipsizeMode="tail">
-        {item.name}
+        {name}
       </Text>
 
       {/* Age & Height */}
       <Text style={styles.profileDetails} numberOfLines={1}>
-        {item.age} Yrs, {item.height}
+        {age} Yrs, {height}
       </Text>
     </TouchableOpacity>
   );
 });
 
-MatchCard.displayName = 'MatchCard';
 
 // -----------------------------------------------------------------------------
 // 4. MEMOIZED ALL MATCHES SECTION COMPONENT
 // -----------------------------------------------------------------------------
 const AllMatchesSection: React.FC<AllMatchesSectionProps> = React.memo(
   ({
-    data: propData,
-    matchCount: propMatchCount,
+    matches: initialMatches,
+    matchCount: initialCount,
     onProfilePress,
     onViewAll,
     containerStyle,
   }) => {
-    const [matches, setMatches] = useState<MatchProfile[]>(
-      propData && propData.length > 0 ? propData : DEFAULT_ALL_MATCHES,
-    );
-    const [displayCount, setDisplayCount] = useState<number>(
-      propMatchCount ?? 497,
-    );
+    // TanStack Query with memoized selector for zero re-renders
+    const { data } = useApiQuery({
+      queryKey: ALL_MATCHES_QUERY_KEY,
+      url: ApiURL.allMatchesFeed,
+      params: ALL_MATCHES_PARAMS,
+      staleTime: 1000 * 60 * 5,
+      select: useCallback((res: any) => {
+        const list = Array.isArray(res?.items) ? res.items : Array.isArray(res?.list) ? res.list : [];
+        const count = res?.totalMatchesCount ?? res?.total ?? list.length;
+        return {
+          matches: list,
+          count: typeof count === 'number' ? count : list.length,
+        };
+      }, []),
+    });
 
-    useEffect(() => {
-      if (propData && propData.length > 0) {
-        setMatches(propData);
-        if (propMatchCount !== undefined) {
-          setDisplayCount(propMatchCount);
-        }
-        return;
-      }
+    const matches = (data?.matches && data.matches.length > 0)
+      ? data.matches
+      : (initialMatches && initialMatches.length > 0 ? initialMatches : EMPTY_MATCHES);
+    const displayCount = data?.count ?? initialCount ?? matches.length;
 
-      let isMounted = true;
-      const fetchMatches = async () => {
-        try {
-          const res = await apiFetch<any>({
-            url: ApiURL.allMatchesFeed,
-            method: 'GET',
-            params: { page: 1, limit: 10 },
-            showErrorToast: false,
-          });
+    const onProfilePressRef = useRef(onProfilePress);
+    onProfilePressRef.current = onProfilePress;
 
-          if (!isMounted) return;
+    const onViewAllRef = useRef(onViewAll);
+    onViewAllRef.current = onViewAll;
 
-          const list = res?.data?.list || res?.data?.items;
-          if (Array.isArray(list) && list.length > 0) {
-            const mapped: MatchProfile[] = list.map((item: any, idx: number) => ({
-              id: String(item.id || item._id || `match_${idx}`),
-              name: item.name || 'Member',
-              age: typeof item.age === 'number' ? item.age : parseInt(item.age, 10) || 25,
-              height: item.height || "5'2\"",
-              location: item.city || item.location || '',
-              profession: item.profession || '',
-              imageUrl: item.imageUrl || item.photoUrl || item.avatar || '',
-            }));
-            setMatches(mapped);
-          }
+    // Stable callbacks to prevent child re-renders
+    const handleProfilePress = useCallback((profile: MatchProfile) => {
+      onProfilePressRef.current?.(profile);
+    }, []);
 
-          const count = res?.data?.matchCount ?? res?.data?.total ?? res?.data?.pagination?.total;
-          if (typeof count === 'number') {
-            setDisplayCount(count);
-          }
-        } catch {
-          // Keep fallback matches on error
-        }
-      };
-
-      fetchMatches();
-
-      return () => {
-        isMounted = false;
-      };
-    }, [propData, propMatchCount]);
+    const handleViewAllPress = useCallback(() => {
+      onViewAllRef.current?.();
+    }, []);
 
     // Render Item callback for FlashList
     const renderItem = useCallback(
       ({ item }: { item: MatchProfile }) => (
-        <MatchCard item={item} onPress={onProfilePress} />
+        <MatchCard item={item} onPress={handleProfilePress} />
       ),
-      [onProfilePress],
+      [handleProfilePress],
     );
 
-    const keyExtractor = useCallback((item: MatchProfile) => item.id, []);
+    const keyExtractor = useCallback((item: any, idx: number) => String(item.id || item._id || item.matrimonyId || idx), []);
 
     return (
       <View style={[styles.container, containerStyle]}>
@@ -227,7 +170,6 @@ const AllMatchesSection: React.FC<AllMatchesSectionProps> = React.memo(
         <FlashList
           horizontal
           data={matches}
-          estimatedItemSize={moderateScale(150)}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           showsHorizontalScrollIndicator={false}
@@ -238,7 +180,7 @@ const AllMatchesSection: React.FC<AllMatchesSectionProps> = React.memo(
         {/* "View all >" Capsule Outline Button */}
         <LoadingButton
           title="View all"
-          onPress={onViewAll}
+          onPress={handleViewAllPress}
           variant="outline"
           style={styles.viewAllBtn}
           textStyle={styles.viewAllText}

@@ -33,6 +33,7 @@
     "lottie-react-native": "^7.3.8",
     "lucide-react-native": "^1.23.0",
     "moment": "^2.30.1",
+    "one-react-native-upi": "^0.1.2",
     "react": "19.2.3",
     "react-native": "0.86.0",
     "react-native-date-picker": "^5.0.13",

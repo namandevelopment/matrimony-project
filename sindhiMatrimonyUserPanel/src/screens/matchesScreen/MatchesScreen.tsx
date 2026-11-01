@@ -38,6 +38,7 @@ import {
   useRequestPhotoMutation,
 } from "@/tanstackQuery";
 import { ApiURL } from "@/redux/apiService/endpoint";
+import { apiRequest } from "@/redux/apiService";
 
 
 const PAGE_SIZE = 5;
@@ -219,7 +220,7 @@ const MatchesScreenComponent: React.FC<MatchesScreenProps> = ({
       });
       shortlistMutation.mutate({
         url: ApiURL.shortlistCandidate(id),
-        method: "POST",
+        method: willShortlist ? "PUT" : "DELETE",
         data: { candidateId: id, shortlist: willShortlist, action: willShortlist ? "ADD" : "REMOVE" },
         isToken: true,
       });
@@ -283,13 +284,41 @@ const MatchesScreenComponent: React.FC<MatchesScreenProps> = ({
     [requestPhotoMutation]
   );
 
-  const handleCallClick = useCallback((profile: MatchDetailProfile) => {
-    setSelectedProfileForContact(profile);
+  const handleCallClick = useCallback(async (profile: MatchDetailProfile) => {
+    try {
+      const res: any = await apiRequest({
+        url: ApiURL.viewContact(profile.id),
+        method: "POST",
+        isToken: true,
+      });
+      const data = res?.data || res;
+      setSelectedProfileForContact({
+        ...profile,
+        phoneNumber: data.phone || profile.phoneNumber,
+        whatsappNumber: data.whatsapp || profile.whatsappNumber,
+      });
+    } catch {
+      setSelectedProfileForContact(profile);
+    }
     setContactModalType("call");
   }, []);
 
-  const handleWhatsAppClick = useCallback((profile: MatchDetailProfile) => {
-    setSelectedProfileForContact(profile);
+  const handleWhatsAppClick = useCallback(async (profile: MatchDetailProfile) => {
+    try {
+      const res: any = await apiRequest({
+        url: ApiURL.viewContact(profile.id),
+        method: "POST",
+        isToken: true,
+      });
+      const data = res?.data || res;
+      setSelectedProfileForContact({
+        ...profile,
+        phoneNumber: data.phone || profile.phoneNumber,
+        whatsappNumber: data.whatsapp || profile.whatsappNumber,
+      });
+    } catch {
+      setSelectedProfileForContact(profile);
+    }
     setContactModalType("whatsapp");
   }, []);
 

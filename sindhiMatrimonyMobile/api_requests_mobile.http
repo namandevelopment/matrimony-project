@@ -843,7 +843,7 @@ Content-Type: application/json
 {
   "conversationId": "{{conversationId}}",
   "recipientProfileId": "67b34a12c8e312a0f9000004",
-  "text": "Jai Jhulelal! Glad to connect with your profile on Sindhi Matrimony.",
+  "text": "Hello! Glad to connect with your profile on Sindhi Matrimony.",
   "messageType": "TEXT"
 }
 

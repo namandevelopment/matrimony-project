@@ -31,6 +31,8 @@ router.post("/search", searchCandidates);
 router.get("/quick-search", quickSearch);
 router.get("/viewed-my-profile", getViewedMyProfile);
 router.post("/shortlist/:candidateId", toggleShortlist);
+router.put("/shortlist/:candidateId", toggleShortlist);
+router.delete("/shortlist/:candidateId", toggleShortlist);
 router.get("/shortlist", getMyShortlist);
 router.get("/mutual-matches", getMutualMatches);
 

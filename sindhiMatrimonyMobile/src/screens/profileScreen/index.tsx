@@ -1,7 +1,9 @@
 // @ts-nocheck
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import {
   Alert,
+  Animated,
+  Easing,
   Image,
   Pressable,
   ScrollView,
@@ -11,7 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import CustomHeader from '../../components/headers/CustomHeader';
 import CustomLucidIcons from '../../components/CustomLucidIcons';
@@ -50,6 +52,35 @@ const ProfileScreen: React.FC = () => {
   const storedUser = Storage.getItemSync<any>('user') || {};
   const reduxProfile = useSelector(selectProfile);
   const profile = reduxProfile || storedUser?.profile || storedUser || {};
+
+  const animatedScore = useRef(new Animated.Value(0)).current;
+  const [displayScore, setDisplayScore] = useState(0);
+  const targetScore = Number(profile?.profileScore || profile?.score) || 52;
+
+  useFocusEffect(
+    useCallback(() => {
+      animatedScore.setValue(0);
+      setDisplayScore(0);
+
+      const anim = Animated.timing(animatedScore, {
+        toValue: targetScore,
+        duration: 900,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      });
+
+      const listenerId = animatedScore.addListener(({ value }) => {
+        setDisplayScore(Math.round(value));
+      });
+
+      anim.start();
+
+      return () => {
+        animatedScore.removeListener(listenerId);
+        anim.stop();
+      };
+    }, [targetScore]),
+  );
 
   const rawAvatar =
     profile?.avatar ||
@@ -123,7 +154,16 @@ const ProfileScreen: React.FC = () => {
       id: 'daily_recommendation',
       title: 'Daily Recommendation',
       iconName: 'calendar-days',
-      onPress: () => handleGenericItemPress('Daily Recommendation'),
+      onPress: () => {
+        try {
+          navigation.navigate('BottomTab', {
+            screen: 'Home',
+            params: { scrollTo: 'dailyRecommendation', timestamp: Date.now() },
+          });
+        } catch {
+          navigation.navigate('Home', { scrollTo: 'dailyRecommendation', timestamp: Date.now() });
+        }
+      },
     },
     {
       id: 'messages',
@@ -141,7 +181,7 @@ const ProfileScreen: React.FC = () => {
       id: 'edit_partner_pref',
       title: 'Edit Partner Preference',
       iconName: 'user-round-pen',
-      onPress: () => handleGenericItemPress('Edit Partner Preference'),
+      onPress: () => navigation.navigate('PartnerPreferenceScreen'),
     },
     {
       id: 'upgrade_now',
@@ -155,19 +195,19 @@ const ProfileScreen: React.FC = () => {
       id: 'privacy_settings',
       title: 'Privacy Settings',
       iconName: 'file-lock',
-      onPress: () => handleGenericItemPress('Privacy Settings'),
+      onPress: () => navigation.navigate('PrivacySettings'),
     },
-    {
-      id: 'communication_settings',
-      title: 'Communication Settings',
-      iconName: 'settings',
-      onPress: () => handleGenericItemPress('Communication Settings'),
-    },
+    // {
+    //   id: 'communication_settings',
+    //   title: 'Communication Settings',
+    //   iconName: 'settings',
+    //   onPress: () => handleGenericItemPress('Communication Settings'),
+    // },
     {
       id: 'account_settings',
       title: 'Account Settings',
       iconName: 'circle-user-round',
-      onPress: () => handleGenericItemPress('Account Settings'),
+      onPress: () => navigation.navigate('AccountSettings'),
     },
     {
       id: 'rate_us',
@@ -200,23 +240,23 @@ const ProfileScreen: React.FC = () => {
       hasChevron: false,
       onPress: handleSupportPress,
     },
-    {
-      id: 'more',
-      title: 'More',
-      hasChevron: true,
-      onPress: () => handleGenericItemPress('More options'),
-    },
+    // {
+    //   id: 'more',
+    //   title: 'More',
+    //   hasChevron: true,
+    //   onPress: () => handleGenericItemPress('More options'),
+    // },
     {
       id: 'terms',
       title: 'Terms & Conditions',
-      hasChevron: false,
-      onPress: () => handleGenericItemPress('Terms & Conditions'),
+      hasChevron: true,
+      onPress: () => navigation.navigate('TermsAndConditions'),
     },
     {
       id: 'privacy_policy',
       title: 'Privacy Policy',
-      hasChevron: false,
-      onPress: () => handleGenericItemPress('Privacy Policy'),
+      hasChevron: true,
+      onPress: () => navigation.navigate('PrivacyPolicy'),
     },
   ];
 
@@ -341,13 +381,23 @@ const ProfileScreen: React.FC = () => {
 
             {/* Profile Score Progress Bar */}
             <View style={styles.progressBarTrack}>
-              <View style={styles.progressBarFill} />
+              <Animated.View
+                style={[
+                  styles.progressBarFill,
+                  {
+                    width: animatedScore.interpolate({
+                      inputRange: [0, 100],
+                      outputRange: ['0%', '100%'],
+                    }),
+                  },
+                ]}
+              />
             </View>
 
             {/* Profile Score Text */}
             <View style={styles.scoreRow}>
               <Text style={styles.scoreLabel}>Your profile score </Text>
-              <Text style={styles.scoreValue}>52%</Text>
+              <Text style={styles.scoreValue}>{displayScore}%</Text>
             </View>
           </View>
         </View>
@@ -562,7 +612,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressBarFill: {
-    width: '52%',
     height: '100%',
     backgroundColor: SCORE_FILL,
     borderRadius: moderateScale(2),

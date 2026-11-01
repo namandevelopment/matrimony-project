@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { asyncHandler, apiHTTPResponse, logMessage, cleanEntity } from "../../utils/globalFunction.js";
 import * as CONSTANTS from "../../utils/constants.js";
-import { Profile, PartnerPreference, User } from "../../models/index.js";
+import { Profile, PartnerPreference, User, Shortlist, BlockedUser } from "../../models/index.js";
 
 const getUserId = (req) =>
   req.user?.id ||
@@ -413,14 +413,50 @@ export const getViewedMyProfile = asyncHandler(async (req, res) => {
 export const toggleShortlist = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
   const { candidateId } = req.params;
-  const { action = "ADD" } = req.body;
+  const isRemove = req.method === "DELETE" || req.body?.action === "REMOVE";
+
+  if (!userId) {
+    return apiHTTPResponse(req, res, CONSTANTS.HTTP_UNAUTHORIZED, "Authentication required.", null, "UNAUTHORIZED", CONSTANTS.ERROR_TRUE);
+  }
+
+  let targetId = candidateId;
+  if (mongoose.connection.readyState === 1 && !mongoose.Types.ObjectId.isValid(targetId)) {
+    const found = await Profile.findOne({ matrimonyId: targetId.toUpperCase() }).select("_id").lean();
+    if (found) targetId = found._id.toString();
+  }
+
+  if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(targetId)) {
+    if (isRemove) {
+      await Shortlist.deleteOne({ userId, candidateProfileId: targetId });
+    } else {
+      await Shortlist.updateOne(
+        { userId, candidateProfileId: targetId },
+        { $setOnInsert: { userId, candidateProfileId: targetId, createdAt: new Date() } },
+        { upsert: true }
+      );
+    }
+    const total = await Shortlist.countDocuments({ userId });
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_OK,
+      isRemove ? "Candidate removed from shortlist." : "Candidate added to shortlist.",
+      {
+        candidateId,
+        isShortlisted: !isRemove,
+        totalShortlisted: total,
+      },
+      CONSTANTS.OK,
+      CONSTANTS.ERROR_FALSE
+    );
+  }
 
   if (!inMemoryShortlists.has(userId)) {
     inMemoryShortlists.set(userId, new Set());
   }
 
   const userList = inMemoryShortlists.get(userId);
-  if (action === "REMOVE") {
+  if (isRemove) {
     userList.delete(candidateId);
   } else {
     userList.add(candidateId);
@@ -430,10 +466,10 @@ export const toggleShortlist = asyncHandler(async (req, res) => {
     req,
     res,
     CONSTANTS.HTTP_OK,
-    action === "REMOVE" ? "Candidate removed from shortlist." : "Candidate added to shortlist.",
+    isRemove ? "Candidate removed from shortlist." : "Candidate added to shortlist.",
     {
       candidateId,
-      isShortlisted: action !== "REMOVE",
+      isShortlisted: !isRemove,
       totalShortlisted: userList.size,
     },
     CONSTANTS.OK,
@@ -441,21 +477,77 @@ export const toggleShortlist = asyncHandler(async (req, res) => {
   );
 });
 
-/**
- * 📑 Get My Shortlisted Candidates
- * GET /api/v1/matchmaking/shortlist?page=1&limit=20
- */
 export const getMyShortlist = asyncHandler(async (req, res) => {
   const userId = getUserId(req);
-  const userList = inMemoryShortlists.get(userId) || new Set();
+  const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
 
+  if (mongoose.connection.readyState === 1 && userId) {
+    const [shortlists, total] = await Promise.all([
+      Shortlist.find({ userId })
+        .sort({ createdAt: -1, _id: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      Shortlist.countDocuments({ userId }),
+    ]);
+
+    const profileIds = shortlists.map((s) => s.candidateProfileId);
+    const profiles = await Profile.find({ _id: { $in: profileIds }, isDeleted: false })
+      .select("_id name age height location education profession avatar photos isVerified subcaste photoPrivacy")
+      .lean();
+
+    const profileMap = new Map(profiles.map((p) => [p._id.toString(), p]));
+    const items = shortlists
+      .map((s) => profileMap.get(s.candidateProfileId.toString()))
+      .filter(Boolean)
+      .map((p) => {
+        const isRestricted = p.photoPrivacy === "ONLY_ON_REQUEST" || p.photoPrivacy === "RESTRICTED";
+        return {
+          id: p._id.toString(),
+          name: p.name,
+          age: p.age || 25,
+          height: p.height ? `${Math.floor(p.height / 30.48)}'${Math.round((p.height % 30.48) / 2.54)}"` : "5'4\"",
+          city: p.location?.city || "Jaipur",
+          caste: p.subcaste || "Bhaiband",
+          education: p.education?.degree || "Graduate",
+          profession: p.profession?.occupation || "Professional",
+          photoUrl: isRestricted ? null : (p.avatar || p.photos?.[0]?.url || null),
+          isSilhouette: isRestricted || (!p.avatar && (!p.photos || p.photos.length === 0)),
+          isVerified: Boolean(p.isVerified),
+          isShortlisted: true,
+          matrimonyId: `SM${p._id.toString().slice(-7).toUpperCase()}`,
+        };
+      });
+
+    const totalPages = Math.ceil(total / limit) || 1;
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_OK,
+      "Shortlisted candidates retrieved successfully.",
+      {
+        totalShortlisted: total,
+        total,
+        totalPages,
+        page,
+        limit,
+        hasMore: page < totalPages,
+        pagination: { total, page, limit, totalPages, hasMore: page < totalPages },
+        items,
+        list: items,
+      },
+      CONSTANTS.OK,
+      CONSTANTS.ERROR_FALSE
+    );
+  }
+
+  const userList = inMemoryShortlists.get(userId) || new Set();
   const shortlistedCandidates = SEED_MATCH_CANDIDATES.filter((c) => userList.has(c._id)).map((c) => ({
     ...c,
     isShortlisted: true,
   }));
 
-  const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
-  const limit = Math.min(50, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
   const total = shortlistedCandidates.length;
   const totalPages = Math.ceil(total / limit) || 1;
   const startIdx = (page - 1) * limit;
@@ -473,14 +565,8 @@ export const getMyShortlist = asyncHandler(async (req, res) => {
       page,
       limit,
       hasMore: page < totalPages,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages,
-        hasMore: page < totalPages,
-      },
-      candidates: paginated,
+      pagination: { total, page, limit, totalPages, hasMore: page < totalPages },
+      items: paginated,
       list: paginated,
     },
     CONSTANTS.OK,
@@ -493,8 +579,91 @@ export const getMyShortlist = asyncHandler(async (req, res) => {
  * GET /api/v1/matchmaking/mutual-matches
  */
 export const getMutualMatches = asyncHandler(async (req, res) => {
+  const userId = getUserId(req);
   const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
   const limit = Math.min(50, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
+
+  if (mongoose.connection.readyState === 1 && userId) {
+    const userProfile = await Profile.findOne({ userId, isDeleted: false }).lean();
+    const userPref = await PartnerPreference.findOne({ userId }).lean();
+    const targetGender = userProfile?.gender === "MALE" ? "FEMALE" : "MALE";
+
+    const blocked = await BlockedUser.find({
+      $or: [{ blockerUserId: userId }, { blockedUserId: userId }]
+    }).select("blockerUserId blockedUserId").lean();
+    const excludedIds = [userId.toString(), ...blocked.map(b => b.blockerUserId.toString() === userId.toString() ? b.blockedUserId.toString() : b.blockerUserId.toString())];
+
+    const query = {
+      isDeleted: false,
+      status: "ACTIVE",
+      userId: { $nin: excludedIds.map(id => new mongoose.Types.ObjectId(id)) },
+      gender: targetGender,
+    };
+
+    if (userPref?.minAge || userPref?.maxAge) {
+      query.age = {};
+      if (userPref.minAge) query.age.$gte = Number(userPref.minAge);
+      if (userPref.maxAge) query.age.$lte = Number(userPref.maxAge);
+    }
+    if (userPref?.subcaste && userPref.subcaste.length > 0) {
+      query.subcaste = { $in: userPref.subcaste };
+    }
+
+    const [candidates, total] = await Promise.all([
+      Profile.find(query)
+        .select("_id name age height location education profession avatar photos isVerified subcaste photoPrivacy")
+        .sort({ isFeatured: -1, createdAt: -1, _id: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      Profile.countDocuments(query),
+    ]);
+
+    const pageProfileIds = candidates.map(c => c._id);
+    const shortlists = await Shortlist.find({ userId, candidateProfileId: { $in: pageProfileIds } }).select("candidateProfileId").lean();
+    const shortSet = new Set(shortlists.map(s => s.candidateProfileId.toString()));
+
+    const items = candidates.map((c, idx) => {
+      const isRestricted = c.photoPrivacy === "ONLY_ON_REQUEST" || c.photoPrivacy === "RESTRICTED";
+      return {
+        _id: c._id.toString(),
+        id: c._id.toString(),
+        name: c.name,
+        age: c.age || 25,
+        subcaste: c.subcaste || "Bhaiband",
+        city: c.location?.city || "Mumbai",
+        profession: c.profession?.occupation || "Professional",
+        photoUrl: isRestricted ? null : (c.avatar || c.photos?.[0]?.url || null),
+        isSilhouette: isRestricted || (!c.avatar && (!c.photos || c.photos.length === 0)),
+        isShortlisted: shortSet.has(c._id.toString()),
+        mutualScore: 98 - idx * 2,
+        candidateExpressedInterest: true,
+        partnerExpressedInterest: idx % 2 === 0,
+        unlockedAt: Date.now() - 3600000 * (idx * 6 + 2),
+      };
+    });
+
+    const totalPages = Math.ceil(total / limit) || 1;
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_OK,
+      "Mutual matches retrieved successfully.",
+      {
+        total,
+        totalPages,
+        page,
+        limit,
+        hasMore: page < totalPages,
+        pagination: { total, page, limit, totalPages, hasMore: page < totalPages },
+        candidates: items,
+        items,
+        list: items,
+      },
+      CONSTANTS.OK,
+      CONSTANTS.ERROR_FALSE
+    );
+  }
 
   const allMutuals = SEED_MATCH_CANDIDATES.slice(0, 8).map((c, idx) => ({
     _id: c._id,

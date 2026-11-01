@@ -24,6 +24,11 @@ const userSchema = new Schema(
       sparse: true,
       index: true,
     },
+    alternatePhone: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     password: {
       type: String,
       select: false, // Hidden by default for security

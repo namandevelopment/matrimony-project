@@ -11,7 +11,6 @@ import {
   Platform,
   StatusBar,
 } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import CustomHeader from '../../components/headers/CustomHeader';
@@ -32,6 +31,26 @@ const FAMILY_STATUSES = [
   'High class',
 ];
 const SIBLING_COUNTS = ['None', '1', '2', '3', '4', '5+'];
+const FATHER_OCCUPATIONS = [
+  'Businessman',
+  'Service - Private',
+  'Service - Govt',
+  'Professional',
+  'Civil Services',
+  'Retired',
+  'Passed Away',
+  'Not Employed',
+];
+const MOTHER_OCCUPATIONS = [
+  'Homemaker',
+  'Businesswoman',
+  'Service - Private',
+  'Service - Govt',
+  'Teacher / Professor',
+  'Professional',
+  'Retired',
+  'Passed Away',
+];
 
 // -----------------------------------------------------------------------------
 // MAIN COMPONENT: FamilyDetails / Edit Profile - About my family
@@ -39,17 +58,32 @@ const SIBLING_COUNTS = ['None', '1', '2', '3', '4', '5+'];
 const FamilyDetailsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
 
-  // State initialized with values from user screenshot (media_1792347200778.jpg)
-  const [familyValue, setFamilyValue] = useState<string>('Moderate');
-  const [familyType, setFamilyType] = useState<string>('Nuclear family');
-  const [familyStatus, setFamilyStatus] = useState<string>('Upper middle class');
-  const [fatherOccupation, setFatherOccupation] = useState<string>('6');
-  const [motherOccupation, setMotherOccupation] = useState<string>('1');
-  const [familyOrigin, setFamilyOrigin] = useState<string>('Maharashtra');
-  const [noOfBrothers, setNoOfBrothers] = useState<string>('');
-  const [brothersMarried, setBrothersMarried] = useState<string>('');
-  const [noOfSisters, setNoOfSisters] = useState<string>('');
-  const [sistersMarried, setSistersMarried] = useState<string>('');
+  const savedData = useMemo(() => {
+    try {
+      const saved = Storage.getItemSync<any>('familyDetailsData');
+      if (saved) return typeof saved === 'string' ? JSON.parse(saved) : saved;
+    } catch (e) {}
+    try {
+      const user = Storage.getItemSync<any>('user');
+      if (user?.family) return user.family;
+    } catch (e) {}
+    return {};
+  }, []);
+
+  const [familyValue, setFamilyValue] = useState<string>(savedData.familyValue || 'Moderate');
+  const [familyType, setFamilyType] = useState<string>(savedData.familyType || 'Nuclear family');
+  const [familyStatus, setFamilyStatus] = useState<string>(savedData.familyStatus || 'Upper middle class');
+  const [fatherOccupation, setFatherOccupation] = useState<string>(
+    savedData.fatherOccupation === '6' || !savedData.fatherOccupation ? 'Passed Away' : savedData.fatherOccupation
+  );
+  const [motherOccupation, setMotherOccupation] = useState<string>(
+    savedData.motherOccupation === '1' || !savedData.motherOccupation ? 'Homemaker' : savedData.motherOccupation
+  );
+  const [familyOrigin, setFamilyOrigin] = useState<string>(savedData.familyOrigin || savedData.origin || 'Maharashtra');
+  const [noOfBrothers, setNoOfBrothers] = useState<string>(savedData.noOfBrothers || savedData.brothers || 'None');
+  const [brothersMarried, setBrothersMarried] = useState<string>(savedData.brothersMarried || 'None');
+  const [noOfSisters, setNoOfSisters] = useState<string>(savedData.noOfSisters || savedData.sisters || 'None');
+  const [sistersMarried, setSistersMarried] = useState<string>(savedData.sistersMarried || 'None');
 
   // Selection Modal State
   const [modalVisible, setModalVisible] = useState(false);
@@ -79,6 +113,12 @@ const FamilyDetailsScreen: React.FC = () => {
           break;
         case 'familyStatus':
           setFamilyStatus(value);
+          break;
+        case 'fatherOccupation':
+          setFatherOccupation(value);
+          break;
+        case 'motherOccupation':
+          setMotherOccupation(value);
           break;
         case 'noOfBrothers':
           setNoOfBrothers(value);
@@ -132,6 +172,32 @@ const FamilyDetailsScreen: React.FC = () => {
     fatherOccupation,
     motherOccupation,
     familyOrigin,
+    noOfBrothers,
+    brothersMarried,
+    noOfSisters,
+    sistersMarried,
+  ]);
+
+  const getSelectedValue = useCallback(() => {
+    switch (currentField) {
+      case 'familyValue': return familyValue;
+      case 'familyType': return familyType;
+      case 'familyStatus': return familyStatus;
+      case 'fatherOccupation': return fatherOccupation;
+      case 'motherOccupation': return motherOccupation;
+      case 'noOfBrothers': return noOfBrothers;
+      case 'brothersMarried': return brothersMarried;
+      case 'noOfSisters': return noOfSisters;
+      case 'sistersMarried': return sistersMarried;
+      default: return '';
+    }
+  }, [
+    currentField,
+    familyValue,
+    familyType,
+    familyStatus,
+    fatherOccupation,
+    motherOccupation,
     noOfBrothers,
     brothersMarried,
     noOfSisters,
@@ -245,29 +311,51 @@ const FamilyDetailsScreen: React.FC = () => {
             <View style={styles.divider} />
 
             {/* 4. Father's Occupation */}
-            <View style={styles.inputItemRow}>
+            <TouchableOpacity
+              style={styles.itemRow}
+              activeOpacity={0.7}
+              onPress={() =>
+                openPicker(
+                  'fatherOccupation',
+                  "Select Father's Occupation",
+                  FATHER_OCCUPATIONS,
+                )
+              }
+            >
               <Text style={styles.itemLabel}>Father's Occupation</Text>
-              <TextInput
-                style={styles.inlineInput}
-                value={fatherOccupation}
-                onChangeText={setFatherOccupation}
-                placeholder="Enter occupation"
-                placeholderTextColor="#A0A0A0"
-              />
-            </View>
+              <View style={styles.itemRight}>
+                <Text style={styles.itemValue}>{fatherOccupation}</Text>
+                <CustomLucidIcons
+                  name="chevron-right"
+                  size={18}
+                  color="#B0B0B0"
+                />
+              </View>
+            </TouchableOpacity>
             <View style={styles.divider} />
 
             {/* 5. Mother's Occupation */}
-            <View style={styles.inputItemRow}>
+            <TouchableOpacity
+              style={styles.itemRow}
+              activeOpacity={0.7}
+              onPress={() =>
+                openPicker(
+                  'motherOccupation',
+                  "Select Mother's Occupation",
+                  MOTHER_OCCUPATIONS,
+                )
+              }
+            >
               <Text style={styles.itemLabel}>Mother's Occupation</Text>
-              <TextInput
-                style={styles.inlineInput}
-                value={motherOccupation}
-                onChangeText={setMotherOccupation}
-                placeholder="Enter occupation"
-                placeholderTextColor="#A0A0A0"
-              />
-            </View>
+              <View style={styles.itemRight}>
+                <Text style={styles.itemValue}>{motherOccupation}</Text>
+                <CustomLucidIcons
+                  name="chevron-right"
+                  size={18}
+                  color="#B0B0B0"
+                />
+              </View>
+            </TouchableOpacity>
             <View style={styles.divider} />
 
             {/* 6. Ancestral / Family Origin */}
@@ -441,21 +529,39 @@ const FamilyDetailsScreen: React.FC = () => {
             <View style={styles.modalTitleDivider} />
 
             {/* Options List */}
-            <FlashList
-              data={modalOptions}
-              estimatedItemSize={48}
-              keyExtractor={item => item}
+            <ScrollView
+              style={styles.modalScrollView}
+              contentContainerStyle={styles.modalScrollContent}
               showsVerticalScrollIndicator={false}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.modalOptionItem}
-                  activeOpacity={0.6}
-                  onPress={() => handleSelectOption(item)}
-                >
-                  <Text style={styles.modalOptionText}>{item}</Text>
-                </TouchableOpacity>
-              )}
-            />
+              bounces={false}
+            >
+              {modalOptions.map((item, idx) => {
+                const isSelected = item === getSelectedValue();
+                return (
+                  <TouchableOpacity
+                    key={`${item}-${idx}`}
+                    style={[
+                      styles.modalOptionItem,
+                      isSelected && styles.modalOptionItemSelected,
+                    ]}
+                    activeOpacity={0.6}
+                    onPress={() => handleSelectOption(item)}
+                  >
+                    <Text
+                      style={[
+                        styles.modalOptionText,
+                        isSelected && styles.modalOptionTextSelected,
+                      ]}
+                    >
+                      {item}
+                    </Text>
+                    {isSelected && (
+                      <CustomLucidIcons name="check" size={18} color="#DB2F3C" />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
@@ -617,14 +723,32 @@ const styles = StyleSheet.create({
     backgroundColor: '#EAEAEA',
     marginBottom: 4,
   },
+  modalScrollView: {
+    maxHeight: 380,
+  },
+  modalScrollContent: {
+    paddingBottom: 16,
+  },
   modalOptionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#F5F5F5',
+  },
+  modalOptionItemSelected: {
+    backgroundColor: '#FFF8F8',
+    paddingHorizontal: 8,
+    borderRadius: 6,
   },
   modalOptionText: {
     fontSize: 15,
     color: '#262626',
     fontFamily: fontFamily.Inter18Regular,
+  },
+  modalOptionTextSelected: {
+    color: '#DB2F3C',
+    fontFamily: fontFamily.Inter18Medium,
   },
 });

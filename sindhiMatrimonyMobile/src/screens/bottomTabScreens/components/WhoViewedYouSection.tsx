@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -13,6 +13,10 @@ import fontFamily from '../../../components/fontFamily';
 import CustomLucidIcons from '../../../components/CustomLucidIcons';
 import LoadingButton from '../../../components/buttons/LoadingButton';
 import { moderateScale, moderateVerticalScale } from '../../../utils/Responsive';
+import { IMAGES } from '../../../components/images';
+import { ApiURL } from '../../../redux/apiService';
+import { useApiQuery } from '../../../tanstackQuery/useQuery';
+import { QUERY_KEYS } from '../../../tanstackQuery/keys';
 
 // -----------------------------------------------------------------------------
 // 1. TYPES & INTERFACES
@@ -22,8 +26,12 @@ export interface ViewedProfile {
   name: string;
   age: number;
   height: string;
-  viewedOn: string;
-  imageUrl: string;
+  viewedOn?: string;
+  viewedDate?: string;
+  viewedAt?: string;
+  imageUrl?: string;
+  photoUrl?: string;
+  avatar?: string;
   isPrime?: boolean;
 }
 
@@ -36,60 +44,11 @@ interface WhoViewedYouSectionProps {
 }
 
 // -----------------------------------------------------------------------------
-// 2. CURATED DUMMY DATA (Matching User's Reference Screenshot)
+// 2. QUERY CONSTANTS
 // -----------------------------------------------------------------------------
-export const DUMMY_WHO_VIEWED_YOU: ViewedProfile[] = [
-  {
-    id: 'wvy_1',
-    name: 'Akshata Hegde',
-    age: 27,
-    height: `5'2"`,
-    viewedOn: '11 Oct 2026',
-    imageUrl:
-      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80',
-    isPrime: false,
-  },
-  {
-    id: 'wvy_2',
-    name: 'Smruthi',
-    age: 25,
-    height: `5'2"`,
-    viewedOn: '19 Sept 2026',
-    imageUrl:
-      'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80',
-    isPrime: true,
-  },
-  {
-    id: 'wvy_3',
-    name: 'Shivali Somani',
-    age: 29,
-    height: `5'0"`,
-    viewedOn: '07 Sept 2026',
-    imageUrl:
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
-    isPrime: false,
-  },
-  {
-    id: 'wvy_4',
-    name: 'Pooja Ahuja',
-    age: 26,
-    height: `5'4"`,
-    viewedOn: '02 Sept 2026',
-    imageUrl:
-      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500&auto=format&fit=crop&q=80',
-    isPrime: true,
-  },
-  {
-    id: 'wvy_5',
-    name: 'Muskaan Rohra',
-    age: 28,
-    height: `5'3"`,
-    viewedOn: '28 Aug 2026',
-    imageUrl:
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&auto=format&fit=crop&q=80',
-    isPrime: false,
-  },
-];
+const WHO_VIEWED_YOU_PARAMS = { page: 1, limit: 10 };
+const WHO_VIEWED_YOU_QUERY_KEY = [...QUERY_KEYS.whoViewedYou, WHO_VIEWED_YOU_PARAMS] as const;
+const EMPTY_LIST: ViewedProfile[] = [];
 
 // -----------------------------------------------------------------------------
 // 3. MEMOIZED CARD COMPONENT
@@ -106,6 +65,12 @@ const ViewedProfileCard: React.FC<CardProps> = React.memo(({ item, onPress }) =>
     onPress?.(item);
   }, [item, onPress]);
 
+  const imageUri = item.imageUrl || item.photoUrl || item.avatar;
+  const name = item.name || 'Sindhi Candidate';
+  const age = item.age || 25;
+  const height = item.height || "5'2\"";
+  const viewedDate = item.viewedOn || item.viewedDate || item.viewedAt || 'Recently';
+
   return (
     <TouchableOpacity
       activeOpacity={0.85}
@@ -116,9 +81,9 @@ const ViewedProfileCard: React.FC<CardProps> = React.memo(({ item, onPress }) =>
       <View style={styles.imageWrapper}>
         <Image
           source={
-            imageError || !item.imageUrl
-              ? require('../../../assets/images/user_avatar.png')
-              : { uri: item.imageUrl }
+            imageError || !imageUri
+              ? IMAGES.userAvatar
+              : { uri: imageUri }
           }
           style={styles.profileImage}
           resizeMode="cover"
@@ -135,50 +100,117 @@ const ViewedProfileCard: React.FC<CardProps> = React.memo(({ item, onPress }) =>
 
       {/* Profile Name */}
       <Text style={styles.profileName} numberOfLines={1} ellipsizeMode="tail">
-        {item.name}
+        {name}
       </Text>
 
       {/* Age & Height */}
       <Text style={styles.profileDetails} numberOfLines={1}>
-        {item.age} Yrs, {item.height}
+        {age} Yrs, {height}
       </Text>
 
       {/* Viewed On Date */}
       <Text style={styles.viewedOnLabel}>Viewed on:</Text>
       <Text style={styles.viewedOnDate} numberOfLines={1}>
-        {item.viewedOn}
+        {viewedDate}
       </Text>
     </TouchableOpacity>
   );
 });
 
-ViewedProfileCard.displayName = 'ViewedProfileCard';
 
 // -----------------------------------------------------------------------------
 // 4. MAIN WHO VIEWED YOU SECTION COMPONENT
 // -----------------------------------------------------------------------------
 const WhoViewedYouSection: React.FC<WhoViewedYouSectionProps> = React.memo(
   ({
-    data = DUMMY_WHO_VIEWED_YOU,
-    count = 10,
+    data: propData,
+    count: propCount,
     onProfilePress,
     onViewAll,
     containerStyle,
   }) => {
+    // TanStack Query with memoized selector for zero re-renders
+    const { data: apiData } = useApiQuery({
+      queryKey: WHO_VIEWED_YOU_QUERY_KEY,
+      url: ApiURL.whoViewedYouFeed,
+      params: WHO_VIEWED_YOU_PARAMS,
+      staleTime: 1000 * 60 * 5,
+      select: useCallback((res: any) => {
+        const raw = res?.data !== undefined ? res.data : res;
+        const list = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.list)
+            ? raw.list
+            : Array.isArray(raw?.items)
+              ? raw.items
+              : Array.isArray(res?.list)
+                ? res.list
+                : Array.isArray(res?.items)
+                  ? res.items
+                  : [];
+
+        const totalCount =
+          raw?.count ??
+          raw?.total ??
+          raw?.pagination?.total ??
+          res?.count ??
+          res?.total ??
+          list.length;
+
+        return {
+          profiles: list.map((item: any, idx: number): ViewedProfile => ({
+            id: String(item.id || item._id || item.matrimonyId || `wvy_${idx}`),
+            name: item.name || item.fullName || 'Sindhi Candidate',
+            age: item.age || 25,
+            height:
+              typeof item.height === 'number'
+                ? `${Math.floor(item.height / 30.48)}'${Math.round((item.height % 30.48) / 2.54)}"`
+                : (item.height || "5'2\""),
+            viewedOn: item.viewedOn || item.viewedDate || item.viewedAt || 'Recently',
+            imageUrl: item.imageUrl || item.photoUrl || item.avatar || item.photos?.[0]?.url || '',
+            isPrime: Boolean(item.isPrime || item.isPremium || (!item.isLocked && !item.upgradeRequired)),
+          })),
+          count: typeof totalCount === 'number' ? totalCount : list.length,
+        };
+      }, []),
+    });
+
+    const profiles = (apiData?.profiles && apiData.profiles.length > 0)
+      ? apiData.profiles
+      : (propData && propData.length > 0 ? propData : EMPTY_LIST);
+    const displayCount = propCount ?? apiData?.count ?? profiles.length;
+
+    const onProfilePressRef = useRef(onProfilePress);
+    onProfilePressRef.current = onProfilePress;
+
+    const onViewAllRef = useRef(onViewAll);
+    onViewAllRef.current = onViewAll;
+
+    const handleProfilePress = useCallback((profile: ViewedProfile) => {
+      onProfilePressRef.current?.(profile);
+    }, []);
+
+    const handleViewAllPress = useCallback(() => {
+      onViewAllRef.current?.();
+    }, []);
+
     const renderItem = useCallback(
       ({ item }: { item: ViewedProfile }) => (
-        <ViewedProfileCard item={item} onPress={onProfilePress} />
+        <ViewedProfileCard item={item} onPress={handleProfilePress} />
       ),
-      [onProfilePress],
+      [handleProfilePress],
     );
 
-    const keyExtractor = useCallback((item: ViewedProfile) => item.id, []);
+    const keyExtractor = useCallback(
+      (item: any, idx: number) => String(item.id || item._id || item.matrimonyId || idx),
+      [],
+    );
 
     return (
       <View style={[styles.container, containerStyle]}>
         {/* Section Header */}
         <View style={styles.headerRow}>
-          <Text style={styles.sectionTitle}>Who Viewed You ({count})</Text>
+          <Text style={styles.sectionTitle}>Who Viewed You ({displayCount})</Text>
           <Text style={styles.sectionSubtitle}>
             Members who have viewed your profile
           </Text>
@@ -187,8 +219,7 @@ const WhoViewedYouSection: React.FC<WhoViewedYouSectionProps> = React.memo(
         {/* Horizontal List of Cards */}
         <FlashList
           horizontal
-          data={data}
-          estimatedItemSize={moderateScale(150)}
+          data={profiles}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           showsHorizontalScrollIndicator={false}
@@ -199,7 +230,7 @@ const WhoViewedYouSection: React.FC<WhoViewedYouSectionProps> = React.memo(
         {/* "View all >" Outline Capsule Button */}
         <LoadingButton
           title="View all"
-          onPress={onViewAll}
+          onPress={handleViewAllPress}
           variant="outline"
           style={styles.viewAllBtn}
           textStyle={styles.viewAllText}

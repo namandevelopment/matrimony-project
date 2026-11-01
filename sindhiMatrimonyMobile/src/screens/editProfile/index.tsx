@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import {
   Alert,
   Image,
@@ -10,17 +10,20 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
-import { selectProfile } from '../../redux/useSelector';
+import { selectProfile, selectPartnerPreferences } from '../../redux/useSelector';
 import Storage from '../../storage/Storage';
+import { apiFetch, ApiURL } from '../../redux/apiService';
 import CustomHeader from '../../components/headers/CustomHeader';
 import CustomLucidIcons from '../../components/CustomLucidIcons';
 import fontFamily from '../../components/fontFamily';
 import { showToast } from '../../utils/CustomToast';
 import PhotoPickerModal from '../../customModals/PhotoPickerModal';
+import usePermissions from '../../customHooks/usePermissions';
 
 const HEADER_COLOR = '#DB2F3C';
 
@@ -30,8 +33,56 @@ interface DetailItem {
   isMore?: boolean;
 }
 
+interface FamilyDetailsData {
+  familyValue: string;
+  familyType: string;
+  familyStatus: string;
+  fatherOccupation: string;
+  motherOccupation: string;
+  familyOrigin: string;
+  noOfBrothers: string;
+  noOfSisters: string;
+  brothersMarried: string;
+  sistersMarried: string;
+}
+
+const FAMILY_VALUES = ['Orthodox', 'Traditional', 'Moderate', 'Liberal'];
+const FAMILY_TYPES = ['Joint family', 'Nuclear family'];
+const FAMILY_STATUSES = ['Middle class', 'Upper middle class', 'Rich / Affluent', 'High class'];
+const SIBLING_COUNTS = ['None', '1', '2', '3', '4', '5+'];
+const MARRIED_COUNTS = ['None', '1', '2', '3', '4', 'All'];
+
+const DEFAULT_SECTION_VALUES: Record<string, string> = {
+  'A Few Lines About Myself': '',
+  'Basic Details': '',
+  'Religious Information': '',
+  'Hobbies & Interests': '',
+  'Habits': '',
+  'Family Details': '',
+  'About my family': '',
+  'A Few Lines About My Partner': '',
+  'Religious Preference': '',
+  'Professional Preference': '',
+  'Location Preference': '',
+  'Habits Preferences': '',
+};
+
+const getPreferenceValue = (sections: any[], key: string, fallback: string): string => {
+  if (!Array.isArray(sections)) return fallback;
+  for (const sec of sections) {
+    if (sec.fields && Array.isArray(sec.fields)) {
+      const found = sec.fields.find((f: any) => f.key === key);
+      if (found && found.value) return found.value;
+    }
+  }
+  return fallback;
+};
+
 const EditProfile: React.FC = () => {
   const navigation = useNavigation<any>();
+  const { width: screenWidth } = useWindowDimensions();
+  const heroScrollRef = useRef<ScrollView>(null);
+  const { requestGalleryPermission, requestCameraPermission } = usePermissions();
 
   // Profile and photos state
   const storedUser = Storage.getItemSync<any>('user') || {};
@@ -73,6 +124,243 @@ const EditProfile: React.FC = () => {
   // State for interactive modal editing
   const [activeEditSection, setActiveEditSection] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
+  const [savedValues, setSavedValues] = useState<Record<string, string>>(() => {
+    try {
+      const stored = Storage.getItemSync<any>('profileSavedValues');
+      if (stored) return typeof stored === 'string' ? JSON.parse(stored) : stored;
+    } catch (e) {}
+    return {};
+  });
+
+  const bioValue =
+    savedValues['A Few Lines About Myself'] ||
+    profile?.aboutMe ||
+    profile?.about ||
+    profile?.bio ||
+    '';
+
+  const hobbiesValue =
+    savedValues['Hobbies & Interests'] ||
+    (Array.isArray(profile?.hobbies) ? profile.hobbies.join(', ') : profile?.hobbies) ||
+    profile?.interests ||
+    '';
+
+  const aboutFamilyValue =
+    savedValues['About my family'] ||
+    profile?.family?.aboutFamily ||
+    profile?.aboutFamily ||
+    '';
+
+  const primaryPhone =
+    profile?.phone ||
+    profile?.mobile ||
+    storedUser?.phone ||
+    storedUser?.mobile ||
+    '+91 98765 43210';
+  const primaryEmail =
+    profile?.email ||
+    storedUser?.email ||
+    'user@sindhimatrimony.com';
+  const [alternatePhone, setAlternatePhone] = useState<string>(() => {
+    return (
+      profile?.alternatePhone ||
+      profile?.alternateMobile ||
+      storedUser?.alternatePhone ||
+      Storage.getItemSync<string>('alternatePhone') ||
+      ''
+    );
+  });
+  const [hasHoroscope, setHasHoroscope] = useState<boolean>(() => {
+    const val = Storage.getItemSync<any>('hasHoroscope');
+    return val === true || val === 'true' || !!profile?.hasHoroscope || !!profile?.horoscope;
+  });
+
+  // Family Details State
+  const [familyDetails, setFamilyDetails] = useState<FamilyDetailsData>(() => {
+    try {
+      const saved = Storage.getItemSync<any>('familyDetailsData');
+      if (saved) {
+        const parsed = typeof saved === 'string' ? JSON.parse(saved) : saved;
+        return {
+          ...parsed,
+          fatherOccupation: parsed.fatherOccupation === '6' ? 'Passed Away' : (parsed.fatherOccupation || 'Passed Away'),
+          motherOccupation: parsed.motherOccupation === '1' ? 'Homemaker' : (parsed.motherOccupation || 'Homemaker'),
+        };
+      }
+    } catch (e) { }
+    const fam = profile?.family || storedUser?.family || {};
+    return {
+      familyValue: fam?.familyValue || 'Moderate',
+      familyType: fam?.familyType || 'Nuclear family',
+      familyStatus: fam?.familyStatus || 'Upper middle class',
+      fatherOccupation: fam?.fatherOccupation || 'Passed Away',
+      motherOccupation: fam?.motherOccupation || 'Homemaker',
+      familyOrigin: fam?.origin || fam?.familyOrigin || profile?.location?.state || 'Not Specified',
+      noOfBrothers: fam?.brothers || fam?.noOfBrothers || 'None',
+      noOfSisters: fam?.sisters || fam?.noOfSisters || 'None',
+      brothersMarried: fam?.brothersMarried || 'None',
+      sistersMarried: fam?.sistersMarried || 'None',
+    };
+  });
+
+  const [isFamilyModalVisible, setIsFamilyModalVisible] = useState(false);
+  const [familyFormData, setFamilyFormData] = useState<FamilyDetailsData>(familyDetails);
+
+  // Active inline custom dropdown
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+
+  const toggleDropdown = useCallback((field: string) => {
+    setActiveDropdown(prev => (prev === field ? null : field));
+  }, []);
+
+  const handleSelectOption = useCallback((field: keyof FamilyDetailsData, value: string) => {
+    setFamilyFormData((prev: FamilyDetailsData) => ({
+      ...prev,
+      [field]: value,
+    }));
+    setActiveDropdown(null);
+  }, []);
+
+  const renderCustomDropdown = (
+    field: keyof FamilyDetailsData,
+    options: string[]
+  ) => {
+    if (activeDropdown !== field) return null;
+    return (
+      <View style={styles.dropdownMenu}>
+        {options.map((opt, idx) => {
+          const isSelected = familyFormData[field] === opt;
+          return (
+            <TouchableOpacity
+              key={`${opt}-${idx}`}
+              style={[
+                styles.dropdownMenuItem,
+                isSelected && styles.dropdownMenuItemSelected,
+                idx === options.length - 1 && { borderBottomWidth: 0 },
+              ]}
+              activeOpacity={0.7}
+              onPress={() => handleSelectOption(field, opt)}
+            >
+              <Text
+                style={[
+                  styles.dropdownMenuText,
+                  isSelected && styles.dropdownMenuTextSelected,
+                ]}
+              >
+                {opt}
+              </Text>
+              {isSelected && (
+                <CustomLucidIcons name="check" size={16} color={HEADER_COLOR} />
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
+
+  const handleOpenFamilyModal = useCallback(() => {
+    setFamilyFormData(familyDetails);
+    setIsFamilyModalVisible(true);
+  }, [familyDetails]);
+
+  const handleSaveFamilyDetails = useCallback(() => {
+    setFamilyDetails(familyFormData);
+    Storage.setItemSync('familyDetailsData', JSON.stringify(familyFormData));
+    try {
+      const currentUser = Storage.getItemSync<any>('user') || {};
+      Storage.setItemSync('user', {
+        ...currentUser,
+        familyDetails: familyFormData,
+      });
+    } catch (e) { }
+
+    apiFetch({
+      url: ApiURL.updateProfile,
+      method: 'POST',
+      payload: {
+        family: {
+          familyValue: familyFormData.familyValue,
+          familyType: familyFormData.familyType,
+          familyStatus: familyFormData.familyStatus,
+          fatherOccupation: familyFormData.fatherOccupation,
+          motherOccupation: familyFormData.motherOccupation,
+          origin: familyFormData.familyOrigin,
+          brothers: familyFormData.noOfBrothers,
+          sisters: familyFormData.noOfSisters,
+          brothersMarried: familyFormData.brothersMarried,
+          sistersMarried: familyFormData.sistersMarried,
+        },
+      },
+      showErrorToast: false,
+    }).catch(() => { });
+
+    showToast({
+      type: 'success',
+      message: 'Family details updated successfully',
+    });
+    setIsFamilyModalVisible(false);
+  }, [familyFormData]);
+
+  const reduxPartnerPrefs = useSelector(selectPartnerPreferences);
+  const [partnerPrefs, setPartnerPrefs] = useState<any[]>(() => {
+    return reduxPartnerPrefs || Storage.getItemSync<any[]>('partnerPreferences') || [];
+  });
+
+  React.useEffect(() => {
+    if (reduxPartnerPrefs && Array.isArray(reduxPartnerPrefs) && reduxPartnerPrefs.length > 0) {
+      setPartnerPrefs(reduxPartnerPrefs);
+    }
+  }, [reduxPartnerPrefs]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const saved = Storage.getItemSync<any[]>('partnerPreferences');
+      if (saved && Array.isArray(saved) && saved.length > 0) {
+        setPartnerPrefs(saved);
+      }
+      const horo = Storage.getItemSync<any>('hasHoroscope');
+      if (horo === true || horo === 'true') {
+        setHasHoroscope(true);
+      }
+      const alt = Storage.getItemSync<string>('alternatePhone');
+      if (alt) {
+        setAlternatePhone(alt);
+      }
+      try {
+        const savedFam = Storage.getItemSync<any>('familyDetailsData');
+        if (savedFam) {
+          const parsed = typeof savedFam === 'string' ? JSON.parse(savedFam) : savedFam;
+          setFamilyDetails({
+            ...parsed,
+            fatherOccupation: parsed.fatherOccupation === '6' ? 'Passed Away' : (parsed.fatherOccupation || 'Passed Away'),
+            motherOccupation: parsed.motherOccupation === '1' ? 'Homemaker' : (parsed.motherOccupation || 'Homemaker'),
+          });
+        }
+      } catch (e) { }
+
+      // Sync latest data from backend API
+      apiFetch({
+        url: ApiURL.getProfile,
+        method: 'GET',
+        showErrorToast: false,
+      })
+        .then((res: any) => {
+          const profileData = res?.data?.profile || res?.data;
+          if (profileData) {
+            if (profileData.alternatePhone !== undefined) {
+              setAlternatePhone(profileData.alternatePhone || '');
+              Storage.setItemSync('alternatePhone', profileData.alternatePhone || '');
+            }
+            if (profileData.hasHoroscope || profileData.horoscope) {
+              setHasHoroscope(true);
+              Storage.setItemSync('hasHoroscope', 'true');
+            }
+          }
+        })
+        .catch(() => { });
+    }, []),
+  );
 
   const handleBack = useCallback(() => {
     if (navigation?.canGoBack?.()) {
@@ -82,97 +370,120 @@ const EditProfile: React.FC = () => {
     }
   }, [navigation]);
 
-  const openCameraPicker = useCallback(() => {
+  const openCameraPicker = useCallback(async () => {
     try {
-      const ImageCropPicker = require('react-native-image-crop-picker').default;
-      ImageCropPicker.openCamera({
-        width: 800,
-        height: 800,
-        cropping: true,
-        cropperCircleOverlay: false,
-        compressImageQuality: 0.8,
-      })
-        .then((image: any) => {
-          if (image?.path) {
-            setPhotos(prev => {
-              if (targetSlotIndex !== null && targetSlotIndex < prev.length) {
-                const updated = [...prev];
-                updated[targetSlotIndex] = image.path;
-                return updated;
-              }
-              return [image.path, ...prev];
-            });
-            setSelectedPhotoIndex(targetSlotIndex !== null ? targetSlotIndex : 0);
-            setHasImageError(false);
-            showToast({ type: 'success', message: 'Photo uploaded successfully' });
-          }
-        })
-        .catch((err: any) => {
-          if (err?.code !== 'E_PICKER_CANCELLED') {
-            showToast({ type: 'info', message: 'Camera closed' });
-          }
-        });
-    } catch {
-      showToast({ type: 'info', message: 'Camera opened' });
-    }
-  }, [targetSlotIndex]);
+      const hasPermission = await requestCameraPermission();
+      if (!hasPermission) {
+        showToast({ type: 'info', message: 'Camera permission denied' });
+        return;
+      }
 
-  const openGalleryPicker = useCallback(() => {
-    try {
       const ImageCropPicker = require('react-native-image-crop-picker').default;
-      ImageCropPicker.openPicker({
-        width: 800,
-        height: 800,
-        cropping: true,
-        compressImageQuality: 0.8,
-        mediaType: 'photo',
-      })
-        .then((image: any) => {
-          if (image?.path) {
-            setPhotos(prev => {
-              if (targetSlotIndex !== null && targetSlotIndex < prev.length) {
-                const updated = [...prev];
-                updated[targetSlotIndex] = image.path;
-                return updated;
-              }
-              return [...prev, image.path];
-            });
-            setSelectedPhotoIndex(targetSlotIndex !== null ? targetSlotIndex : photos.length);
-            setHasImageError(false);
-            showToast({ type: 'success', message: 'Photo added successfully' });
-          }
-        })
-        .catch((err: any) => {
-          if (err?.code !== 'E_PICKER_CANCELLED') {
-            showToast({ type: 'info', message: 'Gallery closed' });
-          }
+      let image: any;
+      try {
+        image = await ImageCropPicker.openCamera({
+          width: 800,
+          height: 800,
+          cropping: true,
+          cropperCircleOverlay: false,
+          compressImageQuality: 0.8,
+          cropperToolbarTitle: 'Crop Photo',
         });
-    } catch {
-      showToast({ type: 'info', message: 'Gallery opened' });
+      } catch (cropErr: any) {
+        if (cropErr?.code === 'E_PICKER_CANCELLED') return;
+        image = await ImageCropPicker.openCamera({
+          compressImageQuality: 0.8,
+        });
+      }
+
+      if (image?.path) {
+        setPhotos(prev => {
+          if (targetSlotIndex !== null && targetSlotIndex < prev.length) {
+            const updated = [...prev];
+            updated[targetSlotIndex] = image.path;
+            return updated;
+          }
+          return [image.path, ...prev];
+        });
+        setSelectedPhotoIndex(targetSlotIndex !== null ? targetSlotIndex : 0);
+        setHasImageError(false);
+        showToast({ type: 'success', message: 'Photo uploaded successfully' });
+      }
+    } catch (err: any) {
+      if (err?.code !== 'E_PICKER_CANCELLED') {
+        showToast({ type: 'info', message: 'Camera closed' });
+      }
     }
-  }, [targetSlotIndex, photos.length]);
+  }, [requestCameraPermission, targetSlotIndex]);
+
+  const openGalleryPicker = useCallback(async () => {
+    try {
+      const hasPermission = await requestGalleryPermission();
+      if (!hasPermission) {
+        showToast({ type: 'info', message: 'Gallery permission denied' });
+        return;
+      }
+
+      const ImageCropPicker = require('react-native-image-crop-picker').default;
+      let image: any;
+      try {
+        image = await ImageCropPicker.openPicker({
+          width: 800,
+          height: 800,
+          cropping: true,
+          compressImageQuality: 0.8,
+          mediaType: 'photo',
+          cropperToolbarTitle: 'Crop Photo',
+        });
+      } catch (cropErr: any) {
+        if (cropErr?.code === 'E_PICKER_CANCELLED') return;
+        image = await ImageCropPicker.openPicker({
+          compressImageQuality: 0.8,
+          mediaType: 'photo',
+        });
+      }
+
+      if (image?.path) {
+        setPhotos(prev => {
+          if (targetSlotIndex !== null && targetSlotIndex < prev.length) {
+            const updated = [...prev];
+            updated[targetSlotIndex] = image.path;
+            return updated;
+          }
+          return [...prev, image.path];
+        });
+        setSelectedPhotoIndex(targetSlotIndex !== null ? targetSlotIndex : photos.length);
+        setHasImageError(false);
+        showToast({ type: 'success', message: 'Photo added successfully' });
+      }
+    } catch (err: any) {
+      if (err?.code !== 'E_PICKER_CANCELLED') {
+        showToast({ type: 'info', message: 'Gallery closed' });
+      }
+    }
+  }, [requestGalleryPermission, targetSlotIndex, photos.length]);
 
   const handleAddPhoto = useCallback(() => {
-    if (photos.length >= 6) {
-      showToast({ type: 'info', message: 'Maximum 6 photos allowed' });
-      return;
-    }
-    setTargetSlotIndex(null);
+    setTargetSlotIndex(selectedPhotoIndex < photos.length ? selectedPhotoIndex : null);
     setPhotoPickerVisible(true);
-  }, [photos.length]);
+  }, [photos.length, selectedPhotoIndex]);
 
   const handleSlotPress = useCallback(
     (index: number) => {
       if (index < photos.length) {
         setSelectedPhotoIndex(index);
         setHasImageError(false);
+        heroScrollRef.current?.scrollTo({ x: index * screenWidth, animated: true });
+        if (index === selectedPhotoIndex) {
+          setTargetSlotIndex(index);
+          setPhotoPickerVisible(true);
+        }
+      } else {
         setTargetSlotIndex(index);
         setPhotoPickerVisible(true);
-      } else {
-        handleAddPhoto();
       }
     },
-    [photos.length, handleAddPhoto],
+    [photos.length, screenWidth, selectedPhotoIndex],
   );
 
   const handleSetPrimary = useCallback(() => {
@@ -198,32 +509,94 @@ const EditProfile: React.FC = () => {
 
   const handleEditAction = useCallback((sectionName: string, initialContent?: string) => {
     setActiveEditSection(sectionName);
-    setEditingValue(initialContent || '');
-  }, []);
+    let fallback = '';
+    if (sectionName === 'A Few Lines About Myself') fallback = bioValue;
+    else if (sectionName === 'Hobbies & Interests') fallback = hobbiesValue;
+    else if (sectionName === 'About my family') fallback = aboutFamilyValue;
+    setEditingValue(initialContent || savedValues[sectionName] || fallback || DEFAULT_SECTION_VALUES[sectionName] || '');
+  }, [savedValues, bioValue, hobbiesValue, aboutFamilyValue]);
 
   const handleSaveEdit = useCallback(() => {
+    if (activeEditSection === 'Alternate Mobile Number') {
+      const trimmed = editingValue.trim();
+      if (trimmed.length > 0 && !/^\+?[0-9]{10,13}$/.test(trimmed.replace(/[\s-]/g, ''))) {
+        showToast({
+          type: 'error',
+          message: 'Please enter a valid 10-digit mobile number',
+        });
+        return;
+      }
+      setAlternatePhone(trimmed);
+      Storage.setItemSync('alternatePhone', trimmed);
+      try {
+        const currentUser = Storage.getItemSync<any>('user') || {};
+        Storage.setItemSync('user', { ...currentUser, alternatePhone: trimmed });
+      } catch (e) {
+        // ignore
+      }
+
+      // Sync with backend API
+      apiFetch({
+        url: ApiURL.updateProfile,
+        method: 'POST',
+        payload: { alternatePhone: trimmed },
+        showErrorToast: false,
+      }).catch(() => { });
+
+      showToast({
+        type: 'success', position: 'top',
+        message: trimmed ? 'Alternate mobile number saved' : 'Alternate number removed',
+      });
+      setActiveEditSection(null);
+      return;
+    }
+
     if (activeEditSection) {
+      setSavedValues(prev => {
+        const next = { ...prev, [activeEditSection]: editingValue };
+        try {
+          Storage.setItemSync('profileSavedValues', JSON.stringify(next));
+        } catch (e) {}
+        return next;
+      });
       showToast({
         type: 'success',
         message: `${activeEditSection} updated successfully`,
       });
       setActiveEditSection(null);
     }
-  }, [activeEditSection]);
+  }, [activeEditSection, editingValue]);
 
-  const handleActionStripPress = useCallback((actionName: string) => {
-    showToast({
-      type: 'info',
-      message: `${actionName} opened`,
+  const handleActionStripPress = useCallback((action: 'alternate_phone' | 'email' | 'horoscope') => {
+    if (action === 'alternate_phone') {
+      setActiveEditSection('Alternate Mobile Number');
+      setEditingValue(alternatePhone);
+    } else if (action === 'email') {
+      Alert.alert(
+        'Registered Email',
+        `Registered Email: ${primaryEmail}\n\nEmail ID cannot be changed because it is linked to your login credentials.`,
+        [{ text: 'OK' }]
+      );
+    } else if (action === 'horoscope') {
+      if (hasHoroscope) {
+        navigation.navigate('Horoscope');
+      } else {
+        navigation.navigate('AddHoroscope');
+      }
+    }
+  }, [alternatePhone, primaryEmail, hasHoroscope, navigation]);
+
+  const handlePartnerPreferenceNavigation = useCallback(() => {
+    navigation.navigate('PartnerPreferenceScreen', {
+      onUpdated: (newSections: any[]) => {
+        setPartnerPrefs(newSections);
+      },
     });
-  }, []);
+  }, [navigation]);
 
   const handleCompulsoryFilters = useCallback(() => {
-    showToast({
-      type: 'info',
-      message: 'Compulsory Filters opened',
-    });
-  }, []);
+    handlePartnerPreferenceNavigation();
+  }, [handlePartnerPreferenceNavigation]);
 
   const handleMorePress = useCallback((topic: string) => {
     Alert.alert('Education Details', topic);
@@ -239,11 +612,7 @@ const EditProfile: React.FC = () => {
           {item.value}
           {item.isMore && (
             <Text
-              onPress={() =>
-                handleMorePress(
-                  'Bachelors - Engineering / Computers / Others, Masters - Science / Engineering',
-                )
-              }
+              onPress={() => handleMorePress(item.value)}
               style={styles.moreLink}
             >
               {' '}more
@@ -286,13 +655,32 @@ const EditProfile: React.FC = () => {
       >
         {/* Profile Hero Photo Area */}
         <View style={styles.photoContainer}>
-          {photos.length > 0 && photos[selectedPhotoIndex] && !hasImageError ? (
-            <Image
-              source={{ uri: photos[selectedPhotoIndex] }}
-              style={styles.heroAvatarImage}
-              resizeMode="cover"
-              onError={() => setHasImageError(true)}
-            />
+          {photos.length > 0 && !hasImageError ? (
+            <ScrollView
+              ref={heroScrollRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(e) => {
+                const offsetX = e.nativeEvent.contentOffset.x;
+                const index = Math.round(offsetX / screenWidth);
+                if (index >= 0 && index < photos.length) {
+                  setSelectedPhotoIndex(index);
+                }
+              }}
+              style={styles.heroScrollView}
+            >
+              {photos.map((photoUrl, index) => (
+                <View key={`hero-photo-${index}`} style={{ width: screenWidth, height: 270 }}>
+                  <Image
+                    source={{ uri: photoUrl }}
+                    style={styles.heroAvatarImage}
+                    resizeMode="cover"
+                    onError={() => setHasImageError(true)}
+                  />
+                </View>
+              ))}
+            </ScrollView>
           ) : (
             <View style={styles.heroFallbackWrap}>
               <View style={styles.heroAvatarCircle}>
@@ -303,7 +691,7 @@ const EditProfile: React.FC = () => {
           )}
 
           {/* Hero Top Badges */}
-          <View style={styles.heroTopBar}>
+          <View style={styles.heroTopBar} pointerEvents="box-none">
             <View style={styles.mainBadge}>
               <CustomLucidIcons name="star" color="#F59E0B" size={12} />
               <Text style={styles.mainBadgeText}>
@@ -313,12 +701,29 @@ const EditProfile: React.FC = () => {
 
             <View style={styles.countBadge}>
               <CustomLucidIcons name="image" color="#FFFFFF" size={12} />
-              <Text style={styles.countBadgeText}>{photos.length}/6</Text>
+              <Text style={styles.countBadgeText}>
+                {photos.length > 0 ? `${selectedPhotoIndex + 1}/${photos.length}` : '0/6'}
+              </Text>
             </View>
           </View>
 
+          {/* Carousel Pagination Dots */}
+          {photos.length > 1 && (
+            <View style={styles.heroDotsContainer} pointerEvents="none">
+              {photos.map((_, dotIdx) => (
+                <View
+                  key={`hero-dot-${dotIdx}`}
+                  style={[
+                    styles.heroDot,
+                    dotIdx === selectedPhotoIndex ? styles.heroActiveDot : styles.heroInactiveDot,
+                  ]}
+                />
+              ))}
+            </View>
+          )}
+
           {/* Subtle gradient overlay at bottom for clarity */}
-          <View style={styles.heroBottomOverlay} />
+          <View style={styles.heroBottomOverlay} pointerEvents="none" />
 
           {/* Add / Change Photo CTA Button */}
           <TouchableOpacity
@@ -408,33 +813,37 @@ const EditProfile: React.FC = () => {
         <View style={styles.actionStrip}>
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => handleActionStripPress('Edit Mobile Number')}
+            onPress={() => handleActionStripPress('alternate_phone')}
             style={styles.actionColumn}
           >
             <CustomLucidIcons name="phone" color="#4CAF50" size={19} />
-            <Text style={styles.actionLabel}>EDIT MOBILE{'\n'}NUMBER</Text>
+            <Text style={styles.actionLabel}>
+              {alternatePhone ? 'EDIT ALTERNATE' : 'ADD ALTERNATE'}{'\n'}NUMBER
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.actionDivider} />
 
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => handleActionStripPress('Edit Mail')}
+            onPress={() => handleActionStripPress('email')}
             style={styles.actionColumn}
           >
             <CustomLucidIcons name="mail" color="#4CAF50" size={19} />
-            <Text style={styles.actionLabelSingle}>EDIT MAIL</Text>
+            <Text style={styles.actionLabel}>REGISTERED{'\n'}EMAIL</Text>
           </TouchableOpacity>
 
           <View style={styles.actionDivider} />
 
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => handleActionStripPress('Add Horoscope')}
+            onPress={() => handleActionStripPress('horoscope')}
             style={styles.actionColumn}
           >
             <CustomLucidIcons name="orbit" color="#4CAF50" size={19} />
-            <Text style={styles.actionLabelSingle}>ADD HOROSCOPE</Text>
+            <Text style={styles.actionLabelSingle}>
+              {hasHoroscope ? 'VIEW HOROSCOPE' : 'ADD HOROSCOPE'}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -447,17 +856,8 @@ const EditProfile: React.FC = () => {
           {/* A Few Lines About Myself */}
           <View style={styles.subSectionBlock}>
             {renderSubSectionHeader('A Few Lines About Myself')}
-            <Text style={styles.bioText}>
-              I’m someone who believes in living life with an open mind and a
-              straightforward heart. I don’t like to hide anything—I value honesty
-              and clarity in every part of life. I enjoy spending quality time with
-              my cousins and brothers; family bonds mean a lot to me. Fitness is a
-              big part of who I am—I love bodybuilding, dancing, and singing. Staying
-              active keeps me energized and balanced. I have a deep love for animals,
-              especially dogs—they hold a special place in my heart. Exploring new
-              places and learning about different cultures and histories excites me.
-              I’m also very drawn to mythology and history, and I deeply respect our
-              elders and the values they carry. My philosophy is simple: “The way...
+            <Text style={bioValue ? styles.bioText : styles.notSpecifiedText}>
+              {bioValue || 'Not Specified'}
             </Text>
           </View>
 
@@ -465,10 +865,10 @@ const EditProfile: React.FC = () => {
           <View style={styles.subSectionBlock}>
             {renderSubSectionHeader('Basic Details')}
             {[
-              { label: 'Country', value: 'India' },
-              { label: 'State', value: 'Madhya Pradesh' },
-              { label: 'City', value: 'Indore' },
-              { label: 'Citizenship', value: 'India' },
+              { label: 'Country', value: savedValues['Country'] || profile?.location?.country || profile?.country || 'India' },
+              { label: 'State', value: savedValues['State'] || profile?.location?.state || profile?.state || 'Not Specified' },
+              { label: 'City', value: savedValues['City'] || profile?.location?.city || profile?.city || 'Not Specified' },
+              { label: 'Citizenship', value: savedValues['Citizenship'] || profile?.citizenship || profile?.location?.country || profile?.country || 'India' },
             ].map(renderDetailRow)}
           </View>
 
@@ -478,24 +878,33 @@ const EditProfile: React.FC = () => {
             {[
               {
                 label: 'Caste/Division',
-                value: 'Kokanastha Maharashtrian Brahmin-kokanastha',
+                value: savedValues['Caste/Division'] || profile?.caste || profile?.religion || 'Sindhi',
               },
               {
                 label: 'Subcaste',
-                value: 'Maharashtrian Brahmin-kokanastha',
+                value: savedValues['Subcaste'] || profile?.subcaste || 'Sindhi',
               },
-              { label: 'Star', value: 'Poorvaphalguni' },
-              { label: 'Raasi', value: 'Simha (Leo)' },
-              { label: 'Gothra', value: 'Shrimukh Shandilya' },
-              { label: 'Manglik', value: 'No' },
+              { label: 'Star', value: savedValues['Star'] || profile?.star || profile?.nakshatra || profile?.horoscope?.star || 'Not Specified' },
+              { label: 'Raasi', value: savedValues['Raasi'] || profile?.raasi || profile?.rashi || profile?.horoscope?.rashi || 'Not Specified' },
+              { label: 'Gothra', value: savedValues['Gothra'] || profile?.gotra || profile?.gothra || 'Not Specified' },
+              {
+                label: 'Manglik',
+                value:
+                  savedValues['Manglik'] ||
+                  (profile?.manglik === 'MANGLIK'
+                    ? 'Yes'
+                    : profile?.manglik === 'NON_MANGLIK'
+                    ? 'No'
+                    : profile?.manglik || 'Not Specified'),
+              },
             ].map(renderDetailRow)}
           </View>
 
           {/* Hobbies & Interests */}
           <View style={styles.subSectionBlock}>
             {renderSubSectionHeader('Hobbies & Interests')}
-            <Text style={styles.notSpecifiedText}>
-              Music, Bodybuilding, Dancing, Travel, Pets
+            <Text style={hobbiesValue ? styles.bioText : styles.notSpecifiedText}>
+              {hobbiesValue || 'Not Specified'}
             </Text>
           </View>
 
@@ -503,9 +912,33 @@ const EditProfile: React.FC = () => {
           <View style={styles.subSectionBlock}>
             {renderSubSectionHeader('Habits')}
             {[
-              { label: 'Eating Habits', value: 'Vegetarian' },
-              { label: 'Smoking Habits', value: 'Non-smoker' },
-              { label: 'Drinking Habits', value: 'Non-drinker' },
+              {
+                label: 'Eating Habits',
+                value:
+                  savedValues['Eating Habits'] ||
+                  profile?.diet ||
+                  profile?.habits?.eating ||
+                  profile?.eatingHabits ||
+                  'Not Specified',
+              },
+              {
+                label: 'Smoking Habits',
+                value:
+                  savedValues['Smoking Habits'] ||
+                  profile?.smoking ||
+                  profile?.habits?.smoking ||
+                  profile?.smokingHabits ||
+                  'Non-smoker',
+              },
+              {
+                label: 'Drinking Habits',
+                value:
+                  savedValues['Drinking Habits'] ||
+                  profile?.drinking ||
+                  profile?.habits?.drinking ||
+                  profile?.drinkingHabits ||
+                  'Non-drinker',
+              },
             ].map(renderDetailRow)}
           </View>
 
@@ -521,7 +954,12 @@ const EditProfile: React.FC = () => {
               <CustomLucidIcons name="check" size={15} color="#10B981" strokeWidth={3} />
               <Text style={styles.trustVerificationTitle}>Contact Verification</Text>
             </View>
-            <Text style={styles.trustSubtext}>Mobile number verified</Text>
+            <Text style={styles.trustSubtext}>Primary mobile verified ({primaryPhone})</Text>
+            {alternatePhone ? (
+              <Text style={[styles.trustSubtext, { marginTop: 4, color: '#374151' }]}>
+                Alternate mobile: {alternatePhone}
+              </Text>
+            ) : null}
             <Text style={styles.trustExplanation}>
               We have verified the mobile number provided by the user.
             </Text>
@@ -529,24 +967,27 @@ const EditProfile: React.FC = () => {
 
           {/* Family Details */}
           <View style={styles.subSectionBlock}>
-            {renderSubSectionHeader('Family Details')}
+            {renderSubSectionHeader('Family Details', handleOpenFamilyModal)}
             {[
-              { label: 'Family Type', value: 'Nuclear family' },
-              { label: 'Family Status', value: 'Upper middle class' },
-              { label: "Father's Occupation", value: 'Passed Away' },
-              { label: "Mother's Occupation", value: 'Homemaker' },
-              { label: 'Family Origin', value: 'Maharashtra' },
-              { label: 'No. of Brothers', value: 'None' },
-              { label: 'No. of Sisters', value: 'None' },
-              { label: 'Brothers Married', value: 'None' },
-              { label: 'Sisters Married', value: 'None' },
+              { label: 'Family Value', value: familyDetails.familyValue || 'Moderate' },
+              { label: 'Family Type', value: familyDetails.familyType || 'Nuclear family' },
+              { label: 'Family Status', value: familyDetails.familyStatus || 'Upper middle class' },
+              { label: "Father's Occupation", value: familyDetails.fatherOccupation || 'Passed Away' },
+              { label: "Mother's Occupation", value: familyDetails.motherOccupation || 'Homemaker' },
+              { label: 'Family Origin', value: familyDetails.familyOrigin || 'Not Specified' },
+              { label: 'No. of Brothers', value: familyDetails.noOfBrothers || 'None' },
+              { label: 'No. of Sisters', value: familyDetails.noOfSisters || 'None' },
+              { label: 'Brothers Married', value: familyDetails.brothersMarried || 'None' },
+              { label: 'Sisters Married', value: familyDetails.sistersMarried || 'None' },
             ].map(renderDetailRow)}
           </View>
 
           {/* About my family */}
           <View style={styles.subSectionBlock}>
             {renderSubSectionHeader('About my family')}
-            <Text style={styles.notSpecifiedText}>Not Specified</Text>
+            <Text style={aboutFamilyValue ? styles.bioText : styles.notSpecifiedText}>
+              {aboutFamilyValue || 'Not Specified'}
+            </Text>
           </View>
         </View>
 
@@ -554,8 +995,15 @@ const EditProfile: React.FC = () => {
         {/* SECTION 2: Partner Preference */}
         {/* ========================================================================= */}
         <View style={styles.sectionContainer}>
-          <View style={styles.categoryHeaderWithButton}>
-            <Text style={styles.categoryTitle}>Partner Preference</Text>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handlePartnerPreferenceNavigation}
+            style={styles.categoryHeaderWithButton}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={styles.categoryTitle}>Partner Preference</Text>
+              <CustomLucidIcons name="chevron-right" size={17} color="#DB2F3C" style={{ marginLeft: 4 }} />
+            </View>
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={handleCompulsoryFilters}
@@ -563,66 +1011,73 @@ const EditProfile: React.FC = () => {
             >
               <Text style={styles.compulsoryFiltersText}>Compulsory Filters</Text>
             </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
 
           {/* A Few Lines About My Partner */}
           <View style={styles.subSectionBlock}>
-            {renderSubSectionHeader('A Few Lines About My Partner')}
-            <Text style={styles.notSpecifiedText}>Not Specified</Text>
+            {renderSubSectionHeader('A Few Lines About My Partner', handlePartnerPreferenceNavigation)}
+            <Text style={styles.notSpecifiedText}>
+              {savedValues['A Few Lines About My Partner'] || 'Not Specified'}
+            </Text>
           </View>
 
           {/* Basic Details (Partner Preference) */}
           <View style={styles.subSectionBlock}>
-            {renderSubSectionHeader('Basic Details')}
+            {renderSubSectionHeader('Basic Details', handlePartnerPreferenceNavigation)}
             {[
-              { label: 'Age', value: '24 - 31 Yrs' },
-              { label: 'Height', value: '5 ft - 6 ft' },
-              { label: 'Marital Status', value: 'Unmarried' },
-              { label: 'Physical Status', value: 'Normal' },
-              { label: 'Mother Tongue', value: 'Marathi, Konkani' },
+              { label: 'Age', value: getPreferenceValue(partnerPrefs, 'age', 'Any') },
+              { label: 'Height', value: getPreferenceValue(partnerPrefs, 'height', 'Any') },
+              { label: 'Marital Status', value: getPreferenceValue(partnerPrefs, 'maritalStatus', 'Any') },
+              { label: 'Physical Status', value: getPreferenceValue(partnerPrefs, 'physicalStatus', 'Any') },
+              { label: 'Mother Tongue', value: getPreferenceValue(partnerPrefs, 'motherTongue', 'Sindhi') },
             ].map(renderDetailRow)}
           </View>
 
           {/* Religious Preference */}
           <View style={styles.subSectionBlock}>
-            {renderSubSectionHeader('Religious Preference')}
+            {renderSubSectionHeader('Religious Preference', handlePartnerPreferenceNavigation)}
             {[
-              { label: 'Gothra', value: 'Any' },
-              { label: 'Manglik', value: "Doesn't matter" },
+              { label: 'Gothra', value: getPreferenceValue(partnerPrefs, 'gothra', 'Any') },
+              { label: 'Manglik', value: getPreferenceValue(partnerPrefs, 'manglik', "Doesn't matter") },
             ].map(renderDetailRow)}
           </View>
 
           {/* Professional Preference */}
           <View style={styles.subSectionBlock}>
-            {renderSubSectionHeader('Professional Preference')}
+            {renderSubSectionHeader('Professional Preference', handlePartnerPreferenceNavigation)}
             {[
               {
                 label: 'Education',
-                value: 'Bachelors - Engineering / Computers / Others, Master...',
-                isMore: true,
+                value: getPreferenceValue(
+                  partnerPrefs,
+                  'education',
+                  'Any',
+                ),
               },
-              { label: 'Employed In', value: 'Any' },
-              { label: 'Occupation', value: 'Any' },
-              { label: 'Annual Income', value: 'Any' },
+              { label: 'Employed In', value: getPreferenceValue(partnerPrefs, 'employedIn', 'Any') },
+              { label: 'Occupation', value: getPreferenceValue(partnerPrefs, 'occupation', 'Any') },
+              { label: 'Annual Income', value: getPreferenceValue(partnerPrefs, 'annualIncome', 'Any') },
             ].map(renderDetailRow)}
           </View>
 
           {/* Location Preference */}
           <View style={styles.subSectionBlock}>
-            {renderSubSectionHeader('Location Preference')}
+            {renderSubSectionHeader('Location Preference', handlePartnerPreferenceNavigation)}
             {[
-              { label: 'Country', value: 'Any' },
-              { label: 'Citizenship', value: 'Any' },
+              { label: 'Country', value: getPreferenceValue(partnerPrefs, 'country', 'India') },
+              { label: 'State', value: getPreferenceValue(partnerPrefs, 'state', 'Any') },
+              { label: 'District/City', value: getPreferenceValue(partnerPrefs, 'districtCity', 'Any') },
+              { label: 'Citizenship', value: getPreferenceValue(partnerPrefs, 'citizenship', 'Any') },
             ].map(renderDetailRow)}
           </View>
 
           {/* Habits Preferences */}
           <View style={[styles.subSectionBlock, styles.lastSubSection]}>
-            {renderSubSectionHeader('Habits Preferences')}
+            {renderSubSectionHeader('Habits Preferences', handlePartnerPreferenceNavigation)}
             {[
-              { label: 'Eating Habits', value: 'Vegetarian, Eggetarian' },
-              { label: 'Drinking Habits', value: "Doesn't matter" },
-              { label: 'Smoking Habits', value: "Doesn't matter" },
+              { label: 'Eating Habits', value: getPreferenceValue(partnerPrefs, 'eatingHabits', 'Any') },
+              { label: 'Drinking Habits', value: getPreferenceValue(partnerPrefs, 'drinkingHabits', "Doesn't matter") },
+              { label: 'Smoking Habits', value: getPreferenceValue(partnerPrefs, 'smokingHabits', "Doesn't matter") },
             ].map(renderDetailRow)}
           </View>
         </View>
@@ -638,7 +1093,11 @@ const EditProfile: React.FC = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalHeaderTitle}>Edit {activeEditSection}</Text>
+              <Text style={styles.modalHeaderTitle}>
+                {activeEditSection === 'Alternate Mobile Number'
+                  ? (alternatePhone ? 'Edit Alternate Number' : 'Add Alternate Number')
+                  : `Edit ${activeEditSection}`}
+              </Text>
               <TouchableOpacity
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 onPress={() => setActiveEditSection(null)}
@@ -647,11 +1106,26 @@ const EditProfile: React.FC = () => {
               </TouchableOpacity>
             </View>
 
+            {activeEditSection === 'Alternate Mobile Number' && (
+              <View style={styles.primaryInfoBanner}>
+                <CustomLucidIcons name="info" size={15} color="#4B5563" />
+                <Text style={styles.primaryInfoText}>
+                  Primary Login: <Text style={styles.primaryInfoBold}>{primaryPhone}</Text> (Cannot be edited)
+                </Text>
+              </View>
+            )}
+
             <TextInput
-              style={styles.modalInput}
-              multiline={true}
-              numberOfLines={4}
-              placeholder={`Update ${activeEditSection}...`}
+              style={activeEditSection === 'Alternate Mobile Number' ? styles.modalInputSingle : styles.modalInput}
+              multiline={activeEditSection !== 'Alternate Mobile Number'}
+              numberOfLines={activeEditSection === 'Alternate Mobile Number' ? 1 : 4}
+              keyboardType={activeEditSection === 'Alternate Mobile Number' ? 'phone-pad' : 'default'}
+              maxLength={activeEditSection === 'Alternate Mobile Number' ? 15 : undefined}
+              placeholder={
+                activeEditSection === 'Alternate Mobile Number'
+                  ? 'Enter 10-digit alternate mobile number...'
+                  : `Update ${activeEditSection}...`
+              }
               placeholderTextColor="#9E9E9E"
               value={editingValue}
               onChangeText={setEditingValue}
@@ -666,6 +1140,190 @@ const EditProfile: React.FC = () => {
             </TouchableOpacity>
           </View>
         </View>
+      </Modal>
+
+      {/* ========================================================================= */}
+      {/* 1. EDIT FAMILY DETAILS MODAL                                              */}
+      {/* ========================================================================= */}
+      <Modal
+        visible={isFamilyModalVisible}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setIsFamilyModalVisible(false)}
+      >
+        <SafeAreaView style={styles.familyModalContainer}>
+          {/* Header */}
+          <View style={styles.familyModalHeader}>
+            <TouchableOpacity
+              onPress={() => setIsFamilyModalVisible(false)}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <CustomLucidIcons name="x" size={24} color="#333333" />
+            </TouchableOpacity>
+            <Text style={styles.familyModalTitle}>Edit Family Details</Text>
+            <TouchableOpacity onPress={handleSaveFamilyDetails} activeOpacity={0.7}>
+              <Text style={styles.familyModalSaveHeaderBtn}>Save</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={styles.familyModalScroll}
+            contentContainerStyle={styles.familyModalScrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* 1. Family Value */}
+            <Text style={styles.formLabel}>Family Value</Text>
+            <TouchableOpacity
+              style={[styles.dropdownTrigger, activeDropdown === 'familyValue' && styles.dropdownTriggerActive]}
+              onPress={() => toggleDropdown('familyValue')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.dropdownTriggerText}>{familyFormData.familyValue || 'Select Family Value'}</Text>
+              <CustomLucidIcons
+                name={activeDropdown === 'familyValue' ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color={activeDropdown === 'familyValue' ? HEADER_COLOR : '#757575'}
+              />
+            </TouchableOpacity>
+            {renderCustomDropdown('familyValue', FAMILY_VALUES)}
+
+            {/* 2. Family Type */}
+            <Text style={styles.formLabel}>Family Type</Text>
+            <TouchableOpacity
+              style={[styles.dropdownTrigger, activeDropdown === 'familyType' && styles.dropdownTriggerActive]}
+              onPress={() => toggleDropdown('familyType')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.dropdownTriggerText}>{familyFormData.familyType || 'Select Family Type'}</Text>
+              <CustomLucidIcons
+                name={activeDropdown === 'familyType' ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color={activeDropdown === 'familyType' ? HEADER_COLOR : '#757575'}
+              />
+            </TouchableOpacity>
+            {renderCustomDropdown('familyType', FAMILY_TYPES)}
+
+            {/* 3. Family Status */}
+            <Text style={styles.formLabel}>Family Status</Text>
+            <TouchableOpacity
+              style={[styles.dropdownTrigger, activeDropdown === 'familyStatus' && styles.dropdownTriggerActive]}
+              onPress={() => toggleDropdown('familyStatus')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.dropdownTriggerText}>{familyFormData.familyStatus || 'Select Family Status'}</Text>
+              <CustomLucidIcons
+                name={activeDropdown === 'familyStatus' ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color={activeDropdown === 'familyStatus' ? HEADER_COLOR : '#757575'}
+              />
+            </TouchableOpacity>
+            {renderCustomDropdown('familyStatus', FAMILY_STATUSES)}
+
+            {/* 4. Father's Occupation */}
+            <Text style={styles.formLabel}>Father's Occupation</Text>
+            <TextInput
+              style={styles.textInputField}
+              placeholder="e.g. Businessman, Doctor, Retired, Passed Away"
+              placeholderTextColor="#9E9E9E"
+              value={familyFormData.fatherOccupation}
+              onChangeText={val => setFamilyFormData((prev: FamilyDetailsData) => ({ ...prev, fatherOccupation: val }))}
+            />
+
+            {/* 5. Mother's Occupation */}
+            <Text style={styles.formLabel}>Mother's Occupation</Text>
+            <TextInput
+              style={styles.textInputField}
+              placeholder="e.g. Homemaker, Teacher, Doctor"
+              placeholderTextColor="#9E9E9E"
+              value={familyFormData.motherOccupation}
+              onChangeText={val => setFamilyFormData((prev: FamilyDetailsData) => ({ ...prev, motherOccupation: val }))}
+            />
+
+            {/* 6. Family Origin */}
+            <Text style={styles.formLabel}>Family Origin / Native Place</Text>
+            <TextInput
+              style={styles.textInputField}
+              placeholder="e.g. Maharashtra, Sindh, Gujarat"
+              placeholderTextColor="#9E9E9E"
+              value={familyFormData.familyOrigin}
+              onChangeText={val => setFamilyFormData((prev: FamilyDetailsData) => ({ ...prev, familyOrigin: val }))}
+            />
+
+            {/* 7. No. of Brothers (Numbers Dropdown) */}
+            <Text style={styles.formLabel}>No. of Brothers</Text>
+            <TouchableOpacity
+              style={[styles.dropdownTrigger, activeDropdown === 'noOfBrothers' && styles.dropdownTriggerActive]}
+              onPress={() => toggleDropdown('noOfBrothers')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.dropdownTriggerText}>{familyFormData.noOfBrothers || 'None'}</Text>
+              <CustomLucidIcons
+                name={activeDropdown === 'noOfBrothers' ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color={activeDropdown === 'noOfBrothers' ? HEADER_COLOR : '#757575'}
+              />
+            </TouchableOpacity>
+            {renderCustomDropdown('noOfBrothers', SIBLING_COUNTS)}
+
+            {/* 8. No. of Sisters (Numbers Dropdown) */}
+            <Text style={styles.formLabel}>No. of Sisters</Text>
+            <TouchableOpacity
+              style={[styles.dropdownTrigger, activeDropdown === 'noOfSisters' && styles.dropdownTriggerActive]}
+              onPress={() => toggleDropdown('noOfSisters')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.dropdownTriggerText}>{familyFormData.noOfSisters || 'None'}</Text>
+              <CustomLucidIcons
+                name={activeDropdown === 'noOfSisters' ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color={activeDropdown === 'noOfSisters' ? HEADER_COLOR : '#757575'}
+              />
+            </TouchableOpacity>
+            {renderCustomDropdown('noOfSisters', SIBLING_COUNTS)}
+
+            {/* 9. Brothers Married (Numbers Dropdown) */}
+            <Text style={styles.formLabel}>Brothers Married</Text>
+            <TouchableOpacity
+              style={[styles.dropdownTrigger, activeDropdown === 'brothersMarried' && styles.dropdownTriggerActive]}
+              onPress={() => toggleDropdown('brothersMarried')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.dropdownTriggerText}>{familyFormData.brothersMarried || 'None'}</Text>
+              <CustomLucidIcons
+                name={activeDropdown === 'brothersMarried' ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color={activeDropdown === 'brothersMarried' ? HEADER_COLOR : '#757575'}
+              />
+            </TouchableOpacity>
+            {renderCustomDropdown('brothersMarried', MARRIED_COUNTS)}
+
+            {/* 10. Sisters Married (Numbers Dropdown) */}
+            <Text style={styles.formLabel}>Sisters Married</Text>
+            <TouchableOpacity
+              style={[styles.dropdownTrigger, activeDropdown === 'sistersMarried' && styles.dropdownTriggerActive]}
+              onPress={() => toggleDropdown('sistersMarried')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.dropdownTriggerText}>{familyFormData.sistersMarried || 'None'}</Text>
+              <CustomLucidIcons
+                name={activeDropdown === 'sistersMarried' ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color={activeDropdown === 'sistersMarried' ? HEADER_COLOR : '#757575'}
+              />
+            </TouchableOpacity>
+            {renderCustomDropdown('sistersMarried', MARRIED_COUNTS)}
+
+            {/* Save Button */}
+            <TouchableOpacity
+              style={styles.familySaveButton}
+              activeOpacity={0.8}
+              onPress={handleSaveFamilyDetails}
+            >
+              <Text style={styles.familySaveButtonText}>Save Family Details</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
       </Modal>
 
       {/* Reusable Bottom Sheet Photo Picker Modal */}
@@ -796,6 +1454,33 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontFamily: fontFamily.Inter18Medium,
     fontSize: 11,
+  },
+  heroScrollView: {
+    height: 270,
+    width: '100%',
+  },
+  heroDotsContainer: {
+    alignItems: 'center',
+    bottom: 58,
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    zIndex: 9,
+  },
+  heroDot: {
+    borderRadius: 3,
+    height: 5,
+  },
+  heroActiveDot: {
+    backgroundColor: '#FFFFFF',
+    width: 16,
+  },
+  heroInactiveDot: {
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
+    width: 5,
   },
   heroBottomOverlay: {
     backgroundColor: 'rgba(0,0,0,0.3)',
@@ -1150,6 +1835,36 @@ const styles = StyleSheet.create({
     padding: 12,
     textAlignVertical: 'top',
   },
+  modalInputSingle: {
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    borderWidth: 1,
+    color: '#111827',
+    fontFamily: fontFamily.Inter18Regular,
+    fontSize: 14,
+    height: 48,
+    marginBottom: 20,
+    paddingHorizontal: 12,
+  },
+  primaryInfoBanner: {
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    flexDirection: 'row',
+    marginBottom: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  primaryInfoText: {
+    color: '#4B5563',
+    fontFamily: fontFamily.Inter18Regular,
+    fontSize: 12,
+    marginLeft: 8,
+  },
+  primaryInfoBold: {
+    color: '#111827',
+    fontFamily: fontFamily.Inter18SemiBold,
+  },
   modalSaveButton: {
     alignItems: 'center',
     backgroundColor: HEADER_COLOR,
@@ -1158,6 +1873,124 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalSaveButtonText: {
+    color: '#FFFFFF',
+    fontFamily: fontFamily.Inter18SemiBold,
+    fontSize: 15,
+  },
+  // Family Edit Modal Styles
+  familyModalContainer: {
+    backgroundColor: '#FFFFFF',
+    flex: 1,
+  },
+  familyModalHeader: {
+    alignItems: 'center',
+    borderBottomColor: '#EEEEEE',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  familyModalTitle: {
+    color: '#111827',
+    fontFamily: fontFamily.Inter18Bold,
+    fontSize: 17,
+  },
+  familyModalSaveHeaderBtn: {
+    color: HEADER_COLOR,
+    fontFamily: fontFamily.Inter18SemiBold,
+    fontSize: 15,
+  },
+  familyModalScroll: {
+    flex: 1,
+  },
+  familyModalScrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 36,
+  },
+  formLabel: {
+    color: '#4B5563',
+    fontFamily: fontFamily.Inter18Medium,
+    fontSize: 13,
+    marginBottom: 6,
+    marginTop: 12,
+  },
+  dropdownTrigger: {
+    alignItems: 'center',
+    backgroundColor: '#FAFAFA',
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    height: 48,
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+  },
+  dropdownTriggerActive: {
+    borderColor: HEADER_COLOR,
+    backgroundColor: '#FFFFFF',
+  },
+  dropdownTriggerText: {
+    color: '#111827',
+    fontFamily: fontFamily.Inter18Regular,
+    fontSize: 14,
+  },
+  dropdownMenu: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 4,
+    marginBottom: 8,
+    overflow: 'hidden',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  dropdownMenuItem: {
+    alignItems: 'center',
+    borderBottomColor: '#F3F4F6',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  dropdownMenuItemSelected: {
+    backgroundColor: '#FFF5F5',
+  },
+  dropdownMenuText: {
+    color: '#374151',
+    fontFamily: fontFamily.Inter18Regular,
+    fontSize: 14,
+  },
+  dropdownMenuTextSelected: {
+    color: HEADER_COLOR,
+    fontFamily: fontFamily.Inter18SemiBold,
+  },
+  textInputField: {
+    backgroundColor: '#FAFAFA',
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    borderWidth: 1,
+    color: '#111827',
+    fontFamily: fontFamily.Inter18Regular,
+    fontSize: 14,
+    height: 48,
+    paddingHorizontal: 14,
+  },
+  familySaveButton: {
+    alignItems: 'center',
+    backgroundColor: HEADER_COLOR,
+    borderRadius: 10,
+    height: 48,
+    justifyContent: 'center',
+    marginTop: 24,
+  },
+  familySaveButtonText: {
     color: '#FFFFFF',
     fontFamily: fontFamily.Inter18SemiBold,
     fontSize: 15,

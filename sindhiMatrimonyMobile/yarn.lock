@@ -9454,6 +9454,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"one-react-native-upi@npm:^0.1.2":
+  version: 0.1.2
+  resolution: "one-react-native-upi@npm:0.1.2"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/06997b58a4a77b529ea47881c99613f8075eddadaba1ed56753259c3d4b6bc1e968e16dd5b8e8c690797280db26bcb7ea300e681e7d87515e77ba78d3f8784d8
+  languageName: node
+  linkType: hard
+
 "onetime@npm:^5.1.0, onetime@npm:^5.1.2":
   version: 5.1.2
   resolution: "onetime@npm:5.1.2"
@@ -11274,6 +11284,7 @@ __metadata:
     lottie-react-native: "npm:^7.3.8"
     lucide-react-native: "npm:^1.23.0"
     moment: "npm:^2.30.1"
+    one-react-native-upi: "npm:^0.1.2"
     prettier: "npm:2.8.8"
     react: "npm:19.2.3"
     react-native: "npm:0.86.0"

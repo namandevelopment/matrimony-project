@@ -8,6 +8,9 @@ import {
   ProfileView,
   SuccessStory,
   UserSubscription,
+  BlockedUser,
+  Shortlist,
+  ContactUnlock,
 } from "../../models/index.js";
 import { getKey, setKeyWithTime, removeKey } from "../../services/serviceRedis.js";
 import { isInterestSentToCandidate } from "../matchmaking/interestsController.js";
@@ -543,29 +546,70 @@ export const saveUserRashi = asyncHandler(async (req, res) => {
  * GET /api/v1/dashboard/matches
  * GET /api/v1/matches/recommendations
  */
-export const getRecommendedMatches = asyncHandler(async (req, res) => {
+/**
+ * 👥 Unified Matches Discovery Feed Executor
+ * Used by /matches, /all-matches, /new-matches
+ */
+export const executeUnifiedMatchesFeed = async (req, res, forcedType = null) => {
   const userId = getUserId(req);
   const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
   const limit = Math.min(50, Math.max(1, parseInt(req.query?.limit || req.query?.pageSize, 10) || 10));
+  const type = (forcedType || req.query?.type || req.query?.category || "all").toLowerCase();
+  const sort = req.query?.sort || "relevance";
+  const { caste, subcaste, city, state, minAge, maxAge, minHeight, maxHeight, maritalStatus, education, profession, photoOnly } = req.query;
+
+  const targetGender = resolveTargetGender(null, req);
 
   if (mongoose.connection.readyState !== 1) {
-    const targetGender = resolveTargetGender(null, req);
-    const seedMatches = getSeedMatchesByGender(targetGender);
-    const total = seedMatches.length;
+    let pool = getSeedMatchesByGender(targetGender);
+    if (caste || subcaste) {
+      const cFilter = (caste || subcaste).toLowerCase();
+      pool = pool.filter((m) => (m.caste || m.subcaste || "").toLowerCase().includes(cFilter));
+    }
+    if (city) pool = pool.filter((m) => (m.city || "").toLowerCase().includes(city.toLowerCase()));
+    if (minAge) pool = pool.filter((m) => m.age >= Number(minAge));
+    if (maxAge) pool = pool.filter((m) => m.age <= Number(maxAge));
+
+    const total = pool.length;
     const totalPages = Math.ceil(total / limit) || 1;
     const startIdx = (page - 1) * limit;
-    const paginated = seedMatches.slice(startIdx, startIdx + limit).map((m) => {
-      const isSent = isInterestSentToCandidate(m._id, userId);
+    const paginated = pool.slice(startIdx, startIdx + limit).map((m) => {
+      const isSent = isInterestSentToCandidate(m._id || m.id, userId);
       return {
-        ...m,
+        id: m.id || m._id,
+        _id: m._id || m.id,
+        matrimonyId: m.matrimonyId || `SM${String(m.id || m._id).slice(-7).toUpperCase()}`,
+        name: m.name,
+        gender: m.gender || targetGender,
+        age: m.age || 25,
+        height: m.height || "5'4\"",
+        heightInCm: 162,
+        city: m.city || "Mumbai",
+        state: m.state || "Maharashtra",
+        caste: m.caste || m.subcaste || "Bhaiband",
+        subcaste: m.subcaste || m.caste || "Bhaiband",
+        education: m.education || "Graduate",
+        profession: m.profession || "Professional",
+        photoUrl: m.photoUrl || m.avatar || null,
+        photos: m.photoUrl ? [m.photoUrl] : [],
+        photoCount: m.photoUrl ? 1 : 0,
+        isSilhouette: !m.photoUrl && !m.avatar,
+        isVerified: Boolean(m.isVerified),
+        isShortlisted: false,
+        hasContactViewed: false,
         sendIntrestSended: isSent,
+        interestSent: isSent,
+        lastSeen: "Active recently",
+        lastActive: "Active recently",
+        matchScore: m.matchScore || 92,
       };
     });
+
     return apiHTTPResponse(
       req,
       res,
       CONSTANTS.HTTP_OK,
-      "Recommended matches retrieved successfully.",
+      "Matches retrieved successfully.",
       {
         totalMatchesCount: total,
         total,
@@ -573,13 +617,8 @@ export const getRecommendedMatches = asyncHandler(async (req, res) => {
         page,
         limit,
         hasMore: page < totalPages,
-        pagination: {
-          total,
-          page,
-          limit,
-          totalPages,
-          hasMore: page < totalPages,
-        },
+        pagination: { total, page, limit, totalPages, hasMore: page < totalPages },
+        tabCounts: { all: total, new: Math.min(total, 5), mutual: Math.min(total, 3), prime: Math.min(total, 2), shortlisted: 0 },
         items: paginated,
         list: paginated,
       },
@@ -592,62 +631,148 @@ export const getRecommendedMatches = asyncHandler(async (req, res) => {
   const profileQuery = activeProfileId
     ? { _id: activeProfileId, isDeleted: false }
     : { userId, isDeleted: false };
-  const userProfile = mongoose.connection.readyState === 1
-    ? await Profile.findOne(profileQuery).select("gender").lean()
-    : null;
-  const targetGender = resolveTargetGender(userProfile, req);
+  const userProfile = await Profile.findOne(profileQuery).select("gender").lean();
+  const resolvedTargetGender = resolveTargetGender(userProfile, req);
+
+  // Both-side block exclusions
+  let excludedUserIds = [userId?.toString()].filter(Boolean);
+  if (userId) {
+    const blocks = await BlockedUser.find({
+      $or: [{ blockerUserId: userId }, { blockedUserId: userId }]
+    }).select("blockerUserId blockedUserId").lean();
+    blocks.forEach((b) => {
+      excludedUserIds.push(b.blockerUserId.toString());
+      excludedUserIds.push(b.blockedUserId.toString());
+    });
+  }
 
   const query = {
     isDeleted: false,
-    userId: { $ne: userId },
-    gender: targetGender,
+    status: "ACTIVE",
+    userId: { $nin: Array.from(new Set(excludedUserIds)).map((id) => new mongoose.Types.ObjectId(id)) },
+    gender: resolvedTargetGender,
   };
 
-  const [items, totalCount] = mongoose.connection.readyState === 1
-    ? await Promise.all([
-        Profile.find(query)
-          .select("_id name age height location education profession avatar photos isVerified gender")
-          .sort({ isFeatured: -1, createdAt: -1 })
-          .skip((page - 1) * limit)
-          .limit(limit)
-          .lean(),
-        Profile.countDocuments(query),
-      ])
-    : [[], 0];
+  const selectedCaste = caste || subcaste;
+  if (selectedCaste) query.subcaste = new RegExp(`^${selectedCaste}$`, "i");
+  if (city) query["location.city"] = new RegExp(`^${city}$`, "i");
+  if (state) query["location.state"] = new RegExp(`^${state}$`, "i");
+  if (maritalStatus) query.maritalStatus = maritalStatus;
+  if (education) query["education.degree"] = new RegExp(education, "i");
+  if (profession) query["profession.occupation"] = new RegExp(profession, "i");
+  if (minAge || maxAge) {
+    query.age = {};
+    if (minAge) query.age.$gte = Number(minAge);
+    if (maxAge) query.age.$lte = Number(maxAge);
+  }
+  if (minHeight || maxHeight) {
+    query.height = {};
+    if (minHeight) query.height.$gte = Number(minHeight);
+    if (maxHeight) query.height.$lte = Number(maxHeight);
+  }
+  if (photoOnly === "true" || photoOnly === true) {
+    query.$or = [{ avatar: { $exists: true, $ne: "" } }, { "photos.0": { $exists: true } }];
+  }
 
-  const fallbackMatches = getSeedMatchesByGender(targetGender);
-  const formattedItems = (items.length > 0 ? items : fallbackMatches).map((m) => {
-    const isSent = isInterestSentToCandidate(m._id, userId);
+  // Handle Tab Category
+  if (type === "new" || type === "newlyjoined") {
+    query.createdAt = { $gte: new Date(Date.now() - 30 * 86400000) };
+  } else if (type === "prime" || type === "premium") {
+    query.isFeatured = true;
+  } else if (type === "shortlisted") {
+    const userShortlists = await Shortlist.find({ userId }).select("candidateProfileId").lean();
+    const shortIds = userShortlists.map((s) => s.candidateProfileId);
+    query._id = { $in: shortIds };
+  }
+
+  // Stable Sort with _id tie-breaker
+  let sortSpec = { isFeatured: -1, createdAt: -1, _id: -1 };
+  if (sort === "recently_joined" || sort === "newest") {
+    sortSpec = { createdAt: -1, _id: -1 };
+  } else if (sort === "last_active") {
+    sortSpec = { lastActiveAt: -1, _id: -1 };
+  } else if (sort === "age_asc") {
+    sortSpec = { age: 1, _id: -1 };
+  } else if (sort === "age_desc") {
+    sortSpec = { age: -1, _id: -1 };
+  }
+
+  const [dbMatches, count] = await Promise.all([
+    Profile.find(query)
+      .select("_id name age height location education profession avatar photos isVerified subcaste photoPrivacy isFeatured createdAt lastActiveAt gender maritalStatus")
+      .sort(sortSpec)
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+    Profile.countDocuments(query),
+  ]);
+
+  const pageProfileIds = dbMatches.map((m) => m._id);
+  const [shortlistRecords, unlockRecords] = await Promise.all([
+    userId ? Shortlist.find({ userId, candidateProfileId: { $in: pageProfileIds } }).select("candidateProfileId").lean() : [],
+    userId ? ContactUnlock.find({ viewerUserId: userId, candidateProfileId: { $in: pageProfileIds } }).select("candidateProfileId").lean() : [],
+  ]);
+  const shortlistedSet = new Set(shortlistRecords.map((s) => s.candidateProfileId.toString()));
+  const unlockedSet = new Set(unlockRecords.map((u) => u.candidateProfileId.toString()));
+
+  const items = dbMatches.map((m) => {
+    const isRestricted = m.photoPrivacy === "ONLY_ON_REQUEST" || m.photoPrivacy === "RESTRICTED";
+    const isSilhouette = isRestricted || (!m.avatar && (!m.photos || m.photos.length === 0));
+    const safePhotoUrl = isRestricted ? null : (m.avatar || m.photos?.[0]?.url || null);
+    const safePhotos = isRestricted ? [] : (m.photos || []);
+    const isSent = isInterestSentToCandidate(m._id.toString(), userId);
+
     return {
+      id: m._id.toString(),
       _id: m._id.toString(),
+      matrimonyId: `SM${m._id.toString().slice(-7).toUpperCase()}`,
       name: m.name,
-      gender: m.gender || targetGender,
+      gender: m.gender || resolvedTargetGender,
       age: m.age || 25,
-      height: m.height ? `${Math.floor(m.height / 30.48)}'${Math.round((m.height % 30.48) / 2.54)}"` : (m.heightFormatted || m.height || "5'2\""),
-      city: m.location?.city || m.city || "Mumbai",
-      caste: m.subcaste || m.caste || "Bhaiband",
-      subcaste: m.subcaste || m.caste || "Bhaiband",
-      education: m.education?.degree ? `${m.education.degree} / ${m.profession?.occupation || "Professional"}` : (m.education || "Graduate"),
-      profession: m.profession?.occupation || m.profession || "Professional",
-      photoUrl: m.avatar || m.photos?.[0] || m.photoUrl || "",
-      avatar: m.avatar || m.photos?.[0] || m.photoUrl || "",
-      isSilhouette: !m.avatar && (!m.photos || m.photos.length === 0),
-      isVerified: Boolean(m.verificationBadge === "VERIFIED" || m.isVerified),
-      matrimonyId: m.matrimonyId || `SM${m._id.toString().slice(-7).toUpperCase()}`,
-      matchScore: m.matchScore || 95,
-      badge: m.badge || "98% Match",
+      height: m.height ? `${Math.floor(m.height / 30.48)}'${Math.round((m.height % 30.48) / 2.54)}"` : "5'2\"",
+      heightInCm: m.height || 160,
+      city: m.location?.city || "Jaipur",
+      state: m.location?.state || "Rajasthan",
+      caste: m.subcaste || "Bhaiband",
+      subcaste: m.subcaste || "Bhaiband",
+      education: m.education?.degree || "Graduate",
+      profession: m.profession?.occupation || "Professional",
+      photoUrl: safePhotoUrl,
+      photos: safePhotos,
+      photoCount: isRestricted ? 0 : (m.photos?.length || (m.avatar ? 1 : 0)),
+      isSilhouette,
+      isVerified: Boolean(m.isVerified || m.verificationBadge === "VERIFIED"),
+      isShortlisted: shortlistedSet.has(m._id.toString()),
+      hasContactViewed: unlockedSet.has(m._id.toString()),
       sendIntrestSended: isSent,
+      interestSent: isSent,
+      lastSeen: "Active recently",
+      lastActive: "Active recently",
+      matchScore: 92,
     };
   });
 
-  const total = totalCount || formattedItems.length;
+  const total = count;
   const totalPages = Math.ceil(total / limit) || 1;
+
+  // Calculate dynamic tab counts using same demographic filters
+  const baseFilterForCounts = { ...query };
+  delete baseFilterForCounts.createdAt;
+  delete baseFilterForCounts.isFeatured;
+  delete baseFilterForCounts._id;
+
+  const [allCount, newCount, primeCount, shortCount] = await Promise.all([
+    Profile.countDocuments(baseFilterForCounts),
+    Profile.countDocuments({ ...baseFilterForCounts, createdAt: { $gte: new Date(Date.now() - 30 * 86400000) } }),
+    Profile.countDocuments({ ...baseFilterForCounts, isFeatured: true }),
+    userId ? Shortlist.countDocuments({ userId }) : 0,
+  ]);
 
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
-    "Recommended matches retrieved successfully.",
+    "Matches retrieved successfully.",
     {
       totalMatchesCount: total,
       total,
@@ -655,19 +780,18 @@ export const getRecommendedMatches = asyncHandler(async (req, res) => {
       page,
       limit,
       hasMore: page < totalPages,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages,
-        hasMore: page < totalPages,
-      },
-      items: formattedItems,
-      list: formattedItems,
+      pagination: { total, page, limit, totalPages, hasMore: page < totalPages },
+      tabCounts: { all: allCount, new: newCount, mutual: Math.min(allCount, 15), prime: primeCount, shortlisted: shortCount },
+      items,
+      list: items,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
+};
+
+export const getRecommendedMatches = asyncHandler(async (req, res) => {
+  return executeUnifiedMatchesFeed(req, res);
 });
 
 // =============================================================================
@@ -1379,136 +1503,7 @@ export const getDailyRecommendationsFeed = asyncHandler(async (req, res) => {
  * GET /api/v1/dashboard/all-matches
  */
 export const getAllMatchesFeed = asyncHandler(async (req, res) => {
-  const userId = getUserId(req);
-  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
-  const limit = Math.min(50, Math.max(1, parseInt(req.query?.limit || req.query?.pageSize, 10) || 10));
-  const { caste, city, minAge, maxAge } = req.query;
-
-  const targetGender = resolveTargetGender(null, req);
-
-  if (mongoose.connection.readyState !== 1) {
-    let pool = getSeedMatchesByGender(targetGender);
-    if (caste) pool = pool.filter((m) => m.caste.toLowerCase() === String(caste).toLowerCase());
-    if (city) pool = pool.filter((m) => m.city.toLowerCase() === String(city).toLowerCase());
-    if (minAge) pool = pool.filter((m) => m.age >= Number(minAge));
-    if (maxAge) pool = pool.filter((m) => m.age <= Number(maxAge));
-
-    const total = pool.length;
-    const totalPages = Math.ceil(total / limit) || 1;
-    const startIdx = (page - 1) * limit;
-    const paginatedItems = pool.slice(startIdx, startIdx + limit);
-
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_OK,
-      "All matches retrieved successfully.",
-      {
-        matchCount: total,
-        total,
-        totalPages,
-        page,
-        limit,
-        hasMore: page < totalPages,
-        pagination: {
-          total,
-          page,
-          limit,
-          totalPages,
-          hasMore: page < totalPages,
-        },
-        items: paginatedItems,
-        list: paginatedItems,
-      },
-      CONSTANTS.OK,
-      CONSTANTS.ERROR_FALSE
-    );
-  }
-
-  const activeProfileId = req.user?.activeProfileId || req.auth?.activeProfileId;
-  const profileQuery = activeProfileId
-    ? { _id: activeProfileId, isDeleted: false }
-    : { userId, isDeleted: false };
-  const profile = mongoose.connection.readyState === 1
-    ? await Profile.findOne(profileQuery).select("gender").lean()
-    : null;
-  const resolvedTargetGender = resolveTargetGender(profile, req);
-
-  const query = {
-    isDeleted: false,
-    status: "ACTIVE",
-    userId: { $ne: userId },
-    gender: resolvedTargetGender,
-  };
-
-  if (caste) query.subcaste = caste;
-  if (city) query["location.city"] = new RegExp(`^${city}$`, "i");
-  if (minAge || maxAge) {
-    query.age = {};
-    if (minAge) query.age.$gte = Number(minAge);
-    if (maxAge) query.age.$lte = Number(maxAge);
-  }
-
-  const [dbMatches, count] = mongoose.connection.readyState === 1
-    ? await Promise.all([
-        Profile.find(query)
-          .select("_id name age height location education profession avatar photos isVerified subcaste")
-          .sort({ isFeatured: -1, createdAt: -1 })
-          .skip((page - 1) * limit)
-          .limit(limit)
-          .lean(),
-        Profile.countDocuments(query),
-      ])
-    : [[], 0];
-
-  const items =
-    dbMatches && dbMatches.length > 0
-      ? dbMatches.map((m) => ({
-          id: m._id.toString(),
-          name: m.name,
-          age: m.age || 25,
-          height: m.height
-            ? `${Math.floor(m.height / 30.48)}'${Math.round((m.height % 30.48) / 2.54)}"`
-            : "5'2\"",
-          city: m.location?.city || "Jaipur",
-          caste: m.subcaste || "Bhaiband",
-          education: m.education?.degree || "Graduate",
-          profession: m.profession?.occupation || "Professional",
-          photoUrl: m.avatar || m.photos?.[0]?.url || "",
-          isSilhouette: !m.avatar && (!m.photos || m.photos.length === 0),
-          isVerified: Boolean(m.isVerified || m.verificationBadge === "VERIFIED"),
-          matrimonyId: `SM${m._id.toString().slice(-7).toUpperCase()}`,
-        }))
-      : getSeedMatchesByGender(resolvedTargetGender);
-
-  const total = count || items.length;
-  const totalPages = Math.ceil(total / limit) || 1;
-
-  return apiHTTPResponse(
-    req,
-    res,
-    CONSTANTS.HTTP_OK,
-    "All matches retrieved successfully.",
-    {
-      matchCount: total,
-      total,
-      totalPages,
-      page,
-      limit,
-      hasMore: page < totalPages,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages,
-        hasMore: page < totalPages,
-      },
-      items,
-      list: items,
-    },
-    CONSTANTS.OK,
-    CONSTANTS.ERROR_FALSE
-  );
+  return executeUnifiedMatchesFeed(req, res);
 });
 
 /**
@@ -1516,126 +1511,7 @@ export const getAllMatchesFeed = asyncHandler(async (req, res) => {
  * GET /api/v1/dashboard/new-matches
  */
 export const getNewMatchesFeed = asyncHandler(async (req, res) => {
-  const userId = getUserId(req);
-  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
-  const limit = Math.min(50, Math.max(1, parseInt(req.query?.pageSize || req.query?.limit, 10) || 10));
-  const maxDays = parseInt(req.query?.maxDays, 10) || 30;
-  const sinceDate = new Date(Date.now() - maxDays * 24 * 60 * 60 * 1000);
-
-  const targetGender = resolveTargetGender(null, req);
-
-  if (mongoose.connection.readyState !== 1) {
-    const seedMatches = getSeedMatchesByGender(targetGender);
-    const total = seedMatches.length;
-    const totalPages = Math.ceil(total / limit) || 1;
-    const startIdx = (page - 1) * limit;
-    const paginatedItems = seedMatches.slice(startIdx, startIdx + limit);
-
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_OK,
-      "New matches retrieved successfully.",
-      {
-        matchCount: total,
-        total,
-        totalPages,
-        page,
-        limit,
-        hasMore: page < totalPages,
-        pagination: {
-          total,
-          page,
-          limit,
-          totalPages,
-          hasMore: page < totalPages,
-        },
-        items: paginatedItems,
-        list: paginatedItems,
-      },
-      CONSTANTS.OK,
-      CONSTANTS.ERROR_FALSE
-    );
-  }
-
-  const activeProfileId = req.user?.activeProfileId || req.auth?.activeProfileId;
-  const profileQuery = activeProfileId
-    ? { _id: activeProfileId, isDeleted: false }
-    : { userId, isDeleted: false };
-  const profile = await Profile.findOne(profileQuery).select("gender").lean();
-  const resolvedTargetGender = resolveTargetGender(profile, req);
-
-  const query = {
-    isDeleted: false,
-    status: "ACTIVE",
-    userId: { $ne: userId },
-    gender: resolvedTargetGender,
-    createdAt: { $gte: sinceDate },
-  };
-
-  const [dbMatches, count] = await Promise.all([
-    Profile.find(query)
-      .select("_id name age height location education profession avatar photos isVerified subcaste createdAt")
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean(),
-    Profile.countDocuments(query),
-  ]);
-
-  const items =
-    dbMatches && dbMatches.length > 0
-      ? dbMatches.map((m) => {
-          const joinedDays = Math.max(
-            1,
-            Math.floor((Date.now() - new Date(m.createdAt).getTime()) / (1000 * 60 * 60 * 24))
-          );
-          return {
-            id: m._id.toString(),
-            name: m.name,
-            age: m.age || 24,
-            height: m.height
-              ? `${Math.floor(m.height / 30.48)}'${Math.round((m.height % 30.48) / 2.54)}"`
-              : "5'3\"",
-            city: m.location?.city || "Pune",
-            caste: m.subcaste || "Bhaiband",
-            profession: m.profession?.occupation || "Professional",
-            photoUrl: m.avatar || m.photos?.[0]?.url || "",
-            joinedDaysAgo: `Joined ${joinedDays} day${joinedDays > 1 ? "s" : ""} ago`,
-            isVerified: Boolean(m.isVerified || m.verificationBadge === "VERIFIED"),
-            matrimonyId: `SM${m._id.toString().slice(-7).toUpperCase()}`,
-          };
-        })
-      : getSeedMatchesByGender(resolvedTargetGender);
-
-  const total = count || items.length;
-  const totalPages = Math.ceil(total / limit) || 1;
-
-  return apiHTTPResponse(
-    req,
-    res,
-    CONSTANTS.HTTP_OK,
-    "New matches retrieved successfully.",
-    {
-      matchCount: total,
-      total,
-      totalPages,
-      page,
-      limit,
-      hasMore: page < totalPages,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages,
-        hasMore: page < totalPages,
-      },
-      items,
-      list: items,
-    },
-    CONSTANTS.OK,
-    CONSTANTS.ERROR_FALSE
-  );
+  return executeUnifiedMatchesFeed(req, res, "new");
 });
 
 /**

@@ -1,5 +1,7 @@
 import { Pressable, StyleSheet, Text, View, TouchableOpacity } from 'react-native'
 import React from 'react'
+import { useSelector } from 'react-redux'
+import { selectProfile } from '../../../redux/useSelector'
 import LinearGradient from 'react-native-linear-gradient'
 import { useNavigation } from '@react-navigation/native'
 import { fontFamily } from '../../../components/fontFamily'
@@ -16,6 +18,9 @@ const HomeProfileTab = ({
   onPressBanner?: () => void
 }) => {
   const navigation = useNavigation<any>()
+  const profile = useSelector(selectProfile)
+  const userName = profile?.name || 'My Profile'
+  const avatarInitial = (userName.charAt(0) || 'U').toUpperCase()
   return (
     <LinearGradient
       colors={['#F7FFEA', '#F0FAE0', '#EFFFF4']}
@@ -43,7 +48,7 @@ const HomeProfileTab = ({
             onPress={() => navigation.navigate('ProfileScreen')}
           >
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>M</Text>
+              <Text style={styles.avatarText}>{avatarInitial}</Text>
             </View>
 
             <Pressable style={styles.cameraButton}>
@@ -58,7 +63,7 @@ const HomeProfileTab = ({
           <View style={styles.userInfo}>
             <Pressable onPress={() => navigation.navigate('ProfileScreen')}>
               <Text style={styles.userName} numberOfLines={1} ellipsizeMode="tail">
-                Mayank Tamhankar
+                {userName}
               </Text>
             </Pressable>
 

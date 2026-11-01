@@ -7,17 +7,19 @@ import {
   TouchableOpacity,
   StyleProp,
   ViewStyle,
-  Dimensions,
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import { useNavigation } from '@react-navigation/native';
 import fontFamily from '../../../components/fontFamily';
 import CustomLucidIcons from '../../../components/CustomLucidIcons';
 import LoadingButton from '../../../components/buttons/LoadingButton';
 import { moderateScale, moderateVerticalScale } from '../../../utils/Responsive';
+import { ApiURL } from '../../../redux/apiService';
+import { useApiQuery } from '../../../tanstackQuery/useQuery';
+import { QUERY_KEYS } from '../../../tanstackQuery/keys';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = moderateScale(290);
 const CARD_SPACING = moderateScale(14);
 const SNAP_INTERVAL = CARD_WIDTH + CARD_SPACING;
@@ -32,50 +34,28 @@ export interface SuccessStory {
   storySnippet: string;
   imageUrl: string;
   badge?: string;
+  weddingDate?: string;
+  location?: string;
+  fullStory?: string;
 }
 
 interface SuccessStoriesSectionProps {
   data?: SuccessStory[];
+  title?: string;
+  subtitle?: string;
   onStoryPress?: (story: SuccessStory) => void;
   onViewAll?: () => void;
   containerStyle?: StyleProp<ViewStyle>;
 }
 
 // -----------------------------------------------------------------------------
-// 2. CURATED DUMMY STORIES (Authentic Indian Sindhi Wedding Couples)
+// 2. QUERY CONSTANTS & CURATED FALLBACK STORIES
 // -----------------------------------------------------------------------------
-export const DUMMY_SUCCESS_STORIES: SuccessStory[] = [
-  {
-    id: 'story_1',
-    coupleName: 'Saravana sharma & Srinika',
-    postedOn: '14 Oct 2026',
-    storySnippet:
-      'I was looking for a partner who will understand me and stand by my side through all phases of life.',
-    imageUrl:
-      'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&auto=format&fit=crop&q=80',
-    badge: 'Just Married',
-  },
-  {
-    id: 'story_2',
-    coupleName: 'Chandrashekar & Dhavani',
-    postedOn: '10 Oct 2026',
-    storySnippet:
-      'Our families connected on the app and bonded instantly over shared Sindhi traditions and values.',
-    imageUrl:
-      'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=600&auto=format&fit=crop&q=80',
-    badge: 'Happily Married',
-  },
-  {
-    id: 'story_3',
-    coupleName: 'Kunal & Mehek Advani',
-    postedOn: '28 Sept 2026',
-    storySnippet:
-      'From our very first chat to our grand wedding celebration, finding each other here felt purely destined.',
-    imageUrl:
-      'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600&auto=format&fit=crop&q=80',
-    badge: 'Match Made in Heaven',
-  },
-];
+const SUCCESS_STORIES_PARAMS = { page: 1, limit: 10 };
+const SUCCESS_STORIES_QUERY_KEY = [...QUERY_KEYS.successStories, SUCCESS_STORIES_PARAMS] as const;
+
+
+
 
 // -----------------------------------------------------------------------------
 // 3. MEMOIZED STORY CARD COMPONENT
@@ -103,7 +83,7 @@ const StoryCard: React.FC<StoryCardProps> = React.memo(({ item, onPress }) => {
         <Image
           source={
             imageError || !item.imageUrl
-              ? require('../../../assets/images/celebrating_banner.jpg')
+              ? require('../../../assets/images/celebrating_banner.png')
               : { uri: item.imageUrl }
           }
           style={styles.coupleImage}
@@ -169,40 +149,141 @@ StoryCard.displayName = 'StoryCard';
 // -----------------------------------------------------------------------------
 const SuccessStoriesSection: React.FC<SuccessStoriesSectionProps> = React.memo(
   ({
-    data = DUMMY_SUCCESS_STORIES,
+    data: propStories,
+    title = 'Success Stories',
+    subtitle = 'Sindhi couples who found love',
     onStoryPress,
     onViewAll,
     containerStyle,
   }) => {
     const [activeIndex, setActiveIndex] = useState(0);
 
+    // Fetch dynamic success stories feed with fallback
+    const { data: apiStories } = useApiQuery({
+      queryKey: SUCCESS_STORIES_QUERY_KEY,
+      url: ApiURL.successStoriesFeed,
+      params: SUCCESS_STORIES_PARAMS,
+      staleTime: 1000 * 60 * 10,
+      select: useCallback((res: any) => {
+        const raw = res?.data !== undefined ? res.data : res;
+        const list = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.stories)
+            ? raw.stories
+            : Array.isArray(raw?.list)
+              ? raw.list
+              : Array.isArray(raw?.items)
+                ? raw.items
+                : Array.isArray(res?.stories)
+                  ? res.stories
+                  : Array.isArray(res?.list)
+                    ? res.list
+                    : Array.isArray(res?.items)
+                      ? res.items
+                      : [];
+
+        if (!list.length) return [];
+
+        return list.map((item: any, idx: number): SuccessStory => {
+          const couple =
+            item.coupleName ||
+            item.coupleNames ||
+            (item.groomName && item.brideName ? `${item.groomName} & ${item.brideName}` : 'Happy Couple');
+          const img =
+            item.imageUrl ||
+            item.photoUrl ||
+            item.couplePhoto ||
+            (Array.isArray(item.photoUrls) ? item.photoUrls[0] : '') ||
+            '';
+          const snippet =
+            item.storySnippet ||
+            item.storyDescription ||
+            item.testimonial ||
+            item.fullStory ||
+            'Found our soulmate through verified community matchmaking.';
+          const posted = item.postedDate || item.postedOn || item.weddingDate || 'Recently';
+
+          return {
+            id: String(item.id || item._id || item.storyId || `story_${idx + 1}`),
+            coupleName: couple,
+            postedOn: posted,
+            storySnippet: snippet,
+            imageUrl: img,
+            badge: item.badge || item.storyTitle || 'Just Married',
+            weddingDate: item.weddingDate,
+            location: item.location || item.city,
+            fullStory: item.fullStory || snippet,
+          };
+        });
+      }, []),
+    });
+
+    const stories =
+      apiStories && apiStories.length > 0
+        ? apiStories
+        : (propStories && propStories.length > 0 ? propStories : []);
+
+    const onStoryPressRef = useRef(onStoryPress);
+    onStoryPressRef.current = onStoryPress;
+
+    const onViewAllRef = useRef(onViewAll);
+    onViewAllRef.current = onViewAll;
+
+    const navigation = useNavigation<any>();
+
+    const handleStoryPress = useCallback((story: SuccessStory) => {
+      if (onStoryPressRef.current) {
+        onStoryPressRef.current(story);
+      } else {
+        navigation.navigate('SuccessStoryDetailScreen', { story, id: story.id });
+      }
+    }, [navigation]);
+
+    const handleViewAllPress = useCallback(() => {
+      if (onViewAllRef.current) {
+        onViewAllRef.current();
+      } else {
+        navigation.navigate('SuccessStoriesListScreen');
+      }
+    }, [navigation]);
+
     const onScroll = useCallback(
       (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         const offsetX = event.nativeEvent.contentOffset.x;
         const index = Math.round(offsetX / SNAP_INTERVAL);
-        if (index >= 0 && index < data.length) {
+        if (index >= 0 && index < stories.length) {
           setActiveIndex(index);
         }
       },
-      [data.length],
+      [stories.length],
     );
 
     const renderItem = useCallback(
       ({ item }: { item: SuccessStory }) => (
-        <StoryCard item={item} onPress={onStoryPress} />
+        <StoryCard item={item} onPress={handleStoryPress} />
       ),
-      [onStoryPress],
+      [handleStoryPress],
     );
 
     const keyExtractor = useCallback((item: SuccessStory) => item.id, []);
 
+    if (!stories || stories?.length === 0) {
+      return null;
+    }
+
     return (
       <View style={[styles.container, containerStyle]}>
+        {/* Section Header */}
+        <View style={styles.headerRow}>
+          <Text style={styles.sectionTitle}>{title}</Text>
+          {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
+        </View>
+
         {/* Horizontal Carousel of Story Cards */}
         <FlashList
           horizontal
-          data={data}
-          estimatedItemSize={SNAP_INTERVAL || 280}
+          data={stories}
+
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           showsHorizontalScrollIndicator={false}
@@ -216,22 +297,24 @@ const SuccessStoriesSection: React.FC<SuccessStoriesSectionProps> = React.memo(
         />
 
         {/* Carousel Pagination Dots */}
-        <View style={styles.paginationRow}>
-          {data.map((_, idx) => (
-            <View
-              key={`dot_${idx}`}
-              style={[
-                styles.dot,
-                idx === activeIndex ? styles.activeDot : styles.inactiveDot,
-              ]}
-            />
-          ))}
-        </View>
+        {stories.length > 1 && (
+          <View style={styles.paginationRow}>
+            {stories.map((_: any, idx: any) => (
+              <View
+                key={`dot_${idx}`}
+                style={[
+                  styles.dot,
+                  idx === activeIndex ? styles.activeDot : styles.inactiveDot,
+                ]}
+              />
+            ))}
+          </View>
+        )}
 
         {/* "View success stories >" Outline Capsule Button */}
         <LoadingButton
           title="View success stories"
-          onPress={onViewAll}
+          onPress={handleViewAllPress}
           variant="outline"
           style={styles.viewAllBtn}
           textStyle={styles.viewAllText}
@@ -258,6 +341,22 @@ const styles = StyleSheet.create({
   container: {
     marginTop: moderateVerticalScale(8),
     marginBottom: moderateVerticalScale(24),
+  },
+  headerRow: {
+    paddingHorizontal: moderateScale(16),
+    marginBottom: moderateVerticalScale(12),
+  },
+  sectionTitle: {
+    fontFamily: fontFamily.Inter18Bold,
+    fontSize: moderateScale(17),
+    color: '#0F172A',
+    letterSpacing: -0.3,
+  },
+  sectionSubtitle: {
+    fontFamily: fontFamily.Inter18Regular,
+    fontSize: moderateScale(12),
+    color: '#64748B',
+    marginTop: moderateVerticalScale(2),
   },
   horizontalList: {
     overflow: 'visible',

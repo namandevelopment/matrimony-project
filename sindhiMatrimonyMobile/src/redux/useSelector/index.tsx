@@ -11,7 +11,8 @@ const selectDataState = (state: RootState): any => state?.data ?? {};
 // =============================================================================
 // 1. PROFILE & DASHBOARD SELECTORS
 // =============================================================================
-export const selectProfile = createSelector([selectDataState], (data: any) => data?.getprofiledata?.data || null);
+export const selectProfile = createSelector([selectDataState], (data: any) => data?.getprofiledata?.data?.profile || data?.getprofiledata?.data || null);
+export const selectPartnerPreferences = createSelector([selectDataState], (data: any) => data?.partnerPreferences ?? data?.getprofiledata?.data?.partnerPreferences ?? null);
 export const selectProfileLoader = createSelector([selectDataState], (data: any) => !!data?.getprofiledata?.loader);
 export const selectProfileError = createSelector([selectDataState], (data: any) => data?.getprofiledata?.error || null);
 

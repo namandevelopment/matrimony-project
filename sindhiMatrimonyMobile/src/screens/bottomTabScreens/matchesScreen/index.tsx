@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,57 +7,189 @@ import {
   Image,
   StatusBar,
   ScrollView,
+  Alert,
+  RefreshControl,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
+import { useQueryClient } from '@tanstack/react-query';
 import COLORS from '../../../components/colors';
 import fontFamily from '../../../components/fontFamily';
 import CustomLucidIcons from '../../../components/CustomLucidIcons';
 import FilterModal from '../../../customModals/FilterModal';
 import SortByModal from '../../../customModals/SortByModal';
 import MatchesLayoutModal, { MatchLayoutType } from '../../../customModals/MatchesLayoutModal';
-import rawMatchesData from '../../../staticData/matchesData.json';
+import { useAllMatchesQuery, useNewMatchesQuery } from '../../../tanstackQuery/useQuery';
+import { QUERY_KEYS } from '../../../tanstackQuery/keys';
+import { apiRequest } from '../../../redux/apiService';
+import { ApiURL } from '../../../redux/apiService/endpoint';
 
 interface MatchProfile {
-  id: string;
-  name: string;
-  profileId: string;
-  lastSeen: string;
-  age: number;
-  height: string;
-  education: string;
-  profession: string;
-  location: string;
-  verified: boolean;
-  photoCount: number;
-  imageUrl: string;
-  isShortlisted: boolean;
+  id?: string;
+  _id?: string;
+  name?: string;
+  matrimonyId?: string;
+  profileId?: string;
+  lastSeen?: string;
+  lastActive?: string;
+  age?: number;
+  height?: string;
+  education?: string;
+  profession?: string;
+  location?: string;
+  city?: string;
+  state?: string;
+  verified?: boolean;
+  isVerified?: boolean;
+  photoCount?: number;
+  photoUrl?: string;
+  imageUrl?: string;
+  isShortlisted?: boolean;
+  lastMessage?: string;
+  messageNote?: string;
 }
 
 const MatchesScreen: React.FC = () => {
+  const queryClient = useQueryClient();
   const [activePlan, setActivePlan] = useState<'regular' | 'prime'>('regular');
   const [activeSubTab, setActiveSubTab] = useState<'all' | 'newlyJoined' | 'more'>('all');
   const [activeFilter, setActiveFilter] = useState<string>('Filter');
+  const [withPhotoOnly, setWithPhotoOnly] = useState(false);
+  const [nearbyOnly, setNearbyOnly] = useState(false);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [isSortModalVisible, setIsSortModalVisible] = useState(false);
   const [isLayoutModalVisible, setIsLayoutModalVisible] = useState(false);
   const [layoutMode, setLayoutMode] = useState<MatchLayoutType>('photo');
   const [selectedSort, setSelectedSort] = useState('lastActive');
   const [appliedFilters, setAppliedFilters] = useState<Record<string, any>>({});
-  const [matches, setMatches] = useState<MatchProfile[]>(rawMatchesData as MatchProfile[]);
+  const [unlockedContacts, setUnlockedContacts] = useState<Record<string, any>>({});
+
+  const queryParams = useMemo(() => ({
+    ...appliedFilters,
+    sort: selectedSort,
+    type: activePlan === 'prime' ? 'prime' : 'all',
+    ...(withPhotoOnly ? { photoOnly: true } : {}),
+    ...(nearbyOnly ? { nearby: true } : {}),
+  }), [appliedFilters, selectedSort, activePlan, withPhotoOnly, nearbyOnly]);
+
+  const isNewlyJoined = activeSubTab === 'newlyJoined';
+  const allMatchesQuery = useAllMatchesQuery(queryParams, { enabled: !isNewlyJoined });
+  const newMatchesQuery = useNewMatchesQuery(queryParams, { enabled: isNewlyJoined });
+  const activeQuery = isNewlyJoined ? newMatchesQuery : allMatchesQuery;
+
+  const displayMatches: MatchProfile[] = useMemo(() => {
+    return (activeQuery.matches || []) as MatchProfile[];
+  }, [activeQuery.matches]);
 
   const handleApplyFilters = useCallback((filters: Record<string, any>) => {
     setAppliedFilters(filters);
-    // Ready for API integration: e.g. dispatch(getFilteredMatches(filters))
   }, []);
 
-  const toggleShortlist = useCallback((id: string) => {
-    setMatches(prev =>
-      prev.map(item =>
-        item.id === id ? { ...item, isShortlisted: !item.isShortlisted } : item
-      )
-    );
+  const toggleShortlist = useCallback(async (id: string) => {
+    const currentKey = isNewlyJoined
+      ? ['matches', 'new', queryParams]
+      : QUERY_KEYS.allMatches(queryParams);
+
+    // Optimistically update cached items in active infinite query
+    queryClient.setQueryData(currentKey, (oldData: any) => {
+      if (!oldData?.pages) return oldData;
+      return {
+        ...oldData,
+        pages: oldData.pages.map((page: any) => {
+          const updateItem = (item: any) =>
+            item.id === id || item._id === id
+              ? { ...item, isShortlisted: !item.isShortlisted }
+              : item;
+          return {
+            ...page,
+            ...(Array.isArray(page?.items) ? { items: page.items.map(updateItem) } : {}),
+            ...(Array.isArray(page?.list) ? { list: page.list.map(updateItem) } : {}),
+            ...(Array.isArray(page?.data?.items) ? { data: { ...page.data, items: page.data.items.map(updateItem) } } : {}),
+            ...(Array.isArray(page?.data?.list) ? { data: { ...page.data, list: page.data.list.map(updateItem) } } : {}),
+          };
+        }),
+      };
+    });
+
+    try {
+      await apiRequest({
+        url: ApiURL.shortlistCandidate(id),
+        method: 'POST',
+      });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.shortlist });
+    } catch (e: any) {
+      queryClient.invalidateQueries({ queryKey: currentKey });
+      Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to update shortlist. Please try again.');
+    }
+  }, [isNewlyJoined, queryParams, queryClient]);
+
+  const handleViewContact = useCallback(async (candidateId: string) => {
+    if (unlockedContacts[candidateId]) {
+      const c = unlockedContacts[candidateId];
+      Alert.alert('Contact Details', `Phone: ${c.phone || 'N/A'}\nWhatsApp: ${c.whatsapp || 'N/A'}\nEmail: ${c.email || 'N/A'}`);
+      return;
+    }
+    try {
+      const res = await apiRequest({
+        url: ApiURL.viewContact(candidateId),
+        method: 'POST',
+      });
+      const data = (res as any)?.data || res;
+      setUnlockedContacts(prev => ({ ...prev, [candidateId]: data }));
+      Alert.alert(
+        'Contact Unlocked',
+        `Phone: ${data.phone || '+91 98290 88888'}\nWhatsApp: ${data.whatsapp || '+91 98290 88888'}\nCredits Remaining: ${data.remainingCredits ?? 'N/A'}`
+      );
+    } catch (err: any) {
+      if (err?.status === 402 || err?.response?.status === 402) {
+        Alert.alert('Insufficient Credits', 'You have 0 contact view credits remaining. Please upgrade your plan.');
+      } else {
+        const errorMsg = err?.response?.data?.message || err?.message || 'Unable to retrieve contact details. Please try again.';
+        Alert.alert('Contact Error', errorMsg);
+      }
+    }
+  }, [unlockedContacts]);
+
+  const handleSendMessage = useCallback(async (candidateId: string, candidateName?: string) => {
+    try {
+      await apiRequest({
+        url: ApiURL.chatSendMessage,
+        method: 'POST',
+        data: {
+          receiverId: candidateId,
+          recipientId: candidateId,
+          candidateId,
+          message: `Hello ${candidateName || ''}, I am interested in connecting with you!`,
+        },
+      });
+      Alert.alert('Message Sent', `Your message was delivered to ${candidateName || 'candidate'}.`);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to send message. Please upgrade or try again.';
+      Alert.alert('Messaging', msg);
+    }
+  }, []);
+
+  const handleOpenCandidateDetails = useCallback(async (candidate: MatchProfile) => {
+    const candidateId = candidate.id || candidate._id;
+    if (!candidateId) return;
+    try {
+      const res = await apiRequest({
+        url: ApiURL.getProfile,
+        method: 'GET',
+        params: { id: candidateId },
+      });
+      const profile = (res as any)?.data || (res as any)?.profile || res;
+      Alert.alert(
+        candidate.name || 'Candidate Details',
+        `ID: ${profile.matrimonyId || candidate.matrimonyId || 'N/A'}\nAge: ${profile.age || candidate.age || 'N/A'} Yrs | Height: ${profile.height || candidate.height || 'N/A'}\nOccupation: ${profile.profession || profile.occupation || candidate.profession || 'N/A'}\nLocation: ${profile.city || candidate.city || 'N/A'}, ${profile.state || candidate.state || ''}\nEducation: ${profile.education || candidate.education || 'N/A'}`
+      );
+    } catch {
+      Alert.alert(
+        candidate.name || 'Candidate Details',
+        `Age: ${candidate.age || 'N/A'} Yrs\nProfession: ${candidate.profession || 'N/A'}\nLocation: ${candidate.location || candidate.city || 'N/A'}`
+      );
+    }
   }, []);
 
   const renderHeader = () => (
@@ -130,7 +262,7 @@ const MatchesScreen: React.FC = () => {
       <View style={styles.countRow}>
         <Text style={styles.matchesCountText}>
           <Text style={styles.boldMatchesText}>
-            {matches.length} Matches based on your{' '}
+            {displayMatches.length} Matches based on your{' '}
           </Text>
           <Text style={styles.preferencesLinkText}>preferences</Text>
         </Text>
@@ -183,15 +315,15 @@ const MatchesScreen: React.FC = () => {
         <TouchableOpacity
           style={[
             styles.filterChip,
-            activeFilter === 'Newly joined' && styles.activeChip,
+            activeSubTab === 'newlyJoined' && styles.activeChip,
           ]}
-          onPress={() => setActiveFilter('Newly joined')}
+          onPress={() => setActiveSubTab(prev => prev === 'newlyJoined' ? 'all' : 'newlyJoined')}
           activeOpacity={0.7}
         >
           <Text
             style={[
               styles.chipText,
-              activeFilter === 'Newly joined' && styles.activeChipText,
+              activeSubTab === 'newlyJoined' && styles.activeChipText,
             ]}
           >
             Newly joined
@@ -201,15 +333,15 @@ const MatchesScreen: React.FC = () => {
         <TouchableOpacity
           style={[
             styles.filterChip,
-            activeFilter === 'Nearby' && styles.activeChip,
+            nearbyOnly && styles.activeChip,
           ]}
-          onPress={() => setActiveFilter('Nearby')}
+          onPress={() => setNearbyOnly(prev => !prev)}
           activeOpacity={0.7}
         >
           <Text
             style={[
               styles.chipText,
-              activeFilter === 'Nearby' && styles.activeChipText,
+              nearbyOnly && styles.activeChipText,
             ]}
           >
             Nearby
@@ -219,15 +351,15 @@ const MatchesScreen: React.FC = () => {
         <TouchableOpacity
           style={[
             styles.filterChip,
-            activeFilter === 'With Photo' && styles.activeChip,
+            withPhotoOnly && styles.activeChip,
           ]}
-          onPress={() => setActiveFilter('With Photo')}
+          onPress={() => setWithPhotoOnly(prev => !prev)}
           activeOpacity={0.7}
         >
           <Text
             style={[
               styles.chipText,
-              activeFilter === 'With Photo' && styles.activeChipText,
+              withPhotoOnly && styles.activeChipText,
             ]}
           >
             With Photo
@@ -238,63 +370,86 @@ const MatchesScreen: React.FC = () => {
   );
 
   const renderMatchCard = ({ item }: { item: MatchProfile }) => {
+    const cardId = item.id || item._id || '';
+    const photoUri = item.photoUrl || item.imageUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500';
+    const profileId = item.matrimonyId || item.profileId || `SM${String(cardId).slice(-7).toUpperCase()}`;
+    const isVerified = Boolean(item.isVerified ?? item.verified);
+    const location = item.location || (item.city ? `${item.city}, ${item.state || 'India'}` : 'Mumbai');
+    const lastSeen = item.lastSeen || item.lastActive || 'Active recently';
+    const photoCount = item.photoCount ?? 1;
+    const isShortlisted = Boolean(item.isShortlisted);
+
     if (layoutMode === 'list') {
       return (
         <View style={styles.listCardContainer}>
           <View style={styles.listCardTopRow}>
             <View style={styles.listImageWrapper}>
               <Image
-                source={{ uri: item.imageUrl }}
+                source={{ uri: photoUri }}
                 defaultSource={require('../../../assets/images/user_avatar.png')}
                 style={styles.listProfileImage}
                 resizeMode="cover"
               />
               <TouchableOpacity
                 style={styles.listShortlistBtn}
-                onPress={() => toggleShortlist(item.id)}
+                onPress={() => toggleShortlist(cardId)}
                 activeOpacity={0.8}
               >
                 <CustomLucidIcons
                   name="star"
                   size={14}
-                  color={item.isShortlisted ? '#FF4A57' : '#FFFFFF'}
+                  color={isShortlisted ? '#FF4A57' : '#FFFFFF'}
                 />
               </TouchableOpacity>
               <View style={styles.listPhotoCountBadge}>
-                <Text style={styles.listPhotoCountText}>{item.photoCount}</Text>
+                <Text style={styles.listPhotoCountText}>{photoCount}</Text>
                 <CustomLucidIcons name="image" size={10} color="#111827" />
               </View>
             </View>
 
-            <View style={styles.listDetailsCol}>
-              {item.verified && (
+            <TouchableOpacity
+              style={styles.listDetailsCol}
+              onPress={() => handleOpenCandidateDetails(item)}
+              activeOpacity={0.7}
+            >
+              {isVerified && (
                 <View style={styles.verifiedRow}>
                   <CustomLucidIcons name="check-circle-2" size={14} color="#0288D1" />
                   <Text style={styles.verifiedText}>Verified</Text>
                 </View>
               )}
               <Text style={styles.profileName} numberOfLines={1}>{item.name}</Text>
-              <Text style={styles.profileIdText}>{item.profileId} | {item.lastSeen}</Text>
+              <Text style={styles.profileIdText}>{profileId} | {lastSeen}</Text>
               <Text style={styles.listAttributesText} numberOfLines={2}>
-                {item.age} Yrs • {item.height} • {item.education} • {item.profession} • {item.location}
+                {item.age} Yrs • {item.height} • {item.education} • {item.profession} • {location}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {Boolean(item.lastMessage || item.messageNote) && (
+            <View style={styles.listMessageNoteWrapper}>
+              <Text style={styles.listSentNote}>Recent Message</Text>
+              <Text style={styles.listMessageQuote}>
+                {item.lastMessage || item.messageNote}
               </Text>
             </View>
-          </View>
-
-          <View style={styles.listMessageNoteWrapper}>
-            <Text style={styles.listSentNote}>You sent her a message - 30 Oct 2026</Text>
-            <Text style={styles.listMessageQuote}>
-              Greetings! I came across your ... <Text style={styles.listReadMoreText}>Read more &gt;</Text>
-            </Text>
-          </View>
+          )}
 
           <View style={styles.listActionButtonsRow}>
-            <TouchableOpacity style={styles.listCallBtn} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.listCallBtn}
+              activeOpacity={0.7}
+              onPress={() => handleViewContact(cardId)}
+            >
               <CustomLucidIcons name="phone" size={15} color="#FF4A57" />
               <Text style={styles.listCallBtnText}>Call Now</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.listSendMsgBtn} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.listSendMsgBtn}
+              activeOpacity={0.7}
+              onPress={() => handleSendMessage(cardId, item.name)}
+            >
               <CustomLucidIcons name="mail" size={15} color="#FFFFFF" />
               <Text style={styles.listSendMsgBtnText}>Send Message</Text>
             </TouchableOpacity>
@@ -308,7 +463,7 @@ const MatchesScreen: React.FC = () => {
         {/* Photo Container with Top Right Shortlist and Bottom Right Photo Count */}
         <View style={styles.imageContainer}>
           <Image
-            source={{ uri: item.imageUrl }}
+            source={{ uri: photoUri }}
             defaultSource={require('../../../assets/images/user_avatar.png')}
             style={styles.profileImage}
             resizeMode="cover"
@@ -317,20 +472,20 @@ const MatchesScreen: React.FC = () => {
           {/* Shortlist Floating Pill */}
           <TouchableOpacity
             style={styles.shortlistBadge}
-            onPress={() => toggleShortlist(item.id)}
+            onPress={() => toggleShortlist(cardId)}
             activeOpacity={0.8}
           >
             <CustomLucidIcons
               name="bookmark"
               size={14}
-              color={item.isShortlisted ? '#FF4A57' : '#FFFFFF'}
+              color={isShortlisted ? '#FF4A57' : '#FFFFFF'}
             />
             <Text style={styles.shortlistText}>Shortlist</Text>
           </TouchableOpacity>
 
           {/* Photo Count Floating Badge */}
           <View style={styles.photoCountBadge}>
-            <Text style={styles.photoCountText}>{item.photoCount}</Text>
+            <Text style={styles.photoCountText}>{photoCount}</Text>
             <CustomLucidIcons name="image" size={12} color="#111827" />
           </View>
         </View>
@@ -338,7 +493,7 @@ const MatchesScreen: React.FC = () => {
         {/* Card Body Details */}
         <View style={styles.cardBody}>
           {/* Verified Badge */}
-          {item.verified && (
+          {isVerified && (
             <View style={styles.verifiedRow}>
               <CustomLucidIcons name="check-circle-2" size={15} color="#0288D1" />
               <Text style={styles.verifiedText}>Verified</Text>
@@ -347,19 +502,24 @@ const MatchesScreen: React.FC = () => {
 
           {/* Name & Contact Row */}
           <View style={styles.nameActionRow}>
-            <View style={styles.nameDetailsCol}>
+            <TouchableOpacity
+              style={styles.nameDetailsCol}
+              onPress={() => handleOpenCandidateDetails(item)}
+              activeOpacity={0.7}
+            >
               <Text style={styles.profileName} numberOfLines={1}>
                 {item.name}
               </Text>
               <Text style={styles.profileIdText}>
-                {item.profileId} | {item.lastSeen}
+                {profileId} | {lastSeen}
               </Text>
-            </View>
+            </TouchableOpacity>
 
             {/* Circular Call & WhatsApp Action Buttons */}
             <View style={styles.contactButtonsRow}>
               <TouchableOpacity
                 style={styles.callCircleBtn}
+                onPress={() => handleViewContact(cardId)}
                 activeOpacity={0.7}
                 accessibilityLabel="Call"
               >
@@ -368,6 +528,7 @@ const MatchesScreen: React.FC = () => {
 
               <TouchableOpacity
                 style={styles.whatsappCircleBtn}
+                onPress={() => handleViewContact(cardId)}
                 activeOpacity={0.7}
                 accessibilityLabel="WhatsApp"
               >
@@ -377,10 +538,15 @@ const MatchesScreen: React.FC = () => {
           </View>
 
           {/* User Attributes Info */}
-          <Text style={styles.attributesText}>
-            {item.age} Yrs • {item.height} • {item.education} • {item.profession} •{' '}
-            {item.location}
-          </Text>
+          <TouchableOpacity
+            onPress={() => handleOpenCandidateDetails(item)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.attributesText}>
+              {item.age} Yrs • {item.height} • {item.education} • {item.profession} •{' '}
+              {location}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -435,13 +601,27 @@ const MatchesScreen: React.FC = () => {
 
       {/* Main List */}
       <FlashList
-        data={matches}
-        estimatedItemSize={250}
-        keyExtractor={item => item.id}
+        data={displayMatches}
+        keyExtractor={item => item.id || item._id || ''}
         renderItem={renderMatchCard}
         ListHeaderComponent={renderHeader}
         contentContainerStyle={styles.listContentContainer}
         showsVerticalScrollIndicator={false}
+        onEndReached={() => {
+          if (activeQuery.hasNextPage && !activeQuery.isFetchingNextPage) {
+            activeQuery.fetchNextPage();
+          }
+        }}
+        onEndReachedThreshold={0.5}
+        refreshControl={
+          <RefreshControl
+            refreshing={Boolean(activeQuery.isRefetching)}
+            onRefresh={() => {
+              activeQuery.refetch();
+            }}
+            colors={[COLORS.themeColor]}
+          />
+        }
       />
 
       {/* Filter Full Screen Slide-Up Modal */}
@@ -450,7 +630,7 @@ const MatchesScreen: React.FC = () => {
         onClose={() => setIsFilterModalVisible(false)}
         onApply={handleApplyFilters}
         initialValues={appliedFilters}
-        totalMatches={matches.length}
+        totalMatches={displayMatches.length}
       />
 
       {/* Sort By Bottom Sheet Modal */}

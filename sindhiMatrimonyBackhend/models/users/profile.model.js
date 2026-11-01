@@ -44,6 +44,11 @@ const profileSchema = new Schema(
       required: true,
       index: true,
     },
+    alternatePhone: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     dateOfBirth: {
       type: Number, // Timestamp in ms
     },

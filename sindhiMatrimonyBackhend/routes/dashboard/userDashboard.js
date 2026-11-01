@@ -103,8 +103,10 @@ router.post("/profile-views/track", trackProfileView);
 
 import {
   getPublicSuccessStories,
+  getPublicSuccessStoryById,
   submitUserSuccessStory,
   toggleLikeSuccessStory,
+  addSuccessStoryComment,
 } from "../../controllers/stories/successStoryController.js";
 
 /**
@@ -113,9 +115,11 @@ import {
  * @access  Public / Private
  */
 router.get("/success-stories", getPublicSuccessStories);
+router.get("/success-stories/:id", getPublicSuccessStoryById);
 router.post("/success-stories/share", submitUserSuccessStory);
 router.post("/success-stories/:id/like", toggleLikeSuccessStory);
 router.put("/success-stories/:id/like", toggleLikeSuccessStory);
+router.post("/success-stories/:id/comments", addSuccessStoryComment);
 
 /**
  * @route   GET /api/v1/dashboard/banners

@@ -90,7 +90,7 @@ android {
     splits {
         abi {
             reset()
-            enable true
+            enable !gradle.startParameter.taskNames.any { it.contains("bundle") }
             universalApk true
             include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
         }
@@ -124,6 +124,22 @@ android {
             signingConfig signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+        }
+    }
+
+    packaging {
+        resources {
+            excludes += [
+                "META-INF/*.version",
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*",
+                "META-INF/*.txt",
+                "META-INF/*.md"
+            ]
+        }
+        jniLibs {
+            useLegacyPackaging = true
         }
     }
 }

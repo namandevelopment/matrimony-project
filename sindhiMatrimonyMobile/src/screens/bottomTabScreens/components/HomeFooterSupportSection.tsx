@@ -44,22 +44,10 @@ const HomeFooterSupportSection: React.FC<HomeFooterSupportSectionProps> =
         });
       }, [phoneNumber]);
 
-      // Direct chat handler inside the component
+      // Direct chat handler: Navigates directly to SupportChatScreen
       const handleChatWithUs = useCallback(() => {
-        // Option 1: Open WhatsApp support directly if available, fallback to HelpCenter
-        const whatsappUrl = `https://wa.me/91${phoneNumber}?text=Hello%20${appName}%20Support,%20I%20need%20assistance.`;
-        Linking.canOpenURL(whatsappUrl)
-          .then(supported => {
-            if (supported) {
-              return Linking.openURL(whatsappUrl);
-            } else {
-              navigation.navigate('HelpCenter');
-            }
-          })
-          .catch(() => {
-            navigation.navigate('HelpCenter');
-          });
-      }, [appName, phoneNumber, navigation]);
+        navigation.navigate('SupportChatScreen');
+      }, [navigation]);
 
       // Wedding planning know more handler
       const handleKnowMore = useCallback(() => {

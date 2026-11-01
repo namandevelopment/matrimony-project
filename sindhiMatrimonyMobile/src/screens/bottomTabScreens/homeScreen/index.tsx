@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import COLORS from '../../../components/colors';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectProfile } from '../../../redux/useSelector';
+import { get_Profile_Call } from '../../../redux/useDispatch';
 import HomeProfileTab from '../components/HomeProfileTab';
 import CompleteProfileSection from '../components/CompleteProfileSection';
 import DailyRecommendationsSection, { DailyRecommendation } from '../components/DailyRecommendationsSection';
@@ -19,7 +22,32 @@ import CelebratingBanner from '../components/CelebratingBanner';
 
 const HomeScreen = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const [primeModalVisible, setPrimeModalVisible] = useState(false);
+  const dispatch = useDispatch();
+  const profile = useSelector(selectProfile);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const dailyRecYRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (!profile) {
+      get_Profile_Call(dispatch);
+    }
+  }, [dispatch, profile]);
+
+  const completenessScore = profile?.completenessScore || 52;
+
+  useEffect(() => {
+    if (route?.params?.scrollTo === 'dailyRecommendation') {
+      const timer = setTimeout(() => {
+        scrollViewRef.current?.scrollTo({
+          y: Math.max(0, dailyRecYRef.current - 8),
+          animated: true,
+        });
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [route?.params?.scrollTo, route?.params?.timestamp]);
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }} >
@@ -37,6 +65,7 @@ const HomeScreen = () => {
         }}
       />
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={{ paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
       >
@@ -46,19 +75,24 @@ const HomeScreen = () => {
         }} />
 
 
-        <CompleteProfileSection score={52} />
+        <CompleteProfileSection score={completenessScore} />
 
-        <DailyRecommendationsSection
-          onProfilePress={(profile: DailyRecommendation) => {
-            console.log('Daily recommendation selected:', profile.name);
+        <View
+          onLayout={(e) => {
+            dailyRecYRef.current = e.nativeEvent.layout.y;
           }}
-          onViewAll={() => {
-            navigation.navigate('Matches');
-          }}
-        />
+        >
+          <DailyRecommendationsSection
+            onProfilePress={(profile: DailyRecommendation) => {
+              console.log('Daily recommendation selected:', profile.name);
+            }}
+            onViewAll={() => {
+              navigation.navigate('Matches');
+            }}
+          />
+        </View>
 
         <AllMatchesSection
-          matchCount={497}
           onProfilePress={(profile: MatchProfile) => {
             console.log('Match selected:', profile.name);
           }}
@@ -77,7 +111,6 @@ const HomeScreen = () => {
         />
 
         <NewMatchesSection
-          matchCount={17}
           onProfilePress={(profile: NewMatchProfile) => {
             console.log('New match selected:', profile.name);
           }}
@@ -95,7 +128,6 @@ const HomeScreen = () => {
 
         {/* Who Viewed You Section */}
         <WhoViewedYouSection
-          count={10}
           onProfilePress={(profile: ViewedProfile) => {
             console.log('Who viewed you selected:', profile.name);
           }}
@@ -106,7 +138,6 @@ const HomeScreen = () => {
 
         {/* Profiles You Viewed Section */}
         <ProfilesYouViewedSection
-          count={27}
           onProfilePress={(profile: MyViewedProfile) => {
             console.log('Profile viewed selected:', profile.name);
           }}
@@ -121,10 +152,10 @@ const HomeScreen = () => {
         {/* Success Stories Section */}
         <SuccessStoriesSection
           onStoryPress={(story: SuccessStory) => {
-            console.log('Success story selected:', story.coupleName);
+            navigation.navigate('SuccessStoryDetailScreen', { story, id: story.id });
           }}
           onViewAll={() => {
-            navigation.navigate('Matches');
+            navigation.navigate('SuccessStoriesListScreen');
           }}
         />
 

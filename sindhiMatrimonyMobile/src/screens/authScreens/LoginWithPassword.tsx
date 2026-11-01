@@ -80,7 +80,13 @@ const LoginWithPassword = ({ navigation }: any) => {
 
       if (response.error || !response.data) {
         const errorMsg = response.message || 'Login failed. Please check your credentials.';
-        setErrors(prev => ({ ...prev, password: errorMsg }));
+        const isConnError =
+          errorMsg.toLowerCase().includes('connect') ||
+          errorMsg.toLowerCase().includes('internet') ||
+          errorMsg.toLowerCase().includes('timed out');
+        if (!isConnError) {
+          setErrors(prev => ({ ...prev, password: errorMsg }));
+        }
         toast.error(errorMsg);
         return;
       }
@@ -88,7 +94,10 @@ const LoginWithPassword = ({ navigation }: any) => {
       const { token, refreshToken, user } = response.data;
 
       // Save tokens & user context synchronously to high-performance MMKV storage
-      if (token) setToken(token);
+      if (token) {
+        setToken(token);
+        Storage.setItemSync('accessToken', token);
+      }
       if (refreshToken) setRefreshToken(refreshToken);
       if (user) Storage.setItemSync('user', user);
 
@@ -114,7 +123,13 @@ const LoginWithPassword = ({ navigation }: any) => {
     } catch (err: any) {
       setIsLoading(false);
       const errMsg = err?.message || 'Network error. Please try again.';
-      setErrors(prev => ({ ...prev, password: errMsg }));
+      const isConnError =
+        errMsg.toLowerCase().includes('connect') ||
+        errMsg.toLowerCase().includes('internet') ||
+        errMsg.toLowerCase().includes('network');
+      if (!isConnError) {
+        setErrors(prev => ({ ...prev, password: errMsg }));
+      }
       toast.error(errMsg);
     }
   }, [inputs, navigation]);

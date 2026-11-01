@@ -9,16 +9,19 @@ import { Platform } from 'react-native';
 // - Android Emulator: 'http://10.0.2.2:5001'
 // - Physical Device (Wi-Fi): 'http://192.168.29.126:5001' (Change to your local machine IP if needed)
 // - Production Server: 'https://api.sindhimatrimony.co.in'
+const USE_LOCAL_BACKEND = false;
+
 const getDevBaseUrl = () => {
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:5001';
+  if (USE_LOCAL_BACKEND) {
+    return Platform.OS === 'android' ? 'http://10.0.2.2:5001' : 'http://localhost:5001';
   }
-  return 'http://localhost:5001';
+  return 'https://sindhi-matrimony-backend.vercel.app';
 };
 
 export const BASE_URL = __DEV__
   ? getDevBaseUrl()
-  : 'https://api.sindhimatrimony.co.in';
+  : 'https://sindhi-matrimony-backend.vercel.app';
+
 
 // Socket.io Real-time Gateway
 export const SOCKET_URL = `${BASE_URL}/socket`;
@@ -103,6 +106,9 @@ export const ApiURL = {
   profilesYouViewedFeed: `${BASE_URL}/api/v1/dashboard/profiles-you-viewed`,
   trackProfileView: `${BASE_URL}/api/v1/dashboard/profile-views/track`,
   successStoriesFeed: `${BASE_URL}/api/v1/dashboard/success-stories`,
+  successStoryDetails: (id: string) => `${BASE_URL}/api/v1/dashboard/success-stories/${id}`,
+  successStoryLike: (id: string) => `${BASE_URL}/api/v1/dashboard/success-stories/${id}/like`,
+  successStoryComments: (id: string) => `${BASE_URL}/api/v1/dashboard/success-stories/${id}/comments`,
   homeBanners: `${BASE_URL}/api/v1/dashboard/banners`,
   saveBanner: `${BASE_URL}/api/v1/dashboard/banners`,
   supportInfo: `${BASE_URL}/api/v1/dashboard/support-info`,

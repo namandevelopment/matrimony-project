@@ -29,6 +29,8 @@ import { showToast } from '../../utils/CustomToast';
 import { displayLocalNotification, processPendingNotificationRedirect } from '../../firebase';
 import { Storage } from '../../storage/Storage';
 import { apiPost, ApiURL, setToken, setRefreshToken } from '../../redux/apiService';
+import { useDispatch } from 'react-redux';
+import { get_Profile_Call } from '../../redux/useDispatch';
 import { useInputs } from '../../customHooks/useInputs';
 
 const defaultCountry = COUNTRIES?.find(c => c.iso2 === 'IN') || COUNTRIES[0];
@@ -56,6 +58,7 @@ const LoginScreen = ({ navigation }: any) => {
     },
   );
   const [selectedCountry, setSelectedCountry] = useState(defaultCountry);
+  const dispatch = useDispatch();
   const inputRef = useRef<any>(null);
   const passwordRef = useRef<any>(null);
 
@@ -117,7 +120,13 @@ const LoginScreen = ({ navigation }: any) => {
       if (response.error || !response.data) {
         const errorMsg =
           response.message || 'Login failed. Please check your credentials.';
-        setError('password', errorMsg);
+        const isConnError =
+          errorMsg.toLowerCase().includes('connect') ||
+          errorMsg.toLowerCase().includes('internet') ||
+          errorMsg.toLowerCase().includes('timed out');
+        if (!isConnError) {
+          setError('password', errorMsg);
+        }
         showToast({
           type: 'error',
           message: errorMsg,
@@ -128,9 +137,14 @@ const LoginScreen = ({ navigation }: any) => {
 
       const { token, refreshToken, user } = response?.data;
 
-      if (token) setToken(token);
+      if (token) {
+        setToken(token);
+        Storage.setItemSync('accessToken', token);
+      }
       if (refreshToken) setRefreshToken(refreshToken);
       if (user) Storage.setItemSync('user', user);
+
+      get_Profile_Call(dispatch);
 
       displayLocalNotification({
         title: '🎉 Welcome Back!',
@@ -156,7 +170,13 @@ const LoginScreen = ({ navigation }: any) => {
     } catch (err: any) {
       setBoolean('isLoading', false);
       const errMsg = err?.message || 'Network error. Please try again.';
-      setError('password', errMsg);
+      const isConnError =
+        errMsg.toLowerCase().includes('connect') ||
+        errMsg.toLowerCase().includes('internet') ||
+        errMsg.toLowerCase().includes('network');
+      if (!isConnError) {
+        setError('password', errMsg);
+      }
       showToast({
         type: 'error',
         message: errMsg,

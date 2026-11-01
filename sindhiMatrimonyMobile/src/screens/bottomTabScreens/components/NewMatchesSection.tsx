@@ -13,6 +13,9 @@ import fontFamily from '../../../components/fontFamily';
 import CustomLucidIcons from '../../../components/CustomLucidIcons';
 import LoadingButton from '../../../components/buttons/LoadingButton';
 import { moderateScale, moderateVerticalScale } from '../../../utils/Responsive';
+import { ApiURL } from '../../../redux/apiService';
+import { useApiQuery } from '../../../tanstackQuery/useQuery';
+import { QUERY_KEYS } from '../../../tanstackQuery/keys';
 
 // -----------------------------------------------------------------------------
 // 1. TYPES & INTERFACES
@@ -36,61 +39,7 @@ interface NewMatchesSectionProps {
   containerStyle?: StyleProp<ViewStyle>;
 }
 
-// -----------------------------------------------------------------------------
-// 2. CURATED DUMMY DATA (Matching User's Reference Screenshot)
-// -----------------------------------------------------------------------------
-export const DUMMY_NEW_MATCHES: NewMatchProfile[] = [
-  {
-    id: 'new_1',
-    name: 'Prajkta Deshmukh',
-    age: 24,
-    height: `5'5"`,
-    location: 'Pune, Maharashtra',
-    profession: 'Fashion Designer',
-    imageUrl:
-      'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'new_2',
-    name: 'Purva Deshpande',
-    age: 27,
-    height: `5'3"`,
-    location: 'Mumbai, Maharashtra',
-    profession: 'Content Strategist',
-    imageUrl:
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'new_3',
-    name: 'Sayali Dalvi',
-    age: 27,
-    height: `5'2"`,
-    location: 'Nashik, Maharashtra',
-    profession: 'HR Specialist',
-    imageUrl:
-      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'new_4',
-    name: 'Mansi Vazirani',
-    age: 25,
-    height: `5'4"`,
-    location: 'Ahmedabad, Gujarat',
-    profession: 'Financial Analyst',
-    imageUrl:
-      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'new_5',
-    name: 'Ritu Bhagchandani',
-    age: 28,
-    height: `5'1"`,
-    location: 'Jaipur, Rajasthan',
-    profession: 'Software Engineer',
-    imageUrl:
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&auto=format&fit=crop&q=80',
-  },
-];
+
 
 // -----------------------------------------------------------------------------
 // 3. MEMOIZED NEW MATCH CARD COMPONENT
@@ -102,7 +51,7 @@ interface CardProps {
 }
 
 const NewMatchCard: React.FC<CardProps> = React.memo(
-  ({ item, onPress, onViewAll }) => {
+  ({ item, onPress, onViewAll }: any) => {
     const [imageError, setImageError] = useState(false);
 
     const handlePress = useCallback(() => {
@@ -156,9 +105,9 @@ const NewMatchCard: React.FC<CardProps> = React.memo(
         <View style={styles.imageWrapper}>
           <Image
             source={
-              imageError || !item.imageUrl
-                ? require('../../../assets/images/user_avatar.png')
-                : { uri: item.imageUrl }
+
+
+              { uri: item.photoUrl }
             }
             style={styles.profileImage}
             resizeMode="cover"
@@ -182,17 +131,52 @@ const NewMatchCard: React.FC<CardProps> = React.memo(
 
 NewMatchCard.displayName = 'NewMatchCard';
 
+const NEW_MATCHES_PARAMS = { page: 1, limit: 10 };
+const NEW_MATCHES_QUERY_KEY = [...QUERY_KEYS.newMatches, NEW_MATCHES_PARAMS] as const;
+
 // -----------------------------------------------------------------------------
 // 4. MEMOIZED MAIN SECTION COMPONENT
 // -----------------------------------------------------------------------------
 const NewMatchesSection: React.FC<NewMatchesSectionProps> = React.memo(
   ({
-    data = DUMMY_NEW_MATCHES,
+    data,
     matchCount = 17,
     onProfilePress,
     onViewAll,
     containerStyle,
   }) => {
+    const { data: queryData } = useApiQuery({
+      queryKey: NEW_MATCHES_QUERY_KEY,
+      url: ApiURL.newMatchesFeed,
+      params: NEW_MATCHES_PARAMS,
+      staleTime: 1000 * 60 * 5,
+      select: useCallback((res: any) => {
+        const raw = res?.data !== undefined ? res.data : res;
+        const list = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.list)
+            ? raw.list
+            : Array.isArray(raw?.items)
+              ? raw.items
+              : Array.isArray(res?.list)
+                ? res.list
+                : Array.isArray(res?.items)
+                  ? res.items
+                  : [];
+        const count = raw?.matchCount ?? raw?.count ?? raw?.total ?? res?.count ?? res?.total ?? list.length;
+        return {
+          matches: list,
+          count: typeof count === 'number' ? count : list.length,
+        };
+      }, []),
+    });
+
+    const activeMatches = (queryData?.matches && queryData.matches.length > 0)
+      ? queryData.matches
+      : (Array.isArray(data) && data.length > 0 ? data : []);
+
+    const activeCount = queryData?.count ?? (Array.isArray(data) && data.length > 0 ? data.length : matchCount);
+
     // Append the "View all" trailing card to the list as seen in reference screenshot
     const listData = React.useMemo(() => {
       const endCard: NewMatchProfile = {
@@ -201,12 +185,12 @@ const NewMatchesSection: React.FC<NewMatchesSectionProps> = React.memo(
         age: 0,
         height: '',
         imageUrl:
-          data[0]?.imageUrl ||
+          activeMatches[0]?.imageUrl ||
           'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80',
         isEndCard: true,
       };
-      return [...data, endCard];
-    }, [data]);
+      return [...activeMatches, endCard];
+    }, [activeMatches]);
 
     const renderItem = useCallback(
       ({ item }: { item: NewMatchProfile }) => (
@@ -225,7 +209,7 @@ const NewMatchesSection: React.FC<NewMatchesSectionProps> = React.memo(
       <View style={[styles.container, containerStyle]}>
         {/* Section Header */}
         <View style={styles.headerRow}>
-          <Text style={styles.sectionTitle}>New Matches ({matchCount})</Text>
+          <Text style={styles.sectionTitle}>New Matches ({activeCount})</Text>
           <Text style={styles.sectionSubtitle}>
             Members who match your preferences and have joined in the last 30
             days
@@ -236,7 +220,6 @@ const NewMatchesSection: React.FC<NewMatchesSectionProps> = React.memo(
         <FlashList
           horizontal
           data={listData}
-          estimatedItemSize={moderateScale(150)}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           showsHorizontalScrollIndicator={false}

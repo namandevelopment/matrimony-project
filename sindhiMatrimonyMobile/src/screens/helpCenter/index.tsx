@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import CustomHeader from '../../components/headers/CustomHeader';
 import CustomLucidIcons from '../../components/CustomLucidIcons';
 import fontFamily from '../../components/fontFamily';
@@ -28,6 +29,7 @@ interface HelpCenterItem {
 }
 
 const HelpCenter: React.FC = () => {
+  const navigation = useNavigation<any>();
 
   // Call us handler
   const handleCallUs = useCallback(() => {
@@ -54,11 +56,8 @@ const HelpCenter: React.FC = () => {
 
   // 24x7 Chat handler
   const handleChat = useCallback(() => {
-    showToast({
-      type: 'info',
-      message: 'Connecting to 24x7 live chat support representative...',
-    });
-  }, []);
+    navigation.navigate('SupportChatScreen');
+  }, [navigation]);
 
   // Feedback handler
   const handleFeedback = useCallback(() => {

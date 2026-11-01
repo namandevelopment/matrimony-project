@@ -81,8 +81,8 @@ export const useApiInfiniteQuery = <T = any>({
       });
     },
     getNextPageParam: (lastPage: any, allPages: any[]) => {
-      const hasMore = lastPage?.hasMore;
-      const list = Array.isArray(lastPage?.list) ? lastPage.list : Array.isArray(lastPage) ? lastPage : [];
+      const hasMore = lastPage?.hasMore ?? lastPage?.pagination?.hasMore ?? lastPage?.data?.hasMore;
+      const list = Array.isArray(lastPage?.items) ? lastPage.items : Array.isArray(lastPage?.list) ? lastPage.list : Array.isArray(lastPage?.data?.items) ? lastPage?.data?.items : Array.isArray(lastPage?.data?.list) ? lastPage?.data?.list : Array.isArray(lastPage) ? lastPage : [];
 
       if (hasMore === false || list.length === 0) {
         return undefined;
@@ -115,6 +115,17 @@ export const useDashboardQuery = (enabled = true) => {
   });
 };
 
+/** 2.1 Daily Recommendations Feed (with structural sharing & 5-minute freshness) */
+export const useDailyRecommendationsQuery = (params: Record<string, any> = {}, enabled = true) => {
+  return useApiQuery({
+    queryKey: [...QUERY_KEYS.dailyRecommendations, params],
+    url: ApiURL.dailyRecommendations,
+    params,
+    enabled,
+    staleTime: 1000 * 60 * 5,
+  });
+};
+
 /** 3. Master Dropdowns (Subcaste, Gotra, Occupations) */
 export const useMasterDropdownsQuery = () => {
   return useApiQuery({
@@ -134,14 +145,22 @@ export const useCountriesQuery = () => {
 };
 
 /** 5. All Matches Infinite Feed */
-export const useAllMatchesQuery = (filters: Record<string, any> = {}) => {
+export const useAllMatchesQuery = (filters: Record<string, any> = {}, options: Record<string, any> = {}) => {
   const query = useApiInfiniteQuery({
     queryKey: QUERY_KEYS.allMatches(filters),
     url: ApiURL.allMatchesFeed,
     params: filters,
+    staleTime: 1000 * 60 * 5,
+    enabled: options.enabled ?? true,
+    options: {
+      gcTime: 1000 * 60 * 15,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      ...options,
+    },
   });
 
-  const matches = query.data?.pages.flatMap(page => page?.list || []) ?? [];
+  const matches = query.data?.pages.flatMap(page => page?.items || page?.list || page?.data?.items || page?.data?.list || []) ?? [];
 
   return {
     ...query,
@@ -166,13 +185,22 @@ export const useRecommendedMatchesQuery = (filters: Record<string, any> = {}) =>
 };
 
 /** 7. New Matches Infinite Feed */
-export const useNewMatchesQuery = () => {
+export const useNewMatchesQuery = (filters: Record<string, any> = {}, options: Record<string, any> = {}) => {
   const query = useApiInfiniteQuery({
-    queryKey: QUERY_KEYS.newMatches,
+    queryKey: ['matches', 'new', filters],
     url: ApiURL.newMatchesFeed,
+    params: filters,
+    staleTime: 1000 * 60 * 5,
+    enabled: options.enabled ?? true,
+    options: {
+      gcTime: 1000 * 60 * 15,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      ...options,
+    },
   });
 
-  const matches = query.data?.pages.flatMap(page => page?.list || []) ?? [];
+  const matches = query.data?.pages.flatMap(page => page?.items || page?.list || page?.data?.items || page?.data?.list || []) ?? [];
 
   return {
     ...query,

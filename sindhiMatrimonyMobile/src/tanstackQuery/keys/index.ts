@@ -12,6 +12,7 @@ export const QUERY_KEYS = {
   dashboard: ['dashboard', 'home'] as const,
   dailyRecommendations: ['dashboard', 'recommendations'] as const,
   successStories: ['dashboard', 'success-stories'] as const,
+  successStoryDetails: (id: string) => ['dashboard', 'success-story', id] as const,
   banners: ['dashboard', 'banners'] as const,
 
   // 3. Matches & Discover (Paginated Feeds)

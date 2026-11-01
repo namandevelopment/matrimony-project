@@ -14,6 +14,9 @@ import { moderateScale, moderateVerticalScale } from '../utils/Responsive';
 import { clearTokens } from '../redux/apiService';
 import { reset } from '../navigation/navigationService';
 import { showToast } from '../utils/CustomToast';
+import { useDispatch } from 'react-redux';
+import { resetEntireStore } from '../redux/slices/dataSlice';
+import { persistor } from '../redux/Store/store';
 
 export interface LogoutModalProps {
   visible: boolean;
@@ -34,6 +37,7 @@ export const LogoutModal: React.FC<LogoutModalProps> = memo(({
 }) => {
   const [internalLoading, setInternalLoading] = useState(false);
   const isLoading = externalLoading || internalLoading;
+  const dispatch = useDispatch();
 
   const handleLogout = useCallback(async () => {
     setInternalLoading(true);
@@ -42,6 +46,10 @@ export const LogoutModal: React.FC<LogoutModalProps> = memo(({
         await onConfirm();
       } else {
         clearTokens();
+        dispatch(resetEntireStore());
+        try {
+          await persistor.purge();
+        } catch (_) {}
         showToast({
           type: 'success',
           message: 'You have been logged out successfully.',

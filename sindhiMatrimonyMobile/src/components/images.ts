@@ -3,4 +3,5 @@ export const IMAGES = {
   splashscreen: require('../assets/images/splashscreen.png'),
   loginMobile: require('../assets/images/loginMobile.png'),
   celebratingBanner: require('../assets/images/celebrating_banner.png'),
+  userAvatar: require('../assets/images/user_avatar.png'),
 };

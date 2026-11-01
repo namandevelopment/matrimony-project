@@ -130,7 +130,7 @@ export const showToast = (
   const {
     type = 'info',
     message,
-    position = 'bottom',
+    position = 'top',
     duration = type === 'error' ? 3500 : 2500,
     topOffset = 50,
     bottomOffset = 25,

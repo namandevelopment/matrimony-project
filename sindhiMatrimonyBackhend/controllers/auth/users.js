@@ -799,6 +799,18 @@ export const loginWithPassword = asyncHandler(async (req, res) => {
         CONSTANTS.ERROR_TRUE
       );
     }
+    const isMemPasswordValid = await verifyPassword(memUser.password || "Password123@", password);
+    if (!isMemPasswordValid) {
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_UNAUTHORIZED,
+        "Invalid password. Please check your password and try again.",
+        CONSTANTS.DATA_NULL,
+        CONSTANTS.UNAUTHORIZED,
+        CONSTANTS.ERROR_TRUE
+      );
+    }
     const tokenPayload = {
       id: memUser._id.toString(),
       userId: memUser._id.toString(),
@@ -869,7 +881,7 @@ export const loginWithPassword = asyncHandler(async (req, res) => {
     return apiHTTPResponse(
       req,
       res,
-      CONSTANTS.HTTP_OK,
+      CONSTANTS.HTTP_BAD_REQUEST,
       "Mobile number is verified but password is not yet created. OTP verification required to resume registration.",
       {
         action: "REQUIRE_OTP_RESUME",
@@ -880,8 +892,8 @@ export const loginWithPassword = asyncHandler(async (req, res) => {
         nextStep: "OTP_VERIFICATION",
         nextRoute: "/registration/otp",
       },
-      CONSTANTS.OK,
-      CONSTANTS.ERROR_FALSE
+      CONSTANTS.BAD_REQUEST,
+      CONSTANTS.ERROR_TRUE
     );
   }
 

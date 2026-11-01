@@ -156,6 +156,154 @@ export const getPublicSuccessStories = asyncHandler(async (req, res) => {
   );
 });
 
+// Runtime in-memory comments store
+const storyCommentsMap = new Map();
+
+const getStoryComments = (storyId) => {
+  const sid = String(storyId || "default");
+  if (!storyCommentsMap.has(sid)) {
+    storyCommentsMap.set(sid, [
+      {
+        id: `c_${sid}_1`,
+        userName: "Kunal Advani",
+        userAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
+        commentText: "Heartiest congratulations! Beautiful couple and wonderful wedding story 🙏",
+        createdAt: "2h ago",
+        likesCount: 14,
+        isLiked: false,
+        replies: [
+          {
+            id: `r_${sid}_1`,
+            userName: "Geeta (Bride)",
+            userAvatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200",
+            replyText: "Thank you so much Kunal bhau! Appreciate your warm wishes.",
+            createdAt: "1h ago",
+            likesCount: 5,
+            isLiked: false,
+          },
+        ],
+      },
+      {
+        id: `c_${sid}_2`,
+        userName: "Simran Vazirani",
+        userAvatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200",
+        commentText: "So inspiring to read how easily your Gotras matched through the app! Wish you both a lifetime of happiness.",
+        createdAt: "5h ago",
+        likesCount: 8,
+        isLiked: false,
+        replies: [],
+      },
+    ]);
+  }
+  return storyCommentsMap.get(sid);
+};
+
+/**
+ * 📖 GET SINGLE SUCCESS STORY DETAILS BY ID
+ * Route: GET /api/v1/dashboard/success-stories/:id
+ */
+export const getPublicSuccessStoryById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  let story = null;
+  if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(id)) {
+    try {
+      const dbStory = await SuccessStory.findById(id).lean();
+      if (dbStory) story = normalizeStory(dbStory);
+    } catch {}
+  }
+
+  if (!story) {
+    const memStory = inMemoryStories.find((s) => s.id === id || s._id === id || s.storyId === id);
+    story = memStory ? normalizeStory(memStory) : normalizeStory(inMemoryStories[0]);
+  }
+
+  // Ensure rich multi-image gallery for slider
+  if (!Array.isArray(story.photoUrls) || story.photoUrls.length < 2) {
+    story.photoUrls = [
+      story.imageUrl,
+      "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800&auto=format&fit=crop&q=80",
+    ].filter(Boolean);
+  }
+
+  const comments = getStoryComments(story.id);
+
+  return apiHTTPResponse(
+    req,
+    res,
+    HTTP_OK,
+    "Success story details retrieved successfully.",
+    {
+      ...story,
+      comments,
+      commentsCount: comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0),
+    },
+    OK,
+    ERROR_FALSE
+  );
+});
+
+/**
+ * 💬 ADD COMMENT OR NESTED REPLY TO SUCCESS STORY
+ * Route: POST /api/v1/dashboard/success-stories/:id/comments
+ */
+export const addSuccessStoryComment = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { text, parentCommentId } = req.body;
+  const userName = req.user?.fullName || req.user?.name || "Sindhi Member";
+  const userAvatar = req.user?.photoUrl || req.user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200";
+
+  if (!text || !text.trim()) {
+    return apiHTTPResponse(req, res, HTTP_BAD_REQUEST, "Comment text is required.", null, null, ERROR_TRUE);
+  }
+
+  const comments = getStoryComments(id);
+
+  if (parentCommentId) {
+    const parent = comments.find((c) => c.id === parentCommentId);
+    if (parent) {
+      if (!Array.isArray(parent.replies)) parent.replies = [];
+      const newReply = {
+        id: `r_${Date.now()}`,
+        userName,
+        userAvatar,
+        replyText: text.trim(),
+        createdAt: "Just now",
+        likesCount: 0,
+        isLiked: false,
+      };
+      parent.replies.push(newReply);
+    }
+  } else {
+    const newComment = {
+      id: `c_${Date.now()}`,
+      userName,
+      userAvatar,
+      commentText: text.trim(),
+      createdAt: "Just now",
+      likesCount: 0,
+      isLiked: false,
+      replies: [],
+    };
+    comments.unshift(newComment);
+  }
+
+  return apiHTTPResponse(
+    req,
+    res,
+    HTTP_CREATED,
+    parentCommentId ? "Reply posted successfully." : "Comment posted successfully.",
+    {
+      comments,
+      commentsCount: comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0),
+    },
+    OK,
+    ERROR_FALSE
+  );
+});
+
 /**
  * ❤️ TOGGLE LIKE SUCCESS STORY
  * Route: POST /api/v1/dashboard/success-stories/:id/like
