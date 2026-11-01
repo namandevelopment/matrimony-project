@@ -27,13 +27,16 @@ attachMongooseProfiler();
 const app = express();
 const API_END_POINT_V1 = process.env.API_END_POINT_V1 || "/api/v1/";
 
-// Ensure DB connection for serverless cold-starts on Vercel (Non-blocking background initialization)
+// Ensure DB connection for serverless cold-starts on Vercel
 let dbPromise = null;
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   if (!dbPromise) {
     dbPromise = connectDB().catch((err) => {
       console.warn("MongoDB connection notice:", err?.message || err);
     });
+  }
+  if (process.env.VERCEL === "1") {
+    await Promise.race([dbPromise, new Promise((resolve) => setTimeout(resolve, 800))]);
   }
   next();
 });
