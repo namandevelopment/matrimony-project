@@ -49,60 +49,6 @@ interface Plan {
   hasKnowMore?: boolean;
 }
 
-const DEFAULT_PLANS: Plan[] = [
-  {
-    id: 'gold',
-    tabTitle: 'Gold',
-    tabSubtitle: '3 Months',
-    cardTitle: 'Gold',
-    discountText: '11% OFF! Valid for today',
-    originalPrice: '₹5,500',
-    price: '₹4,900',
-    perMonth: '₹1,633 per month',
-    features: [
-      { text: 'Valid for 3 months' },
-      { text: 'View 50 Phone Nos*' },
-      { text: 'Send unlimited messages' },
-      { text: 'Unlimited Horoscope views' },
-      { text: 'View verified profiles with photos' },
-    ],
-  },
-  {
-    id: 'prime-gold',
-    tabTitle: 'Prime Gold',
-    tabSubtitle: '3 Months',
-    cardTitle: 'Prime Gold',
-    discountText: '13% OFF! Valid for today',
-    originalPrice: '₹7,900',
-    price: '₹6,900',
-    perMonth: '₹2,300 per month',
-    features: [
-      { text: 'Valid for 3 months' },
-      { text: 'View unlimited Phone Nos*', hasInfo: true },
-      { text: 'Send unlimited messages' },
-      { text: 'Unlimited Horoscope views' },
-      { text: 'View verified profiles with photos' },
-    ],
-  },
-  {
-    id: 'till-u-marry',
-    tabTitle: 'Till U Marry',
-    tabSubtitle: 'Till Marriage',
-    badge: 'Best Value',
-    cardTitle: 'Prime - Till U Marry',
-    price: '₹23,700',
-    perMonth: '₹1,975 per month',
-    features: [
-      { text: 'Longest validity plan*', hasInfo: true },
-      { text: 'View unlimited Phone Nos*', hasInfo: true },
-      { text: 'Send unlimited messages' },
-      { text: 'Unlimited Horoscope views' },
-      { text: 'View verified profiles with photos' },
-    ],
-    hasKnowMore: true,
-  },
-];
-
 const mapApiPlanToUiPlan = (raw: any): Plan => {
   const months =
     Number(raw.durationMonths) ||
@@ -115,16 +61,16 @@ const mapApiPlanToUiPlan = (raw: any): Plan => {
   const features =
     rawFeatures.length > 0
       ? rawFeatures.map((f: any) => ({
-          text: typeof f === 'string' ? f : f?.text || String(f),
-          hasInfo: f?.hasInfo || false,
-        }))
+        text: typeof f === 'string' ? f : f?.text || String(f),
+        hasInfo: f?.hasInfo || false,
+      }))
       : [
-          { text: `Valid for ${months} months` },
-          { text: `View ${raw.contactViewCredits || 50} Phone Nos*`, hasInfo: true },
-          { text: 'Send unlimited messages' },
-          { text: 'Unlimited Horoscope views' },
-          { text: 'View verified profiles with photos' },
-        ];
+        { text: `Valid for ${months} months` },
+        { text: `View ${raw.contactViewCredits || 50} Phone Nos*`, hasInfo: true },
+        { text: 'Send unlimited messages' },
+        { text: 'Unlimited Horoscope views' },
+        { text: 'View verified profiles with photos' },
+      ];
 
   const discPercent =
     Number(raw.discountPercentage) ||
@@ -135,9 +81,9 @@ const mapApiPlanToUiPlan = (raw: any): Plan => {
   const discText = raw.discountPercentage
     ? `${raw.discountPercentage}% OFF! Valid for today`
     : raw.tagline ||
-      (origPriceNum > priceNum
-        ? `${Math.round(((origPriceNum - priceNum) / origPriceNum) * 100)}% OFF!`
-        : undefined);
+    (origPriceNum > priceNum
+      ? `${Math.round(((origPriceNum - priceNum) / origPriceNum) * 100)}% OFF!`
+      : undefined);
 
   return {
     id: String(raw.id || raw._id || raw.tier || Math.random()),
@@ -160,7 +106,7 @@ const UpgradeScreen = () => {
   const navigation = useNavigation<any>();
   const isFocused = useIsFocused();
   const { colors, isDark } = useTheme();
-  const [plans, setPlans] = useState<Plan[]>(DEFAULT_PLANS);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [packagesModalVisible, setPackagesModalVisible] = useState(false);
@@ -259,6 +205,8 @@ const UpgradeScreen = () => {
     const numericAmount = amount.replace(/[^0-9]/g, '');
 
     let orderId = `order_${Date.now()}`;
+    let dynamicUpiId = 'namansaini033@oksbi';
+    let dynamicPayeeName = 'Naman Saini';
     try {
       const orderRes: any = await apiFetch({
         url: ApiURL.createPaymentOrder,
@@ -273,13 +221,19 @@ const UpgradeScreen = () => {
       if (orderRes?.data?.orderId) {
         orderId = orderRes.data.orderId;
       }
+      if (orderRes?.data?.upi?.upiId) {
+        dynamicUpiId = orderRes.data.upi.upiId;
+      }
+      if (orderRes?.data?.upi?.payeeName) {
+        dynamicPayeeName = orderRes.data.upi.payeeName;
+      }
     } catch (e) {
       // Proceed with orderId
     }
 
     const config = {
-      upiId: 'namansaini033@oksbi',
-      name: 'Naman Saini',
+      upiId: dynamicUpiId,
+      name: dynamicPayeeName,
       note: `Payment for ${planName} (Order: ${orderId})`,
       amount: numericAmount,
     };
@@ -304,7 +258,7 @@ const UpgradeScreen = () => {
               },
               showErrorToast: false,
             }).catch(() => null);
-          } catch {}
+          } catch { }
 
           try {
             const currentUser = Storage.getItemSync<any>('user') || {};
@@ -312,7 +266,7 @@ const UpgradeScreen = () => {
               ...currentUser,
               membershipTier: activePlan?.cardTitle || 'GOLD',
             });
-          } catch (e) {}
+          } catch (e) { }
 
           toast.success(
             `Payment successful! Congratulations, your ${planName} plan is now active.`,
@@ -522,12 +476,12 @@ const UpgradeScreen = () => {
                       isSelected
                         ? [styles.activeTabButton, { backgroundColor: '#A41D3B' }]
                         : [
-                            styles.inactiveTabButton,
-                            {
-                              backgroundColor: isDark ? colors.surface : '#FFFFFF',
-                              borderColor: isDark ? colors.border : '#E2E8F0',
-                            },
-                          ],
+                          styles.inactiveTabButton,
+                          {
+                            backgroundColor: isDark ? colors.surface : '#FFFFFF',
+                            borderColor: isDark ? colors.border : '#E2E8F0',
+                          },
+                        ],
                     ]}
                   >
                     <Text
@@ -587,9 +541,9 @@ const UpgradeScreen = () => {
                 selectedPlanIndex === i
                   ? [styles.activePaginationDot, { backgroundColor: '#A41D3B' }]
                   : [
-                      styles.inactivePaginationDot,
-                      { backgroundColor: isDark ? '#4B5563' : '#D1D5DB' },
-                    ],
+                    styles.inactivePaginationDot,
+                    { backgroundColor: isDark ? '#4B5563' : '#D1D5DB' },
+                  ],
               ]}
             />
           ))}

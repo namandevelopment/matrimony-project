@@ -23,8 +23,9 @@ import fontFamily from '../../components/fontFamily';
 import { showToast } from '../../utils/CustomToast';
 import PhotoPickerModal from '../../customModals/PhotoPickerModal';
 import usePermissions from '../../customHooks/usePermissions';
+import COLORS from '../../components/colors';
 
-const HEADER_COLOR = '#DB2F3C';
+const HEADER_COLOR = COLORS.themeColor;
 
 interface DetailItem {
   label: string;

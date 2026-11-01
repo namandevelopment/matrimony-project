@@ -2,7 +2,7 @@ import { asyncHandler, apiHTTPResponse, logMessage } from "../../utils/globalFun
 import * as CONSTANTS from "../../utils/constants.js";
 import { User, Profile, UserSubscription } from "../../models/index.js";
 import { MEMBERSHIP_TIERS } from "../../utils/variables.js";
-import { adminPlansStore } from "../admin/adminSettingsController.js";
+import { adminPlansStore, globalTogglesStore } from "../admin/adminSettingsController.js";
 import { addAdminNotification } from "../admin/adminNotificationController.js";
 
 const getUserId = (req) =>
@@ -254,6 +254,11 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
       planName: selectedPlan.name || selectedPlan.title,
       contactViewCredits: Number(selectedPlan.contactViewsQuota || selectedPlan.contactViewCredits || 25),
       razorpayKeyId: process.env.RAZORPAY_KEY_ID || "rzp_test_simulated_key",
+      upi: {
+        upiId: globalTogglesStore?.paymentGateway?.upiId || "namansaini033@oksbi",
+        payeeName: globalTogglesStore?.paymentGateway?.payeeName || "Naman Saini",
+        merchantName: globalTogglesStore?.paymentGateway?.merchantName || "Sindhi Matrimony",
+      },
       notes: {
         platform: "Sindhi Matrimony",
         planDuration: `${durationMonths} Months`,

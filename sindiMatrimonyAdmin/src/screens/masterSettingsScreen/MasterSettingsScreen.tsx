@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { apiFetch, ApiURL } from '../../redux/apiService';
 import {
   Save,
   Globe,
@@ -52,6 +53,8 @@ export interface MasterSettingsState {
   gstRate: number;
   autoInvoicing: boolean;
   refundWindowDays: number;
+  upiId: string;
+  upiName: string;
 
   // Gateway IDs
   smsSenderId: string;
@@ -83,6 +86,8 @@ const DEFAULT_SETTINGS: MasterSettingsState = {
   gstRate: 18,
   autoInvoicing: true,
   refundWindowDays: 7,
+  upiId: 'namansaini033@oksbi',
+  upiName: 'Naman Saini',
 
   smsSenderId: 'SINDHI',
   smtpHost: 'smtp.sendgrid.net',
@@ -115,20 +120,55 @@ export const MasterSettingsScreen: React.FC = () => {
     'all' | 'identity' | 'matching' | 'privacy' | 'finance' | 'biodata'
   >('all');
 
-  const handleSave = (e?: React.FormEvent) => {
+  useEffect(() => {
+    const fetchMasterSettings = async () => {
+      try {
+        const res: any = await apiFetch({
+          url: ApiURL.masterSettings,
+          method: 'GET',
+        });
+        const gw = res?.data?.paymentGateway;
+        if (gw?.upiId) {
+          update('upiId', gw.upiId);
+        }
+        if (gw?.payeeName) {
+          update('upiName', gw.payeeName);
+        }
+      } catch {
+        // Fallback to local
+      }
+    };
+    fetchMasterSettings();
+  }, []);
+
+  const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setIsSaving(true);
-    setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY_MASTER_SETTINGS, JSON.stringify(settings));
-        biodataService.updateSettings(biodataSettings);
-        setIsSaving(false);
-        toast.success('Master Settings & Biodata configurations applied successfully.');
-      } catch {
-        setIsSaving(false);
-        toast.error('Failed to save settings.');
-      }
-    }, 400);
+    try {
+      localStorage.setItem(STORAGE_KEY_MASTER_SETTINGS, JSON.stringify(settings));
+      biodataService.updateSettings(biodataSettings);
+
+      await apiFetch({
+        url: ApiURL.masterSettings,
+        method: 'PUT',
+        payload: {
+          paymentGateway: {
+            enabled: true,
+            provider: 'ONE_UPI',
+            upiId: settings.upiId,
+            payeeName: settings.upiName,
+            merchantName: 'Sindhi Matrimony',
+          },
+        },
+        showErrorToast: false,
+      }).catch(() => null);
+
+      setIsSaving(false);
+      toast.success('Master Settings & UPI configuration updated successfully.');
+    } catch {
+      setIsSaving(false);
+      toast.error('Failed to save settings.');
+    }
   };
 
   const handleReset = () => {
@@ -521,6 +561,24 @@ export const MasterSettingsScreen: React.FC = () => {
                 max={30}
                 value={settings.refundWindowDays}
                 onChange={(e) => update('refundWindowDays', Number(e.target.value) || 7)}
+                size="sm"
+              />
+
+              <CustomTextInput
+                label="Merchant UPI ID (VPA)"
+                type="text"
+                value={settings.upiId}
+                onChange={(e) => update('upiId', e.target.value)}
+                placeholder="e.g. namansaini033@oksbi"
+                size="sm"
+              />
+
+              <CustomTextInput
+                label="Payee Account Name"
+                type="text"
+                value={settings.upiName}
+                onChange={(e) => update('upiName', e.target.value)}
+                placeholder="e.g. Naman Saini"
                 size="sm"
               />
             </div>

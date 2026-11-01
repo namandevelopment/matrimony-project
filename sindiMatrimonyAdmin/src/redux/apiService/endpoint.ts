@@ -48,6 +48,7 @@ export const ApiURL = {
   dashboardCharts: (type: string) => `${BASE_URL}/api/v1/admin/dashboard/charts/${type}`,
   dashboard: `${BASE_URL}/api/v1/admin/dashboard/stats`,
   mobileHomeFeed: `${BASE_URL}/api/v1/dashboard/mobile-home`,
+  homeBanners: `${BASE_URL}/api/v1/dashboard/banners`,
 
   // =========================================================================
   // 3. PROFILE & MY PROFILES (Shared with User Panel & Mobile)
@@ -183,6 +184,7 @@ export const ApiURL = {
   adminSuccessStoryDetail: (id: string) => `${BASE_URL}/api/v1/admin/success-stories/${id}`,
   publicSuccessStories: `${BASE_URL}/api/v1/dashboard/success-stories`,
   systemConfig: `${BASE_URL}/api/v1/admin/settings/config`,
+  masterSettings: `${BASE_URL}/api/v1/admin/master-settings`,
 };
 
 export default ApiURL;

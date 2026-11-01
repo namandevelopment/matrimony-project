@@ -6,6 +6,7 @@ import {
   getMessages,
   sendMessage,
   markMessagesRead,
+  bulkCreateConversations,
 } from "../../controllers/chat/chatController.js";
 
 const router = express.Router();
@@ -22,6 +23,7 @@ router.get("/quota-status", getChatQuota);
 // 2. Active Conversations List & Initiation
 router.get("/conversations", getConversations);
 router.post("/conversations", getOrCreateConversation);
+router.post("/conversations/bulk", bulkCreateConversations);
 
 // 3. Message History
 router.get("/messages/:conversationId", getMessages);

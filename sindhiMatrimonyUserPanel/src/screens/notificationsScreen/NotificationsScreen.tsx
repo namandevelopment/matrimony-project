@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, memo } from "react";
+import React, { useState, useMemo, useCallback, useEffect, memo } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch, ApiURL } from "@/redux/apiService";
 import {
   NotificationHeader,
   NotificationCategoryTabs,
@@ -49,6 +50,81 @@ const NotificationsScreenComponent: React.FC<NotificationsScreenProps> = ({
       setToastMessage((current) => (current === msg ? null : current));
     }, 3200);
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLiveNotifications = async () => {
+      try {
+        const res: any = await apiFetch({
+          url: ApiURL.getNotificationsList,
+          method: "GET",
+          isToken: true,
+        });
+        const list = res?.data?.notifications || res?.data?.list || [];
+        if (isMounted && Array.isArray(list) && list.length > 0) {
+          const mapped: NotificationItem[] = list.map((n: any) => ({
+            id: String(n._id || n.id),
+            title: n.title || "Notification",
+            message: n.message || n.body || "",
+            createdAt: n.createdAt || new Date().toISOString(),
+            isRead: Boolean(n.isRead),
+            category: (n.category?.toLowerCase() === "interest" ? "interests" : n.category?.toLowerCase() === "match" ? "matches" : n.category?.toLowerCase() === "message" ? "messages" : "system") as any,
+            type: n.type || "system",
+            isActionRequired: Boolean(n.isActionRequired),
+            isLocked: Boolean(n.isLocked),
+            upgradeRequired: Boolean(n.upgradeRequired),
+            avatar: n.avatar || n.actor?.avatarUrl || "",
+            actor: n.actor,
+            primaryAction: n.primaryAction,
+          }));
+          setNotifications(mapped);
+        }
+      } catch {
+        // Fallback gracefully
+      }
+    };
+
+    fetchLiveNotifications();
+
+    let eventSource: EventSource | null = null;
+    try {
+      if (typeof window !== "undefined" && typeof EventSource !== "undefined") {
+        eventSource = new EventSource(`${ApiURL.getNotificationsList}/sse`);
+        eventSource.addEventListener("notification", (e: MessageEvent) => {
+          try {
+            const data = JSON.parse(e.data);
+            if (data?.notification) {
+              const notif = data.notification;
+              setNotifications((prev) => [
+                {
+                  id: String(notif._id || notif.id),
+                  title: notif.title,
+                  message: notif.message,
+                  createdAt: notif.createdAt || new Date().toISOString(),
+                  isRead: false,
+                  category: (notif.category?.toLowerCase() === "interest" ? "interests" : notif.category?.toLowerCase() === "match" ? "matches" : notif.category?.toLowerCase() === "message" ? "messages" : "system") as any,
+                  type: notif.type || "system",
+                  isActionRequired: Boolean(notif.isActionRequired),
+                  isLocked: Boolean(notif.isLocked),
+                  upgradeRequired: Boolean(notif.upgradeRequired),
+                  avatar: notif.avatar || "",
+                  actor: notif.actor,
+                  primaryAction: notif.primaryAction,
+                },
+                ...prev,
+              ]);
+              showToast(`🔔 ${notif.title}: ${notif.message}`);
+            }
+          } catch {}
+        });
+      }
+    } catch {}
+
+    return () => {
+      isMounted = false;
+      eventSource?.close();
+    };
+  }, [showToast]);
 
   // Compute counts per category using useMemo
   const categoryCounts = useMemo(() => {
@@ -139,12 +215,22 @@ const NotificationsScreenComponent: React.FC<NotificationsScreenProps> = ({
         item.id === id ? { ...item, isRead: !item.isRead } : item
       )
     );
+    apiFetch({
+      url: ApiURL.markNotificationAsRead(id),
+      method: "PATCH",
+      isToken: true,
+    }).catch(() => {});
   }, []);
 
   // Handler: Dismiss / Delete single notification
   const handleDismiss = useCallback(
     (id: string) => {
       setNotifications((prev) => prev.filter((item) => item.id !== id));
+      apiFetch({
+        url: ApiURL.deleteNotificationItem(id),
+        method: "DELETE",
+        isToken: true,
+      }).catch(() => {});
       showToast("Notification dismissed");
     },
     [showToast]
@@ -155,6 +241,11 @@ const NotificationsScreenComponent: React.FC<NotificationsScreenProps> = ({
     setNotifications((prev) =>
       prev.map((item) => (item.isRead ? item : { ...item, isRead: true }))
     );
+    apiFetch({
+      url: ApiURL.markAllNotificationsAsRead,
+      method: "PUT",
+      isToken: true,
+    }).catch(() => {});
     showToast("All notifications marked as read");
   }, [showToast]);
 

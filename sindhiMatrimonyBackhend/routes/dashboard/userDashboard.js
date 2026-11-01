@@ -13,7 +13,9 @@ import {
   trackProfileView,
   getSuccessStoriesFeed,
   getHomeBanners,
+  updateHomeBanners,
   getSupportInfo,
+  updateSupportInfo,
 } from "../../controllers/dashboard/userDashboardController.js";
 
 const router = express.Router();
@@ -107,7 +109,9 @@ import {
   submitUserSuccessStory,
   toggleLikeSuccessStory,
   addSuccessStoryComment,
+  bulkCreateSuccessStories,
 } from "../../controllers/stories/successStoryController.js";
+import { bulkCreateAdminAds } from "../../controllers/campaigns/index.js";
 
 /**
  * @route   GET /api/v1/dashboard/success-stories
@@ -115,6 +119,7 @@ import {
  * @access  Public / Private
  */
 router.get("/success-stories", getPublicSuccessStories);
+router.post("/success-stories/bulk", bulkCreateSuccessStories);
 router.get("/success-stories/:id", getPublicSuccessStoryById);
 router.post("/success-stories/share", submitUserSuccessStory);
 router.post("/success-stories/:id/like", toggleLikeSuccessStory);
@@ -127,7 +132,10 @@ router.post("/success-stories/:id/comments", addSuccessStoryComment);
  * @access  Public / Private
  */
 router.get("/banners", getHomeBanners);
+router.post("/banners", updateHomeBanners);
+router.put("/banners", updateHomeBanners);
 router.get("/ads", getHomeBanners);
+router.post("/ads/bulk", bulkCreateAdminAds);
 
 /**
  * @route   GET /api/v1/dashboard/support-info
@@ -135,6 +143,8 @@ router.get("/ads", getHomeBanners);
  * @access  Public / Private
  */
 router.get("/support-info", getSupportInfo);
+router.post("/support-info", updateSupportInfo);
+router.put("/support-info", updateSupportInfo);
 
 export default router;
 

@@ -701,3 +701,37 @@ export const deleteAdminSuccessStory = asyncHandler(async (req, res) => {
     ERROR_FALSE
   );
 });
+
+export const bulkCreateSuccessStories = asyncHandler(async (req, res) => {
+  const items = Array.isArray(req.body) ? req.body : req.body?.stories || req.body?.items || [];
+  if (!Array.isArray(items) || items.length === 0) {
+    return apiHTTPResponse(req, res, HTTP_BAD_REQUEST, "No stories provided.", null, OK, ERROR_TRUE);
+  }
+
+  const results = [];
+  for (const s of items) {
+    const filter = s._id && mongoose.isValidObjectId(s._id) ? { _id: s._id } : { coupleName: s.coupleName };
+    const docData = {
+      ...s,
+      coupleName: s.coupleName || `${s.groomName || ""} & ${s.brideName || ""}`.trim(),
+      isActive: s.isActive !== false,
+      isFeatured: Boolean(s.isFeatured),
+    };
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const saved = await SuccessStory.findOneAndUpdate(filter, { $set: docData }, { upsert: true, new: true, setDefaultsOnInsert: true }).lean();
+        results.push(saved);
+      } catch {
+        results.push(docData);
+      }
+    } else {
+      results.push(docData);
+    }
+    const idx = inMemoryStories.findIndex((m) => String(m.id || m._id) === String(s._id) || m.coupleName === s.coupleName);
+    const normalized = normalizeStory(docData, idx >= 0 ? idx : inMemoryStories.length);
+    if (idx >= 0) inMemoryStories[idx] = normalized;
+    else inMemoryStories.push(normalized);
+  }
+
+  return apiHTTPResponse(req, res, HTTP_CREATED, `Successfully imported ${results.length} success stories.`, { count: results.length, items: results }, OK, ERROR_FALSE);
+});

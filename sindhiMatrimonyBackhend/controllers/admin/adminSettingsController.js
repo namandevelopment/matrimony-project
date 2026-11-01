@@ -1025,7 +1025,10 @@ let globalTogglesStore = {
   },
   paymentGateway: {
     enabled: true,
-    provider: "RAZORPAY",
+    provider: "ONE_UPI",
+    upiId: "namansaini033@oksbi",
+    payeeName: "Naman Saini",
+    merchantName: "Sindhi Matrimony",
     sandboxMode: false,
     autoInvoiceReceipt: true,
     supportedCurrencies: ["INR", "AED", "USD", "GBP"],

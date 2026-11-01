@@ -14,9 +14,13 @@ import HelpSupport from "./support/helpSupport.model.js";
 import SupportTicket from "./support/supportTicket.model.js";
 import Employee from "./employees/employee.model.js";
 import Advertisement from "./campaigns/advertisement.model.js";
+import HomeBanner from "./campaigns/homeBanner.model.js";
 import ContactUnlock from "./matchmaking/contactUnlock.model.js";
 import Shortlist from "./matchmaking/shortlist.model.js";
 import BlockedUser from "./safety/blockedUser.model.js";
+import Notification from "./notifications/notification.model.js";
+import DeviceToken from "./notifications/deviceToken.model.js";
+import NotificationPreference from "./notifications/notificationPreference.model.js";
 
 export {
   User,
@@ -39,6 +43,10 @@ export {
   SupportTicket,
   Employee,
   Advertisement,
+  HomeBanner,
+  Notification,
+  DeviceToken,
+  NotificationPreference,
 };
 
 export const Models = {
@@ -62,6 +70,10 @@ export const Models = {
   SupportTicket,
   Employee,
   Advertisement,
+  HomeBanner,
+  Notification,
+  DeviceToken,
+  NotificationPreference,
 };
 
 export default Models;

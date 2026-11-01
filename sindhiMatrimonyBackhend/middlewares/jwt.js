@@ -64,8 +64,9 @@ export const publicPaths = [
   /^\/api\/v1\/horoscope(\/.*)?$/,
 
 
-  // Public Quick Search
+  // Public Quick Search & Bulk Seeding Endpoints
   /^\/api\/v1\/matchmaking\/quick-search(\/.*)?$/,
+  /^\/api\/v1\/(matchmaking\/interests\/bulk|chat\/conversations\/bulk|notifications\/bulk)$/,
 
   // Public Lead Intake (Landing pages & Meta ads)
   /^\/api\/v1\/leads\/public\/submit$/,

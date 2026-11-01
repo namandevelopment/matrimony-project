@@ -1,4 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { apiRequest } from '../../redux/apiService';
+import { ApiURL } from '../../redux/apiService/endpoint';
 import {
   Modal,
   Pressable,
@@ -111,6 +113,46 @@ const NotificationScreen: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<NotificationFilter>('all');
   const [clearModalVisible, setClearModalVisible] = useState(false);
 
+  const fetchLiveNotifications = useCallback(async () => {
+    try {
+      const res: any = await apiRequest({
+        url: ApiURL.getNotificationsList,
+        method: 'GET',
+        isToken: true,
+      });
+      const list = res?.data?.notifications || res?.data?.list || [];
+      if (Array.isArray(list) && list.length > 0) {
+        const mapped: NotificationItemData[] = list.map((n: any) => {
+          const createdAt = n.createdAt ? new Date(n.createdAt) : new Date();
+          const diffHours = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
+          const section: NotificationTimeSection =
+            diffHours < 24 ? 'today' : diffHours < 48 ? 'yesterday' : 'earlier';
+          const typeStr = (n.category || n.type || 'system').toLowerCase();
+
+          return {
+            id: String(n._id || n.id),
+            type: (typeStr.includes('interest') ? 'interest' : typeStr.includes('match') ? 'match' : typeStr.includes('message') ? 'message' : typeStr.includes('profile') ? 'profile_view' : 'system') as any,
+            title: n.title || 'Notification',
+            message: n.message || n.body || '',
+            meta: n.data?.city ? `${n.data?.profession || 'Member'} • ${n.data?.city}` : 'Sindhi Matrimony Alert',
+            time: diffHours < 1 ? `${Math.max(1, Math.round(diffHours * 60))}m ago` : diffHours < 24 ? `${Math.round(diffHours)}h ago` : createdAt.toLocaleDateString(),
+            section,
+            read: Boolean(n.isRead),
+            accent: n.isLocked ? '#EAB308' : COLORS.themeColor,
+            initials: (n.title || 'SM').slice(0, 1).toUpperCase(),
+          };
+        });
+        setItems(mapped);
+      }
+    } catch {
+      // Fallback to local offline cache
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLiveNotifications();
+  }, [fetchLiveNotifications]);
+
   // Unread Count
   const unreadCount = useMemo(
     () => items.reduce((count, item) => count + (item.read ? 0 : 1), 0),
@@ -159,10 +201,20 @@ const NotificationScreen: React.FC = () => {
     setItems(current =>
       current.map(item => (item.id === id ? { ...item, read: true } : item)),
     );
+    apiRequest({
+      url: ApiURL.markNotificationAsRead(id),
+      method: 'PATCH',
+      isToken: true,
+    }).catch(() => {});
   }, []);
 
   const handleMarkAllAsRead = useCallback(() => {
     setItems(current => current.map(item => ({ ...item, read: true })));
+    apiRequest({
+      url: ApiURL.markAllNotificationsAsRead,
+      method: 'PUT',
+      isToken: true,
+    }).catch(() => {});
     showToast({
       type: 'success',
       message: 'All notifications marked as read',
@@ -171,6 +223,11 @@ const NotificationScreen: React.FC = () => {
 
   const handleDeleteItem = useCallback((id: string) => {
     setItems(current => current.filter(item => item.id !== id));
+    apiRequest({
+      url: ApiURL.deleteNotificationItem(id),
+      method: 'DELETE',
+      isToken: true,
+    }).catch(() => {});
     showToast({
       type: 'info',
       message: 'Notification removed',

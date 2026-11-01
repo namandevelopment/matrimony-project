@@ -588,3 +588,30 @@ export const trackAdClick = asyncHandler(async (req, res) => {
     ERROR_FALSE
   );
 });
+
+export const bulkCreateAdminAds = asyncHandler(async (req, res) => {
+  const items = Array.isArray(req.body) ? req.body : req.body?.ads || req.body?.items || [];
+  if (!Array.isArray(items) || items.length === 0) {
+    return apiHTTPResponse(req, res, HTTP_BAD_REQUEST, "No ads provided.", null, OK, ERROR_TRUE);
+  }
+
+  const results = [];
+  for (const ad of items) {
+    const filter = ad.adId ? { adId: ad.adId } : ad._id && mongoose.isValidObjectId(ad._id) ? { _id: ad._id } : { name: ad.name };
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const saved = await Advertisement.findOneAndUpdate(filter, { $set: ad }, { upsert: true, new: true, setDefaultsOnInsert: true }).lean();
+        results.push(saved);
+      } catch {
+        results.push(ad);
+      }
+    } else {
+      results.push(ad);
+    }
+    const idx = inMemoryAds.findIndex((m) => m.adId === ad.adId || String(m._id) === String(ad._id));
+    if (idx >= 0) inMemoryAds[idx] = { ...inMemoryAds[idx], ...ad };
+    else inMemoryAds.push({ ...ad, _id: ad._id || `ad_${Date.now()}` });
+  }
+
+  return apiHTTPResponse(req, res, HTTP_CREATED, `Successfully imported ${results.length} partner deals.`, { count: results.length, items: results }, OK, ERROR_FALSE);
+});

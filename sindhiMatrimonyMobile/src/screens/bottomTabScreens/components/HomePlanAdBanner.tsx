@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,6 +10,9 @@ import {
 import fontFamily from '../../../components/fontFamily';
 import CustomLucidIcons from '../../../components/CustomLucidIcons';
 import { moderateScale, moderateVerticalScale } from '../../../utils/Responsive';
+import { ApiURL } from '../../../redux/apiService';
+import { useApiQuery } from '../../../tanstackQuery/useQuery';
+import { QUERY_KEYS } from '../../../tanstackQuery/keys';
 
 // -----------------------------------------------------------------------------
 // 1. TYPES & INTERFACES
@@ -29,6 +32,8 @@ interface HomePlanAdBannerProps {
   originalPrice?: number;
   discountedPrice?: number;
   features?: PlanFeature[];
+  buttonText?: string;
+  disclaimer?: string;
   onPayPress?: () => void;
   containerStyle?: StyleProp<ViewStyle>;
 }
@@ -61,7 +66,7 @@ const DEFAULT_FEATURES: PlanFeature[] = [
 // -----------------------------------------------------------------------------
 // 3. MEMOIZED DECORATIVE LIMITED OFFER BADGE
 // -----------------------------------------------------------------------------
-const LimitedOfferBadge = React.memo(() => {
+const LimitedOfferBadge = React.memo(({ title = 'LIMITED', subtitle = 'PERIOD OFFER' }: { title?: string; subtitle?: string }) => {
   return (
     <View style={badgeStyles.badgeOuterWrapper}>
       {/* 8-pointed star / burst created with 2 rotated squares */}
@@ -83,8 +88,8 @@ const LimitedOfferBadge = React.memo(() => {
         </View>
 
         {/* Text */}
-        <Text style={badgeStyles.limitedText}>LIMITED</Text>
-        <Text style={badgeStyles.periodText}>PERIOD OFFER</Text>
+        <Text style={badgeStyles.limitedText}>{title}</Text>
+        <Text style={badgeStyles.periodText}>{subtitle}</Text>
       </View>
     </View>
   );
@@ -97,15 +102,38 @@ LimitedOfferBadge.displayName = 'LimitedOfferBadge';
 // -----------------------------------------------------------------------------
 const HomePlanAdBanner: React.FC<HomePlanAdBannerProps> = React.memo(
   ({
-    planName = 'Silver - 1 month',
-    tagline = 'Your only starter pack to find the right match',
-    offerTag = 'Special offer only for you',
-    originalPrice = 1800,
-    discountedPrice = 990,
-    features = DEFAULT_FEATURES,
+    planName: propPlanName,
+    tagline: propTagline,
+    offerTag: propOfferTag,
+    originalPrice: propOriginalPrice,
+    discountedPrice: propDiscountedPrice,
+    features: propFeatures,
+    buttonText: propButtonText,
+    disclaimer: propDisclaimer,
     onPayPress,
     containerStyle,
   }) => {
+    const { data: bannerData } = useApiQuery({
+      queryKey: QUERY_KEYS.banners,
+      url: ApiURL.homeBanners,
+      staleTime: 1000 * 60 * 10,
+      select: useCallback((res: any) => {
+        const raw = res?.data !== undefined ? res.data : res;
+        return raw?.planAdBanner || raw?.planAd || raw?.plan || null;
+      }, []),
+    });
+
+    const planName = propPlanName ?? bannerData?.planName ?? 'Silver - 1 month';
+    const tagline = propTagline ?? bannerData?.tagline ?? 'Your only starter pack to find the right match';
+    const offerTag = propOfferTag ?? bannerData?.offerTag ?? 'Special offer only for you';
+    const originalPrice = propOriginalPrice ?? (bannerData?.originalPrice ? Number(bannerData.originalPrice) : 1800);
+    const discountedPrice = propDiscountedPrice ?? (bannerData?.discountedPrice ? Number(bannerData.discountedPrice) : 990);
+    const features = propFeatures ?? bannerData?.features ?? DEFAULT_FEATURES;
+    const buttonLabel = propButtonText ?? bannerData?.buttonText ?? `Pay ₹${discountedPrice.toLocaleString('en-IN')}`;
+    const disclaimerText = propDisclaimer ?? bannerData?.disclaimer ?? '*Prices are exclusive of GST';
+    const badgeTitle = bannerData?.badge?.title ?? bannerData?.badgeTitle ?? 'LIMITED';
+    const badgeSubtitle = bannerData?.badge?.subtitle ?? bannerData?.badgeSubtitle ?? 'PERIOD OFFER';
+
     return (
       <View style={[styles.container, containerStyle]}>
         {/* Plan Header */}
@@ -127,7 +155,7 @@ const HomePlanAdBanner: React.FC<HomePlanAdBannerProps> = React.memo(
           <View style={styles.leftCol}>
             {/* Features List */}
             <View style={styles.featuresContainer}>
-              {features.map(item => (
+              {features.map((item: any) => (
                 <View key={item.id} style={styles.featureItem}>
                   <View style={styles.featureIconWrap}>
                     <CustomLucidIcons
@@ -161,20 +189,20 @@ const HomePlanAdBanner: React.FC<HomePlanAdBannerProps> = React.memo(
               onPress={onPayPress}
               style={styles.payButton}
               accessibilityRole="button"
-              accessibilityLabel={`Pay ${discountedPrice}`}
+              accessibilityLabel={buttonLabel}
             >
               <Text style={styles.payButtonText}>
-                Pay ₹{discountedPrice.toLocaleString('en-IN')}
+                {buttonLabel}
               </Text>
             </TouchableOpacity>
 
             {/* GST Disclaimer */}
-            <Text style={styles.gstText}>*Prices are exclusive of GST</Text>
+            <Text style={styles.gstText}>{disclaimerText}</Text>
           </View>
 
           {/* Right Column: Limited Period Offer Badge */}
           <View style={styles.rightCol}>
-            <LimitedOfferBadge />
+            <LimitedOfferBadge title={badgeTitle} subtitle={badgeSubtitle} />
           </View>
         </View>
       </View>
@@ -182,7 +210,6 @@ const HomePlanAdBanner: React.FC<HomePlanAdBannerProps> = React.memo(
   },
 );
 
-HomePlanAdBanner.displayName = 'HomePlanAdBanner';
 
 export default HomePlanAdBanner;
 

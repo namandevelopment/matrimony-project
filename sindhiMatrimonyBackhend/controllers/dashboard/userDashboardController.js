@@ -11,6 +11,7 @@ import {
   BlockedUser,
   Shortlist,
   ContactUnlock,
+  HomeBanner,
 } from "../../models/index.js";
 import { getKey, setKeyWithTime, removeKey } from "../../services/serviceRedis.js";
 import { isInterestSentToCandidate } from "../matchmaking/interestsController.js";
@@ -105,9 +106,6 @@ export const getSeedViewedProfilesByGender = (targetGender = "FEMALE") => {
   }));
 };
 
-const DEFAULT_MATCHES = getSeedMatchesByGender("FEMALE");
-const DEFAULT_VIEWED_PROFILES = getSeedViewedProfilesByGender("FEMALE");
-const DEFAULT_SUCCESS_STORIES = [];
 
 /**
  * Helper to calculate dynamic profile completeness score (0-100)
@@ -265,7 +263,7 @@ export const getDashboardData = asyncHandler(async (req, res) => {
           })),
         },
         viewedProfiles: seedViewed,
-        successStories: DEFAULT_SUCCESS_STORIES,
+        successStories: [],
         promos: {
           paidMember: {
             discountPercent: 71,
@@ -416,7 +414,7 @@ export const getDashboardData = asyncHandler(async (req, res) => {
       })),
     },
     viewedProfiles: getSeedViewedProfilesByGender(targetGender),
-    successStories: DEFAULT_SUCCESS_STORIES,
+    successStories: [],
     promos: {
       paidMember: {
         discountPercent: 71,
@@ -878,105 +876,41 @@ export const getMidnightCountdown = () => {
   };
 };
 
-// Static dummy candidate pools cleared - only real database records are served
-export const DEFAULT_DAILY_RECOMMENDATIONS = [];
-export const DEFAULT_NEW_MATCHES = [];
-export const DEFAULT_WHO_VIEWED_YOU = [];
-export const DEFAULT_PROFILES_YOU_VIEWED = (SEED_CANDIDATE_POOL || []).slice(3, 7).map((c, idx) => ({
-  _id: c._id,
-  id: c.matrimonyId || c._id,
-  matrimonyId: c.matrimonyId || `SM${c._id.slice(-7).toUpperCase()}`,
-  name: c.name,
-  age: c.age || 24,
-  height: typeof c.height === "number" ? `${Math.floor(c.height / 30.48)}'${Math.round((c.height % 30.48) / 2.54)}"` : (c.height || "5'3\""),
-  photoUrl: c.avatar || c.photoUrl,
-  viewedDate: `${idx + 1} day${idx > 0 ? "s" : ""} ago`,
-}));
+let cachedMobileBanners = {};
 
-export const DEFAULT_MOBILE_SUCCESS_STORIES = [];
-
-export const DEFAULT_MOBILE_BANNERS = {
-  celebratingBanner: {
-    title: "Celebrating 26 Years of Trust",
-    subtitle: "Find your ideal Sindhi life partner with India's most trusted matrimony",
-    badge: "26 Years Milestone",
-    ctaText: "Upgrade Now",
-    ctaUrl: "/subscription",
-  },
-  planAdBanner: {
-    planName: "Silver - 1 month",
-    originalPrice: 1800,
-    discountedPrice: 990,
-    discountPercent: 45,
-    discountEndsInSeconds: 86400,
-    perks: [
-      "View 25 verified phone numbers directly",
-      "Unlimited messaging & chat conversations",
-      "Detailed Vedic Horoscope & Kundli Milan",
-      "Profile highlighted to 3X more matches",
-    ],
-  },
-  assistedServiceBanner: {
-    title: "Assisted Service Luxury",
-    subtitle: "Find matches 3X faster with a dedicated Relationship Manager",
-    badge: "Personalized VIP Service",
-    benefits: [
-      "Dedicated Matchmaker handpicks curated profiles",
-      "Facilitates family introductions & meetings",
-      "100% Confidential and background-verified",
-    ],
-    ctaText: "Explore Assisted",
-    ctaUrl: "/subscription?plan=assisted",
-  },
-  limcaRecordBanner: {
-    title: "Limca Book of Records",
-    subtitle: "Officially recognized for facilitating the maximum number of documented marriages",
-    statText: "Over 2.8 Lakh+ Happy Sindhi Marriages",
-    trustRating: "4.9 / 5",
-  },
-  paidMember: {
-    discountPercent: 71,
-    title: "Become a Paid Member & Save 71%",
-    subtitle: "Get up to 71% OFF on paid membership!",
-    perks: [
-      "Call/WhatsApp matches",
-      "Unlimited messages",
-      "Higher chances of response",
-      "View and match horoscopes",
-    ],
-    ctaText: "See membership plans",
-    upgradeUrl: "/subscription",
-  },
-  assistedService: {
-    title: "Assisted Service Luxury",
-    subtitle: "3X Faster with Dedicated Relationship Manager",
-    actionUrl: "/subscription?plan=assisted",
-  },
+export const resolveHomeBanners = async () => {
+  try {
+    const doc = await HomeBanner.findOne({ key: "DEFAULT_HOME_BANNERS", isActive: true }).lean();
+    if (doc) {
+      cachedMobileBanners = {
+        celebratingBanner: doc.celebratingBanner || {},
+        planAdBanner: doc.planAdBanner || {},
+        assistedServiceBanner: doc.assistedServiceBanner || {},
+        limcaRecordBanner: doc.limcaRecordBanner || {},
+        paidMember: doc.paidMember || {},
+        assistedService: doc.assistedService || {},
+      };
+      return cachedMobileBanners;
+    }
+  } catch (err) {
+    logMessage("Resolve home banners DB error:", err?.message || err, "warn");
+  }
+  return cachedMobileBanners;
 };
 
-export const DEFAULT_FOOTER_SUPPORT = {
-  weddingPlatform: {
-    title: "SindhiMatrimony Wedding Services",
-    subtitle: "Plan your dream wedding with 2.8 Lakh+ verified vendors across India",
-    vendorCount: "2.8 Lakh+",
-    categories: [
-      { name: "Venues", icon: "home" },
-      { name: "Photographers", icon: "camera" },
-      { name: "Catering", icon: "coffee" },
-      { name: "Bridal Wear", icon: "heart" },
-    ],
-  },
-  customerSupport: {
-    title: "Need help finding a match?",
-    phone: "+91 98765 43210",
-    formattedPhone: "+91-9876543210",
-    whatsapp: "+91 98765 43210",
-    whatsappUrl: "https://wa.me/919876543210?text=Hello%20SindhiMatrimony%20Support",
-    email: "support@sindhimatrimony.co.in",
-    workingHours: "9:00 AM to 8:00 PM (Mon - Sun)",
-    tollFree: "1800-419-6287",
-    helpCenterUrl: "https://sindhimatrimony.co.in/help",
-  },
+let cachedFooterSupport = {};
+
+export const resolveFooterSupport = async () => {
+  try {
+    const doc = await HomeBanner.findOne({ key: "DEFAULT_HOME_BANNERS", isActive: true }).lean();
+    if (doc?.footerSupport && Object.keys(doc.footerSupport).length > 0) {
+      cachedFooterSupport = doc.footerSupport;
+      return cachedFooterSupport;
+    }
+  } catch (err) {
+    logMessage("Resolve footer support DB error:", err?.message || err, "warn");
+  }
+  return cachedFooterSupport;
 };
 
 /**
@@ -1027,6 +961,9 @@ export const getMobileHomeFeed = asyncHandler(async (req, res) => {
   }
 
   // 2. OFFLINE / TEST DB ISOLATION FALLBACK
+  const liveBanners = await resolveHomeBanners();
+  const liveSupport = await resolveFooterSupport();
+
   if (mongoose.connection.readyState !== 1) {
     const targetGender = resolveTargetGender(null, req);
     const seedMatches = getSeedMatchesByGender(targetGender);
@@ -1042,7 +979,7 @@ export const getMobileHomeFeed = asyncHandler(async (req, res) => {
         avatarUrl: "",
         isVerified: true,
       },
-      celebratingBanner: DEFAULT_MOBILE_BANNERS.celebratingBanner,
+      celebratingBanner: liveBanners.celebratingBanner,
       completeness: {
         score: 52,
         pendingCount: 3,
@@ -1058,12 +995,12 @@ export const getMobileHomeFeed = asyncHandler(async (req, res) => {
         subtitle: "Matches matching your partner preference",
         items: seedMatches,
       },
-      planAdBanner: DEFAULT_MOBILE_BANNERS.planAdBanner,
+      planAdBanner: liveBanners.planAdBanner,
       newMatches: {
         matchCount: seedMatches.length,
         items: seedMatches.slice(0, 10),
       },
-      assistedServiceBanner: DEFAULT_MOBILE_BANNERS.assistedServiceBanner,
+      assistedServiceBanner: liveBanners.assistedServiceBanner,
       whoViewedYou: {
         count: seedViewed.length,
         items: seedViewed,
@@ -1072,12 +1009,12 @@ export const getMobileHomeFeed = asyncHandler(async (req, res) => {
         count: seedViewed.length,
         items: seedViewed,
       },
-      limcaRecordBanner: DEFAULT_MOBILE_BANNERS.limcaRecordBanner,
+      limcaRecordBanner: liveBanners.limcaRecordBanner,
       successStories: {
-        count: DEFAULT_MOBILE_SUCCESS_STORIES.length,
-        items: DEFAULT_MOBILE_SUCCESS_STORIES,
+        count: 0,
+        items: [],
       },
-      footerSupport: DEFAULT_FOOTER_SUPPORT,
+      footerSupport: liveSupport,
     };
 
     return apiHTTPResponse(
@@ -1161,26 +1098,26 @@ export const getMobileHomeFeed = asyncHandler(async (req, res) => {
     // Who viewed you
     userId
       ? ProfileView.find({ viewedUserId: userId })
-          .sort({ viewedAt: -1 })
-          .limit(10)
-          .populate({
-            path: "viewerProfileId",
-            select: "_id name age height location profession avatar photos isVerified subcaste",
-          })
-          .lean()
+        .sort({ viewedAt: -1 })
+        .limit(10)
+        .populate({
+          path: "viewerProfileId",
+          select: "_id name age height location profession avatar photos isVerified subcaste",
+        })
+        .lean()
       : Promise.resolve([]),
     userId ? ProfileView.countDocuments({ viewedUserId: userId }) : Promise.resolve(0),
 
     // Profiles you viewed
     userId
       ? ProfileView.find({ viewerUserId: userId })
-          .sort({ viewedAt: -1 })
-          .limit(10)
-          .populate({
-            path: "viewedProfileId",
-            select: "_id name age height location profession avatar photos isVerified subcaste",
-          })
-          .lean()
+        .sort({ viewedAt: -1 })
+        .limit(10)
+        .populate({
+          path: "viewedProfileId",
+          select: "_id name age height location profession avatar photos isVerified subcaste",
+        })
+        .lean()
       : Promise.resolve([]),
     userId ? ProfileView.countDocuments({ viewerUserId: userId }) : Promise.resolve(0),
   ]);
@@ -1189,129 +1126,129 @@ export const getMobileHomeFeed = asyncHandler(async (req, res) => {
   const dailyRecommendationsItems =
     dbDailyMatches && dbDailyMatches.length > 0
       ? dbDailyMatches.map((m, idx) => ({
-          id: m._id.toString(),
-          name: m.name,
-          age: m.age || 25,
-          height: m.height
-            ? `${Math.floor(m.height / 30.48)}'${Math.round((m.height % 30.48) / 2.54)}"`
-            : "5'2\"",
-          city: m.location?.city || "Jaipur",
-          caste: m.subcaste || "Bhaiband",
-          education: m.education?.degree || "Graduate",
-          profession: m.profession?.occupation || "Professional",
-          photoUrl: m.avatar || m.photos?.[0]?.url || "",
-          isSilhouette: !m.avatar && (!m.photos || m.photos.length === 0),
-          isVerified: Boolean(m.isVerified || m.verificationBadge === "VERIFIED"),
-          matchScore: 90 + ((idx * 3) % 10),
-          badge: idx === 0 ? "98% Match" : idx === 1 ? "Horoscope Match" : "New Today",
-          matrimonyId: `SM${m._id.toString().slice(-7).toUpperCase()}`,
-        }))
+        id: m._id.toString(),
+        name: m.name,
+        age: m.age || 25,
+        height: m.height
+          ? `${Math.floor(m.height / 30.48)}'${Math.round((m.height % 30.48) / 2.54)}"`
+          : "5'2\"",
+        city: m.location?.city || "Jaipur",
+        caste: m.subcaste || "Bhaiband",
+        education: m.education?.degree || "Graduate",
+        profession: m.profession?.occupation || "Professional",
+        photoUrl: m.avatar || m.photos?.[0]?.url || "",
+        isSilhouette: !m.avatar && (!m.photos || m.photos.length === 0),
+        isVerified: Boolean(m.isVerified || m.verificationBadge === "VERIFIED"),
+        matchScore: 90 + ((idx * 3) % 10),
+        badge: idx === 0 ? "98% Match" : idx === 1 ? "Horoscope Match" : "New Today",
+        matrimonyId: `SM${m._id.toString().slice(-7).toUpperCase()}`,
+      }))
       : getSeedMatchesByGender(targetGender);
 
   // Transform all matches
   const allMatchesItems =
     dbAllMatches && dbAllMatches.length > 0
       ? dbAllMatches.map((m) => ({
-          id: m._id.toString(),
-          name: m.name,
-          age: m.age || 25,
-          height: m.height
-            ? `${Math.floor(m.height / 30.48)}'${Math.round((m.height % 30.48) / 2.54)}"`
-            : "5'2\"",
-          city: m.location?.city || "Jaipur",
-          caste: m.subcaste || "Bhaiband",
-          education: m.education?.degree || "Graduate",
-          profession: m.profession?.occupation || "Professional",
-          photoUrl: m.avatar || m.photos?.[0]?.url || "",
-          isSilhouette: !m.avatar && (!m.photos || m.photos.length === 0),
-          isVerified: Boolean(m.isVerified || m.verificationBadge === "VERIFIED"),
-          matrimonyId: `SM${m._id.toString().slice(-7).toUpperCase()}`,
-        }))
+        id: m._id.toString(),
+        name: m.name,
+        age: m.age || 25,
+        height: m.height
+          ? `${Math.floor(m.height / 30.48)}'${Math.round((m.height % 30.48) / 2.54)}"`
+          : "5'2\"",
+        city: m.location?.city || "Jaipur",
+        caste: m.subcaste || "Bhaiband",
+        education: m.education?.degree || "Graduate",
+        profession: m.profession?.occupation || "Professional",
+        photoUrl: m.avatar || m.photos?.[0]?.url || "",
+        isSilhouette: !m.avatar && (!m.photos || m.photos.length === 0),
+        isVerified: Boolean(m.isVerified || m.verificationBadge === "VERIFIED"),
+        matrimonyId: `SM${m._id.toString().slice(-7).toUpperCase()}`,
+      }))
       : getSeedMatchesByGender(targetGender);
 
   // Transform new matches
   const newMatchesItems =
     dbNewMatches && dbNewMatches.length > 0
       ? dbNewMatches.map((m) => {
-          const joinedDays = Math.max(
-            1,
-            Math.floor((Date.now() - new Date(m.createdAt).getTime()) / (1000 * 60 * 60 * 24))
-          );
-          return {
-            id: m._id.toString(),
-            name: m.name,
-            age: m.age || 24,
-            height: m.height
-              ? `${Math.floor(m.height / 30.48)}'${Math.round((m.height % 30.48) / 2.54)}"`
-              : "5'3\"",
-            city: m.location?.city || "Pune",
-            caste: m.subcaste || "Bhaiband",
-            profession: m.profession?.occupation || "Professional",
-            photoUrl: m.avatar || m.photos?.[0]?.url || "",
-            joinedDaysAgo: `Joined ${joinedDays} day${joinedDays > 1 ? "s" : ""} ago`,
-            isVerified: Boolean(m.isVerified || m.verificationBadge === "VERIFIED"),
-            matrimonyId: `SM${m._id.toString().slice(-7).toUpperCase()}`,
-          };
-        })
+        const joinedDays = Math.max(
+          1,
+          Math.floor((Date.now() - new Date(m.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+        );
+        return {
+          id: m._id.toString(),
+          name: m.name,
+          age: m.age || 24,
+          height: m.height
+            ? `${Math.floor(m.height / 30.48)}'${Math.round((m.height % 30.48) / 2.54)}"`
+            : "5'3\"",
+          city: m.location?.city || "Pune",
+          caste: m.subcaste || "Bhaiband",
+          profession: m.profession?.occupation || "Professional",
+          photoUrl: m.avatar || m.photos?.[0]?.url || "",
+          joinedDaysAgo: `Joined ${joinedDays} day${joinedDays > 1 ? "s" : ""} ago`,
+          isVerified: Boolean(m.isVerified || m.verificationBadge === "VERIFIED"),
+          matrimonyId: `SM${m._id.toString().slice(-7).toUpperCase()}`,
+        };
+      })
       : getSeedMatchesByGender(targetGender);
 
   // Transform Who Viewed You
   const whoViewedYouItems =
     dbWhoViewedYou && dbWhoViewedYou.length > 0
       ? dbWhoViewedYou.map((v) => {
-          const p = v.viewerProfileId || {};
-          return {
-            id: (p._id || v._id).toString(),
-            name: p.name || "Member",
-            age: p.age || 25,
-            height: p.height
-              ? `${Math.floor(p.height / 30.48)}'${Math.round((p.height % 30.48) / 2.54)}"`
-              : "5'2\"",
-            city: p.location?.city || "Mumbai",
-            caste: p.subcaste || "Amil",
-            profession: p.profession?.occupation || "Professional",
-            photoUrl: p.avatar || p.photos?.[0]?.url || "",
-            viewedAt: formatViewedRelativeTime(v.viewedAt),
-            viewCount: v.viewCount || 1,
-            matrimonyId: p._id ? `SM${p._id.toString().slice(-7).toUpperCase()}` : "SM4517094",
-          };
-        })
+        const p = v.viewerProfileId || {};
+        return {
+          id: (p._id || v._id).toString(),
+          name: p.name || "Member",
+          age: p.age || 25,
+          height: p.height
+            ? `${Math.floor(p.height / 30.48)}'${Math.round((p.height % 30.48) / 2.54)}"`
+            : "5'2\"",
+          city: p.location?.city || "Mumbai",
+          caste: p.subcaste || "Amil",
+          profession: p.profession?.occupation || "Professional",
+          photoUrl: p.avatar || p.photos?.[0]?.url || "",
+          viewedAt: formatViewedRelativeTime(v.viewedAt),
+          viewCount: v.viewCount || 1,
+          matrimonyId: p._id ? `SM${p._id.toString().slice(-7).toUpperCase()}` : "SM4517094",
+        };
+      })
       : getSeedViewedProfilesByGender(targetGender);
 
   // Transform Profiles You Viewed
   const profilesYouViewedItems =
     dbProfilesYouViewed && dbProfilesYouViewed.length > 0
       ? dbProfilesYouViewed.map((v) => {
-          const p = v.viewedProfileId || {};
-          return {
-            id: (p._id || v._id).toString(),
-            name: p.name || "Member",
-            age: p.age || 24,
-            height: p.height
-              ? `${Math.floor(p.height / 30.48)}'${Math.round((p.height % 30.48) / 2.54)}"`
-              : "5'1\"",
-            city: p.location?.city || "Lucknow",
-            profession: p.profession?.occupation || "Professional",
-            photoUrl: p.avatar || p.photos?.[0]?.url || "",
-            viewedAt: formatViewedRelativeTime(v.viewedAt),
-            matrimonyId: p._id ? `SM${p._id.toString().slice(-7).toUpperCase()}` : "SM4486236",
-          };
-        })
+        const p = v.viewedProfileId || {};
+        return {
+          id: (p._id || v._id).toString(),
+          name: p.name || "Member",
+          age: p.age || 24,
+          height: p.height
+            ? `${Math.floor(p.height / 30.48)}'${Math.round((p.height % 30.48) / 2.54)}"`
+            : "5'1\"",
+          city: p.location?.city || "Lucknow",
+          profession: p.profession?.occupation || "Professional",
+          photoUrl: p.avatar || p.photos?.[0]?.url || "",
+          viewedAt: formatViewedRelativeTime(v.viewedAt),
+          matrimonyId: p._id ? `SM${p._id.toString().slice(-7).toUpperCase()}` : "SM4486236",
+        };
+      })
       : getSeedViewedProfilesByGender(targetGender);
 
   // Transform Success Stories
   const successStoriesItems =
     activeStories && activeStories.length > 0
       ? activeStories.map((s) => ({
-          id: s._id.toString(),
-          coupleName: s.coupleName,
-          postedOn: s.postedOn || "Recently",
-          storySnippet: s.storySnippet,
-          imageUrl: s.imageUrl,
-          badge: s.badge || "Just Married",
-          city: s.city || "Mumbai",
-        }))
-      : DEFAULT_MOBILE_SUCCESS_STORIES;
+        id: s._id.toString(),
+        coupleName: s.coupleName,
+        postedOn: s.postedOn || "Recently",
+        storySnippet: s.storySnippet,
+        imageUrl: s.imageUrl,
+        badge: s.badge || "Just Married",
+        city: s.city || "Mumbai",
+      }))
+      : [];
 
   const responsePayload = {
     profileTab: {
@@ -1323,7 +1260,7 @@ export const getMobileHomeFeed = asyncHandler(async (req, res) => {
       avatarUrl: profileDoc?.avatar || "",
       isVerified: Boolean(profileDoc?.isVerified || profileDoc?.verificationBadge === "VERIFIED"),
     },
-    celebratingBanner: DEFAULT_MOBILE_BANNERS.celebratingBanner,
+    celebratingBanner: liveBanners.celebratingBanner,
     completeness: {
       score: completeness.score,
       pendingCount: completeness.actions.length,
@@ -1339,12 +1276,12 @@ export const getMobileHomeFeed = asyncHandler(async (req, res) => {
       subtitle: "Matches matching your partner preference",
       items: allMatchesItems,
     },
-    planAdBanner: DEFAULT_MOBILE_BANNERS.planAdBanner,
+    planAdBanner: liveBanners.planAdBanner,
     newMatches: {
       matchCount: totalNewMatchesCount || newMatchesItems.length,
       items: newMatchesItems,
     },
-    assistedServiceBanner: DEFAULT_MOBILE_BANNERS.assistedServiceBanner,
+    assistedServiceBanner: liveBanners.assistedServiceBanner,
     whoViewedYou: {
       count: totalWhoViewedCount || whoViewedYouItems.length,
       items: whoViewedYouItems,
@@ -1353,12 +1290,12 @@ export const getMobileHomeFeed = asyncHandler(async (req, res) => {
       count: totalProfilesYouViewedCount || profilesYouViewedItems.length,
       items: profilesYouViewedItems,
     },
-    limcaRecordBanner: DEFAULT_MOBILE_BANNERS.limcaRecordBanner,
+    limcaRecordBanner: liveBanners.limcaRecordBanner,
     successStories: {
       count: successStoriesItems.length,
       items: successStoriesItems,
     },
-    footerSupport: DEFAULT_FOOTER_SUPPORT,
+    footerSupport: liveSupport,
   };
 
   // Cache in Redis for sub-5ms repeated lookups
@@ -1446,23 +1383,23 @@ export const getDailyRecommendationsFeed = asyncHandler(async (req, res) => {
   const allItems =
     dbMatches && dbMatches.length > 0
       ? dbMatches.map((m, idx) => ({
-          id: m._id.toString(),
-          name: m.name,
-          age: m.age || 25,
-          height: m.height
-            ? `${Math.floor(m.height / 30.48)}'${Math.round((m.height % 30.48) / 2.54)}"`
-            : "5'2\"",
-          city: m.location?.city || "Jaipur",
-          caste: m.subcaste || "Bhaiband",
-          education: m.education?.degree || "Graduate",
-          profession: m.profession?.occupation || "Professional",
-          photoUrl: m.avatar || m.photos?.[0]?.url || "",
-          isSilhouette: !m.avatar && (!m.photos || m.photos.length === 0),
-          isVerified: Boolean(m.isVerified || m.verificationBadge === "VERIFIED"),
-          matchScore: 90 + ((idx * 3) % 10),
-          badge: idx === 0 ? "98% Match" : idx === 1 ? "Horoscope Match" : "New Today",
-          matrimonyId: `SM${m._id.toString().slice(-7).toUpperCase()}`,
-        }))
+        id: m._id.toString(),
+        name: m.name,
+        age: m.age || 25,
+        height: m.height
+          ? `${Math.floor(m.height / 30.48)}'${Math.round((m.height % 30.48) / 2.54)}"`
+          : "5'2\"",
+        city: m.location?.city || "Jaipur",
+        caste: m.subcaste || "Bhaiband",
+        education: m.education?.degree || "Graduate",
+        profession: m.profession?.occupation || "Professional",
+        photoUrl: m.avatar || m.photos?.[0]?.url || "",
+        isSilhouette: !m.avatar && (!m.photos || m.photos.length === 0),
+        isVerified: Boolean(m.isVerified || m.verificationBadge === "VERIFIED"),
+        matchScore: 90 + ((idx * 3) % 10),
+        badge: idx === 0 ? "98% Match" : idx === 1 ? "Horoscope Match" : "New Today",
+        matrimonyId: `SM${m._id.toString().slice(-7).toUpperCase()}`,
+      }))
       : getSeedMatchesByGender(resolvedTargetGender);
 
   const total = allItems.length;
@@ -1582,27 +1519,27 @@ export const getWhoViewedYouFeed = asyncHandler(async (req, res) => {
   const items =
     dbViews && dbViews.length > 0
       ? dbViews.map((v) => {
-          const p = v.viewerProfileId || {};
-          return {
-            id: (p._id || v._id).toString(),
-            name: isPaidSubscriber ? (p.name || "Member") : "Sindhi Candidate",
-            age: isPaidSubscriber ? (p.age || 25) : 25,
-            height: p.height
-              ? `${Math.floor(p.height / 30.48)}'${Math.round((p.height % 30.48) / 2.54)}"`
-              : "5'2\"",
-            city: isPaidSubscriber ? (p.location?.city || "Mumbai") : "City Hidden",
-            caste: p.subcaste || "Sindhi",
-            profession: isPaidSubscriber ? (p.profession?.occupation || "Professional") : "Occupation Locked",
-            photoUrl: isPaidSubscriber ? (p.avatar || p.photos?.[0]?.url || "") : "",
-            isLocked: !isPaidSubscriber,
-            upgradeRequired: !isPaidSubscriber,
-            viewedAt: formatViewedRelativeTime(v.viewedAt),
-            viewCount: v.viewCount || 1,
-            matrimonyId: isPaidSubscriber
-              ? (p._id ? `SM${p._id.toString().slice(-7).toUpperCase()}` : "SM4517094")
-              : "SM******",
-          };
-        })
+        const p = v.viewerProfileId || {};
+        return {
+          id: (p._id || v._id).toString(),
+          name: isPaidSubscriber ? (p.name || "Member") : "Sindhi Candidate",
+          age: isPaidSubscriber ? (p.age || 25) : 25,
+          height: p.height
+            ? `${Math.floor(p.height / 30.48)}'${Math.round((p.height % 30.48) / 2.54)}"`
+            : "5'2\"",
+          city: isPaidSubscriber ? (p.location?.city || "Mumbai") : "City Hidden",
+          caste: p.subcaste || "Sindhi",
+          profession: isPaidSubscriber ? (p.profession?.occupation || "Professional") : "Occupation Locked",
+          photoUrl: isPaidSubscriber ? (p.avatar || p.photos?.[0]?.url || "") : "",
+          isLocked: !isPaidSubscriber,
+          upgradeRequired: !isPaidSubscriber,
+          viewedAt: formatViewedRelativeTime(v.viewedAt),
+          viewCount: v.viewCount || 1,
+          matrimonyId: isPaidSubscriber
+            ? (p._id ? `SM${p._id.toString().slice(-7).toUpperCase()}` : "SM4517094")
+            : "SM******",
+        };
+      })
       : getSeedViewedProfilesByGender(targetGender);
 
   const total = count || items.length;
@@ -1697,21 +1634,21 @@ export const getProfilesYouViewedFeed = asyncHandler(async (req, res) => {
   const items =
     dbViews && dbViews.length > 0
       ? dbViews.map((v) => {
-          const p = v.viewedProfileId || {};
-          return {
-            id: (p._id || v._id).toString(),
-            name: p.name || "Member",
-            age: p.age || 24,
-            height: p.height
-              ? `${Math.floor(p.height / 30.48)}'${Math.round((p.height % 30.48) / 2.54)}"`
-              : "5'1\"",
-            city: p.location?.city || "Lucknow",
-            profession: p.profession?.occupation || "Professional",
-            photoUrl: p.avatar || p.photos?.[0]?.url || "",
-            viewedAt: formatViewedRelativeTime(v.viewedAt),
-            matrimonyId: p._id ? `SM${p._id.toString().slice(-7).toUpperCase()}` : "SM4486236",
-          };
-        })
+        const p = v.viewedProfileId || {};
+        return {
+          id: (p._id || v._id).toString(),
+          name: p.name || "Member",
+          age: p.age || 24,
+          height: p.height
+            ? `${Math.floor(p.height / 30.48)}'${Math.round((p.height % 30.48) / 2.54)}"`
+            : "5'1\"",
+          city: p.location?.city || "Lucknow",
+          profession: p.profession?.occupation || "Professional",
+          photoUrl: p.avatar || p.photos?.[0]?.url || "",
+          viewedAt: formatViewedRelativeTime(v.viewedAt),
+          matrimonyId: p._id ? `SM${p._id.toString().slice(-7).toUpperCase()}` : "SM4486236",
+        };
+      })
       : getSeedViewedProfilesByGender(targetGender);
 
   const total = count || items.length;
@@ -1847,8 +1784,8 @@ export const trackProfileView = asyncHandler(async (req, res) => {
           }).lean(),
           resolvedViewerProfileId
             ? Profile.findById(resolvedViewerProfileId)
-                .select("name avatar photos age location profession subcaste")
-                .lean()
+              .select("name avatar photos age location profession subcaste")
+              .lean()
             : null,
         ]);
       }
@@ -1881,12 +1818,16 @@ export const trackProfileView = asyncHandler(async (req, res) => {
         addNotification({
           _id: `notif_visit_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
           recipientUserId: String(resolvedViewedUserId),
+          senderUserId: String(viewerUserId),
           viewerUserId: String(viewerUserId),
           type: "PROFILE_VIEWED",
-          category: "matches",
+          category: "PROFILE_VIEW",
           title: isPaidSubscriber
             ? "Profile Visitor 👁️"
             : "Someone Viewed Your Profile 👁️",
+          message: isPaidSubscriber
+            ? `${visitorName} (${visitorProfession}, ${visitorCity}) viewed your profile.`
+            : `A verified Sindhi match from ${visitorCity} viewed your profile. Upgrade your plan to see who visited you.`,
           body: isPaidSubscriber
             ? `${visitorName} (${visitorProfession}, ${visitorCity}) viewed your profile.`
             : `A verified Sindhi match from ${visitorCity} viewed your profile. Upgrade your plan to see who visited you.`,
@@ -1908,15 +1849,15 @@ export const trackProfileView = asyncHandler(async (req, res) => {
           },
           primaryAction: isPaidSubscriber
             ? {
-                label: "View Profile",
-                action: "view_profile",
-                variant: "secondary",
-              }
+              label: "View Profile",
+              action: "view_profile",
+              variant: "secondary",
+            }
             : {
-                label: "Upgrade to View Profile",
-                action: "upgrade_plan",
-                variant: "primary",
-              },
+              label: "Upgrade to View Profile",
+              action: "upgrade_plan",
+              variant: "primary",
+            },
           data: {
             candidateId: String(resolvedViewerProfileId || viewedProfileId),
             viewerUserId: String(viewerUserId),
@@ -1937,16 +1878,16 @@ export const trackProfileView = asyncHandler(async (req, res) => {
       }
     }
 
-      // Invalidate both users' home feed Redis cache for immediate real-time update
-      try {
-        await Promise.all([
-          removeKey(`${MOBILE_HOME_CACHE_PREFIX}${viewerUserId}`),
-          removeKey(`${MOBILE_HOME_CACHE_PREFIX}${resolvedViewedUserId}`),
-        ]);
-      } catch (cacheErr) {
-        logMessage("Redis Cache Invalidation Non-fatal Warning:", cacheErr?.message || cacheErr, "warn");
-      }
+    // Invalidate both users' home feed Redis cache for immediate real-time update
+    try {
+      await Promise.all([
+        removeKey(`${MOBILE_HOME_CACHE_PREFIX}${viewerUserId}`),
+        removeKey(`${MOBILE_HOME_CACHE_PREFIX}${resolvedViewedUserId}`),
+      ]);
+    } catch (cacheErr) {
+      logMessage("Redis Cache Invalidation Non-fatal Warning:", cacheErr?.message || cacheErr, "warn");
     }
+  }
 
   return apiHTTPResponse(
     req,
@@ -1972,21 +1913,17 @@ export const getSuccessStoriesFeed = asyncHandler(async (req, res) => {
   const limit = Math.min(50, Math.max(1, parseInt(req.query?.limit, 10) || 10));
 
   if (mongoose.connection.readyState !== 1) {
-    const total = DEFAULT_MOBILE_SUCCESS_STORIES.length;
-    const startIdx = (page - 1) * limit;
-    const paginatedItems = DEFAULT_MOBILE_SUCCESS_STORIES.slice(startIdx, startIdx + limit);
-
     return apiHTTPResponse(
       req,
       res,
       CONSTANTS.HTTP_OK,
       "Success stories retrieved successfully.",
       {
-        count: total,
-        totalPages: Math.ceil(total / limit),
+        count: 0,
+        totalPages: 0,
         page,
         limit,
-        items: paginatedItems,
+        items: [],
       },
       CONSTANTS.OK,
       CONSTANTS.ERROR_FALSE
@@ -2005,16 +1942,16 @@ export const getSuccessStoriesFeed = asyncHandler(async (req, res) => {
   const items =
     dbStories && dbStories.length > 0
       ? dbStories.map((s) => ({
-          id: s._id.toString(),
-          coupleName: s.coupleName,
-          postedOn: s.postedOn || "Recently",
-          storySnippet: s.storySnippet,
-          imageUrl: s.imageUrl,
-          badge: s.badge || "Just Married",
-          city: s.city || "Mumbai",
-          weddingDate: s.weddingDate,
-        }))
-      : DEFAULT_MOBILE_SUCCESS_STORIES;
+        id: s._id.toString(),
+        coupleName: s.coupleName,
+        postedOn: s.postedOn || "Recently",
+        storySnippet: s.storySnippet,
+        imageUrl: s.imageUrl,
+        badge: s.badge || "Just Married",
+        city: s.city || "Mumbai",
+        weddingDate: s.weddingDate,
+      }))
+      : [];
 
   return apiHTTPResponse(
     req,
@@ -2037,12 +1974,65 @@ export const getSuccessStoriesFeed = asyncHandler(async (req, res) => {
  * GET /api/v1/dashboard/banners
  */
 export const getHomeBanners = asyncHandler(async (req, res) => {
+  const banners = await resolveHomeBanners();
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Home banners retrieved successfully.",
-    DEFAULT_MOBILE_BANNERS,
+    banners,
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const updateHomeBanners = asyncHandler(async (req, res) => {
+  const {
+    celebratingBanner,
+    planAdBanner,
+    assistedServiceBanner,
+    limcaRecordBanner,
+    paidMember,
+    assistedService,
+  } = req.body || {};
+
+  const updateFields = {
+    ...(celebratingBanner !== undefined ? { celebratingBanner } : {}),
+    ...(planAdBanner !== undefined ? { planAdBanner } : {}),
+    ...(assistedServiceBanner !== undefined ? { assistedServiceBanner } : {}),
+    ...(limcaRecordBanner !== undefined ? { limcaRecordBanner } : {}),
+    ...(paidMember !== undefined ? { paidMember } : {}),
+    ...(assistedService !== undefined ? { assistedService } : {}),
+    isActive: true,
+  };
+
+  cachedMobileBanners = { ...cachedMobileBanners, ...updateFields };
+
+  try {
+    const doc = await HomeBanner.findOneAndUpdate(
+      { key: "DEFAULT_HOME_BANNERS" },
+      { $set: updateFields },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    ).lean();
+
+    cachedMobileBanners = {
+      celebratingBanner: doc.celebratingBanner || {},
+      planAdBanner: doc.planAdBanner || {},
+      assistedServiceBanner: doc.assistedServiceBanner || {},
+      limcaRecordBanner: doc.limcaRecordBanner || {},
+      paidMember: doc.paidMember || {},
+      assistedService: doc.assistedService || {},
+    };
+  } catch (err) {
+    logMessage("Update home banners DB persistence error:", err?.message || err, "warn");
+  }
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    "Home banners updated successfully.",
+    cachedMobileBanners,
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
@@ -2053,12 +2043,41 @@ export const getHomeBanners = asyncHandler(async (req, res) => {
  * GET /api/v1/dashboard/support-info
  */
 export const getSupportInfo = asyncHandler(async (req, res) => {
+  const support = await resolveFooterSupport();
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Support info retrieved successfully.",
-    DEFAULT_FOOTER_SUPPORT,
+    support,
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const updateSupportInfo = asyncHandler(async (req, res) => {
+  const payload = req.body || {};
+  cachedFooterSupport = { ...cachedFooterSupport, ...payload };
+
+  try {
+    const doc = await HomeBanner.findOneAndUpdate(
+      { key: "DEFAULT_HOME_BANNERS" },
+      { $set: { footerSupport: cachedFooterSupport } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    ).lean();
+    if (doc?.footerSupport) {
+      cachedFooterSupport = doc.footerSupport;
+    }
+  } catch (err) {
+    logMessage("Update footer support DB persistence error:", err?.message || err, "warn");
+  }
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    "Support info updated successfully.",
+    cachedFooterSupport,
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );

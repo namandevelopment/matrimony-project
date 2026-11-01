@@ -148,10 +148,14 @@ export const sendInterest = asyncHandler(async (req, res) => {
   // Dispatch in-app notification for receiver
   addNotification({
     _id: `notif_${Date.now()}`,
+    recipientUserId: idStr,
+    senderUserId: req.user?._id || req.user?.id || null,
     type: "INTEREST_RECEIVED",
+    category: "INTEREST",
     title: "New Rishta Connect Request 💌",
+    message: `${req.user?.name || "A member"} expressed interest in your profile.`,
     body: `${req.user?.name || "A member"} expressed interest in your profile.`,
-    data: { candidateId: idStr, interestId, receiverProfileId: idStr },
+    data: { candidateId: idStr, interestId, receiverProfileId: idStr, senderName: req.user?.name },
     avatar: req.user?.avatar || "",
     isRead: false,
     createdAt: Date.now(),
@@ -451,4 +455,25 @@ export const getInterestsBadgeCount = asyncHandler(async (req, res) => {
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
+});
+
+export const bulkCreateInterests = asyncHandler(async (req, res) => {
+  const items = Array.isArray(req.body) ? req.body : req.body?.interests || req.body?.items || [];
+  if (!Array.isArray(items) || items.length === 0) {
+    return apiHTTPResponse(req, res, CONSTANTS.HTTP_BAD_REQUEST, "No interests provided.", null, CONSTANTS.OK, CONSTANTS.ERROR_TRUE);
+  }
+
+  const results = [];
+  for (const item of items) {
+    const id = item._id || `int_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const interestDoc = { ...item, _id: id };
+    inMemoryInterests.set(id, interestDoc);
+    if (item.direction === "SENT") {
+      const recId = item.receiverProfileId || item.receiverProfile?._id;
+      if (recId) sentInterestReceiverIds.add(recId.toString());
+    }
+    results.push(interestDoc);
+  }
+
+  return apiHTTPResponse(req, res, CONSTANTS.HTTP_CREATED, `Successfully imported ${results.length} interests.`, { count: results.length, items: results }, CONSTANTS.OK, CONSTANTS.ERROR_FALSE);
 });

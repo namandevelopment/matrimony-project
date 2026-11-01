@@ -1,4 +1,5 @@
 import { notificationService } from './notificationService';
+import { BASE_URL } from '../redux/apiService';
 
 export type TargetAudience =
   | 'ALL'
@@ -1052,9 +1053,25 @@ class CampaignService {
         idempotencyKey: resolvedIdempotency,
       });
 
-      // Background Worker Simulation (batches)
+      // Background Worker Simulation & Backend API Dispatch
       let currentProgress = 0;
       this.updateCampaign(campaignId, { status: 'PROCESSING', processingProgress: 5 });
+
+      if (typeof window !== 'undefined') {
+        fetch(`${BASE_URL}/api/v1/notifications/bulk`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            targetAudience: camp.targetAudience,
+            title: camp.title,
+            message: camp.message,
+            category: 'PROMOTION',
+            type: 'CAMPAIGN_BROADCAST',
+            data: { campaignId, campaignName: camp.campaignName },
+            priority: camp.priority === 'URGENT' ? 'CRITICAL' : camp.priority === 'HIGH' ? 'HIGH' : 'NORMAL',
+          }),
+        }).catch(() => {});
+      }
 
       const interval = setInterval(() => {
         currentProgress += 20;

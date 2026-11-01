@@ -17,6 +17,7 @@ import {
   getReceivedInterests,
   getSentInterests,
   getInterestsBadgeCount,
+  bulkCreateInterests,
 } from "../../controllers/matchmaking/interestsController.js";
 
 const router = express.Router();
@@ -42,6 +43,7 @@ router.get("/mutual-matches", getMutualMatches);
  * --------------------------------------------------------------------------
  */
 router.post("/interests/send", sendInterest);
+router.post("/interests/bulk", bulkCreateInterests);
 router.put("/interests/:interestId/accept", acceptInterest);
 router.put("/interests/:interestId/decline", declineInterest);
 router.put("/interests/:interestId/remind", remindInterest);

@@ -102,9 +102,6 @@ const HomeScreen = () => {
         />
 
         <HomePlanAdBanner
-          planName="Silver - 1 month"
-          originalPrice={1800}
-          discountedPrice={990}
           onPayPress={() => {
             navigation.navigate('Upgrade');
           }}

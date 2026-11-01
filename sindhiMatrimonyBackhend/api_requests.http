@@ -608,10 +608,111 @@ GET {{baseUrl}}/dashboard/banners
 Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
+### 5.7.11.1 Create or Update Home Promotional & Trust Banners
+POST {{baseUrl}}/dashboard/banners
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "celebratingBanner": {
+    "title": "Celebrating 26 Years of Matchmaking",
+    "subtitle": "Find your ideal Sindhi life partner with India's most trusted matrimony",
+    "badge": "26 Years Milestone",
+    "discountPercent": 78,
+    "ctaText": "Get upto 78% OFF",
+    "ctaUrl": "Upgrade",
+    "imageUrl": null,
+    "isVisible": true
+  },
+  "planAdBanner": {
+    "planName": "Silver - 1 month",
+    "tagline": "Your only starter pack to find the right match",
+    "offerTag": "Special offer only for you",
+    "originalPrice": 1800,
+    "discountedPrice": 990,
+    "discountPercent": 45,
+    "discountEndsInSeconds": 86400,
+    "features": [
+      { "id": "feat_1", "icon": "smartphone", "prefixText": "View ", "highlightText": "10 Phone Nos", "hasInfo": false },
+      { "id": "feat_2", "icon": "message-square", "prefixText": "Send ", "highlightText": "messages to matches", "hasInfo": true },
+      { "id": "feat_3", "icon": "sparkles", "prefixText": "View ", "highlightText": "unlimited horoscopes", "hasInfo": false }
+    ],
+    "buttonText": "Pay ₹990",
+    "disclaimer": "*Prices are exclusive of GST",
+    "badge": { "title": "LIMITED", "subtitle": "PERIOD OFFER" }
+  },
+  "assistedServiceBanner": {
+    "title": "Assisted Service Luxury",
+    "subtitle": "Find matches 3X faster with a dedicated Relationship Manager",
+    "badge": "Personalized VIP Service",
+    "benefits": [
+      "Dedicated Matchmaker handpicks curated profiles",
+      "Facilitates family introductions & meetings",
+      "100% Confidential and background-verified"
+    ],
+    "ctaText": "Explore Assisted",
+    "ctaUrl": "/subscription?plan=assisted"
+  },
+  "limcaRecordBanner": {
+    "title": "Limca Book of Records",
+    "subtitle": "Officially recognized for facilitating the maximum number of documented marriages",
+    "statText": "Over 2.8 Lakh+ Happy Sindhi Marriages",
+    "trustRating": "4.9 / 5"
+  },
+  "paidMember": {
+    "discountPercent": 71,
+    "title": "Become a Paid Member & Save 71%",
+    "subtitle": "Get up to 71% OFF on paid membership!",
+    "perks": [
+      "Call/WhatsApp matches",
+      "Unlimited messages",
+      "Higher chances of response",
+      "View and match horoscopes"
+    ],
+    "ctaText": "See membership plans",
+    "upgradeUrl": "/subscription"
+  },
+  "assistedService": {
+    "title": "Assisted Service Luxury",
+    "subtitle": "3X Faster with Dedicated Relationship Manager",
+    "actionUrl": "/subscription?plan=assisted"
+  }
+}
+
 ### 5.7.12 Customer Support & Wedding Planning Platform Directory
 GET {{baseUrl}}/dashboard/support-info
 Authorization: Bearer {{authToken}}
 Content-Type: application/json
+
+### 5.7.12.1 Create or Update Customer Support & Wedding Services Info
+POST {{baseUrl}}/dashboard/support-info
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "weddingPlatform": {
+    "title": "SindhiMatrimony Wedding Services",
+    "subtitle": "Plan your dream wedding with 2.8 Lakh+ verified vendors across India",
+    "vendorCount": "2.8 Lakh+",
+    "categories": [
+      { "name": "Venues", "icon": "home" },
+      { "name": "Photographers", "icon": "camera" },
+      { "name": "Catering", "icon": "coffee" },
+      { "name": "Bridal Wear", "icon": "heart" }
+    ]
+  },
+  "customerSupport": {
+    "title": "Need help finding a match?",
+    "phone": "+91 98765 43210",
+    "formattedPhone": "+91-9876543210",
+    "whatsapp": "+91 98765 43210",
+    "whatsappUrl": "https://wa.me/919876543210?text=Hello%20SindhiMatrimony%20Support",
+    "email": "support@sindhimatrimony.co.in",
+    "workingHours": "9:00 AM to 8:00 PM (Mon - Sun)",
+    "tollFree": "1800-419-6287",
+    "helpCenterUrl": "https://sindhimatrimony.co.in/help"
+  }
+}
 
 
 ### ============================================================================
@@ -2799,3 +2900,553 @@ Content-Type: application/json
 DELETE {{baseUrl}}/admin/success-stories/story_admin_1
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
+
+### ============================================================================
+### 24. BULK DATA INGESTION & SEEDING APIS (DYNAMIC CLOUD POPULATION)
+### ============================================================================
+
+### 24.1 Bulk Upload Wedding Success Stories
+POST {{baseUrl}}/dashboard/success-stories/bulk
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+[
+  {
+    "_id": "67b34a12c8e312a0f9000301",
+    "coupleName": "Naveen Advani & Geeta Chhabria",
+    "coupleNames": "Naveen & Geeta",
+    "groomName": "Naveen Advani",
+    "brideName": "Geeta Chhabria",
+    "weddingDate": "14 Dec 2025",
+    "postedOn": "18 Dec 2025",
+    "city": "Jaipur",
+    "location": "Jaipur, Rajasthan",
+    "storySnippet": "We connected on SindhiMatrimony, discovered that our families hailed from adjacent neighborhoods in Ajmer, and found perfect alignment in culture, gotra, and life goals.",
+    "fullStory": "Our journey began with a simple Connect request on the app. We spent three weeks understanding each other's aspirations and family traditions. When our parents met for the formal 'Kachhi Misri', everyone instantly bonded over authentic Sindhi Dal Pakwan. Truly a match made in heaven!",
+    "imageUrl": "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800&auto=format&fit=crop&q=80",
+    "photoUrl": "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800&auto=format&fit=crop&q=80",
+    "badge": "Just Married",
+    "displayOrder": 1,
+    "isFeatured": true,
+    "isActive": true
+  },
+  {
+    "_id": "67b34a12c8e312a0f9000302",
+    "coupleName": "Rahul Vaswani & Priya Jhangiani",
+    "coupleNames": "Rahul & Priya",
+    "groomName": "Rahul Vaswani",
+    "brideName": "Priya Jhangiani",
+    "weddingDate": "20 Jan 2026",
+    "postedOn": "25 Jan 2026",
+    "city": "Mumbai",
+    "location": "Bandra, Mumbai",
+    "storySnippet": "Our families exchanged Kundlis using the app's instant 36 Guna Milan feature. With 31/36 score, our wedding was celebrated with vibrant Lada and Santh ceremonies.",
+    "fullStory": "Both of us were working in fast-paced corporate roles in Mumbai. SindhiMatrimony made the search transparent and dignified. The compatibility report gave both sets of elders immense confidence. We had our Grand wedding at Taj Lands End with authentic Sufi music.",
+    "imageUrl": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&auto=format&fit=crop&q=80",
+    "photoUrl": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&auto=format&fit=crop&q=80",
+    "badge": "31/36 Guna Match",
+    "displayOrder": 2,
+    "isFeatured": true,
+    "isActive": true
+  },
+  {
+    "_id": "67b34a12c8e312a0f9000303",
+    "coupleName": "Mohit Motwani & Divya Bhavnani",
+    "coupleNames": "Mohit & Divya",
+    "groomName": "Mohit Motwani",
+    "brideName": "Divya Bhavnani",
+    "weddingDate": "05 Feb 2026",
+    "postedOn": "10 Feb 2026",
+    "city": "Pune",
+    "location": "Kalyani Nagar, Pune",
+    "storySnippet": "Finding someone who shares the same entrepreneurial drive and Sindhi values felt impossible until we matched here. Within 4 months, we tied the knot!",
+    "fullStory": "Divya runs her own design boutique and I manage a software consultancy. Our partner preferences matched to 96%. After our initial video call on the app, we knew our wavelengths were completely in sync.",
+    "imageUrl": "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&auto=format&fit=crop&q=80",
+    "photoUrl": "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&auto=format&fit=crop&q=80",
+    "badge": "Arranged Love",
+    "displayOrder": 3,
+    "isFeatured": true,
+    "isActive": true
+  },
+  {
+    "_id": "67b34a12c8e312a0f9000304",
+    "coupleName": "Karan Hingorani & Dr. Sneha Gidwani",
+    "coupleNames": "Karan & Sneha",
+    "groomName": "Karan Hingorani",
+    "brideName": "Dr. Sneha Gidwani",
+    "weddingDate": "28 Feb 2026",
+    "postedOn": "04 Mar 2026",
+    "city": "Dubai",
+    "location": "Dubai, UAE",
+    "storySnippet": "Cross-border NRI match: Karan was in Dubai and Sneha was in Mumbai. The verified profiles gave both families complete peace of mind.",
+    "fullStory": "Being an NRI, verifying profiles was the biggest challenge. SindhiMatrimony's Blue Badge verification and direct contact unlock made communication seamless. We hosted our reception in Dubai with over 300 Sindhi community elders attending.",
+    "imageUrl": "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=800&auto=format&fit=crop&q=80",
+    "photoUrl": "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=800&auto=format&fit=crop&q=80",
+    "badge": "NRI Match",
+    "displayOrder": 4,
+    "isFeatured": true,
+    "isActive": true
+  },
+  {
+    "_id": "67b34a12c8e312a0f9000305",
+    "coupleName": "Deepak Lulla & Karishma Makhija",
+    "coupleNames": "Deepak & Karishma",
+    "groomName": "Deepak Lulla",
+    "brideName": "Karishma Makhija",
+    "weddingDate": "12 Mar 2026",
+    "postedOn": "18 Mar 2026",
+    "city": "Ahmedabad",
+    "location": "Ahmedabad, Gujarat",
+    "storySnippet": "Both CA professionals. We matched on career ambition and family ethos. Celebrated Cheti Chand as newlyweds!",
+    "fullStory": "We both prioritized partners with professional financial background. When we met over coffee in Ahmedabad, conversation flowed effortlessly for 3 hours. Both families agreed immediately, and we couldn't be happier.",
+    "imageUrl": "https://images.unsplash.com/photo-1532712938310-34cb3982ef74?w=800&auto=format&fit=crop&q=80",
+    "photoUrl": "https://images.unsplash.com/photo-1532712938310-34cb3982ef74?w=800&auto=format&fit=crop&q=80",
+    "badge": "CA Couple",
+    "displayOrder": 5,
+    "isFeatured": true,
+    "isActive": true
+  },
+  {
+    "_id": "67b34a12c8e312a0f9000306",
+    "coupleName": "Varun Chandiramani & Ananya Hinduja",
+    "coupleNames": "Varun & Ananya",
+    "groomName": "Varun Chandiramani",
+    "brideName": "Ananya Hinduja",
+    "weddingDate": "02 Apr 2026",
+    "postedOn": "07 Apr 2026",
+    "city": "Ulhasnagar",
+    "location": "Ulhasnagar, Maharashtra",
+    "storySnippet": "Our grandparents were close friends in pre-partition Sindh. Reconnected through the app after 3 generations!",
+    "fullStory": "When our Gotras and native place were entered into the app's Gotra detection tool, our families realized our ancestral connections in Sukkur. It brought tears of joy to our elders. Truly a blessed union.",
+    "imageUrl": "https://images.unsplash.com/photo-1606800052052-a08af7148866?w=800&auto=format&fit=crop&q=80",
+    "photoUrl": "https://images.unsplash.com/photo-1606800052052-a08af7148866?w=800&auto=format&fit=crop&q=80",
+    "badge": "Historic Heritage",
+    "displayOrder": 6,
+    "isFeatured": true,
+    "isActive": true
+  }
+]
+
+### 24.2 Bulk Upload Partner Deals & Advertisements
+POST {{baseUrl}}/dashboard/ads/bulk
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+[
+  {
+    "adId": "AD_COUPLE_RINGS",
+    "name": "Sterling Silver Couple Promise Rings",
+    "categoryLabel": "💍 Rings",
+    "categories": ["Rings", "Jewellery", "Engagement", "Silver"],
+    "price": 599,
+    "originalPrice": 1999,
+    "discountPercent": 70,
+    "platform": "Amazon",
+    "platformLogoBg": "bg-[#232F3E]",
+    "platformTextColor": "text-amber-400",
+    "badge": "Top Engagement Gift",
+    "badgeColor": "bg-amber-50 text-amber-800 border-amber-200",
+    "imageSrc": "/images/dashboard/gift_couple_rings.jpg",
+    "images": [
+      "/images/dashboard/gift_couple_rings.jpg",
+      "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600&auto=format&fit=crop&q=80"
+    ],
+    "description": "Adjustable pure 925 silver couple rings with solitaire crystal & luxury gift box.",
+    "couponCode": "AMZMATCH50",
+    "affiliateUrl": "https://www.amazon.in/s?k=couple+rings+silver&tag=sindhimatrimony-21",
+    "status": "ACTIVE",
+    "priority": 10,
+    "targetAudience": "ALL"
+  },
+  {
+    "adId": "AD_HEART_LOCKET",
+    "name": "Rose Gold Heart Neck Locket & Chain",
+    "categoryLabel": "💖 Lockets",
+    "categories": ["Lockets", "Pendants", "Jewellery", "Rose Gold"],
+    "price": 249,
+    "originalPrice": 899,
+    "discountPercent": 72,
+    "platform": "Meesho",
+    "platformLogoBg": "bg-[#570741]",
+    "platformTextColor": "text-fuchsia-300",
+    "badge": "Trending on Meesho",
+    "badgeColor": "bg-fuchsia-50 text-fuchsia-800 border-fuchsia-200",
+    "imageSrc": "/images/dashboard/gift_neck_locket.jpg",
+    "images": [
+      "/images/dashboard/gift_neck_locket.jpg",
+      "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600&auto=format&fit=crop&q=80"
+    ],
+    "description": "Delicate opening heart pendant with crystal border for photos & initials.",
+    "couponCode": "MEESHOLOVE",
+    "affiliateUrl": "https://www.meesho.com/search?q=heart+locket+pendant&ref=sindhimatrimony",
+    "status": "ACTIVE",
+    "priority": 8,
+    "targetAudience": "ALL"
+  },
+  {
+    "adId": "AD_CHARM_BRACELET",
+    "name": "Crystal Heart Charm Bracelet for Girls",
+    "categoryLabel": "✨ Bracelets",
+    "categories": ["Bracelets", "Accessories", "Gifts", "Crystal"],
+    "price": 399,
+    "originalPrice": 1299,
+    "discountPercent": 69,
+    "platform": "Flipkart",
+    "platformLogoBg": "bg-[#2874F0]",
+    "platformTextColor": "text-yellow-300",
+    "badge": "Most Loved by Girls",
+    "badgeColor": "bg-blue-50 text-blue-800 border-blue-200",
+    "imageSrc": "/images/dashboard/gift_crystal_bracelet.jpg",
+    "images": [
+      "/images/dashboard/gift_crystal_bracelet.jpg",
+      "https://images.unsplash.com/photo-1611591475846-f94db12aa319?w=600&auto=format&fit=crop&q=80"
+    ],
+    "description": "Sparkling rose gold & silver charm bracelet with velvet presentation box.",
+    "couponCode": "FLIPWED40",
+    "affiliateUrl": "https://www.flipkart.com/search?q=charm+bracelet+for+girls&affid=sindhimatrimony",
+    "status": "ACTIVE",
+    "priority": 6,
+    "targetAudience": "ALL"
+  },
+  {
+    "adId": "AD_TEDDY_HAMPER",
+    "name": "Cute Teddy Bear & Chocolate Gift Hamper",
+    "categoryLabel": "🧸 Soft Toys",
+    "categories": ["Hampers", "Soft Toys", "Chocolates", "Combo"],
+    "price": 699,
+    "originalPrice": 1599,
+    "discountPercent": 56,
+    "platform": "Amazon",
+    "platformLogoBg": "bg-[#232F3E]",
+    "platformTextColor": "text-amber-400",
+    "badge": "Romantic Surprise",
+    "badgeColor": "bg-rose-50 text-rose-800 border-rose-200",
+    "imageSrc": "/images/dashboard/gift_teddy_hamper.jpg",
+    "images": [
+      "/images/dashboard/gift_teddy_hamper.jpg",
+      "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&auto=format&fit=crop&q=80"
+    ],
+    "description": "Fluffy LOVE teddy bear with luxury chocolates & roses in a satin bow box.",
+    "couponCode": "AMZTEDDY",
+    "affiliateUrl": "https://www.amazon.in/s?k=teddy+bear+chocolate+gift+box&tag=sindhimatrimony-21",
+    "status": "ACTIVE",
+    "priority": 4,
+    "targetAudience": "ALL"
+  }
+]
+
+### 24.3 Bulk Upload Connect & Rishta Interests
+POST {{baseUrl}}/matchmaking/interests/bulk
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+[
+  {
+    "_id": "67b34a12c8e312a0f9000005",
+    "senderProfile": {
+      "_id": "67b34a12c8e312a0f9000004",
+      "name": "Pooja Chhabria",
+      "age": 26,
+      "subcaste": "Bhaiband",
+      "city": "Mumbai",
+      "profession": "Senior Audit Manager",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80"
+    },
+    "receiverProfileId": "my_profile",
+    "personalizedNote": "Namaste, we really liked your profile. Would love to connect and discuss further.",
+    "status": "PENDING",
+    "direction": "RECEIVED",
+    "sentAt": 1740000000000
+  },
+  {
+    "_id": "67b34a12c8e312a0f9000021",
+    "senderProfile": {
+      "_id": "67b34a12c8e312a0f9000014",
+      "name": "Simran Advani",
+      "age": 25,
+      "subcaste": "Amil",
+      "city": "Pune",
+      "profession": "Brand Strategist",
+      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80"
+    },
+    "receiverProfileId": "my_profile",
+    "personalizedNote": "We find your education and family background very compatible with our family values.",
+    "status": "PENDING",
+    "direction": "RECEIVED",
+    "sentAt": 1739950000000
+  },
+  {
+    "_id": "67b34a12c8e312a0f9000022",
+    "senderProfile": {
+      "_id": "67b34a12c8e312a0f9000015",
+      "name": "Dr. Roshni Jhangiani",
+      "age": 27,
+      "subcaste": "Bhaiband",
+      "city": "Mumbai",
+      "profession": "Consultant Dermatologist",
+      "avatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500&auto=format&fit=crop&q=80"
+    },
+    "receiverProfileId": "my_profile",
+    "personalizedNote": "Looking forward to initiating communication and exchanging horoscopes.",
+    "status": "ACCEPTED",
+    "direction": "RECEIVED",
+    "sentAt": 1739840000000
+  },
+  {
+    "_id": "67b34a12c8e312a0f9000023",
+    "senderProfile": {
+      "_id": "67b34a12c8e312a0f9000016",
+      "name": "Muskaan Motwani",
+      "age": 24,
+      "subcaste": "Sahiti",
+      "city": "Jaipur",
+      "profession": "Software Engineer",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&auto=format&fit=crop&q=80"
+    },
+    "receiverProfileId": "my_profile",
+    "personalizedNote": "Hello, loved your biodata and your hobbies. Would like to know more about you.",
+    "status": "PENDING",
+    "direction": "RECEIVED",
+    "sentAt": 1739970000000
+  },
+  {
+    "_id": "67b34a12c8e312a0f9000024",
+    "senderProfile": {
+      "_id": "67b34a12c8e312a0f9000018",
+      "name": "Mehek Hinduja",
+      "age": 25,
+      "subcaste": "Amil",
+      "city": "Delhi",
+      "profession": "Software Engineer",
+      "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80"
+    },
+    "receiverProfileId": "my_profile",
+    "personalizedNote": "Pranam, my parents were very impressed by your family background.",
+    "status": "PENDING",
+    "direction": "RECEIVED",
+    "sentAt": 1739920000000
+  },
+  {
+    "_id": "67b34a12c8e312a0f9000025",
+    "senderProfile": {
+      "_id": "67b34a12c8e312a0f9000019",
+      "name": "Karishma Motwani",
+      "age": 26,
+      "subcaste": "Bhaiband",
+      "city": "Mumbai",
+      "profession": "Marketing Lead",
+      "avatar": "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=500&auto=format&fit=crop&q=80"
+    },
+    "receiverProfileId": "my_profile",
+    "personalizedNote": "Greetings! Let's connect and see if our goals align.",
+    "status": "DECLINED",
+    "direction": "RECEIVED",
+    "sentAt": 1739750000000
+  },
+  {
+    "_id": "67b34a12c8e312a0f9000026",
+    "receiverProfile": {
+      "_id": "67b34a12c8e312a0f9000020",
+      "name": "Anjali Gidwani",
+      "age": 24,
+      "subcaste": "Sahiti",
+      "city": "Ahmedabad",
+      "profession": "Professor",
+      "avatar": "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=500&auto=format&fit=crop&q=80"
+    },
+    "senderProfileId": "my_profile",
+    "personalizedNote": "Namaste, we saw your profile and feel we share common cultural values.",
+    "status": "PENDING",
+    "direction": "SENT",
+    "sentAt": 1739980000000
+  },
+  {
+    "_id": "67b34a12c8e312a0f9000027",
+    "receiverProfile": {
+      "_id": "67b34a12c8e312a0f9000017",
+      "name": "Karan Hingorani",
+      "age": 28,
+      "subcaste": "Bhaiband",
+      "city": "Dubai",
+      "profession": "Lead AI Engineer",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80"
+    },
+    "senderProfileId": "my_profile",
+    "personalizedNote": "Hi Karan, impressed with your profile and career standing in Dubai.",
+    "status": "ACCEPTED",
+    "direction": "SENT",
+    "sentAt": 1739880000000
+  }
+]
+
+### 24.4 Bulk Upload Real-Time Chat Conversations
+POST {{baseUrl}}/chat/conversations/bulk
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+[
+  {
+    "_id": "67b34a12c8e312a0f9000006",
+    "participant": {
+      "_id": "67b34a12c8e312a0f9000004",
+      "name": "Pooja Chhabria",
+      "age": 26,
+      "subcaste": "Bhaiband",
+      "city": "Mumbai",
+      "profession": "Senior Audit Manager",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
+      "isOnline": true,
+      "lastSeen": 1740000000000
+    },
+    "lastMessage": {
+      "text": "Namaste! It was wonderful speaking with your family. Looking forward to our video call tomorrow at 7 PM.",
+      "senderId": "67b34a12c8e312a0f9000004",
+      "timestamp": 1740000000000,
+      "isRead": false
+    },
+    "unreadCount": 1,
+    "status": "ACTIVE",
+    "messages": [
+      { "id": "m1", "text": "Namaste Pooja, we received your interest request. Thank you for connecting!", "senderId": "my_profile", "timestamp": 1739900000000, "isRead": true },
+      { "id": "m2", "text": "Namaste! Very happy to connect. My parents and I really liked your education and family background.", "senderId": "67b34a12c8e312a0f9000004", "timestamp": 1739910000000, "isRead": true },
+      { "id": "m3", "text": "That is great to hear. Are you originally from Mumbai?", "senderId": "my_profile", "timestamp": 1739920000000, "isRead": true },
+      { "id": "m4", "text": "Yes, born and brought up in Bandra, though our ancestral roots are in Ajmer. And yourself?", "senderId": "67b34a12c8e312a0f9000004", "timestamp": 1739950000000, "isRead": true },
+      { "id": "m5", "text": "Same here, family has lived in Jaipur for 40 years! Should our families speak over the weekend?", "senderId": "my_profile", "timestamp": 1739980000000, "isRead": true },
+      { "id": "m6", "text": "Namaste! It was wonderful speaking with your family. Looking forward to our video call tomorrow at 7 PM.", "senderId": "67b34a12c8e312a0f9000004", "timestamp": 1740000000000, "isRead": false }
+    ]
+  },
+  {
+    "_id": "67b34a12c8e312a0f9000007",
+    "participant": {
+      "_id": "67b34a12c8e312a0f9000014",
+      "name": "Simran Advani",
+      "age": 25,
+      "subcaste": "Amil",
+      "city": "Pune",
+      "profession": "Brand Strategist",
+      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80",
+      "isOnline": false,
+      "lastSeen": 1739990000000
+    },
+    "lastMessage": {
+      "text": "Yes, our parents also spoke yesterday and seemed very happy with the Kundli match (30 Gunas).",
+      "senderId": "67b34a12c8e312a0f9000014",
+      "timestamp": 1739990000000,
+      "isRead": true
+    },
+    "unreadCount": 0,
+    "status": "ACTIVE",
+    "messages": [
+      { "id": "m7", "text": "Hello Simran! Hope you are having a productive week.", "senderId": "my_profile", "timestamp": 1739850000000, "isRead": true },
+      { "id": "m8", "text": "Hello! Yes, quite busy with a new campaign launch. How about you?", "senderId": "67b34a12c8e312a0f9000014", "timestamp": 1739870000000, "isRead": true },
+      { "id": "m9", "text": "Did your panditji review the horoscopes we shared?", "senderId": "my_profile", "timestamp": 1739960000000, "isRead": true },
+      { "id": "m10", "text": "Yes, our parents also spoke yesterday and seemed very happy with the Kundli match (30 Gunas).", "senderId": "67b34a12c8e312a0f9000014", "timestamp": 1739990000000, "isRead": true }
+    ]
+  },
+  {
+    "_id": "67b34a12c8e312a0f9000008",
+    "participant": {
+      "_id": "67b34a12c8e312a0f9000015",
+      "name": "Dr. Roshni Jhangiani",
+      "age": 27,
+      "subcaste": "Bhaiband",
+      "city": "Mumbai",
+      "profession": "Consultant Dermatologist",
+      "avatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500&auto=format&fit=crop&q=80",
+      "isOnline": true,
+      "lastSeen": 1740000000000
+    },
+    "lastMessage": {
+      "text": "I finished my clinic shift. Will give you a call around 8:30 PM if that suits you?",
+      "senderId": "67b34a12c8e312a0f9000015",
+      "timestamp": 1740000000000,
+      "isRead": false
+    },
+    "unreadCount": 1,
+    "status": "ACTIVE",
+    "messages": [
+      { "id": "m11", "text": "Pranam Roshni ji, hope your rounds went well.", "senderId": "my_profile", "timestamp": 1739980000000, "isRead": true },
+      { "id": "m12", "text": "I finished my clinic shift. Will give you a call around 8:30 PM if that suits you?", "senderId": "67b34a12c8e312a0f9000015", "timestamp": 1740000000000, "isRead": false }
+    ]
+  }
+]
+
+### 24.5 Bulk Upload In-App Notifications Feed
+POST {{baseUrl}}/notifications/bulk
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+[
+  {
+    "_id": "notif_001",
+    "type": "INTEREST_RECEIVED",
+    "title": "New Rishta Connect Request 💌",
+    "body": "Pooja Chhabria (CA, Mumbai) expressed interest in your profile.",
+    "data": { "candidateId": "67b34a12c8e312a0f9000004", "interestId": "67b34a12c8e312a0f9000005" },
+    "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
+    "isRead": false
+  },
+  {
+    "_id": "notif_002",
+    "type": "INTEREST_ACCEPTED",
+    "title": "Interest Accepted! 🎉",
+    "body": "Dr. Roshni Jhangiani accepted your Rishta request. You can now chat directly.",
+    "data": { "candidateId": "67b34a12c8e312a0f9000015" },
+    "avatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500&auto=format&fit=crop&q=80",
+    "isRead": false
+  },
+  {
+    "_id": "notif_003",
+    "type": "PROFILE_VIEWED",
+    "title": "Profile Visitor 👁️",
+    "body": "Simran Advani (Brand Strategist, Pune) viewed your profile 2 hours ago.",
+    "data": { "candidateId": "67b34a12c8e312a0f9000014" },
+    "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80",
+    "isRead": false
+  },
+  {
+    "_id": "notif_004",
+    "type": "NEW_MATCH",
+    "title": "New Compatible Match Found 🌟",
+    "body": "Muskaan Motwani (Software Engineer, Amazon) just registered from Jaipur.",
+    "data": { "candidateId": "67b34a12c8e312a0f9000016" },
+    "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&auto=format&fit=crop&q=80",
+    "isRead": false
+  },
+  {
+    "_id": "notif_005",
+    "type": "VERIFICATION_APPROVED",
+    "title": "Blue Trust Badge Activated! 🛡️",
+    "body": "Your government ID verification has been approved. Your profile trust rating increased to 100%.",
+    "data": {},
+    "avatar": "",
+    "isRead": true
+  },
+  {
+    "_id": "notif_006",
+    "type": "HOROSCOPE_MATCH",
+    "title": "Auspicious Kundli Match (32/36) 🕉️",
+    "body": "Astrological Guna Milan scored 32/36 points with Dr. Roshni Jhangiani.",
+    "data": { "candidateId": "67b34a12c8e312a0f9000015" },
+    "avatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500&auto=format&fit=crop&q=80",
+    "isRead": true
+  },
+  {
+    "_id": "notif_007",
+    "type": "DAILY_RECOMMENDATIONS_READY",
+    "title": "Daily Matches are Ready! ✨",
+    "body": "12 new curated matches matching your partner preferences have been selected for today.",
+    "data": {},
+    "avatar": "",
+    "isRead": true
+  },
+  {
+    "_id": "notif_008",
+    "type": "CHAT_MESSAGE",
+    "title": "New Message from Pooja Chhabria",
+    "body": "Looking forward to our video call tomorrow at 7 PM.",
+    "data": { "conversationId": "67b34a12c8e312a0f9000006" },
+    "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
+    "isRead": false
+  }
+]

@@ -295,6 +295,15 @@ cd "sindhiMatrimonyBackhend"
 npx vercel --name sindhi-matrimony-backend --prod --yes
 ```
 
+### 🔑 GitHub Deployment & Push Credentials:
+- **Repository:** `https://github.com/namandevelopment/matrimony-project.git`
+- **Username:** `namandevelopment`
+- **Personal Access Token:** `[YOUR_GITHUB_TOKEN]`
+- **Push Command:**
+  ```bash
+  git push origin main
+  ```
+
 ### 💻 Local Development Servers:
 ```bash
 # Terminal 1 - User Panel (Next.js)

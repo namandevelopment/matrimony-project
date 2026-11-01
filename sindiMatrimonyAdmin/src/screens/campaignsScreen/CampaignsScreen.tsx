@@ -8,6 +8,7 @@ import {
   TrendingUp,
   ShieldCheck,
   ShoppingBag,
+  Layers,
 } from 'lucide-react';
 import { NotificationManagementSection } from './sections/NotificationManagementSection';
 import { FestivalOffersSection } from './sections/FestivalOffersSection';
@@ -15,11 +16,13 @@ import { PopupManagementSection } from './sections/PopupManagementSection';
 import { DeliveryLogsSection } from './sections/DeliveryLogsSection';
 import { CampaignAnalyticsSection } from './sections/CampaignAnalyticsSection';
 import { AdsManagementSection } from './sections/AdsManagementSection';
+import { HomeBannersManagementSection } from './sections/HomeBannersManagementSection';
 import { MarketingAuditLogModal } from './components/MarketingAuditLogModal';
 import { campaignService } from '../../services/campaignService';
 import { memoWithDeepEqual } from '../../utils/memoUtils';
 
 export type CampaignTab =
+  | 'BANNERS'
   | 'ADS'
   | 'NOTIFICATIONS'
   | 'FESTIVAL_OFFERS'
@@ -42,6 +45,7 @@ export function resolveCampaignTab(pathname: string, search: string): CampaignTa
 
   // 1. Explicit query parameter
   if (
+    tabParam === 'BANNERS' ||
     tabParam === 'ADS' ||
     tabParam === 'NOTIFICATIONS' ||
     tabParam === 'FESTIVAL_OFFERS' ||
@@ -57,6 +61,7 @@ export function resolveCampaignTab(pathname: string, search: string): CampaignTa
   }
 
   // 2. Canonical route pathnames
+  if (cleanPath.includes('/banners')) return 'BANNERS';
   if (cleanPath.includes('/ads') || cleanPath.includes('/deals')) return 'ADS';
   if (cleanPath.includes('/notifications')) return 'NOTIFICATIONS';
   if (cleanPath.includes('/offers')) return 'FESTIVAL_OFFERS';
@@ -102,6 +107,12 @@ export const CampaignsScreen: React.FC = memoWithDeepEqual(() => {
 
   const tabs: TabItem[] = useMemo(
     () => [
+      {
+        id: 'BANNERS',
+        label: 'Home Banners & Placement',
+        icon: Layers,
+        routePath: '/campaigns/banners',
+      },
       {
         id: 'ADS',
         label: 'Ads & Partner Deals',
@@ -230,6 +241,7 @@ export const CampaignsScreen: React.FC = memoWithDeepEqual(() => {
 
       {/* 3. Tab Section Content */}
       <div className="transition-all duration-200">
+        {activeTab === 'BANNERS' && <HomeBannersManagementSection />}
         {activeTab === 'ADS' && <AdsManagementSection />}
         {activeTab === 'NOTIFICATIONS' && <NotificationManagementSection />}
         {activeTab === 'FESTIVAL_OFFERS' && <FestivalOffersSection />}

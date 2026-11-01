@@ -357,6 +357,13 @@ export const screens: ScreenConfig[] = [
     requiresAuth: true,
   },
   {
+    name: 'CampaignBannersScreen',
+    path: '/campaigns/banners',
+    component: CampaignsScreen,
+    title: 'Home Banners & Placement',
+    requiresAuth: true,
+  },
+  {
     name: 'DirectAdsScreen',
     path: '/ads',
     component: CampaignsScreen,

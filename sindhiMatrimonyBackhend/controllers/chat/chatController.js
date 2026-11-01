@@ -842,6 +842,36 @@ export const getContactCredits = asyncHandler(async (req, res) => {
   );
 });
 
+export const bulkCreateConversations = asyncHandler(async (req, res) => {
+  const items = Array.isArray(req.body) ? req.body : req.body?.conversations || req.body?.items || [];
+  if (!Array.isArray(items) || items.length === 0) {
+    return apiHTTPResponse(req, res, CONSTANTS.HTTP_BAD_REQUEST, "No conversations provided.", null, CONSTANTS.OK, CONSTANTS.ERROR_TRUE);
+  }
+
+  const results = [];
+  for (const item of items) {
+    const convId = (item._id || item.id || `conv_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`).toString();
+    const convDoc = {
+      _id: convId,
+      participant: item.participant,
+      lastMessage: item.lastMessage,
+      unreadCount: item.unreadCount || 0,
+      status: item.status || "ACTIVE",
+      updatedAt: item.lastMessage?.timestamp || Date.now(),
+    };
+    const idx = inMemoryConversations.findIndex((c) => c._id === convId);
+    if (idx >= 0) inMemoryConversations[idx] = convDoc;
+    else inMemoryConversations.push(convDoc);
+
+    if (Array.isArray(item.messages) && item.messages.length > 0) {
+      inMemoryMessages[convId] = item.messages;
+    }
+    results.push(convDoc);
+  }
+
+  return apiHTTPResponse(req, res, CONSTANTS.HTTP_CREATED, `Successfully imported ${results.length} conversations.`, { count: results.length, items: results }, CONSTANTS.OK, CONSTANTS.ERROR_FALSE);
+});
+
 export default {
   getChatQuota,
   getConversations,
@@ -851,4 +881,5 @@ export default {
   markMessagesRead,
   viewContactDetails,
   getContactCredits,
+  bulkCreateConversations,
 };
