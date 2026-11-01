@@ -48,8 +48,8 @@ const LoginScreen = ({ navigation }: any) => {
     getInputs,
   } = useInputs(
     {
-      mobileNumber: '',
-      password: '',
+      mobileNumber: '9876543210',
+      password: 'Password123@',
     },
     {
       showPassword: false,

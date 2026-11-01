@@ -797,4 +797,22 @@ export const get = async <T = any>(url: string, params?: any, options?: any): Pr
   return await apiFetch.get<T>(url, params, options);
 };
 
+export const uploadImage = async <T = any>(
+  image: { uri: string; type?: string; name?: string } | FormData,
+  options?: { url?: string; fieldName?: string; showToast?: boolean }
+): Promise<ApiResponse<T>> => {
+  try {
+    if (!image) throw new Error('Image file is required');
+    const url = options?.url || ApiURL.uploadProfilePhoto || ApiURL.upload;
+    const payload = image instanceof FormData ? image : { [options?.fieldName || 'photo']: image };
+    return await apiFetch<T>({ url, method: 'POST', payload, isMultipart: true, showErrorToast: options?.showToast ?? true });
+  } catch (err: any) {
+    const message = err?.message || 'Image upload failed';
+    if (options?.showToast ?? true) toast.error(message);
+    return { error: true, message, data: null, code: 400 };
+  }
+};
+
+export { pickImage } from '../../utils/imagePicker';
+
 export default apiFetch;

@@ -129,7 +129,7 @@ const UpgradeScreen = () => {
           setPlans(rawList.map(mapApiPlanToUiPlan));
         }
       } catch (err) {
-        // Fallback to DEFAULT_PLANS
+
       }
     };
 
