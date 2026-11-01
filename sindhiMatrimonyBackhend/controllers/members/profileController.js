@@ -390,6 +390,22 @@ export const editProfile = asyncHandler(async (req, res) => {
     };
   }
 
+  if (typeof updateData.hobbies === "string") {
+    updateData.hobbies = updateData.hobbies
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
+  if (updateData.aboutFamily && !updateData.family?.aboutFamily) {
+    updateData.family = {
+      ...(updateData.family || {}),
+      aboutFamily: updateData.aboutFamily,
+    };
+  } else if (updateData.family?.aboutFamily && !updateData.aboutFamily) {
+    updateData.aboutFamily = updateData.family.aboutFamily;
+  }
+
   const partnerPreferenceData = updateData.partnerPreference;
   delete updateData.partnerPreference;
   delete updateData._id;

@@ -52,7 +52,9 @@ export const familySchema = Joi.object({
     sistersCount: optionalNumber(0, 20).default(0),
     familyType: Joi.string().valid("NUCLEAR", "JOINT").default("NUCLEAR"),
     familyValues: Joi.string().valid("TRADITIONAL", "MODERATE", "LIBERAL").default("MODERATE"),
+    aboutFamily: optionalString(0, 1500),
   }).optional(),
+  aboutFamily: optionalString(0, 1500),
 }).options({ stripUnknown: true });
 
 // 4. Astro & Kundli

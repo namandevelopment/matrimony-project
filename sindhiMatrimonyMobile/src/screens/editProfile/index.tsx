@@ -4,7 +4,6 @@ import {
   Image,
   Modal,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -127,13 +126,7 @@ const EditProfile: React.FC = () => {
   // State for interactive modal editing
   const [activeEditSection, setActiveEditSection] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
-  const [savedValues, setSavedValues] = useState<Record<string, string>>(() => {
-    try {
-      const stored = Storage.getItemSync<any>('profileSavedValues');
-      if (stored) return typeof stored === 'string' ? JSON.parse(stored) : stored;
-    } catch (e) {}
-    return {};
-  });
+  const [savedValues, setSavedValues] = useState<Record<string, string>>({});
 
   const bioValue =
     savedValues['A Few Lines About Myself'] ||
@@ -355,7 +348,7 @@ const EditProfile: React.FC = () => {
             try {
               const curUser = Storage.getItemSync<any>('user') || {};
               Storage.setItemSync('user', { ...curUser, ...profileData, profile: profileData });
-            } catch (e) {}
+            } catch (e) { }
 
             if (profileData.alternatePhone !== undefined) {
               setAlternatePhone(profileData.alternatePhone || '');
@@ -577,13 +570,7 @@ const EditProfile: React.FC = () => {
 
     if (activeEditSection) {
       const trimmed = editingValue.trim();
-      setSavedValues(prev => {
-        const next = { ...prev, [activeEditSection]: trimmed };
-        try {
-          Storage.setItemSync('profileSavedValues', JSON.stringify(next));
-        } catch (e) {}
-        return next;
-      });
+      setSavedValues(prev => ({ ...prev, [activeEditSection]: trimmed }));
 
       // Construct API payload based on section name
       let payload: Record<string, any> = {};
@@ -592,32 +579,43 @@ const EditProfile: React.FC = () => {
       } else if (activeEditSection === 'Hobbies & Interests') {
         payload = { hobbies: trimmed.split(',').map(s => s.trim()).filter(Boolean) };
       } else if (activeEditSection === 'About my family') {
-        payload = { family: { ...(profile?.family || {}), aboutFamily: trimmed } };
+        payload = { family: { ...(profile?.family || {}), aboutFamily: trimmed }, aboutFamily: trimmed };
       } else {
         payload = { [activeEditSection]: trimmed };
       }
+
+      setLiveProfile((prev: any) => ({
+        ...prev,
+        ...payload,
+        family: { ...(prev?.family || {}), ...(payload.family || {}) },
+      }));
 
       // Sync with backend API
       apiFetch({
         url: ApiURL.updateUserProfile,
         method: 'POST',
         payload,
-        showErrorToast: false,
-      }).catch(() => {});
-
-      // Also update local user profile
-      try {
-        const currentUser = Storage.getItemSync<any>('user') || {};
-        const currentProfile = currentUser.profile || currentUser;
-        Storage.setItemSync('user', {
-          ...currentUser,
-          ...payload,
-          profile: {
-            ...currentProfile,
-            ...payload,
-          },
-        });
-      } catch (e) {}
+        showErrorToast: true,
+      })
+        .then((res: any) => {
+          const profileData = res?.data?.profile || res?.data;
+          if (profileData) {
+            setLiveProfile(profileData);
+            try {
+              const currentUser = Storage.getItemSync<any>('user') || {};
+              const currentProfile = currentUser.profile || currentUser;
+              Storage.setItemSync('user', {
+                ...currentUser,
+                ...profileData,
+                profile: {
+                  ...currentProfile,
+                  ...profileData,
+                },
+              });
+            } catch (e) { }
+          }
+        })
+        .catch(() => { });
 
       showToast({
         type: 'success',
@@ -930,8 +928,8 @@ const EditProfile: React.FC = () => {
                 label: 'Height',
                 value: profile?.height
                   ? `${Math.floor(Number(profile.height) / 30.48)} ft ${Math.round(
-                      (Number(profile.height) % 30.48) / 2.54,
-                    )} in`
+                    (Number(profile.height) % 30.48) / 2.54,
+                  )} in`
                   : 'Not Specified',
               },
               {
@@ -983,8 +981,8 @@ const EditProfile: React.FC = () => {
                   (typeof profile?.profession?.annualIncome === 'number'
                     ? `₹${profile.profession.annualIncome / 100000} Lakhs`
                     : profile?.profession?.annualIncome ||
-                      profile?.annualIncome ||
-                      'Not Specified'),
+                    profile?.annualIncome ||
+                    'Not Specified'),
               },
             ].map(renderDetailRow)}
           </View>
@@ -1011,8 +1009,8 @@ const EditProfile: React.FC = () => {
                   (profile?.manglik === 'MANGLIK'
                     ? 'Yes'
                     : profile?.manglik === 'NON_MANGLIK'
-                    ? 'No'
-                    : profile?.manglik || 'Not Specified'),
+                      ? 'No'
+                      : profile?.manglik || 'Not Specified'),
               },
             ].map(renderDetailRow)}
           </View>

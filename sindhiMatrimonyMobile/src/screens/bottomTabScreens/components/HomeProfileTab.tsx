@@ -1,7 +1,8 @@
-import { Pressable, StyleSheet, Text, View, TouchableOpacity } from 'react-native'
-import React from 'react'
+import { Image, Pressable, StyleSheet, Text, View, TouchableOpacity } from 'react-native'
+import React, { useState } from 'react'
 import { useSelector } from 'react-redux'
 import { selectProfile } from '../../../redux/useSelector'
+import { Storage } from '../../../storage/Storage'
 import LinearGradient from 'react-native-linear-gradient'
 import { useNavigation } from '@react-navigation/native'
 import { fontFamily } from '../../../components/fontFamily'
@@ -19,7 +20,22 @@ const HomeProfileTab = ({
 }) => {
   const navigation = useNavigation<any>()
   const profile = useSelector(selectProfile)
-  const userName = profile?.name || 'My Profile'
+  const storedUser = Storage.getItemSync<any>('user') || {}
+  const [imageError, setImageError] = useState(false)
+  const rawAvatar =
+    profile?.avatar ||
+    profile?.profileImage ||
+    profile?.photo ||
+    (Array.isArray(profile?.photos) && (typeof profile.photos[0] === 'string' ? profile.photos[0] : profile.photos[0]?.url)) ||
+    storedUser?.avatar ||
+    storedUser?.profileImage ||
+    storedUser?.photo ||
+    storedUser?.profile?.avatar
+  const avatarUrl =
+    !imageError && typeof rawAvatar === 'string' && rawAvatar.trim().length > 0
+      ? rawAvatar.trim()
+      : null
+  const userName = profile?.name || storedUser?.name || 'My Profile'
   const avatarInitial = (userName.charAt(0) || 'U').toUpperCase()
   return (
     <LinearGradient
@@ -48,7 +64,16 @@ const HomeProfileTab = ({
             onPress={() => navigation.navigate('ProfileScreen')}
           >
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{avatarInitial}</Text>
+              {avatarUrl ? (
+                <Image
+                  source={{ uri: avatarUrl }}
+                  style={styles.avatarImage}
+                  resizeMode="cover"
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <Text style={styles.avatarText}>{avatarInitial}</Text>
+              )}
             </View>
 
             <Pressable style={styles.cameraButton}>
@@ -202,6 +227,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: moderateScale(1.5),
     borderColor: '#E8E8E8',
+    overflow: 'hidden',
+  },
+
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
 
   avatarText: {

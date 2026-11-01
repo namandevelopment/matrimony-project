@@ -116,12 +116,42 @@ const profileSchema = new Schema(
       sistersCount: { type: Number, default: 0 },
       familyType: { type: String, enum: ["NUCLEAR", "JOINT"], default: "NUCLEAR" },
       familyValues: { type: String, enum: ["TRADITIONAL", "MODERATE", "LIBERAL"], default: "MODERATE" },
+      aboutFamily: { type: String, trim: true, maxlength: 1500 },
+      familyOrigin: { type: String, trim: true },
+      familyStatus: { type: String, trim: true },
+      brothersMarried: { type: String, trim: true },
+      sistersMarried: { type: String, trim: true },
     },
     aboutMe: {
       type: String,
       trim: true,
       maxlength: 1500,
     },
+    aboutFamily: {
+      type: String,
+      trim: true,
+      maxlength: 1500,
+    },
+    hobbies: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+    diet: { type: String, trim: true },
+    smoking: { type: String, trim: true },
+    drinking: { type: String, trim: true },
+    habits: {
+      eating: { type: String, trim: true },
+      smoking: { type: String, trim: true },
+      drinking: { type: String, trim: true },
+    },
+    caste: { type: String, trim: true },
+    motherTongue: { type: String, trim: true, default: "Sindhi" },
+    citizenship: { type: String, trim: true, default: "India" },
+    star: { type: String, trim: true },
+    raasi: { type: String, trim: true },
+    aboutPartner: { type: String, trim: true, maxlength: 1500 },
     // Media & Photos
     avatar: {
       type: String, // Main display profile picture URL
