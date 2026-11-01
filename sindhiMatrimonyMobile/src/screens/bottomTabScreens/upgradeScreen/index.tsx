@@ -40,6 +40,7 @@ interface Plan {
   tabSubtitle?: string;
   badge?: string;
   cardTitle: string;
+  discountPercentage?: number;
   discountText?: string;
   originalPrice?: string;
   price: string;
@@ -125,6 +126,12 @@ const mapApiPlanToUiPlan = (raw: any): Plan => {
           { text: 'View verified profiles with photos' },
         ];
 
+  const discPercent =
+    Number(raw.discountPercentage) ||
+    (origPriceNum > priceNum
+      ? Math.round(((origPriceNum - priceNum) / origPriceNum) * 100)
+      : 0);
+
   const discText = raw.discountPercentage
     ? `${raw.discountPercentage}% OFF! Valid for today`
     : raw.tagline ||
@@ -138,6 +145,7 @@ const mapApiPlanToUiPlan = (raw: any): Plan => {
     tabSubtitle: `${months} Months`,
     badge: raw.badge || (raw.isPopular ? 'MOST POPULAR' : undefined),
     cardTitle: raw.name || raw.tier || 'Membership',
+    discountPercentage: discPercent,
     discountText: discText,
     originalPrice:
       origPriceNum > 0 ? `₹${origPriceNum.toLocaleString('en-IN')}` : undefined,
@@ -184,6 +192,25 @@ const UpgradeScreen = () => {
       isMounted = false;
     };
   }, [isFocused]);
+
+  const maxDiscount = React.useMemo(() => {
+    let max = 0;
+    for (const p of plans) {
+      if (p.discountPercentage && p.discountPercentage > max) {
+        max = p.discountPercentage;
+      }
+      const match = p.discountText?.match(/(\d+)%/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > max) max = num;
+      }
+    }
+    return max > 0 ? max : 33;
+  }, [plans]);
+
+  const currentPlan = plans[selectedPlanIndex] || plans[0];
+  const activeOfferText =
+    currentPlan?.discountText || 'Find Your Sindhi Life Partner Faster';
 
   const handleSelectPlan = (index: number) => {
     setSelectedPlanIndex(index);
@@ -469,12 +496,12 @@ const UpgradeScreen = () => {
           </View>
 
           <Text style={[styles.heroHeadline, { color: isDark ? colors.text : '#1A1A1A' }]}>
-            Save up to 13%{' '}
+            Save up to {maxDiscount}%{' '}
             <Text style={styles.heroHighlight}>+ 21 Days Money Back Guarantee!</Text>
           </Text>
 
           <Text style={[styles.heroSubtext, { color: isDark ? colors.textSecondary : '#555555' }]}>
-            Exclusive offer for you!
+            {activeOfferText}
           </Text>
 
           <View style={styles.tabsRow}>
