@@ -224,22 +224,22 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
       (storiesData as any)?.items ||
       (Array.isArray(storiesData) ? storiesData : (storiesData as any)?.data?.stories || (storiesData as any)?.data || []);
 
-    if (Array.isArray(rawStories) && rawStories.length > 0) {
+    if (Array.isArray(rawStories)) {
       const loaded: MarriageSuccessStory[] = rawStories.map((s: any) => ({
         id: s.id || s._id || `story_${Date.now()}`,
         coupleNames: s.coupleNames || s.coupleName || "Sindhi Couple",
-        photoUrl: s.photoUrl || s.imageUrl || s.couplePhoto || "/images/dashboard/couple_1.jpg",
-        photoUrls: Array.isArray(s.photoUrls) && s.photoUrls.length > 0 ? s.photoUrls : [s.photoUrl || s.imageUrl || "/images/dashboard/couple_1.jpg"],
-        weddingDate: s.weddingDate || "14 Feb 2026",
+        photoUrl: s.photoUrl || s.imageUrl || s.couplePhoto || "",
+        photoUrls: Array.isArray(s.photoUrls) && s.photoUrls.length > 0 ? s.photoUrls : [s.photoUrl || s.imageUrl || ""].filter(Boolean),
+        weddingDate: s.weddingDate ? (typeof s.weddingDate === "string" ? s.weddingDate.slice(0, 10) : new Date(s.weddingDate).toISOString().slice(0, 10)) : "",
         postedDate: s.postedDate || s.postedOn || "Recently",
         location: s.location || (s.city ? `${s.city}, India` : "India"),
-        groomMatrimonyId: s.groomMatrimonyId || s.groomId || "SND882914",
-        brideMatrimonyId: s.brideMatrimonyId || s.brideId || "SND772183",
+        groomMatrimonyId: s.groomMatrimonyId || s.groomId || "",
+        brideMatrimonyId: s.brideMatrimonyId || s.brideId || "",
         isVerified: s.isVerified !== false,
         verifiedBy: s.verifiedBy || "SindhiMatrimony Trust & Safety",
-        likesCount: Number(s.likesCount) || 120,
-        testimonial: s.testimonial || s.storySnippet || s.storyDescription || "A blessed journey together.",
-        fullStory: s.fullStory || s.storySnippet || s.storyDescription,
+        likesCount: Number(s.likesCount) || 0,
+        testimonial: s.testimonial || s.storySnippet || s.storyDescription || "",
+        fullStory: s.fullStory || s.storySnippet || s.storyDescription || "",
       }));
       setStoriesList(loaded);
     }
@@ -649,17 +649,23 @@ const HappyMarriagesSectionComponent: React.FC<HappyMarriagesSectionProps> = ({
       </div>
 
       {/* 3. Success Stories Grid (Displays 3 or full 12 stories) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 pt-3 pb-6">
-        {visibleStories.map((story) => (
-          <SuccessStoryCard
-            key={story.id}
-            story={story}
-            onOpenModal={setSelectedStory}
-            onLikeToggle={handleLikeToggle}
-            isLiked={likedStoryIds.has(story.id)}
-          />
-        ))}
-      </div>
+      {filteredStories.length === 0 ? (
+        <div className="py-12 text-center text-stone-400">
+          <p className="text-sm font-medium">No success stories published yet.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 pt-3 pb-6">
+          {visibleStories.map((story) => (
+            <SuccessStoryCard
+              key={story.id}
+              story={story}
+              onOpenModal={setSelectedStory}
+              onLikeToggle={handleLikeToggle}
+              isLiked={likedStoryIds.has(story.id)}
+            />
+          ))}
+        </div>
+      )}
 
       {/* 4. Bottom Footer with View Success Stories CTA */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 border-t border-stone-100">

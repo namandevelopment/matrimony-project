@@ -177,17 +177,25 @@ export const getPublicSuccessStoryById = asyncHandler(async (req, res) => {
 
   if (!story) {
     const memStory = inMemoryStories.find((s) => s.id === id || s._id === id || s.storyId === id);
-    story = memStory ? normalizeStory(memStory) : normalizeStory(inMemoryStories[0]);
+    if (memStory) {
+      story = normalizeStory(memStory);
+    }
   }
 
-  // Ensure rich multi-image gallery for slider
-  if (!Array.isArray(story.photoUrls) || story.photoUrls.length < 2) {
-    story.photoUrls = [
-      story.imageUrl,
-      "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800&auto=format&fit=crop&q=80",
-    ].filter(Boolean);
+  if (!story) {
+    return apiHTTPResponse(
+      req,
+      res,
+      HTTP_NOT_FOUND,
+      "Success story not found.",
+      null,
+      HTTP_NOT_FOUND,
+      ERROR_TRUE
+    );
+  }
+
+  if (!Array.isArray(story.photoUrls) || story.photoUrls.length === 0) {
+    story.photoUrls = story.imageUrl ? [story.imageUrl] : [];
   }
 
   const comments = getStoryComments(story.id);
@@ -449,13 +457,9 @@ export const getAdminSuccessStories = asyncHandler(async (req, res) => {
   if (mongoose.connection.readyState === 1) {
     try {
       const dbList = await SuccessStory.find().sort({ createdAt: -1 }).lean();
-      if (dbList && dbList.length > 0) {
-        all = dbList.map((s, idx) => normalizeStory(s, idx));
-      } else {
-        all = inMemoryStories.map((s, idx) => normalizeStory(s, idx));
-      }
+      all = (dbList || []).map((s, idx) => normalizeStory(s, idx));
     } catch {
-      all = inMemoryStories.map((s, idx) => normalizeStory(s, idx));
+      all = [];
     }
   } else {
     all = inMemoryStories.map((s, idx) => normalizeStory(s, idx));
@@ -522,63 +526,83 @@ export const getAdminSuccessStories = asyncHandler(async (req, res) => {
  * Route: POST /api/v1/admin/success-stories
  */
 export const createAdminSuccessStory = asyncHandler(async (req, res) => {
-  const body = req.body;
+  const body = req.body || {};
   const groom = body.groomName || "Groom";
   const bride = body.brideName || "Bride";
-  const couple = `${groom} & ${bride}`;
-  const img = body.couplePhoto || body.photoUrl || "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800&auto=format&fit=crop&q=80";
+  const couple = body.coupleName || `${groom} & ${bride}`;
+  const img = body.couplePhoto || body.photoUrl || body.imageUrl || "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800&auto=format&fit=crop&q=80";
   const desc = body.storyDescription || body.storySnippet || "Beautiful Sindhi wedding celebration.";
   const status = body.status || "PUBLISHED";
   const isActive = status === "PUBLISHED";
 
   const newStory = {
-    id: `story_admin_${Date.now()}`,
-    storyId: `STORY-2026-${Math.floor(100 + Math.random() * 900)}`,
+    coupleName: couple,
+    coupleNames: couple,
     groomName: groom,
     groomId: body.groomId || `cl_${Date.now().toString().slice(-4)}`,
     brideName: bride,
     brideId: body.brideId || `cl_${(Date.now() + 1).toString().slice(-4)}`,
-    coupleName: couple,
-    coupleNames: couple,
     couplePhoto: img,
     photoUrl: img,
     imageUrl: img,
-    weddingDate: body.weddingDate || new Date().toISOString().slice(0, 10),
+    weddingDate: body.weddingDate ? new Date(body.weddingDate) : new Date(),
     engagementDate: body.engagementDate || "",
     city: body.city || "Mumbai",
     subcaste: body.subcaste || "Amil",
     storyTitle: body.storyTitle || "Our Forever Journey",
     storyDescription: desc,
-    storySnippet: desc,
-    fullStory: desc,
+    storySnippet: desc.slice(0, 350),
+    fullStory: body.fullStory || desc,
+    badge: body.storyTitle || "Our Forever Journey",
     attributedEmployeeName: body.attributedEmployeeName || "Admin Desk",
     status,
     isActive,
+    isFeatured: Boolean(body.featuredOnHome ?? true),
     featuredOnHome: Boolean(body.featuredOnHome ?? true),
     profilesArchived: Boolean(body.profilesArchived ?? false),
-    createdAt: new Date().toISOString().slice(0, 10),
   };
+
+  let savedStory = null;
 
   if (mongoose.connection.readyState === 1) {
     try {
-      await SuccessStory.create({
-        coupleName: newStory.coupleName,
-        groomName: newStory.groomName,
-        brideName: newStory.brideName,
-        weddingDate: new Date(newStory.weddingDate),
-        city: newStory.city,
-        storySnippet: newStory.storySnippet.slice(0, 350),
-        fullStory: newStory.fullStory,
-        imageUrl: newStory.photoUrl,
-        badge: newStory.storyTitle,
-        isFeatured: newStory.featuredOnHome,
-        isActive: newStory.isActive,
-      });
+      const created = await SuccessStory.create(newStory);
+      if (created) {
+        const raw = created.toObject ? created.toObject() : created;
+        const normalized = normalizeStory(raw);
+        savedStory = {
+          ...normalized,
+          ...body,
+          id: raw._id.toString(),
+          _id: raw._id.toString(),
+          storyId: raw.storyId || `STORY-${raw._id.toString().slice(-4).toUpperCase()}`,
+          couplePhoto: img,
+          photoUrl: img,
+          imageUrl: img,
+          status,
+          isActive,
+          featuredOnHome: Boolean(body.featuredOnHome ?? true),
+          profilesArchived: Boolean(body.profilesArchived ?? false),
+          weddingDate: body.weddingDate || (raw.weddingDate ? new Date(raw.weddingDate).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)),
+        };
+      }
     } catch {
-      inMemoryStories = [newStory, ...inMemoryStories];
+      // In-memory fallback
     }
-  } else {
-    inMemoryStories = [newStory, ...inMemoryStories];
+  }
+
+  if (!savedStory) {
+    const tempId = `story_admin_${Date.now()}`;
+    savedStory = {
+      ...newStory,
+      ...body,
+      id: tempId,
+      _id: tempId,
+      storyId: `STORY-${tempId.slice(-4).toUpperCase()}`,
+      weddingDate: body.weddingDate || new Date().toISOString().slice(0, 10),
+      createdAt: new Date().toISOString().slice(0, 10),
+    };
+    inMemoryStories = [savedStory, ...inMemoryStories];
   }
 
   return apiHTTPResponse(
@@ -586,7 +610,7 @@ export const createAdminSuccessStory = asyncHandler(async (req, res) => {
     res,
     HTTP_CREATED,
     "Success story created and published successfully.",
-    newStory,
+    savedStory,
     HTTP_CREATED,
     ERROR_FALSE
   );

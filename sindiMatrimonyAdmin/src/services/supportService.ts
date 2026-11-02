@@ -99,68 +99,7 @@ export const FAQ_LIST: FAQItem[] = [
   },
 ];
 
-const INITIAL_TICKETS: SupportTicket[] = [
-  {
-    id: 'TKT-1082',
-    userId: 'emp_003',
-    userName: 'Priya Sharma',
-    userEmail: 'priya@sindhimarriage.in',
-    userPhone: '+91 98765 43212',
-    category: 'CRM_LEADS',
-    priority: 'HIGH',
-    subject: 'Lead LD-1089 reassignment approval needed',
-    description: 'Customer is requesting an agent who speaks Sindhi and Gujarati. Need to transfer lead to western zone team.',
-    status: 'IN_PROGRESS',
-    createdAt: '2026-10-12T14:30:00Z',
-    updatedAt: '2026-10-12T15:00:00Z',
-    responses: [
-      {
-        id: 'resp_1',
-        sender: 'Priya Sharma (CRM Agent)',
-        message: 'Client preferred Gujarati-speaking coordinator. Please approve transfer.',
-        timestamp: '2026-10-12 14:30',
-        isStaff: false,
-      },
-      {
-        id: 'resp_2',
-        sender: 'Rajesh Mulchandani (Super Admin)',
-        message: 'Lead reassigned to Western Region queue. Verified and resolved.',
-        timestamp: '2026-10-12 15:00',
-        isStaff: true,
-      },
-    ],
-  },
-  {
-    id: 'TKT-1081',
-    userId: 'emp_002',
-    userName: 'Kavita Chhabria',
-    userEmail: 'kavita.c@sindhimarriage.in',
-    userPhone: '+91 98211 44556',
-    category: 'TELEPHONY_VOIP',
-    priority: 'MEDIUM',
-    subject: 'SIP WebRTC audio lag during peak hours',
-    description: 'Noticed a 2-second audio latency when dialing numbers in Delhi region between 5 PM and 6 PM.',
-    status: 'RESOLVED',
-    createdAt: '2026-10-11T16:15:00Z',
-    updatedAt: '2026-10-11T18:45:00Z',
-    responses: [
-      {
-        id: 'resp_1',
-        sender: 'Kavita Chhabria',
-        message: 'Audio delay noted on Mumbai gateway.',
-        timestamp: '2026-10-11 16:15',
-        isStaff: false,
-      },
-      {
-        id: 'resp_2',
-        sender: 'IT Telecom Team',
-        message: 'VoIP gateway load balanced to secondary low-latency Singapore node. Latency normalized under 80ms.',
-        timestamp: '2026-10-11 18:45',
-        isStaff: true,
-      },
-    ],
-  },
-];
+const INITIAL_TICKETS: SupportTicket[] = [];
 
 const STORAGE_KEY = 'sindhi_matrimony_support_tickets_v1';
 

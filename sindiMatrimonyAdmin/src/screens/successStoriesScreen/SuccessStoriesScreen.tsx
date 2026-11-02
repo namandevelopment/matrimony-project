@@ -17,7 +17,6 @@ import {
   CheckCircle2,
   Clock,
 } from 'lucide-react';
-import { crmDataService } from '../../services/crmDataService';
 import type { SuccessStory } from '../../types/crm.types';
 import { toast } from '../../toastMessage/toast';
 import { memoWithDeepEqual } from '../../utils/memoUtils';
@@ -67,8 +66,31 @@ const getInitialStoryValues = (): SuccessStoryFormValues => ({
   profilesArchived: true,
 });
 
+const mapApiStoryToModel = (s: any): SuccessStory => ({
+  id: s.id || s._id || `story_${Date.now()}`,
+  storyId: s.storyId || `STORY-${(s.id || s._id || '').slice(-4).toUpperCase()}`,
+  groomId: s.groomId || 'cl_001',
+  groomName: s.groomName || s.coupleName?.split('&')?.[0]?.trim() || 'Groom',
+  groomPhoto: s.groomPhoto,
+  brideId: s.brideId || 'cl_002',
+  brideName: s.brideName || s.coupleName?.split('&')?.[1]?.trim() || 'Bride',
+  bridePhoto: s.bridePhoto,
+  couplePhoto: s.couplePhoto || s.imageUrl || s.photoUrl || 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800&auto=format&fit=crop&q=80',
+  weddingDate: s.weddingDate ? (typeof s.weddingDate === 'string' ? s.weddingDate.slice(0, 10) : new Date(s.weddingDate).toISOString().slice(0, 10)) : new Date().toISOString().slice(0, 10),
+  engagementDate: s.engagementDate || '',
+  storyTitle: s.storyTitle || s.badge || 'Verified Match',
+  storyDescription: s.storyDescription || s.storySnippet || s.testimonial || '',
+  city: s.city || 'Mumbai',
+  subcaste: s.subcaste || 'Sindhi',
+  attributedEmployeeName: s.attributedEmployeeName || 'Admin Desk',
+  status: (s.status as 'PUBLISHED' | 'DRAFT' | 'ARCHIVED') || (s.isActive ? 'PUBLISHED' : 'DRAFT'),
+  featuredOnHome: Boolean(s.featuredOnHome ?? s.isFeatured ?? true),
+  profilesArchived: Boolean(s.profilesArchived ?? false),
+  createdAt: s.createdAt ? (typeof s.createdAt === 'string' ? s.createdAt.slice(0, 10) : new Date(s.createdAt).toISOString().slice(0, 10)) : new Date().toISOString().slice(0, 10),
+});
+
 export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
-  const [stories, setStories] = useState<SuccessStory[]>(() => crmDataService.getSuccessStories());
+  const [stories, setStories] = useState<SuccessStory[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   
   // Filter state via useInputs
@@ -109,37 +131,18 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
         showErrorToast: false,
       });
 
-      if (res?.data?.stories && Array.isArray(res.data.stories) && res.data.stories.length > 0) {
-        const loaded: SuccessStory[] = res.data.stories.map((s: any) => ({
-          id: s.id || s._id || `story_${Date.now()}`,
-          storyId: s.storyId || `STORY-${(s.id || '').slice(-4).toUpperCase()}`,
-          groomId: s.groomId || 'cl_001',
-          groomName: s.groomName || s.coupleName?.split('&')?.[0]?.trim() || 'Groom',
-          groomPhoto: s.groomPhoto,
-          brideId: s.brideId || 'cl_002',
-          brideName: s.brideName || s.coupleName?.split('&')?.[1]?.trim() || 'Bride',
-          bridePhoto: s.bridePhoto,
-          couplePhoto: s.couplePhoto || s.imageUrl || s.photoUrl || 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800&auto=format&fit=crop&q=80',
-          weddingDate: s.weddingDate || new Date().toISOString().slice(0, 10),
-          engagementDate: s.engagementDate || '',
-          storyTitle: s.storyTitle || s.badge || 'Verified Match',
-          storyDescription: s.storyDescription || s.storySnippet || s.testimonial || '',
-          city: s.city || 'Mumbai',
-          subcaste: s.subcaste || 'Sindhi',
-          attributedEmployeeName: s.attributedEmployeeName || 'Admin Desk',
-          status: (s.status as 'PUBLISHED' | 'DRAFT' | 'ARCHIVED') || (s.isActive ? 'PUBLISHED' : 'DRAFT'),
-          featuredOnHome: Boolean(s.featuredOnHome ?? s.isFeatured ?? true),
-          profilesArchived: Boolean(s.profilesArchived ?? false),
-          createdAt: s.createdAt || new Date().toISOString().slice(0, 10),
-        }));
-
+      const rawList = res?.data?.stories || res?.data?.list;
+      if (Array.isArray(rawList)) {
+        const loaded: SuccessStory[] = rawList.map(mapApiStoryToModel);
         setStories(loaded);
         if (showNotification) {
           toast.success('Success stories synced dynamically with live database');
         }
+      } else {
+        setStories([]);
       }
     } catch {
-      // Fallback seamlessly to local CRM data
+      setStories([]);
     } finally {
       setIsSyncing(false);
     }
@@ -176,7 +179,6 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
 
   const handleTogglePublish = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    crmDataService.togglePublishSuccessStory(id);
     const target = stories.find((s) => s.id === id || s.storyId === id);
     const newStatus = target?.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED';
     setStories((prev) =>
@@ -198,7 +200,6 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm('Are you sure you want to remove this success story?')) {
-      crmDataService.deleteSuccessStory(id);
       setStories((prev) => prev.filter((s) => s.id !== id && s.storyId !== id));
       toast.success('Success story removed');
 
@@ -242,7 +243,6 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
     }
 
     const targetId = editingStory.id;
-    crmDataService.updateSuccessStory(targetId, editStoryData);
     setStories((prev) =>
       prev.map((s) => (s.id === targetId || s.storyId === targetId ? { ...s, ...editStoryData } : s))
     );
@@ -262,7 +262,6 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
 
   const handleQuickApprove = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    crmDataService.updateSuccessStory(id, { status: 'PUBLISHED', featuredOnHome: true });
     setStories((prev) =>
       prev.map((s) => (s.id === id || s.storyId === id ? { ...s, status: 'PUBLISHED' as const, featuredOnHome: true } : s))
     );
@@ -326,19 +325,27 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
       profilesArchived: formData.profilesArchived,
     };
 
-    crmDataService.addSuccessStory(payload);
-    setIsModalOpen(false);
-    refreshStories();
-    toast.success('💍 New Success Story added and published successfully!');
-
-    // Post to live Backend API
     try {
-      await apiFetch.post(ApiURL.adminSuccessStories, payload, {
+      setIsSyncing(true);
+      const res = await apiFetch.post<any>(ApiURL.adminSuccessStories, payload, {
         isToken: true,
-        showErrorToast: false,
+        showErrorToast: true,
       });
-    } catch {
-      // Handled locally
+
+      const returned = res?.data?.story || res?.data?.data || res?.data;
+      const createdStory = mapApiStoryToModel(
+        returned && (returned.id || returned._id)
+          ? returned
+          : { ...payload, id: `story_${Date.now()}` }
+      );
+
+      setStories((prev) => [createdStory, ...prev]);
+      setIsModalOpen(false);
+      toast.success('💍 New Success Story added and published successfully!');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to create success story');
+    } finally {
+      setIsSyncing(false);
     }
   };
 

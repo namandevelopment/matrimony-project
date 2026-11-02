@@ -82,6 +82,7 @@ const successStorySchema = new Schema(
   {
     timestamps: true,
     versionKey: false,
+    strict: false,
   }
 );
 

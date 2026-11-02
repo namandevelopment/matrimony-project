@@ -47,41 +47,8 @@ export interface HomeBannersData {
 
 export const homeBannerService = {
   async fetchBanners(): Promise<HomeBannersData> {
-    try {
-      const res = await api.get(ApiURL.homeBanners);
-      return res?.data?.data || res?.data || res;
-    } catch {
-      return {
-        celebratingBanner: {
-          title: 'Celebrating 26 Years of Matchmaking',
-          subtitle: "Find your ideal Sindhi life partner with India's most trusted matrimony",
-          badge: '26 Years Milestone',
-          discountPercent: 78,
-          ctaText: 'Get upto 78% OFF',
-          ctaUrl: 'Upgrade',
-          imageUrl: null,
-          isVisible: true,
-        },
-        planAdBanner: {
-          planName: 'Silver - 1 month',
-          tagline: 'Your only starter pack to find the right match',
-          offerTag: 'Special offer only for you',
-          originalPrice: 1800,
-          discountedPrice: 990,
-          discountPercent: 45,
-          discountEndsInSeconds: 86400,
-          features: [
-            { id: 'feat_1', icon: 'smartphone', prefixText: 'View ', highlightText: '10 Phone Nos', hasInfo: false },
-            { id: 'feat_2', icon: 'message-square', prefixText: 'Send ', highlightText: 'messages to matches', hasInfo: true },
-            { id: 'feat_3', icon: 'sparkles', prefixText: 'View ', highlightText: 'unlimited horoscopes', hasInfo: false },
-          ],
-          buttonText: 'Pay ₹990',
-          disclaimer: '*Prices are exclusive of GST',
-          badge: { title: 'LIMITED', subtitle: 'PERIOD OFFER' },
-          isVisible: true,
-        },
-      };
-    }
+    const res = await api.get(ApiURL.homeBanners);
+    return res?.data?.data || res?.data || res;
   },
 
   async updateBanners(payload: Partial<HomeBannersData>): Promise<HomeBannersData> {

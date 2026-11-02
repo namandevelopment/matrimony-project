@@ -30,87 +30,9 @@ export interface CasteMaster {
 const STORAGE_KEY_RELIGIONS = 'sm_admin_religions_v1';
 const STORAGE_KEY_CASTES = 'sm_admin_castes_v1';
 
-export const INITIAL_RELIGIONS: ReligionMaster[] = [
-  {
-    id: 'rel_1',
-    name: 'Hindu',
-    code: 'HINDU',
-    description: 'Sanatan Vedic Hindu tradition including Sindhi Sanatani practices.',
-    active: true,
-    displayOrder: 1,
-    createdAt: '2026-01-01',
-    updatedAt: '2026-10-13',
-  },
-  {
-    id: 'rel_2',
-    name: 'Sikh',
-    code: 'SIKH',
-    description: 'Sikh traditions and Sindhi Nanakpanthi/Sahajdhari followers of Guru Granth Sahib.',
-    active: true,
-    displayOrder: 2,
-    createdAt: '2026-01-01',
-    updatedAt: '2026-10-13',
-  },
-  {
-    id: 'rel_3',
-    name: 'Jain',
-    code: 'JAIN',
-    description: 'Jain traditions (Digambar and Shwetambar).',
-    active: true,
-    displayOrder: 3,
-    createdAt: '2026-01-01',
-    updatedAt: '2026-10-13',
-  },
-  {
-    id: 'rel_4',
-    name: 'Buddhist',
-    code: 'BUDDHIST',
-    description: 'Buddhist philosophy and tradition.',
-    active: true,
-    displayOrder: 4,
-    createdAt: '2026-01-01',
-    updatedAt: '2026-10-13',
-  },
-  {
-    id: 'rel_5',
-    name: 'Christian',
-    code: 'CHRISTIAN',
-    description: 'Christian faith communities.',
-    active: true,
-    displayOrder: 5,
-    createdAt: '2026-01-01',
-    updatedAt: '2026-10-13',
-  },
-  {
-    id: 'rel_6',
-    name: 'Other',
-    code: 'OTHER',
-    description: 'Other cultural or spiritual beliefs.',
-    active: true,
-    displayOrder: 6,
-    createdAt: '2026-01-01',
-    updatedAt: '2026-10-13',
-  },
-];
+export const INITIAL_RELIGIONS: ReligionMaster[] = [];
 
-export const INITIAL_CASTES: CasteMaster[] = [
-  { id: 'caste_bhaiband', name: 'Sindhi - Bhaiband', code: 'SINDHI_BHAIBAND', religionId: 'rel_1', religionName: 'Hindu', description: 'Renowned international merchant and trade community.', active: true, displayOrder: 1, createdAt: '2026-01-01', updatedAt: '2026-10-13' },
-  { id: 'caste_amil', name: 'Sindhi - Amil', code: 'SINDHI_AMIL', religionId: 'rel_1', religionName: 'Hindu', description: 'Scholarly, administrative and executive community.', active: true, displayOrder: 2, createdAt: '2026-01-01', updatedAt: '2026-10-13' },
-  { id: 'caste_lohana', name: 'Sindhi - Lohana', code: 'SINDHI_LOHANA', religionId: 'rel_1', religionName: 'Hindu', description: 'Ancient mercantile and business clan.', active: true, displayOrder: 3, createdAt: '2026-01-01', updatedAt: '2026-10-13' },
-  { id: 'caste_sahiti', name: 'Sindhi - Sahiti', code: 'SINDHI_SAHITI', religionId: 'rel_1', religionName: 'Hindu', description: 'Families originating from fertile Sahiti pargana.', active: true, displayOrder: 4, createdAt: '2026-01-01', updatedAt: '2026-10-13' },
-  { id: 'caste_larkana', name: 'Sindhi - Larkana', code: 'SINDHI_LARKANA', religionId: 'rel_1', religionName: 'Hindu', description: 'Families hailing from Larkana and northern Sindh.', active: true, displayOrder: 5, createdAt: '2026-01-01', updatedAt: '2026-10-13' },
-  { id: 'caste_sakhar', name: 'Sindhi - Sakhar', code: 'SINDHI_SAKHAR', religionId: 'rel_1', religionName: 'Hindu', description: 'Families hailing from Sukkur and Rohri.', active: true, displayOrder: 6, createdAt: '2026-01-01', updatedAt: '2026-10-13' },
-  { id: 'caste_dadu', name: 'Sindhi - Dadu', code: 'SINDHI_DADU', religionId: 'rel_1', religionName: 'Hindu', description: 'Families originating from Dadu, Sehwan and Kotri belt.', active: true, displayOrder: 7, createdAt: '2026-01-01', updatedAt: '2026-10-13' },
-  { id: 'caste_shikarpuri', name: 'Sindhi - Shikarpuri', code: 'SINDHI_SHIKARPURI', religionId: 'rel_1', religionName: 'Hindu', description: 'Commercial finance and merchant hub families.', active: true, displayOrder: 8, createdAt: '2026-01-01', updatedAt: '2026-10-13' },
-  { id: 'caste_thari', name: 'Sindhi - Thari', code: 'SINDHI_THARI', religionId: 'rel_1', religionName: 'Hindu', description: 'Heritage from Thar desert and Mirpurkhas belt.', active: true, displayOrder: 9, createdAt: '2026-01-01', updatedAt: '2026-10-13' },
-  { id: 'caste_sehwani', name: 'Sindhi - Sehwani', code: 'SINDHI_SEHWANI', religionId: 'rel_1', religionName: 'Hindu', description: 'Lineage from ancient spiritual city of Sehwan.', active: true, displayOrder: 10, createdAt: '2026-01-01', updatedAt: '2026-10-13' },
-  { id: 'caste_hyderabadi', name: 'Sindhi - Hyderabadi', code: 'SINDHI_HYDERABADI', religionId: 'rel_1', religionName: 'Hindu', description: 'Families from historic capital city Hyderabad (Sindh).', active: true, displayOrder: 11, createdAt: '2026-01-01', updatedAt: '2026-10-13' },
-  { id: 'caste_bhatia', name: 'Sindhi - Bhatia', code: 'SINDHI_BHATIA', religionId: 'rel_1', religionName: 'Hindu', description: 'Maritime and international trading community.', active: true, displayOrder: 12, createdAt: '2026-01-01', updatedAt: '2026-10-13' },
-  { id: 'caste_brahmins', name: 'Sindhi - Brahmins (Pokharna, Saraswat)', code: 'SINDHI_BRAHMINS', religionId: 'rel_1', religionName: 'Hindu', description: 'Pushkarna and Saraswat custodians of Vedic rituals.', active: true, displayOrder: 13, createdAt: '2026-01-01', updatedAt: '2026-10-13' },
-  { id: 'caste_chhapru', name: 'Sindhi - Chhapru', code: 'SINDHI_CHHAPRU', religionId: 'rel_1', religionName: 'Hindu', description: 'Lineage from Kohistan and Chhapru regions.', active: true, displayOrder: 14, createdAt: '2026-01-01', updatedAt: '2026-10-13' },
-  { id: 'caste_others', name: 'Sindhi - Others', code: 'SINDHI_OTHERS', religionId: 'rel_1', religionName: 'Hindu', description: 'Other Sindhi allied families.', active: true, displayOrder: 15, createdAt: '2026-01-01', updatedAt: '2026-10-13' },
-  { id: 'caste_no_bar', name: 'Caste No Bar', code: 'CASTE_NO_BAR', religionId: 'rel_1', religionName: 'Hindu', description: 'Open to all Sindhi and Sanatan communities.', active: true, displayOrder: 16, createdAt: '2026-01-01', updatedAt: '2026-10-13' },
-];
+export const INITIAL_CASTES: CasteMaster[] = [];
 
 class CasteReligionService {
   private religions: ReligionMaster[] = [];
