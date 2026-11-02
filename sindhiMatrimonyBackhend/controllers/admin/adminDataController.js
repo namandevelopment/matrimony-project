@@ -1252,6 +1252,168 @@ export const getPlansList = asyncHandler(async (req, res) => {
   );
 });
 
+// ============================================================================
+// 8. USER ANALYTICS & TELEMETRY SESSIONS (Google / Firebase Analytics style)
+// ============================================================================
+export const inMemoryUserSessions = [
+  {
+    id: "sess_1",
+    userId: "u_101",
+    name: "Simran Advani",
+    memberId: "SM-4821",
+    phone: "+91 98201 54321",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+    platform: "MOBILE_APP",
+    deviceInfo: "Android 14 (OnePlus 11)",
+    loginTime: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+    logoutTime: new Date(Date.now() - 3.5 * 60 * 60 * 1000).toISOString(),
+    sessionDurationMinutes: 28,
+    screensVisited: ["Home Feed", "Daily Horoscope", "Recommendations", "Payment & Upgrade Plans"],
+    visitedPaymentScreen: true,
+    engagementScore: "HIGH",
+    status: "LOGGED_OUT",
+  },
+  {
+    id: "sess_2",
+    userId: "u_102",
+    name: "Rohan Chandiramani",
+    memberId: "SM-4932",
+    phone: "+91 98233 87654",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+    platform: "WEB_PANEL",
+    deviceInfo: "Chrome on macOS (Desktop)",
+    loginTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    logoutTime: null,
+    sessionDurationMinutes: 45,
+    screensVisited: ["Dashboard", "Member Search", "Kundli Match", "Festival Offers"],
+    visitedPaymentScreen: true,
+    engagementScore: "HIGH",
+    status: "ACTIVE_NOW",
+  },
+  {
+    id: "sess_3",
+    userId: "u_103",
+    name: "Pooja Vazirani",
+    memberId: "SM-5104",
+    phone: "+91 97112 34567",
+    avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150",
+    platform: "MOBILE_APP",
+    deviceInfo: "iOS 18.1 (iPhone 15 Pro)",
+    loginTime: new Date(Date.now() - 90 * 60 * 1000).toISOString(),
+    logoutTime: new Date(Date.now() - 75 * 60 * 1000).toISOString(),
+    sessionDurationMinutes: 15,
+    screensVisited: ["Home Feed", "Interests Received", "Chat Messaging"],
+    visitedPaymentScreen: false,
+    engagementScore: "MEDIUM",
+    status: "LOGGED_OUT",
+  },
+  {
+    id: "sess_4",
+    userId: "u_104",
+    name: "Karan Lulla",
+    memberId: "SM-5220",
+    phone: "+91 99887 11223",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
+    platform: "MOBILE_APP",
+    deviceInfo: "Android 13 (Samsung S23)",
+    loginTime: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
+    logoutTime: null,
+    sessionDurationMinutes: 22,
+    screensVisited: ["Home Feed", "Profile Edit", "Upgrade Screen"],
+    visitedPaymentScreen: true,
+    engagementScore: "HIGH",
+    status: "ACTIVE_NOW",
+  },
+];
+
+export const getUserAnalyticsSessions = asyncHandler(async (req, res) => {
+  const { platform, status, search } = req.query;
+  let list = [...inMemoryUserSessions];
+
+  if (platform && platform !== "ALL") {
+    list = list.filter((s) => s.platform === platform);
+  }
+  if (status && status !== "ALL") {
+    list = list.filter((s) => s.status === status);
+  }
+  if (search) {
+    const q = search.toLowerCase();
+    list = list.filter((s) =>
+      s.name.toLowerCase().includes(q) ||
+      s.memberId.toLowerCase().includes(q) ||
+      s.phone.includes(q)
+    );
+  }
+
+  const activeUsersToday = list.filter((s) => s.status === "ACTIVE_NOW").length;
+  const paymentVisitsToday = list.filter((s) => s.visitedPaymentScreen).length;
+  const mobileCount = list.filter((s) => s.platform === "MOBILE_APP").length;
+  const webCount = list.filter((s) => s.platform === "WEB_PANEL").length;
+  const totalDuration = list.reduce((acc, s) => acc + s.sessionDurationMinutes, 0);
+  const avgEngagementMinutes = list.length > 0 ? Math.round(totalDuration / list.length) : 0;
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    "User analytics sessions retrieved successfully.",
+    {
+      sessions: list,
+      summary: {
+        totalLoginsToday: list.length,
+        totalLogoutsToday: list.filter((s) => s.status === "LOGGED_OUT").length,
+        activeUsersToday,
+        paymentScreenVisitsToday: paymentVisitsToday,
+        avgEngagementMinutes,
+        mobileCount,
+        webCount,
+      },
+    },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const recordUserSessionEvent = asyncHandler(async (req, res) => {
+  const { userId, name, memberId, phone, platform = "MOBILE_APP", deviceInfo = "Mobile Device", eventType = "LOGIN", screen } = req.body || {};
+
+  const existing = inMemoryUserSessions.find((s) => s.userId === userId && s.status === "ACTIVE_NOW");
+  if (eventType === "LOGOUT" && existing) {
+    existing.logoutTime = new Date().toISOString();
+    existing.status = "LOGGED_OUT";
+    return apiHTTPResponse(req, res, CONSTANTS.HTTP_OK, "Session logout recorded.", { session: existing }, CONSTANTS.OK, CONSTANTS.ERROR_FALSE);
+  }
+
+  const newSession = {
+    id: `sess_${Date.now()}`,
+    userId: userId || "u_guest",
+    name: name || "Member",
+    memberId: memberId || "SM-" + Math.floor(1000 + Math.random() * 9000),
+    phone: phone || "",
+    platform,
+    deviceInfo,
+    loginTime: new Date().toISOString(),
+    logoutTime: null,
+    sessionDurationMinutes: 1,
+    screensVisited: screen ? [screen] : ["Home Feed"],
+    visitedPaymentScreen: screen === "PAYMENT_UPGRADE",
+    engagementScore: "MEDIUM",
+    status: "ACTIVE_NOW",
+  };
+
+  inMemoryUserSessions.unshift(newSession);
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_CREATED,
+    "User session event recorded successfully.",
+    { session: newSession },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
 export default {
   getMembersList,
   getMemberDetail,
@@ -1283,4 +1445,6 @@ export default {
   getFinanceSummary,
   getTransactionsList,
   getPlansList,
+  getUserAnalyticsSessions,
+  recordUserSessionEvent,
 };

@@ -11,6 +11,7 @@ export * from './notificationTracker';
 export * from './backgroundHandler';
 export * from './useNotificationObserver';
 export * from './localNotificationService';
+export * from './crashlyticsService';
 
 // Convenience Singleton Exports
 export { fcmService as NotificationService } from './fcmService';

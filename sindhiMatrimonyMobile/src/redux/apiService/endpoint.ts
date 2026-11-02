@@ -190,6 +190,7 @@ export const ApiURL = {
   // 12. MEMBERSHIP PLANS & PAYMENTS
   // =========================================================================
   getPlans: `${BASE_URL}/api/v1/plans`,
+  trackPaymentScreenVisit: `${BASE_URL}/api/v1/plans/visits`,
   createPaymentOrder: `${BASE_URL}/api/v1/payments/create-order`,
   verifyPaymentSignature: `${BASE_URL}/api/v1/payments/verify`,
 
@@ -202,6 +203,7 @@ export const ApiURL = {
   markAllNotificationsAsRead: `${BASE_URL}/api/v1/notifications/mark-all-read`,
   deleteNotificationItem: (notificationId: string) => `${BASE_URL}/api/v1/notifications/${notificationId}`,
   updateFcmDeviceToken: `${BASE_URL}/api/v1/notifications/fcm-token`,
+  reportCrash: `${BASE_URL}/api/v1/common/crash-report`,
 
   // =========================================================================
   // 14. SUPPORT & HELP CENTER

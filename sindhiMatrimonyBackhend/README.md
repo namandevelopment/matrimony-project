@@ -24,6 +24,7 @@ All backend architectural plans, directory patterns, API specifications, and per
 | 5 | **Cost & Ultra-Performance Optimization Blueprint** | [BACKEND_COST_PERFORMANCE_OPTIMIZATION.md](./BACKEND_COST_PERFORMANCE_OPTIMIZATION.md) | Sub-50ms latency, zero log spam (Pino), `.lean()` queries, direct-to-R2 presigned media uploads, and $5–$10/mo single-VPS deployment guide. |
 | 6 | **Auto-Matchmaking Engine Technical Spec** | [BACKEND_AUTO_MATCHMAKING_ENGINE.md](./BACKEND_AUTO_MATCHMAKING_ENGINE.md) | 10-step eligibility filter, weighted scoring engine, Gotra exogamy validation, and batched daily recommendation worker. |
 | 7 | **Horoscope, Kundli & Notification Specification** | [MASTER_HOROSCOPE_MATCHMAKING_NOTIFICATION_SPECIFICATION.md](./MASTER_HOROSCOPE_MATCHMAKING_NOTIFICATION_SPECIFICATION.md) | Vedic Ashtakoota 36-Guna calculation engine, Manglik Dosha evaluator, transactional event outbox, and push/WhatsApp notification queues. |
+| 8 | **Production Environment Configuration** | [PRODUCTION_ENVIRONMENT.md](./PRODUCTION_ENVIRONMENT.md) | Complete production `.env` blueprint, MongoDB Atlas connection, Redis configuration, and Firebase Admin setup. |
 
 ---
 

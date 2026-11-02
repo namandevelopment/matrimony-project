@@ -39,6 +39,7 @@ const SuccessStoriesScreen = lazy(() => import('../screens/successStoriesScreen/
 const ReviewsScreen = lazy(() => import('../screens/reviewsScreen/ReviewsScreen'));
 const SafetyScreen = lazy(() => import('../screens/safetyScreen/SafetyScreen'));
 const CampaignsScreen = lazy(() => import('../screens/campaignsScreen/CampaignsScreen'));
+const UserAnalyticsScreen = lazy(() => import('../screens/analyticsScreen/UserAnalyticsScreen'));
 
 /**
  * Prefetch all screen chunks in the background so transitions are instant
@@ -347,6 +348,13 @@ export const screens: ScreenConfig[] = [
     path: '/campaigns',
     component: CampaignsScreen,
     title: 'Marketing & Engagement',
+    requiresAuth: true,
+  },
+  {
+    name: 'UserAnalyticsScreen',
+    path: '/analytics',
+    component: UserAnalyticsScreen,
+    title: 'User Analytics & Engagement',
     requiresAuth: true,
   },
   {

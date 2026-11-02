@@ -8,6 +8,15 @@ import Routes from './routes/Routes';
 import { GlobalModalProvider } from './customModals/ModalContext';
 import { ToastProvider } from './toastMessage/toast';
 import { NetworkProvider } from './network';
+import { fcmAdminService } from './firebase';
+
+function FirebaseInitializer() {
+  React.useEffect(() => {
+    fcmAdminService.initialize().catch(() => {});
+  }, []);
+
+  return null;
+}
 
 export const App: React.FC = () => {
   return (
@@ -16,6 +25,7 @@ export const App: React.FC = () => {
         <BrowserRouter>
           <NetworkProvider>
             <GlobalModalProvider>
+              <FirebaseInitializer />
               <Routes />
               <ToastProvider />
             </GlobalModalProvider>

@@ -42,6 +42,14 @@ const initFirebaseAdmin = () => {
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
       });
+    } else {
+      const localKeyPath = new URL("./serviceAccountKey.json", import.meta.url).pathname;
+      if (fs.existsSync(localKeyPath)) {
+        try {
+          const fileContent = fs.readFileSync(localKeyPath, "utf8");
+          credential = admin.credential.cert(JSON.parse(fileContent));
+        } catch {}
+      }
     }
 
     if (credential) {

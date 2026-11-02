@@ -169,6 +169,7 @@ export const ApiURL = {
   conversationsList: `${BASE_URL}/api/v1/chat/conversations`,
   notificationsList: `${BASE_URL}/api/v1/notifications`,
   adminNotifications: `${BASE_URL}/api/v1/admin/notifications`,
+  updateFcmDeviceToken: `${BASE_URL}/api/v1/notifications/fcm-token`,
 
   // =========================================================================
   // 15. REVIEWS & TESTIMONIALS MODERATION

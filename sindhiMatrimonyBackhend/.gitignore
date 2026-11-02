@@ -1,2 +1,5 @@
 .vercel
 .env*
+
+serviceAccountKey.json
+*.json.key

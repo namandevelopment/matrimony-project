@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   ShoppingBag,
   Layers,
+  CreditCard,
 } from 'lucide-react';
 import { NotificationManagementSection } from './sections/NotificationManagementSection';
 import { FestivalOffersSection } from './sections/FestivalOffersSection';
@@ -17,6 +18,7 @@ import { DeliveryLogsSection } from './sections/DeliveryLogsSection';
 import { CampaignAnalyticsSection } from './sections/CampaignAnalyticsSection';
 import { AdsManagementSection } from './sections/AdsManagementSection';
 import { HomeBannersManagementSection } from './sections/HomeBannersManagementSection';
+import { PaymentVisitorsSection } from './sections/PaymentVisitorsSection';
 import { MarketingAuditLogModal } from './components/MarketingAuditLogModal';
 import { campaignService } from '../../services/campaignService';
 import { memoWithDeepEqual } from '../../utils/memoUtils';
@@ -28,7 +30,8 @@ export type CampaignTab =
   | 'FESTIVAL_OFFERS'
   | 'POPUPS'
   | 'DELIVERY_LOGS'
-  | 'ANALYTICS';
+  | 'ANALYTICS'
+  | 'PAYMENT_VISITORS';
 
 interface TabItem {
   id: CampaignTab;
@@ -53,10 +56,13 @@ export function resolveCampaignTab(pathname: string, search: string): CampaignTa
     tabParam === 'POPUPS' ||
     tabParam === 'DELIVERY_LOGS' ||
     tabParam === 'LOGS' ||
-    tabParam === 'ANALYTICS'
+    tabParam === 'ANALYTICS' ||
+    tabParam === 'PAYMENT_VISITORS' ||
+    tabParam === 'VISITORS'
   ) {
     if (tabParam === 'OFFERS') return 'FESTIVAL_OFFERS';
     if (tabParam === 'LOGS') return 'DELIVERY_LOGS';
+    if (tabParam === 'VISITORS') return 'PAYMENT_VISITORS';
     return tabParam as CampaignTab;
   }
 
@@ -68,6 +74,7 @@ export function resolveCampaignTab(pathname: string, search: string): CampaignTa
   if (cleanPath.includes('/popups')) return 'POPUPS';
   if (cleanPath.includes('/logs')) return 'DELIVERY_LOGS';
   if (cleanPath.includes('/analytics')) return 'ANALYTICS';
+  if (cleanPath.includes('/payment-visitors') || cleanPath.includes('/visitors')) return 'PAYMENT_VISITORS';
 
   // 3. Default fallback
   return 'NOTIFICATIONS';
@@ -139,6 +146,13 @@ export const CampaignsScreen: React.FC = memoWithDeepEqual(() => {
         icon: Sparkles,
         badge: summary.activePopupsCount > 0 ? `${summary.activePopupsCount} Active` : undefined,
         routePath: '/campaigns/popups',
+      },
+      {
+        id: 'PAYMENT_VISITORS',
+        label: 'Payment & Offer Visitors',
+        icon: CreditCard,
+        badge: `${campaignService.getPaymentVisitorsStats().todayCount} Today`,
+        routePath: '/campaigns/payment-visitors',
       },
       {
         id: 'DELIVERY_LOGS',
@@ -245,6 +259,7 @@ export const CampaignsScreen: React.FC = memoWithDeepEqual(() => {
         {activeTab === 'ADS' && <AdsManagementSection />}
         {activeTab === 'NOTIFICATIONS' && <NotificationManagementSection />}
         {activeTab === 'FESTIVAL_OFFERS' && <FestivalOffersSection />}
+        {activeTab === 'PAYMENT_VISITORS' && <PaymentVisitorsSection />}
         {activeTab === 'POPUPS' && <PopupManagementSection />}
         {activeTab === 'DELIVERY_LOGS' && <DeliveryLogsSection />}
         {activeTab === 'ANALYTICS' && <CampaignAnalyticsSection />}

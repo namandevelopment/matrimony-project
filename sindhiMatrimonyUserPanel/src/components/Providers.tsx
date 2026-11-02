@@ -8,6 +8,15 @@ import { queryClient as defaultQueryClient } from '@/tanstackQuery/client';
 import { ModalProvider } from '@/customModals';
 import { get_Master_Dropdowns_Call } from '@/redux/useDispatch';
 import { selectMasterDropdowns } from '@/redux/useSelector';
+import { fcmWebService } from '@/firebase';
+
+function FirebaseInitializer() {
+  useEffect(() => {
+    fcmWebService.initialize().catch(() => {});
+  }, []);
+
+  return null;
+}
 
 function MasterDataInitializer() {
   const dispatch = useDispatch<AppDispatch>();
@@ -35,6 +44,7 @@ export function Providers({ children }: ProvidersProps) {
       <QueryClientProvider client={queryClient}>
         <ModalProvider>
           <MasterDataInitializer />
+          <FirebaseInitializer />
           {children}
         </ModalProvider>
       </QueryClientProvider>

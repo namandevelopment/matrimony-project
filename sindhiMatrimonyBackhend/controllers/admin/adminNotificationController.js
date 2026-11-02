@@ -740,3 +740,41 @@ export const deleteAdminNotification = asyncHandler(async (req, res) => {
     CONSTANTS.ERROR_FALSE
   );
 });
+
+/**
+ * 6. POST /api/v1/common/crash-report
+ * Ingest mobile & web crash telemetry and alert Admin instantly
+ */
+export const reportClientCrash = asyncHandler(async (req, res) => {
+  const { error, stack, isFatal, platform = "Mobile", userId, screen } = req.body || {};
+  const errorTitle = typeof error === "string" ? error : error?.message || "Unhandled Application Exception";
+  const userTag = userId ? ` [User: ${userId}]` : "";
+
+  addAdminNotification({
+    title: `🚨 App Crash Detected${userTag}`,
+    message: `${platform} crash on "${screen || "Global"}": ${errorTitle.slice(0, 120)}`,
+    category: "SYSTEM",
+    priority: isFatal ? "CRITICAL" : "HIGH",
+    actionUrl: `/admin/notifications`,
+    actionLabel: "View Alert",
+    metadata: {
+      error: errorTitle,
+      stack: (stack || "").slice(0, 1000),
+      isFatal: Boolean(isFatal),
+      platform,
+      userId,
+      screen,
+      reportedAt: new Date().toISOString(),
+    },
+  });
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    "Crash report received and admin alerted successfully.",
+    { reported: true },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});

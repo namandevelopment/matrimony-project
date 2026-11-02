@@ -31,6 +31,7 @@ import {
   getActiveAdvertisements,
   trackAdClick,
 } from "../controllers/campaigns/index.js";
+import { reportClientCrash } from "../controllers/admin/adminNotificationController.js";
 
 const router = express.Router();
 
@@ -128,5 +129,8 @@ router.get("/help-support", (req, res) => {
 if (process.env.NODE_ENV !== "production") {
   router.use("/dev", devApiTrackerRoutes);
 }
+
+// 15. Crash Reporting & Real-time Admin Alert
+router.post("/common/crash-report", reportClientCrash);
 
 export default router;

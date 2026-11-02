@@ -29,6 +29,7 @@ import {
   Star,
   ShieldAlert,
   Megaphone,
+  LineChart,
 } from 'lucide-react';
 import { crmDataService } from '../services/crmDataService';
 import { notificationService } from '../services/notificationService';
@@ -80,6 +81,16 @@ const prefetchScreens = () => {
 // Static Navigation Items hoisted to module scope to guarantee stable memory references across renders
 export const ALL_NAV_ITEMS: NavItemDef[] = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+  {
+    name: 'User Analytics',
+    icon: LineChart,
+    path: '/analytics',
+    subItems: [
+      { name: 'Live Overview & KPIs', path: '/analytics' },
+      { name: 'Login & Session Logs', path: '/analytics?tab=sessions' },
+      { name: 'Payment & Offer Visits', path: '/analytics?tab=payments' },
+    ],
+  },
   { name: 'CRM Leads', path: '/leads', icon: Contact2 },
   { name: 'Team Chat', path: '/chat', icon: MessageSquare },
   { name: 'Notifications', path: '/notifications', icon: Bell },

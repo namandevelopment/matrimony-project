@@ -481,10 +481,259 @@ export const handlePaymentWebhook = asyncHandler(async (req, res) => {
   );
 });
 
+// ============================================================================
+// 6. PAYMENT & OFFER SCREEN VISIT INTENT TRACKING (1 VISIT / DAY DEDUPLICATION)
+// ============================================================================
+export const paymentScreenVisitsStore = [
+  {
+    id: "visit_seed_1",
+    userId: "user_67890",
+    name: "Simran Advani",
+    memberId: "SM-4821",
+    phone: "+91 98201 54321",
+    email: "simran.advani@gmail.com",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+    city: "Mumbai, Maharashtra",
+    gender: "Female",
+    age: 26,
+    currentPlan: "FREE_MEMBER",
+    visitedScreen: "PAYMENT_UPGRADE",
+    visitedScreenTitle: "Payment & Membership Upgrade Plans",
+    visitedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+    visitDate: new Date().toISOString().slice(0, 10),
+    visitCountToday: 1,
+    totalHistoricalVisits: 3,
+    status: "NEW_VISIT",
+    notes: "Explored Gold Plan (3 months) on mobile app",
+  },
+  {
+    id: "visit_seed_2",
+    userId: "user_67891",
+    name: "Rohan Chandiramani",
+    memberId: "SM-4932",
+    phone: "+91 98233 87654",
+    email: "rohan.c@outlook.com",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+    city: "Pune, Maharashtra",
+    gender: "Male",
+    age: 29,
+    currentPlan: "FREE_MEMBER",
+    visitedScreen: "FESTIVAL_OFFERS",
+    visitedScreenTitle: "Diwali Special 50% Off Offer",
+    visitedAt: new Date(Date.now() - 130 * 60 * 1000).toISOString(),
+    visitDate: new Date().toISOString().slice(0, 10),
+    visitCountToday: 1,
+    totalHistoricalVisits: 1,
+    status: "CONTACTED",
+    lastContactedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    notes: "Counselor called; customer requested coupon extension until Friday",
+  },
+  {
+    id: "visit_seed_3",
+    userId: "user_67892",
+    name: "Pooja Vazirani",
+    memberId: "SM-5104",
+    phone: "+91 97112 34567",
+    email: "pooja.v@gmail.com",
+    avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150",
+    city: "Ahmedabad, Gujarat",
+    gender: "Female",
+    age: 27,
+    currentPlan: "FREE_MEMBER",
+    visitedScreen: "PAYMENT_UPGRADE",
+    visitedScreenTitle: "Payment & Membership Upgrade Plans",
+    visitedAt: new Date(Date.now() - 240 * 60 * 1000).toISOString(),
+    visitDate: new Date().toISOString().slice(0, 10),
+    visitCountToday: 1,
+    totalHistoricalVisits: 4,
+    status: "NEW_VISIT",
+    notes: "Multiple visits this week; high conversion intent",
+  },
+];
+
+export const recordScreenVisit = asyncHandler(async (req, res) => {
+  const userId = getUserId(req) || req.body?.userId || "guest_user";
+  const { screen = "PAYMENT_UPGRADE", screenTitle = "Payment & Upgrade Plans", metadata = {} } = req.body || {};
+  const today = new Date().toISOString().slice(0, 10);
+
+  // 1. Strict 1-visit-per-day deduplication
+  const existingToday = paymentScreenVisitsStore.find(
+    (v) => (v.userId === userId || (req.body?.phone && v.phone === req.body.phone)) &&
+           v.visitDate === today &&
+           v.visitedScreen === screen
+  );
+
+  if (existingToday) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_OK,
+      "Visit already recorded for today (1 visit/day limit active).",
+      { recorded: false, throttled: true, visit: existingToday },
+      CONSTANTS.OK,
+      CONSTANTS.ERROR_FALSE
+    );
+  }
+
+  // 2. Fetch or assemble user details
+  let userName = req.body?.name || req.user?.fullName || "Registered Member";
+  let phone = req.body?.phone || req.user?.phone || "";
+  let email = req.body?.email || req.user?.email || "";
+  let memberId = req.body?.memberId || "SM-" + Math.floor(1000 + Math.random() * 9000);
+  let avatar = req.body?.avatar || "";
+  let city = req.body?.city || "Sindhi Matrimony User";
+  let currentPlan = req.body?.currentPlan || "FREE_MEMBER";
+
+  try {
+    if (userId && userId !== "guest_user") {
+      const dbUser = await User.findById(userId).lean();
+      if (dbUser) {
+        userName = dbUser.fullName || dbUser.name || userName;
+        phone = dbUser.phone || phone;
+        email = dbUser.email || email;
+      }
+      const dbProfile = await Profile.findOne({ userId, isDeleted: false }).lean();
+      if (dbProfile) {
+        memberId = dbProfile.memberId || memberId;
+        city = dbProfile.city || dbProfile.location?.city || city;
+        currentPlan = dbProfile.membershipTier || currentPlan;
+        avatar = dbProfile.profilePictureUrl || dbProfile.photos?.[0] || avatar;
+      }
+    }
+  } catch {}
+
+  const newVisit = {
+    id: `visit_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    userId,
+    name: userName,
+    memberId,
+    phone,
+    email,
+    avatar,
+    city,
+    currentPlan,
+    visitedScreen: screen,
+    visitedScreenTitle: screenTitle,
+    visitedAt: new Date().toISOString(),
+    visitDate: today,
+    visitCountToday: 1,
+    totalHistoricalVisits: 1,
+    status: "NEW_VISIT",
+    notes: metadata?.notes || "Visited via Mobile App",
+  };
+
+  paymentScreenVisitsStore.unshift(newVisit);
+
+  // Send real-time notification to Admin CRM
+  addAdminNotification({
+    title: `Payment Screen Visit: ${userName} (${memberId})`,
+    message: `${userName} (${currentPlan}) opened the ${screenTitle}. High purchase intent detected.`,
+    category: "PAYMENT",
+    priority: "HIGH",
+    actionUrl: `/campaigns?tab=PAYMENT_VISITORS`,
+    actionLabel: "View Visitor",
+    metadata: {
+      userId,
+      memberId,
+      name: userName,
+      phone,
+      screen,
+      visitedAt: newVisit.visitedAt,
+    },
+  });
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_CREATED,
+    "Payment / Offer screen visit recorded successfully.",
+    { recorded: true, throttled: false, visit: newVisit },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const getScreenVisits = asyncHandler(async (req, res) => {
+  const { screen, status, search, date } = req.query || {};
+  let list = [...paymentScreenVisitsStore];
+
+  if (screen && screen !== "ALL") {
+    list = list.filter((v) => v.visitedScreen === screen);
+  }
+  if (status && status !== "ALL") {
+    list = list.filter((v) => v.status === status);
+  }
+  if (date) {
+    list = list.filter((v) => v.visitDate === date);
+  }
+  if (search) {
+    const q = search.toLowerCase();
+    list = list.filter(
+      (v) =>
+        v.name?.toLowerCase().includes(q) ||
+        v.phone?.includes(q) ||
+        v.memberId?.toLowerCase().includes(q) ||
+        v.city?.toLowerCase().includes(q)
+    );
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const todayVisits = list.filter((v) => v.visitDate === today);
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    "Screen visits retrieved successfully.",
+    {
+      visits: list,
+      totalCount: list.length,
+      todayCount: todayVisits.length,
+      summary: {
+        total: list.length,
+        today: todayVisits.length,
+        newVisits: list.filter((v) => v.status === "NEW_VISIT").length,
+        contacted: list.filter((v) => v.status === "CONTACTED").length,
+        converted: list.filter((v) => v.status === "CONVERTED").length,
+      },
+    },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const updateScreenVisitStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { status, notes } = req.body || {};
+
+  const item = paymentScreenVisitsStore.find((v) => v.id === id);
+  if (!item) {
+    return apiHTTPResponse(req, res, CONSTANTS.HTTP_NOT_FOUND, "Visit record not found.", null, CONSTANTS.OK, CONSTANTS.ERROR_TRUE);
+  }
+
+  if (status) item.status = status;
+  if (notes) item.notes = notes;
+  if (status === "CONTACTED") item.lastContactedAt = new Date().toISOString();
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    "Screen visit status updated successfully.",
+    { visit: item },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
 export default {
   MEMBERSHIP_PLANS,
   getPlans,
   createPaymentOrder,
   verifyAndActivateMembership,
   handlePaymentWebhook,
+  recordScreenVisit,
+  getScreenVisits,
+  updateScreenVisitStatus,
+  paymentScreenVisitsStore,
 };

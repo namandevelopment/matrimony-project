@@ -139,6 +139,41 @@ const UpgradeScreen = () => {
     };
   }, [isFocused]);
 
+  // Track screen visit for Admin CRM (Strictly throttled to 1 visit per day)
+  useEffect(() => {
+    if (!isFocused) return;
+    const trackPaymentVisitOnceDaily = async () => {
+      try {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const lastTrackedDate = await Storage.getItem('last_payment_screen_visit_date');
+        if (lastTrackedDate === todayStr) {
+          return;
+        }
+
+        const userObj = await Storage.getItem<any>('user');
+        await apiFetch({
+          url: ApiURL.trackPaymentScreenVisit,
+          method: 'POST',
+          payload: {
+            screen: 'PAYMENT_UPGRADE',
+            screenTitle: 'Payment & Membership Upgrade Plans',
+            userId: userObj?.id || userObj?._id,
+            name: userObj?.fullName || userObj?.name,
+            phone: userObj?.phone,
+            email: userObj?.email,
+          },
+          showErrorToast: false,
+        });
+
+        await Storage.setItem('last_payment_screen_visit_date', todayStr);
+      } catch {
+        // Non-blocking telemetry
+      }
+    };
+
+    trackPaymentVisitOnceDaily();
+  }, [isFocused]);
+
   const maxDiscount = React.useMemo(() => {
     let max = 0;
     for (const p of plans) {

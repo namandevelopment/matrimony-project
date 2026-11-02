@@ -11,7 +11,7 @@ import {
 } from 'react-native-safe-area-context';
 import Routes from './src/routes/Routes';
 import { NetworkProvider } from './src/utils/NetworkProvider';
-import { fcmService, processPendingNotificationRedirect } from './src/firebase';
+import { fcmService, processPendingNotificationRedirect, crashlyticsService } from './src/firebase';
 import { GlobalAlertModal } from './src/customModals/GlobalAlertModal';
 import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
 
@@ -33,6 +33,9 @@ const RootContent = () => {
 
 function App() {
   useEffect(() => {
+    // Initialize Crashlytics & Analytics
+    crashlyticsService.initialize();
+
     // Initialize Firebase FCM & Notifee channels & listeners
     fcmService.initialize();
 

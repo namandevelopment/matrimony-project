@@ -476,17 +476,16 @@ export const NotificationManagementSection: React.FC = () => {
                       {/* Status & Dispatch */}
                       <td className="py-3 px-4">
                         <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                            camp.status === 'COMPLETED'
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                              : camp.status === 'SCHEDULED'
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${camp.status === 'COMPLETED'
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                            : camp.status === 'SCHEDULED'
                               ? 'bg-blue-100 text-blue-800 border border-blue-200'
                               : camp.status === 'DRAFT'
-                              ? 'bg-slate-100 text-slate-700 border border-slate-200'
-                              : camp.status === 'PROCESSING' || camp.status === 'QUEUED'
-                              ? 'bg-amber-100 text-amber-800 border border-amber-200 animate-pulse'
-                              : 'bg-rose-100 text-rose-800 border border-rose-200'
-                          }`}
+                                ? 'bg-slate-100 text-slate-700 border border-slate-200'
+                                : camp.status === 'PROCESSING' || camp.status === 'QUEUED'
+                                  ? 'bg-amber-100 text-amber-800 border border-amber-200 animate-pulse'
+                                  : 'bg-rose-100 text-rose-800 border border-rose-200'
+                            }`}
                         >
                           {camp.status}
                         </span>
@@ -494,8 +493,8 @@ export const NotificationManagementSection: React.FC = () => {
                           {camp.sentAt
                             ? `Sent: ${new Date(camp.sentAt).toLocaleDateString('en-IN')}`
                             : camp.scheduledAt
-                            ? `Sched: ${new Date(camp.scheduledAt).toLocaleDateString('en-IN')}`
-                            : 'Unscheduled Draft'}
+                              ? `Sched: ${new Date(camp.scheduledAt).toLocaleDateString('en-IN')}`
+                              : 'Unscheduled Draft'}
                         </div>
                       </td>
 

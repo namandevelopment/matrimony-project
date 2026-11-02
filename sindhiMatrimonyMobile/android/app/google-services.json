@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "7241577975",
+    "project_id": "sindhimarriage-eb382",
+    "storage_bucket": "sindhimarriage-eb382.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:7241577975:android:fba14f85075c7074a9aaf2",
+        "android_client_info": {
+          "package_name": "com.sindhimarriage"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC8_wjKpsKDAzFsteB5bRVFOwlJGlgevAU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

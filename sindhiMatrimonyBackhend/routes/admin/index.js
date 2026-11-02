@@ -30,6 +30,8 @@ import {
   getFinanceSummary,
   getTransactionsList,
   getPlansList,
+  getUserAnalyticsSessions,
+  recordUserSessionEvent,
 } from "../../controllers/admin/adminDataController.js";
 
 const router = express.Router();
@@ -42,6 +44,8 @@ router.get("/dashboard/charts/:type", getDashboardCharts);
 router.get("/dashboard/top-agents", getTopAgents);
 router.get("/dashboard/recent-leads", getRecentLeads);
 router.get("/dashboard/todays-followups", getTodaysFollowups);
+router.get("/analytics/user-sessions", getUserAnalyticsSessions);
+router.post("/analytics/user-sessions", recordUserSessionEvent);
 
 // 2. Members Management
 import { generateMemberBiodata } from "../../controllers/members/biodataController.js";

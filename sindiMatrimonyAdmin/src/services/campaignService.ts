@@ -223,12 +223,124 @@ export interface MarketingAuditLog {
   details: string;
 }
 
+export interface PaymentVisitor {
+  id: string;
+  userId: string;
+  name: string;
+  memberId: string;
+  phone: string;
+  email: string;
+  avatar?: string;
+  city: string;
+  gender?: string;
+  age?: number;
+  currentPlan: string;
+  visitedScreen: 'PAYMENT_UPGRADE' | 'FESTIVAL_OFFERS' | 'PRIME_MODAL';
+  visitedScreenTitle: string;
+  visitedAt: string;
+  visitDate: string;
+  visitCountToday: number;
+  totalHistoricalVisits: number;
+  lastContactedAt?: string;
+  notes?: string;
+  status: 'NEW_VISIT' | 'CONTACTED' | 'CONVERTED' | 'DROPPED';
+}
+
 const STORAGE_KEY_CAMPAIGNS = 'sindhi_matrimony_notif_campaigns_v2';
 const STORAGE_KEY_OFFERS = 'sindhi_matrimony_festival_offers_v2';
 const STORAGE_KEY_POPUPS = 'sindhi_matrimony_inapp_popups_v2';
 const STORAGE_KEY_RECIPIENT_LOGS = 'sindhi_matrimony_recipient_delivery_logs_v2';
 const STORAGE_KEY_DISMISSALS = 'sindhi_matrimony_user_popup_dismissals_v2';
 const STORAGE_KEY_AUDIT_LOGS = 'sindhi_matrimony_marketing_audit_logs_v2';
+const STORAGE_KEY_PAYMENT_VISITORS = 'sindhi_matrimony_payment_visitors_v1';
+
+const INITIAL_PAYMENT_VISITORS: PaymentVisitor[] = [
+  {
+    id: 'vis_101',
+    userId: 'user_67890',
+    name: 'Simran Advani',
+    memberId: 'SM-4821',
+    phone: '+91 98201 54321',
+    email: 'simran.advani@gmail.com',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+    city: 'Mumbai, Maharashtra',
+    gender: 'Female',
+    age: 26,
+    currentPlan: 'FREE_MEMBER',
+    visitedScreen: 'PAYMENT_UPGRADE',
+    visitedScreenTitle: 'Payment & Membership Upgrade Plans',
+    visitedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+    visitDate: new Date().toISOString().slice(0, 10),
+    visitCountToday: 1,
+    totalHistoricalVisits: 3,
+    status: 'NEW_VISIT',
+    notes: 'Explored Gold 3-Month Plan on mobile app',
+  },
+  {
+    id: 'vis_102',
+    userId: 'user_67891',
+    name: 'Rohan Chandiramani',
+    memberId: 'SM-4932',
+    phone: '+91 98233 87654',
+    email: 'rohan.c@outlook.com',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+    city: 'Pune, Maharashtra',
+    gender: 'Male',
+    age: 29,
+    currentPlan: 'FREE_MEMBER',
+    visitedScreen: 'FESTIVAL_OFFERS',
+    visitedScreenTitle: 'Diwali Special 50% Off Offer',
+    visitedAt: new Date(Date.now() - 130 * 60 * 1000).toISOString(),
+    visitDate: new Date().toISOString().slice(0, 10),
+    visitCountToday: 1,
+    totalHistoricalVisits: 1,
+    status: 'CONTACTED',
+    lastContactedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    notes: 'Telecaller called; requested ₹500 off coupon till weekend',
+  },
+  {
+    id: 'vis_103',
+    userId: 'user_67892',
+    name: 'Pooja Vazirani',
+    memberId: 'SM-5104',
+    phone: '+91 97112 34567',
+    email: 'pooja.v@gmail.com',
+    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150',
+    city: 'Ahmedabad, Gujarat',
+    gender: 'Female',
+    age: 27,
+    currentPlan: 'FREE_MEMBER',
+    visitedScreen: 'PAYMENT_UPGRADE',
+    visitedScreenTitle: 'Payment & Membership Upgrade Plans',
+    visitedAt: new Date(Date.now() - 240 * 60 * 1000).toISOString(),
+    visitDate: new Date().toISOString().slice(0, 10),
+    visitCountToday: 1,
+    totalHistoricalVisits: 4,
+    status: 'NEW_VISIT',
+    notes: 'Frequent visitor to pricing screen in past 7 days',
+  },
+  {
+    id: 'vis_104',
+    userId: 'user_67893',
+    name: 'Karan Lulla',
+    memberId: 'SM-5220',
+    phone: '+91 99887 11223',
+    email: 'karan.lulla@yahoo.com',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+    city: 'Ulhasnagar, Thane',
+    gender: 'Male',
+    age: 31,
+    currentPlan: 'FREE_MEMBER',
+    visitedScreen: 'PRIME_MODAL',
+    visitedScreenTitle: 'Prime VIP Membership Dialog',
+    visitedAt: new Date(Date.now() - 360 * 60 * 1000).toISOString(),
+    visitDate: new Date().toISOString().slice(0, 10),
+    visitCountToday: 1,
+    totalHistoricalVisits: 2,
+    status: 'CONVERTED',
+    notes: 'Upgraded to Silver Plan following WhatsApp reminder',
+  },
+];
 
 // Initial Mock Campaigns
 const INITIAL_CAMPAIGNS: NotificationCampaign[] = [];
@@ -251,6 +363,7 @@ class CampaignService {
   private recipientLogs: RecipientDeliveryLog[];
   private userDismissals: Record<string, string[]>;
   private auditLogs: MarketingAuditLog[];
+  private paymentVisitors: PaymentVisitor[];
   private listeners: (() => void)[] = [];
   private activeLocks: Set<string> = new Set();
 
@@ -261,6 +374,8 @@ class CampaignService {
     this.recipientLogs = this.loadRecipientLogs();
     this.userDismissals = this.loadDismissals();
     this.auditLogs = this.loadAuditLogs();
+    this.paymentVisitors = this.loadPaymentVisitors();
+    this.syncPaymentVisitorsFromApi();
   }
 
   // --- STORAGE LOADERS ---
@@ -314,6 +429,25 @@ class CampaignService {
     return INITIAL_AUDIT_LOGS;
   }
 
+  private loadPaymentVisitors(): PaymentVisitor[] {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_PAYMENT_VISITORS);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_PAYMENT_VISITORS;
+  }
+
+  private async syncPaymentVisitorsFromApi(): Promise<void> {
+    try {
+      const res = await fetch(`${BASE_URL}/api/v1/plans/visits`);
+      const json = await res.json();
+      if (json?.data?.visits && Array.isArray(json.data.visits) && json.data.visits.length > 0) {
+        this.paymentVisitors = json.data.visits;
+        this.savePaymentVisitors();
+      }
+    } catch {}
+  }
+
   // --- STORAGE WRITERS ---
   private saveCampaigns(): void {
     try {
@@ -355,6 +489,103 @@ class CampaignService {
       localStorage.setItem(STORAGE_KEY_AUDIT_LOGS, JSON.stringify(this.auditLogs));
     } catch {}
     this.notify();
+  }
+
+  private savePaymentVisitors(): void {
+    try {
+      localStorage.setItem(STORAGE_KEY_PAYMENT_VISITORS, JSON.stringify(this.paymentVisitors));
+    } catch {}
+    this.notify();
+  }
+
+  // --- PAYMENT / OFFER SCREEN VISITORS API & CRM ACTIONS ---
+  public getPaymentVisitors(): PaymentVisitor[] {
+    return [...this.paymentVisitors];
+  }
+
+  public recordPaymentVisitor(visitor: Partial<PaymentVisitor>): { recorded: boolean; visitor: PaymentVisitor } {
+    const today = new Date().toISOString().slice(0, 10);
+    const existing = this.paymentVisitors.find(
+      (v) => (v.userId === visitor.userId || (visitor.phone && v.phone === visitor.phone)) &&
+             v.visitDate === today &&
+             v.visitedScreen === visitor.visitedScreen
+    );
+
+    if (existing) {
+      return { recorded: false, visitor: existing };
+    }
+
+    const newEntry: PaymentVisitor = {
+      id: `vis_${Date.now()}`,
+      userId: visitor.userId || 'user_guest',
+      name: visitor.name || 'Member',
+      memberId: visitor.memberId || 'SM-' + Math.floor(1000 + Math.random() * 9000),
+      phone: visitor.phone || '',
+      email: visitor.email || '',
+      avatar: visitor.avatar || '',
+      city: visitor.city || 'Sindhi Matrimony User',
+      gender: visitor.gender || 'Unknown',
+      age: visitor.age || 28,
+      currentPlan: visitor.currentPlan || 'FREE_MEMBER',
+      visitedScreen: visitor.visitedScreen || 'PAYMENT_UPGRADE',
+      visitedScreenTitle: visitor.visitedScreenTitle || 'Payment & Membership Upgrade Plans',
+      visitedAt: new Date().toISOString(),
+      visitDate: today,
+      visitCountToday: 1,
+      totalHistoricalVisits: 1,
+      status: 'NEW_VISIT',
+      notes: visitor.notes || 'Recorded via In-App screen view',
+    };
+
+    this.paymentVisitors.unshift(newEntry);
+    this.savePaymentVisitors();
+
+    // Background push to backend
+    fetch(`${BASE_URL}/api/v1/plans/visits`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newEntry),
+    }).catch(() => {});
+
+    return { recorded: true, visitor: newEntry };
+  }
+
+  public updatePaymentVisitorStatus(
+    id: string,
+    status: PaymentVisitor['status'],
+    notes?: string
+  ): void {
+    const visitor = this.paymentVisitors.find((v) => v.id === id);
+    if (visitor) {
+      visitor.status = status;
+      if (notes) visitor.notes = notes;
+      if (status === 'CONTACTED') visitor.lastContactedAt = new Date().toISOString();
+      this.savePaymentVisitors();
+
+      // Background patch to backend
+      fetch(`${BASE_URL}/api/v1/plans/visits/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, notes }),
+      }).catch(() => {});
+    }
+  }
+
+  public getPaymentVisitorsStats() {
+    const list = this.paymentVisitors;
+    const today = new Date().toISOString().slice(0, 10);
+    const todayVisits = list.filter((v) => v.visitDate === today);
+    const freeTierHighIntent = list.filter((v) => v.currentPlan === 'FREE_MEMBER');
+    const converted = list.filter((v) => v.status === 'CONVERTED');
+    const pendingFollowup = list.filter((v) => v.status === 'NEW_VISIT');
+
+    return {
+      total: list.length,
+      todayCount: todayVisits.length,
+      freeTierHighIntentCount: freeTierHighIntent.length,
+      convertedCount: converted.length,
+      pendingFollowupCount: pendingFollowup.length,
+    };
   }
 
   public subscribe(listener: () => void): () => void {
