@@ -4,7 +4,6 @@ import {
   Save,
   RotateCcw,
   Eye,
-  CheckCircle2,
   Clock,
   Layers,
   Smartphone,

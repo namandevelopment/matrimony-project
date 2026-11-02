@@ -99,8 +99,6 @@ export const FAQ_LIST: FAQItem[] = [
   },
 ];
 
-const INITIAL_TICKETS: SupportTicket[] = [];
-
 const STORAGE_KEY = 'sindhi_matrimony_support_tickets_v1';
 
 class SupportService {

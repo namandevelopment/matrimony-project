@@ -50,8 +50,6 @@ export interface PaymentKPIs {
 const STORAGE_KEY = 'sindhi_admin_payment_transactions_v2';
 
 // Realistic timestamps relative to 11 Oct 2026
-// Current base timestamp: 11 Oct 2026 ~ 1791676800000
-const NOW_TS = new Date(2026, 9, 11, 16, 30).getTime();
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const INITIAL_PAYMENT_TRANSACTIONS: PaymentTransaction[] = [];

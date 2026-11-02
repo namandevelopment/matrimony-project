@@ -78,8 +78,6 @@ const INITIAL_EMPLOYEE_VALUES: EmployeeFormValues = {
   allowedSections: ['leads', 'tasks'],
 };
 
-const initialMockEmployees: Employee[] = [];
-
 export const EmployeeScreen: React.FC = () => {
   const navigate = useNavigate();
 

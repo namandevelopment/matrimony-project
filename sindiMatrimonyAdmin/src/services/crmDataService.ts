@@ -26,7 +26,7 @@ import type {
   BlacklistedIdentity,
   SafetyActionType,
 } from '../types/crm.types';
-import { getDefaultPermissionsForRole, getDefaultAllowedSectionsForRole } from '../utils/rbac';
+import { getDefaultAllowedSectionsForRole } from '../utils/rbac';
 import { subcasteGotraService } from './subcasteGotraService';
 
 const STORAGE_KEY = 'sindhi_matrimony_crm_state_v1';

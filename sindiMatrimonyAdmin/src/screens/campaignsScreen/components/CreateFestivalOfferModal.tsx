@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import {
   X,
   Sparkles,
@@ -167,11 +167,17 @@ export const CreateFestivalOfferModal: React.FC<CreateFestivalOfferModalProps> =
     validateOnBlur: true,
   });
 
+  const lastOpenedIdRef = useRef<string | null | undefined>(undefined);
+  const wasOpenRef = useRef<boolean>(false);
+
   useEffect(() => {
-    if (isOpen) {
+    const currentId = initialData ? (initialData.id || (initialData as any)._id) : 'create_new';
+    if (isOpen && (!wasOpenRef.current || lastOpenedIdRef.current !== currentId)) {
       reset(getInitialOfferValues(initialData));
+      lastOpenedIdRef.current = currentId;
     }
-  }, [initialData, isOpen, reset]);
+    wasOpenRef.current = isOpen;
+  }, [isOpen, initialData]);
 
   // Dynamic calculated plan overrides based on discount rules
   const calculatedPlanOverrides: PlanRateOverride[] = useMemo(() => {

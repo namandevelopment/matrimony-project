@@ -5,13 +5,10 @@ import {
   Phone,
   MessageCircle,
   Mail,
-  CheckCircle2,
   Clock,
   Sparkles,
   UserCheck,
   ShieldAlert,
-  ArrowUpRight,
-  Filter,
   Check,
   Tag,
   Flame,
@@ -185,7 +182,7 @@ export const PaymentVisitorsSection: React.FC = () => {
             <CustomTextInput
               placeholder="Search by name, phone, member ID..."
               value={searchQuery}
-              onChangeText={setSearchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               leftIcon={<Search className="w-4 h-4 text-slate-400" />}
             />
           </div>

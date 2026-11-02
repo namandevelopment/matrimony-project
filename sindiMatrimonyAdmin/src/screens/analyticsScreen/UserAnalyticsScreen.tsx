@@ -9,13 +9,9 @@ import {
   Smartphone,
   Globe,
   Search,
-  Filter,
   RefreshCw,
   Flame,
-  ArrowUpRight,
   Activity,
-  Layers,
-  CheckCircle2,
 } from 'lucide-react';
 import {
   type UserSessionEvent,
@@ -318,7 +314,7 @@ export const UserAnalyticsScreen: React.FC = () => {
             <CustomTextInput
               placeholder="Search member name, ID, phone..."
               value={searchQuery}
-              onChangeText={setSearchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               leftIcon={<Search className="w-4 h-4 text-slate-400" />}
             />
           </div>

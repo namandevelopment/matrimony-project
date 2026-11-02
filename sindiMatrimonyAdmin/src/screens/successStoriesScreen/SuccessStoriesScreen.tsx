@@ -87,6 +87,7 @@ const mapApiStoryToModel = (s: any): SuccessStory => ({
   featuredOnHome: Boolean(s.featuredOnHome ?? s.isFeatured ?? true),
   profilesArchived: Boolean(s.profilesArchived ?? false),
   createdAt: s.createdAt ? (typeof s.createdAt === 'string' ? s.createdAt.slice(0, 10) : new Date(s.createdAt).toISOString().slice(0, 10)) : new Date().toISOString().slice(0, 10),
+  updatedAt: s.updatedAt ? (typeof s.updatedAt === 'string' ? s.updatedAt.slice(0, 10) : new Date(s.updatedAt).toISOString().slice(0, 10)) : new Date().toISOString().slice(0, 10),
 });
 
 export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
@@ -149,10 +150,6 @@ export const SuccessStoriesScreen: React.FC = memoWithDeepEqual(() => {
   }, []);
 
   useEffect(() => {
-    fetchStoriesFromBackend();
-  }, [fetchStoriesFromBackend]);
-
-  const refreshStories = useCallback(() => {
     fetchStoriesFromBackend();
   }, [fetchStoriesFromBackend]);
 

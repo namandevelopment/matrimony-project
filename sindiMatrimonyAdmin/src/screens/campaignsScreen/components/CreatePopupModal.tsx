@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Sparkles,
@@ -13,6 +13,7 @@ import {
   Search as SearchIcon,
   User,
   Home,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   type InAppPopup,
@@ -38,6 +39,25 @@ interface CreatePopupModalProps {
   ) => void;
   initialData?: InAppPopup | null;
 }
+
+const SAMPLE_BANNERS = [
+  {
+    name: 'Diwali Festive Lights',
+    url: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    name: 'Royal Wedding Sindhi',
+    url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    name: 'Celebration Sparkles Gold',
+    url: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    name: 'Trust & Shield Protection',
+    url: 'https://images.unsplash.com/photo-1544027993-37dbfe43562a?auto=format&fit=crop&w=800&q=80',
+  },
+];
 
 export interface PopupFormValues {
   internalName: string;
@@ -94,23 +114,24 @@ const getInitialPopupValues = (initialData?: InAppPopup | null): PopupFormValues
     };
   }
   return {
-    internalName: '',
-    title: '',
-    subtitle: '',
-    message: '',
-    bannerImageUrl: '',
-    originalPrice: '',
-    discountedPrice: '',
-    discountLabel: '',
-    couponCode: '',
-    ctaText: '',
+    internalName: 'Diwali 60% Gold Festive Banner',
+    title: '🎆 Diwali Vivah Special — 60% OFF!',
+    subtitle: 'Exclusive Sindhi Community Promotion',
+    message:
+      'Unlock unlimited parent contact numbers, instant Kundli match view & direct WhatsApp messaging at special festival rates.',
+    bannerImageUrl: SAMPLE_BANNERS[0].url,
+    originalPrice: 4999,
+    discountedPrice: 1999,
+    discountLabel: 'FLAT 60% OFF',
+    couponCode: 'DIWALI60',
+    ctaText: 'Claim Festive Plan @ ₹1,999',
     ctaLink: '/settings/membership-plans',
     ctaType: 'MEMBERSHIP_PLANS',
     targetAudience: 'FREE_USERS',
     platform: 'BOTH',
     placement: 'DASHBOARD',
     priority: 1,
-    frequencyPolicy: 'ONCE_PER_USER',
+    frequencyPolicy: 'ONCE_PER_DAY',
     maxImpressionsPerUser: 3,
     dismissalPolicy: 'CROSS_DEVICE_PERSISTENT',
     linkedCampaignId: '',
@@ -153,16 +174,21 @@ export const CreatePopupModal: React.FC<CreatePopupModalProps> = ({
 
   // Mobile Preview dismissal state simulation
   const [isPreviewDismissed, setIsPreviewDismissed] = useState(false);
+  const lastOpenedIdRef = useRef<string | null | undefined>(undefined);
+  const wasOpenRef = useRef<boolean>(false);
 
   // Available offers for linking
   const offers = campaignService.getOffers();
 
   useEffect(() => {
-    if (isOpen) {
+    const currentId = initialData ? (initialData.id || (initialData as any)._id) : 'create_new';
+    if (isOpen && (!wasOpenRef.current || lastOpenedIdRef.current !== currentId)) {
       reset(getInitialPopupValues(initialData));
       setIsPreviewDismissed(false);
+      lastOpenedIdRef.current = currentId;
     }
-  }, [initialData, isOpen, reset]);
+    wasOpenRef.current = isOpen;
+  }, [isOpen, initialData]);
 
   if (!isOpen) return null;
 
@@ -245,7 +271,7 @@ export const CreatePopupModal: React.FC<CreatePopupModalProps> = ({
             {/* Internal Name & Linked Campaign */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <CustomTextInput
-                label="Internal Popup Name *"
+                label="Internal Popup Name"
                 value={values.internalName}
                 onChange={(e) => setFieldValue('internalName', e.target.value)}
                 error={touched.internalName ? errors.internalName : undefined}
@@ -270,7 +296,7 @@ export const CreatePopupModal: React.FC<CreatePopupModalProps> = ({
 
             {/* Title & Subtitle */}
             <CustomTextInput
-              label="Popup Headline Title *"
+              label="Popup Headline Title"
               value={values.title}
               onChange={(e) => setFieldValue('title', e.target.value)}
               error={touched.title ? errors.title : undefined}
@@ -308,17 +334,33 @@ export const CreatePopupModal: React.FC<CreatePopupModalProps> = ({
             {/* Banner Creative */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 block">Banner Image Creative *</label>
-              {values.bannerImageUrl && (
-                <div className="mb-2 max-w-xs rounded-xl overflow-hidden border border-slate-200 aspect-video">
-                  <img src={values.bannerImageUrl} alt="Banner Preview" className="w-full h-full object-cover" />
-                </div>
-              )}
+              <div className="grid grid-cols-4 gap-2 mb-2">
+                {SAMPLE_BANNERS.map((banner) => (
+                  <button
+                    key={banner.name}
+                    type="button"
+                    onClick={() => setFieldValue('bannerImageUrl', banner.url)}
+                    className={`relative rounded-xl overflow-hidden border-2 aspect-video transition cursor-pointer ${
+                      values.bannerImageUrl === banner.url
+                        ? 'border-[#C81E28] ring-2 ring-rose-300'
+                        : 'border-slate-200 opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={banner.url} alt={banner.name} className="w-full h-full object-cover" />
+                    {values.bannerImageUrl === banner.url && (
+                      <div className="absolute top-1 right-1 bg-[#C81E28] text-white p-0.5 rounded-full">
+                        <CheckCircle2 className="w-3 h-3" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
               <CustomTextInput
                 type="url"
                 value={values.bannerImageUrl}
                 onChange={(e) => setFieldValue('bannerImageUrl', e.target.value)}
                 error={touched.bannerImageUrl ? errors.bannerImageUrl : undefined}
-                placeholder="Enter banner image URL (e.g. https://...)"
+                placeholder="Or enter custom banner image URL (e.g. https://...)"
                 size="sm"
                 required
               />
@@ -366,7 +408,7 @@ export const CreatePopupModal: React.FC<CreatePopupModalProps> = ({
             {/* CTA Configuration */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <CustomTextInput
-                label="CTA Button Text *"
+                label="CTA Button Text"
                 value={values.ctaText}
                 onChange={(e) => setFieldValue('ctaText', e.target.value)}
                 placeholder="e.g. Claim Offer @ ₹1,999"
@@ -375,7 +417,7 @@ export const CreatePopupModal: React.FC<CreatePopupModalProps> = ({
               />
 
               <CustomTextInput
-                label="CTA Destination Route *"
+                label="CTA Destination Route"
                 value={values.ctaLink}
                 onChange={(e) => setFieldValue('ctaLink', e.target.value)}
                 placeholder="e.g. /settings/membership-plans"

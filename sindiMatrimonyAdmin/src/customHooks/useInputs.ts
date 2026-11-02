@@ -161,10 +161,14 @@ export function useInputs<T extends FormValues>(
     onFieldChange,
   } = options;
 
-  // Resolve initial state safely
+  // Resolve initial state safely with stable identity
+  const initialValuesSourceRef = useRef(initialValues);
+  initialValuesSourceRef.current = initialValues;
+
   const resolveInitial = useCallback((): T => {
-    return typeof initialValues === 'function' ? (initialValues as () => T)() : initialValues;
-  }, [initialValues]);
+    const src = initialValuesSourceRef.current;
+    return typeof src === 'function' ? (src as () => T)() : src;
+  }, []);
 
   const [initialValuesState, setInitialValuesState] = useState<T>(resolveInitial);
   const [values, setValuesState] = useState<T>(resolveInitial);

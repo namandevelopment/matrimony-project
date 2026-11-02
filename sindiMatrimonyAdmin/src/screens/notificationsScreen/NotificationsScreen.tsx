@@ -4,6 +4,7 @@ import {
   notificationService,
   type AppNotification,
   type NotificationCategory,
+  type NotificationPriority,
 } from '../../services/notificationService';
 import { toast } from '../../toastMessage/toast';
 import { usePerformanceTracker } from '../../customHooks/usePerformanceTracker';
