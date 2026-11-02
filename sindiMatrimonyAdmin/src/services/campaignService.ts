@@ -1,5 +1,5 @@
 import { notificationService } from './notificationService';
-import { BASE_URL } from '../redux/apiService';
+import { BASE_URL, ApiURL, apiFetch } from '../redux/apiService';
 
 export type TargetAudience =
   | 'ALL'
@@ -254,93 +254,7 @@ const STORAGE_KEY_DISMISSALS = 'sindhi_matrimony_user_popup_dismissals_v2';
 const STORAGE_KEY_AUDIT_LOGS = 'sindhi_matrimony_marketing_audit_logs_v2';
 const STORAGE_KEY_PAYMENT_VISITORS = 'sindhi_matrimony_payment_visitors_v1';
 
-const INITIAL_PAYMENT_VISITORS: PaymentVisitor[] = [
-  {
-    id: 'vis_101',
-    userId: 'user_67890',
-    name: 'Simran Advani',
-    memberId: 'SM-4821',
-    phone: '+91 98201 54321',
-    email: 'simran.advani@gmail.com',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-    city: 'Mumbai, Maharashtra',
-    gender: 'Female',
-    age: 26,
-    currentPlan: 'FREE_MEMBER',
-    visitedScreen: 'PAYMENT_UPGRADE',
-    visitedScreenTitle: 'Payment & Membership Upgrade Plans',
-    visitedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-    visitDate: new Date().toISOString().slice(0, 10),
-    visitCountToday: 1,
-    totalHistoricalVisits: 3,
-    status: 'NEW_VISIT',
-    notes: 'Explored Gold 3-Month Plan on mobile app',
-  },
-  {
-    id: 'vis_102',
-    userId: 'user_67891',
-    name: 'Rohan Chandiramani',
-    memberId: 'SM-4932',
-    phone: '+91 98233 87654',
-    email: 'rohan.c@outlook.com',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
-    city: 'Pune, Maharashtra',
-    gender: 'Male',
-    age: 29,
-    currentPlan: 'FREE_MEMBER',
-    visitedScreen: 'FESTIVAL_OFFERS',
-    visitedScreenTitle: 'Diwali Special 50% Off Offer',
-    visitedAt: new Date(Date.now() - 130 * 60 * 1000).toISOString(),
-    visitDate: new Date().toISOString().slice(0, 10),
-    visitCountToday: 1,
-    totalHistoricalVisits: 1,
-    status: 'CONTACTED',
-    lastContactedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    notes: 'Telecaller called; requested ₹500 off coupon till weekend',
-  },
-  {
-    id: 'vis_103',
-    userId: 'user_67892',
-    name: 'Pooja Vazirani',
-    memberId: 'SM-5104',
-    phone: '+91 97112 34567',
-    email: 'pooja.v@gmail.com',
-    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150',
-    city: 'Ahmedabad, Gujarat',
-    gender: 'Female',
-    age: 27,
-    currentPlan: 'FREE_MEMBER',
-    visitedScreen: 'PAYMENT_UPGRADE',
-    visitedScreenTitle: 'Payment & Membership Upgrade Plans',
-    visitedAt: new Date(Date.now() - 240 * 60 * 1000).toISOString(),
-    visitDate: new Date().toISOString().slice(0, 10),
-    visitCountToday: 1,
-    totalHistoricalVisits: 4,
-    status: 'NEW_VISIT',
-    notes: 'Frequent visitor to pricing screen in past 7 days',
-  },
-  {
-    id: 'vis_104',
-    userId: 'user_67893',
-    name: 'Karan Lulla',
-    memberId: 'SM-5220',
-    phone: '+91 99887 11223',
-    email: 'karan.lulla@yahoo.com',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-    city: 'Ulhasnagar, Thane',
-    gender: 'Male',
-    age: 31,
-    currentPlan: 'FREE_MEMBER',
-    visitedScreen: 'PRIME_MODAL',
-    visitedScreenTitle: 'Prime VIP Membership Dialog',
-    visitedAt: new Date(Date.now() - 360 * 60 * 1000).toISOString(),
-    visitDate: new Date().toISOString().slice(0, 10),
-    visitCountToday: 1,
-    totalHistoricalVisits: 2,
-    status: 'CONVERTED',
-    notes: 'Upgraded to Silver Plan following WhatsApp reminder',
-  },
-];
+const INITIAL_PAYMENT_VISITORS: PaymentVisitor[] = [];
 
 // Initial Mock Campaigns
 const INITIAL_CAMPAIGNS: NotificationCampaign[] = [];
@@ -376,6 +290,33 @@ class CampaignService {
     this.auditLogs = this.loadAuditLogs();
     this.paymentVisitors = this.loadPaymentVisitors();
     this.syncPaymentVisitorsFromApi();
+    this.syncOffersFromApi();
+    this.syncPopupsFromApi();
+  }
+
+  public async syncOffersFromApi(): Promise<FestivalOffer[]> {
+    try {
+      const res = await apiFetch.get<any>(ApiURL.getCampaignOffers);
+      if (res?.data?.offers && Array.isArray(res.data.offers) && res.data.offers.length > 0) {
+        this.offers = res.data.offers;
+        this.saveOffers();
+        return this.offers;
+      }
+    } catch {}
+    return this.offers;
+  }
+
+  public async syncPopupsFromApi(): Promise<InAppPopup[]> {
+    try {
+      const res = await apiFetch.get<any>(ApiURL.getCampaignPopups);
+      const list = res?.data?.popups || res?.data?.list;
+      if (list && Array.isArray(list) && list.length > 0) {
+        this.popups = list;
+        this.savePopups();
+        return this.popups;
+      }
+    } catch {}
+    return this.popups;
   }
 
   // --- STORAGE LOADERS ---
@@ -1072,6 +1013,8 @@ class CampaignService {
     this.offers = [newOffer, ...this.offers];
     this.saveOffers();
 
+    apiFetch.post(ApiURL.createCampaignOffer, newOffer).catch(() => {});
+
     this.logAudit(
       'FESTIVAL_OFFER_CREATED',
       'FESTIVAL_OFFER',
@@ -1086,6 +1029,8 @@ class CampaignService {
   public updateOffer(id: string, updates: Partial<FestivalOffer>): void {
     this.offers = this.offers.map((o) => (o.id === id ? { ...o, ...updates, updatedAt: new Date().toISOString() } : o));
     this.saveOffers();
+
+    apiFetch.put(ApiURL.updateCampaignOffer(id), updates).catch(() => {});
 
     const offer = this.getOfferById(id);
     if (offer) {
@@ -1113,6 +1058,8 @@ class CampaignService {
     });
     this.saveOffers();
 
+    apiFetch.post(ApiURL.toggleCampaignOfferStatus(id), {}).catch(() => {});
+
     const offer = this.getOfferById(id);
     if (offer) {
       this.logAudit(
@@ -1129,6 +1076,8 @@ class CampaignService {
     const offer = this.getOfferById(id);
     this.offers = this.offers.filter((o) => o.id !== id);
     this.saveOffers();
+
+    apiFetch.delete(ApiURL.deleteCampaignOffer(id)).catch(() => {});
 
     if (offer) {
       this.logAudit('FESTIVAL_OFFER_DELETED', 'FESTIVAL_OFFER', offer.id, offer.festivalName, 'Offer removed.');
@@ -1166,6 +1115,8 @@ class CampaignService {
     this.popups = [newPopup, ...this.popups];
     this.savePopups();
 
+    apiFetch.post(ApiURL.createCampaignPopup, newPopup).catch(() => {});
+
     this.logAudit(
       'POPUP_CREATED',
       'POPUP',
@@ -1180,6 +1131,8 @@ class CampaignService {
   public updatePopup(id: string, updates: Partial<InAppPopup>): void {
     this.popups = this.popups.map((p) => (p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p));
     this.savePopups();
+
+    apiFetch.put(ApiURL.updateCampaignPopup(id), updates).catch(() => {});
 
     const popup = this.getPopupById(id);
     if (popup) {
@@ -1202,6 +1155,8 @@ class CampaignService {
     });
     this.savePopups();
 
+    apiFetch.post(ApiURL.toggleCampaignPopupStatus(id), {}).catch(() => {});
+
     const popup = this.getPopupById(id);
     if (popup) {
       this.logAudit(
@@ -1218,6 +1173,8 @@ class CampaignService {
     const popup = this.getPopupById(id);
     this.popups = this.popups.filter((p) => p.id !== id);
     this.savePopups();
+
+    apiFetch.delete(ApiURL.deleteCampaignPopup(id)).catch(() => {});
 
     if (popup) {
       this.logAudit('POPUP_DELETED', 'POPUP', popup.id, popup.title, 'Popup deleted.');
@@ -1243,6 +1200,8 @@ class CampaignService {
     this.popups = [duplicated, ...this.popups];
     this.savePopups();
 
+    apiFetch.post(ApiURL.duplicateCampaignPopup(id), {}).catch(() => {});
+
     this.logAudit('POPUP_DUPLICATED', 'POPUP', duplicated.id, duplicated.title, `Cloned from ${original.title}`);
     return duplicated;
   }
@@ -1266,6 +1225,13 @@ class CampaignService {
       return p;
     });
     this.savePopups();
+
+    // Call server dismiss API for Ludo King persistent dismissal
+    apiFetch.post(ApiURL.dismissPopup(popupId), {
+      userId,
+      reason,
+      clientDate: new Date().toISOString().split('T')[0],
+    }).catch(() => {});
 
     // Persist to user dismissal set (server source of truth)
     const currentList = this.userDismissals[userId] || [];

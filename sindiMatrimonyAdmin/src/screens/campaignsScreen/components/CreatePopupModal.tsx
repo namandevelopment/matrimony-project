@@ -1,11 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Sparkles,
   Percent,
-  Eye,
-  CheckCircle2,
   ShieldCheck,
+  Smartphone,
+  RotateCcw,
+  Wifi,
+  Battery,
+  Bell,
+  Heart,
+  Search as SearchIcon,
+  User,
+  Home,
 } from 'lucide-react';
 import {
   type InAppPopup,
@@ -31,25 +38,6 @@ interface CreatePopupModalProps {
   ) => void;
   initialData?: InAppPopup | null;
 }
-
-const SAMPLE_BANNERS = [
-  {
-    name: 'Diwali Festive Lights',
-    url: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    name: 'Royal Wedding Sindhi',
-    url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    name: 'Celebration Sparkles Gold',
-    url: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    name: 'Trust & Shield Protection',
-    url: 'https://images.unsplash.com/photo-1544027993-37dbfe43562a?auto=format&fit=crop&w=800&q=80',
-  },
-];
 
 export interface PopupFormValues {
   internalName: string;
@@ -106,17 +94,16 @@ const getInitialPopupValues = (initialData?: InAppPopup | null): PopupFormValues
     };
   }
   return {
-    internalName: 'Diwali 60% Gold Festive Banner',
-    title: '🎆 Diwali Vivah Special — 60% OFF!',
-    subtitle: 'Exclusive Sindhi Community Promotion',
-    message:
-      'Unlock unlimited parent contact numbers, instant Kundli match view & direct WhatsApp messaging at special festival rates.',
-    bannerImageUrl: SAMPLE_BANNERS[0].url,
-    originalPrice: 4999,
-    discountedPrice: 1999,
-    discountLabel: 'FLAT 60% OFF',
-    couponCode: 'DIWALI60',
-    ctaText: 'Claim Festive Plan @ ₹1,999',
+    internalName: '',
+    title: '',
+    subtitle: '',
+    message: '',
+    bannerImageUrl: '',
+    originalPrice: '',
+    discountedPrice: '',
+    discountLabel: '',
+    couponCode: '',
+    ctaText: '',
     ctaLink: '/settings/membership-plans',
     ctaType: 'MEMBERSHIP_PLANS',
     targetAudience: 'FREE_USERS',
@@ -164,12 +151,16 @@ export const CreatePopupModal: React.FC<CreatePopupModalProps> = ({
     validateOnBlur: true,
   });
 
+  // Mobile Preview dismissal state simulation
+  const [isPreviewDismissed, setIsPreviewDismissed] = useState(false);
+
   // Available offers for linking
   const offers = campaignService.getOffers();
 
   useEffect(() => {
     if (isOpen) {
       reset(getInitialPopupValues(initialData));
+      setIsPreviewDismissed(false);
     }
   }, [initialData, isOpen, reset]);
 
@@ -317,33 +308,17 @@ export const CreatePopupModal: React.FC<CreatePopupModalProps> = ({
             {/* Banner Creative */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 block">Banner Image Creative *</label>
-              <div className="grid grid-cols-4 gap-2 mb-2">
-                {SAMPLE_BANNERS.map((banner) => (
-                  <button
-                    key={banner.name}
-                    type="button"
-                    onClick={() => setFieldValue('bannerImageUrl', banner.url)}
-                    className={`relative rounded-xl overflow-hidden border-2 aspect-video transition cursor-pointer ${
-                      values.bannerImageUrl === banner.url
-                        ? 'border-[#C81E28] ring-2 ring-rose-200'
-                        : 'border-slate-200 opacity-70 hover:opacity-100'
-                    }`}
-                  >
-                    <img src={banner.url} alt={banner.name} className="w-full h-full object-cover" />
-                    {values.bannerImageUrl === banner.url && (
-                      <div className="absolute top-1 right-1 bg-[#C81E28] text-white p-0.5 rounded-full">
-                        <CheckCircle2 className="w-3 h-3" />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
+              {values.bannerImageUrl && (
+                <div className="mb-2 max-w-xs rounded-xl overflow-hidden border border-slate-200 aspect-video">
+                  <img src={values.bannerImageUrl} alt="Banner Preview" className="w-full h-full object-cover" />
+                </div>
+              )}
               <CustomTextInput
                 type="url"
                 value={values.bannerImageUrl}
                 onChange={(e) => setFieldValue('bannerImageUrl', e.target.value)}
                 error={touched.bannerImageUrl ? errors.bannerImageUrl : undefined}
-                placeholder="Or paste custom image URL..."
+                placeholder="Enter banner image URL (e.g. https://...)"
                 size="sm"
                 required
               />
@@ -528,83 +503,237 @@ export const CreatePopupModal: React.FC<CreatePopupModalProps> = ({
             </div>
           </form>
 
-          {/* Right Live Preview: 5 cols */}
-          <div className="lg:col-span-5 space-y-3">
-            <div className="flex items-center justify-between pb-1 border-b border-slate-200">
+          {/* Right Live Mobile Client Mockup Preview: 5 cols */}
+          <div className="lg:col-span-5 flex flex-col items-center justify-start space-y-3">
+            <div className="w-full flex items-center justify-between pb-1.5 border-b border-slate-200">
               <span className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                <Eye className="w-4 h-4 text-[#C81E28]" />
-                Live Client Render Preview
+                <Smartphone className="w-4 h-4 text-[#C81E28]" />
+                Interactive Mobile Device Preview
               </span>
-              <span className="text-[10px] text-slate-500 font-semibold">Priority #{values.priority}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-slate-500 font-bold px-2 py-0.5 rounded-md bg-slate-100">
+                  Priority #{values.priority}
+                </span>
+                {isPreviewDismissed && (
+                  <button
+                    type="button"
+                    onClick={() => setIsPreviewDismissed(false)}
+                    className="text-[10px] font-bold text-[#C81E28] hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Reset
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* Modal Container Mockup */}
-            <div className="bg-slate-900/60 rounded-3xl p-3 border border-slate-200 shadow-xl flex items-center justify-center">
-              <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-sm w-full overflow-hidden text-center relative animate-scale-up">
-                {/* [X] Close button */}
-                <button
-                  type="button"
-                  className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-xs transition cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+            {/* Smartphone Outer Chassis */}
+            <div className="relative w-full max-w-[320px] rounded-[48px] bg-slate-950 p-2.5 shadow-2xl border-[6px] border-slate-900 ring-1 ring-slate-800 transition-all select-none">
+              {/* Phone Screen Container */}
+              <div className="relative w-full h-[580px] bg-slate-900 rounded-[38px] overflow-hidden flex flex-col justify-between">
+                
+                {/* Dynamic Island Pill */}
+                <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-24 h-5 bg-black rounded-full z-40 flex items-center justify-between px-2.5 shadow-sm">
+                  <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center">
+                    <div className="w-1 h-1 rounded-full bg-blue-500/80" />
+                  </div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-slate-800" />
+                </div>
 
-                {/* Banner */}
-                <div className="relative aspect-video w-full bg-slate-100 overflow-hidden">
-                  <img src={values.bannerImageUrl} alt="banner" className="w-full h-full object-cover" />
-                  {values.discountLabel && (
-                    <div className="absolute top-3 left-3 bg-[#C81E28] text-white px-2.5 py-0.5 rounded-full text-[10px] font-black shadow-md tracking-wider">
-                      {values.discountLabel}
+                {/* Status Bar */}
+                <div className="relative z-30 pt-3 px-6 flex items-center justify-between text-white text-[10px] font-bold">
+                  <span>9:41</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[8px] font-mono px-1 py-0.2 bg-white/20 rounded font-black">5G</span>
+                    <Wifi className="w-3 h-3" />
+                    <Battery className="w-3.5 h-3.5 text-emerald-400" />
+                  </div>
+                </div>
+
+                {/* Background App Screen (Mini Sindhi Matrimony App Mockup) */}
+                <div className="absolute inset-0 pt-10 pb-14 overflow-hidden flex flex-col justify-between bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white">
+                  {/* Mini App Header */}
+                  <div className="px-4 py-2 border-b border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-[#C81E28] flex items-center justify-center text-[10px] font-black text-amber-300 shadow-xs">
+                        ੴ
+                      </div>
+                      <span className="text-xs font-black tracking-tight text-white">Sindhi Matrimony</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-white/70">
+                      <SearchIcon className="w-3.5 h-3.5" />
+                      <Bell className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+
+                  {/* App Feed Mock Content */}
+                  <div className="p-3 space-y-2.5 opacity-40 blur-[0.5px]">
+                    <div className="text-[11px] font-extrabold text-white/90">
+                      Jai Jhulelal 🙏 <span className="text-amber-400">Rahul Lalwani</span>
+                    </div>
+
+                    {/* Match Card Mockup */}
+                    <div className="bg-white/10 rounded-2xl p-2.5 border border-white/15 space-y-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center text-white font-bold text-xs shadow-inner">
+                          VK
+                        </div>
+                        <div className="space-y-0.5 text-left">
+                          <div className="text-xs font-bold text-white flex items-center gap-1">
+                            Vandana K. (26)
+                            <span className="text-[9px] text-emerald-400 font-extrabold">94%</span>
+                          </div>
+                          <div className="text-[10px] text-white/70">CA, Ahmedabad • Gotra: Bakhru</div>
+                          <div className="text-[9px] text-amber-300 font-semibold">Verified Sindhi Family</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Secondary Match Card Mockup */}
+                    <div className="bg-white/10 rounded-2xl p-2.5 border border-white/15 space-y-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs shadow-inner">
+                          PS
+                        </div>
+                        <div className="space-y-0.5 text-left">
+                          <div className="text-xs font-bold text-white flex items-center gap-1">
+                            Pooja S. (25)
+                            <span className="text-[9px] text-emerald-400 font-extrabold">91%</span>
+                          </div>
+                          <div className="text-[10px] text-white/70">Software Engineer, Mumbai</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* App Bottom Tab Navigation */}
+                  <div className="px-5 py-2 border-t border-white/10 flex items-center justify-between text-white/50 text-[9px] bg-slate-950/80">
+                    <div className="flex flex-col items-center gap-0.5 text-[#C81E28] font-bold">
+                      <Home className="w-3.5 h-3.5" />
+                      <span>Home</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <Heart className="w-3.5 h-3.5" />
+                      <span>Matches</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <SearchIcon className="w-3.5 h-3.5" />
+                      <span>Search</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <User className="w-3.5 h-3.5" />
+                      <span>Profile</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Overlaid Promotional Popup Modal */}
+                <div className="absolute inset-0 z-30 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3">
+                  {isPreviewDismissed ? (
+                    /* Dismissed State (Simulating Ludo King Day-Cap Behavior) */
+                    <div className="bg-slate-900/95 border border-white/20 rounded-2xl p-4 text-center max-w-[260px] w-full space-y-3 shadow-2xl animate-scale-up text-white">
+                      <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-400 mx-auto flex items-center justify-center">
+                        <X className="w-5 h-5 stroke-[2.5]" />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-black text-white">Popup Dismissed for Today!</h4>
+                        <p className="text-[10px] text-slate-300 leading-relaxed">
+                          Ludo King Daily Rule Active: This user will not see this popup again today even upon re-login.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsPreviewDismissed(false)}
+                        className="w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-[#C81E28] text-white text-[10px] font-black hover:opacity-95 transition shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        <span>Re-trigger Live Popup</span>
+                      </button>
+                    </div>
+                  ) : (
+                    /* Active Popup Card */
+                    <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-[270px] w-full overflow-hidden text-center relative animate-scale-up flex flex-col">
+                      {/* [X] Close button */}
+                      <button
+                        type="button"
+                        onClick={() => setIsPreviewDismissed(true)}
+                        title="Simulate Cross Dismissal (Ludo King Day Cap)"
+                        className="absolute top-2.5 right-2.5 z-40 w-7 h-7 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center backdrop-blur-xs transition cursor-pointer shadow-md active:scale-90"
+                      >
+                        <X className="w-3.5 h-3.5 stroke-[2.5]" />
+                      </button>
+
+                      {/* Banner Image */}
+                      <div className="relative aspect-video w-full bg-slate-900 overflow-hidden">
+                        <img
+                          src={values.bannerImageUrl || 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80'}
+                          alt="banner"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                        {values.discountLabel && (
+                          <div className="absolute top-2 left-2 bg-[#C81E28] text-white px-2 py-0.5 rounded-full text-[9px] font-black shadow-md tracking-wider">
+                            {values.discountLabel}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="p-3.5 space-y-2">
+                        {values.subtitle && (
+                          <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-100 text-amber-900 border border-amber-200">
+                            {values.subtitle}
+                          </span>
+                        )}
+
+                        <h3 className="text-xs font-black text-slate-900 leading-snug">
+                          {values.title || 'Popup Title'}
+                        </h3>
+
+                        <p className="text-[10px] text-slate-600 leading-relaxed line-clamp-3">
+                          {values.message || 'Your dynamic message text here.'}
+                        </p>
+
+                        {/* Pricing Comparison */}
+                        {values.discountedPrice && (
+                          <div className="bg-slate-50 border border-slate-200/80 rounded-xl py-1 px-2 flex items-center justify-center gap-2">
+                            {values.originalPrice && (
+                              <span className="text-[10px] text-slate-400 line-through font-semibold">
+                                ₹{Number(values.originalPrice).toLocaleString('en-IN')}
+                              </span>
+                            )}
+                            <span className="text-sm font-black text-emerald-600">
+                              ₹{Number(values.discountedPrice).toLocaleString('en-IN')}
+                            </span>
+                            {values.couponCode && (
+                              <span className="text-[9px] bg-rose-50 border border-rose-200 text-rose-700 px-1.5 py-0.5 rounded-md font-mono font-bold">
+                                {values.couponCode}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* CTA Button */}
+                        <button
+                          type="button"
+                          className="w-full py-2 px-3 rounded-xl text-[11px] font-black text-white bg-gradient-to-r from-[#991B1B] via-[#C81E28] to-[#E11D48] shadow-md shadow-rose-900/20 hover:opacity-95 transition cursor-pointer"
+                        >
+                          {values.ctaText || 'Claim Offer'}
+                        </button>
+
+                        <div className="text-[9px] text-slate-400 font-medium">
+                          Tap [X] above to test 1-day dismissal
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
 
-                {/* Content */}
-                <div className="p-5 space-y-3">
-                  {values.subtitle && (
-                    <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-200">
-                      {values.subtitle}
-                    </span>
-                  )}
-
-                  <h3 className="text-base font-black text-slate-900 leading-snug">
-                    {values.title || 'Popup Title'}
-                  </h3>
-
-                  <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">
-                    {values.message || 'Your dynamic message text here.'}
-                  </p>
-
-                  {/* Pricing Comparison */}
-                  {values.discountedPrice && (
-                    <div className="bg-slate-50 border border-slate-200/80 rounded-2xl py-2 px-3 flex items-center justify-center gap-3">
-                      {values.originalPrice && (
-                        <span className="text-xs text-slate-400 line-through font-semibold">
-                          ₹{Number(values.originalPrice).toLocaleString('en-IN')}
-                        </span>
-                      )}
-                      <span className="text-lg font-black text-emerald-600">
-                        ₹{Number(values.discountedPrice).toLocaleString('en-IN')}
-                      </span>
-                      {values.couponCode && (
-                        <span className="text-[10px] bg-rose-50 border border-rose-200 text-rose-700 px-2 py-0.5 rounded-md font-mono font-bold">
-                          {values.couponCode}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* CTA Button */}
-                  <button
-                    type="button"
-                    className="w-full py-2.5 px-4 rounded-2xl text-xs font-black text-white bg-gradient-to-r from-[#991B1B] via-[#C81E28] to-[#E11D48] shadow-md shadow-rose-900/20 hover:opacity-95 transition"
-                  >
-                    {values.ctaText || 'Claim Offer'}
-                  </button>
-
-                  <div className="text-[10px] text-slate-400 font-medium">
-                    Tapping [X] records server dismissal under policy: {values.frequencyPolicy}
-                  </div>
+                {/* Bottom Home Indicator Bar */}
+                <div className="relative z-30 pb-1.5 flex justify-center">
+                  <div className="w-28 h-1 bg-white/40 rounded-full" />
                 </div>
               </div>
             </div>

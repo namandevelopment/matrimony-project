@@ -30,6 +30,11 @@ import {
 import {
   getActiveAdvertisements,
   trackAdClick,
+  getActiveCampaignPopups,
+  dismissCampaignPopup,
+  recordPopupInteraction,
+  resetPopupDismissal,
+  getActiveFestivalOffers,
 } from "../controllers/campaigns/index.js";
 import { reportClientCrash } from "../controllers/admin/adminNotificationController.js";
 
@@ -76,6 +81,13 @@ router.post("/horoscope/save-rashi", saveUserRashi);
 router.get("/ads", getActiveAdvertisements);
 router.get("/feed/partner-deals", getActiveAdvertisements);
 router.post("/ads/:id/click", trackAdClick);
+
+// 4c. Client Promotional Popups & Daily Dismissal (Ludo King logic)
+router.get("/campaigns/popups/active", getActiveCampaignPopups);
+router.post("/campaigns/popups/:id/dismiss", dismissCampaignPopup);
+router.post("/campaigns/popups/:id/interaction", recordPopupInteraction);
+router.post("/campaigns/popups/:id/reset-dismissal", resetPopupDismissal);
+router.get("/campaigns/offers/active", getActiveFestivalOffers);
 
 
 // 5. Matchmaking, Search & Interests Router

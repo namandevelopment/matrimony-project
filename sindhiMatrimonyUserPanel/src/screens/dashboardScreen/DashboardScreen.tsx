@@ -17,6 +17,7 @@ import { MailboxSearchInput } from "@/screens/interestsScreen/components";
 import { DashboardNavProvider } from "./context/DashboardNavContext";
 import { FloatingChatWidget } from "@/screens/matchesScreen/components";
 import { NotificationsScreen } from "@/screens/notificationsScreen";
+import { PromotionalCampaignModal } from "@/components/PromotionalCampaignModal";
 import { useGlobalModal } from "@/customModals";
 import { useProfileQuery } from "@/tanstackQuery";
 import type {
@@ -194,6 +195,12 @@ const DashboardScreenComponent: React.FC<DashboardScreenProps> = ({
 
         {/* 5. Floating Chat Widget */}
         <FloatingChatWidget />
+
+        {/* 6. Dynamic Promotional Campaign In-App Popup (Ludo King Day-Cap) */}
+        <PromotionalCampaignModal
+          userId={user?.matrimonyId || "guest_user"}
+          onNavigate={(route) => router.push(route)}
+        />
       </div>
     </DashboardNavProvider>
   );

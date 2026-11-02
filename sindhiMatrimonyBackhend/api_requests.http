@@ -1356,6 +1356,129 @@ GET {{baseUrl}}/admin/campaigns/CMP_101/analytics
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
+### 15.14 Update Promotional Popup (Admin)
+PUT {{baseUrl}}/admin/campaigns/popups/POPUP_201
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "title": "Cheti Chand Mahotsav: 60% Mega Discount",
+  "subtitle": "Updated Auspicious Festive Offer",
+  "message": "Special Sindhi community blessing rates updated dynamically.",
+  "originalPrice": 4999,
+  "discountedPrice": 1999,
+  "discountLabel": "FLAT 60% OFF",
+  "couponCode": "CHETI60",
+  "discountPercentage": 60,
+  "isActive": true
+}
+
+### 15.15 Toggle Promotional Popup Active/Paused Status (Admin)
+POST {{baseUrl}}/admin/campaigns/popups/POPUP_201/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 15.16 Duplicate Promotional Popup as Draft (Admin)
+POST {{baseUrl}}/admin/campaigns/popups/POPUP_201/duplicate
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 15.17 Delete Promotional Popup (Admin)
+DELETE {{baseUrl}}/admin/campaigns/popups/POPUP_203
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 15.18 List All Festival & Offer Campaigns (Admin)
+GET {{baseUrl}}/admin/campaigns/offers?status=ALL
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 15.19 Create New Festival Offer Campaign (Admin)
+POST {{baseUrl}}/admin/campaigns/offers
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "festivalName": "Navratri Dandiya Vivah Festival",
+  "offerTitle": "Navratri Special 50% Off On All Plans",
+  "tagline": "Celebrate 9 Days of Divine Blessings with Premium Matchmaking",
+  "badge": "Navratri Dhamaka 💃",
+  "discountType": "PERCENTAGE",
+  "discountValue": 50,
+  "couponCode": "DANDIYA50",
+  "maxDiscount": 5000,
+  "minPurchaseAmount": 1999,
+  "bannerUrl": "https://images.unsplash.com/photo-1514565131-fce0801e5785?auto=format&fit=crop&w=1200&q=80",
+  "startDate": "2026-11-01T00:00:00.000Z",
+  "endDate": "2026-11-15T23:59:59.000Z",
+  "maxRedemptions": 500,
+  "isActive": true,
+  "autoCreatePopup": true,
+  "planOverrides": [
+    {
+      "planId": "gold_3m",
+      "planName": "Sindhi Gold (3 Months)",
+      "originalPrice": 4999,
+      "festivalPrice": 2499,
+      "discountPercentage": 50,
+      "validityDays": 90
+    }
+  ],
+  "terms": [
+    "Offer valid strictly till Navratri ends.",
+    "Instant activation upon payment."
+  ]
+}
+
+### 15.20 Update Festival Offer Campaign (Admin)
+PUT {{baseUrl}}/admin/campaigns/offers/offer_diwali_2026
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "tagline": "Updated Diwali Flat 65% Off with Free Kundli Matching",
+  "discountValue": 65,
+  "couponCode": "DIWALI65"
+}
+
+### 15.21 Toggle Festival Offer Active/Paused Status (Admin)
+POST {{baseUrl}}/admin/campaigns/offers/offer_diwali_2026/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 15.22 Delete Festival Offer (Admin)
+DELETE {{baseUrl}}/admin/campaigns/offers/offer_diwali_2026
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 15.23 Client / Mobile App: Get Active Promotional Popups (Ludo King logic)
+# Returns popups ONLY if user has NOT dismissed it today.
+GET {{baseUrl}}/campaigns/popups/active?placement=DASHBOARD&platform=BOTH&userId=usr_sample_free
+Content-Type: application/json
+
+### 15.24 Client / Mobile App: User Clicks Cross [X] Button -> Dismiss Popup For Today
+# Calling this records the dismissal for today. User will NOT see this popup again today!
+POST {{baseUrl}}/campaigns/popups/POPUP_201/dismiss
+Content-Type: application/json
+
+{
+  "userId": "usr_sample_free",
+  "reason": "USER_CLICKED_CROSS_CLOSE",
+  "clientDate": "2026-11-02"
+}
+
+### 15.25 Client / Mobile App: Record Popup Impression or CTA Click
+POST {{baseUrl}}/campaigns/popups/POPUP_201/interaction
+Content-Type: application/json
+
+{
+  "type": "CLICK"
+}
+
+### 15.26 Client / Mobile App: Get Active Festival Offers
+GET {{baseUrl}}/campaigns/offers/active
+Content-Type: application/json
+
 ### ============================================================================
 ### 15b. ADVERTISEMENTS & PARTNER DEALS MODULE (`/ads`)
 ### ============================================================================

@@ -48,6 +48,10 @@ const ALLOWED_POPUP_PLACEMENTS = [
   "UPGRADE_PROMPT",
   "HOME_POPUP",
   "DISCOVER_BANNER",
+  "DASHBOARD",
+  "MOBILE_HOME",
+  "MEMBERSHIP_SCREEN",
+  "PROFILE_SCREEN",
 ];
 
 const AUDIENCE_ESTIMATES = {
@@ -256,17 +260,30 @@ let adminCampaignsStore = [
 let adminPopupsStore = [
   {
     _id: "popup_seed_001",
+    id: "POPUP_201",
     popupId: "POPUP_201",
+    internalName: "Cheti Chand Mahotsav Modal",
     title: "Cheti Chand Mahotsav: 50% Off Gold Membership",
-    subtitle: "Find your life partner in the auspicious month of Chaitra",
+    subtitle: "Festive Dhamaka 🔥",
+    message: "Find your life partner in the auspicious month of Chaitra with exclusive verified contacts.",
     bannerUrl: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80",
-    placement: "DISCOUNT_MODAL",
+    bannerImageUrl: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80",
+    originalPrice: 4999,
+    discountedPrice: 2499,
+    discountLabel: "FLAT 50% OFF",
+    placement: "DASHBOARD",
     targetPlatform: "BOTH",
     ctaText: "Claim 50% Off Now",
-    ctaLink: "/plans?coupon=CHETI50",
+    ctaLink: "/settings/membership-plans",
+    ctaType: "MEMBERSHIP_PLANS",
     couponCode: "CHETI50",
     discountPercentage: 50,
+    targetAudience: "FREE_USERS",
+    frequencyPolicy: "ONCE_PER_DAY",
+    maxImpressionsPerUser: 3,
+    dismissalPolicy: "CROSS_DEVICE_PERSISTENT",
     status: "ACTIVE",
+    isActive: true,
     dismissible: true,
     frequencyCapPerDay: 1,
     priority: 1,
@@ -275,22 +292,36 @@ let adminPopupsStore = [
     views: 18450,
     clicks: 1210,
     conversions: 245,
+    dismissals: 3420,
+    impressionsCount: 18450,
+    ctaClicksCount: 1210,
+    dismissCount: 3420,
     ctr: "6.56%",
     createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
     _id: "popup_seed_002",
+    id: "POPUP_202",
     popupId: "POPUP_202",
+    internalName: "KYC Verification Prompt",
     title: "Get Government ID Verified for Blue Badge",
-    subtitle: "Verified badges receive 300% more interest and trust from parents",
+    subtitle: "Trust & Safety 🛡️",
+    message: "Verified badges receive 300% more interest and trust from parents and matches.",
     bannerUrl: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=800&q=80",
-    placement: "HOME_SPLASH",
+    bannerImageUrl: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=800&q=80",
+    placement: "MOBILE_HOME",
     targetPlatform: "MOBILE",
     ctaText: "Upload Aadhaar / Passport",
     ctaLink: "/verifications/upload",
+    ctaType: "PROFILE_VERIFY",
     couponCode: "",
     discountPercentage: 0,
+    targetAudience: "UNVERIFIED_PROFILES",
+    frequencyPolicy: "ONCE_PER_DAY",
+    maxImpressionsPerUser: 3,
+    dismissalPolicy: "CROSS_DEVICE_PERSISTENT",
     status: "ACTIVE",
+    isActive: true,
     dismissible: true,
     frequencyCapPerDay: 1,
     priority: 2,
@@ -299,34 +330,172 @@ let adminPopupsStore = [
     views: 9420,
     clicks: 812,
     conversions: 340,
+    dismissals: 1820,
+    impressionsCount: 9420,
+    ctaClicksCount: 812,
+    dismissCount: 1820,
     ctr: "8.62%",
     createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
     _id: "popup_seed_003",
+    id: "POPUP_203",
     popupId: "POPUP_203",
+    internalName: "Royal Diamond Concierge Upgrade",
     title: "Upgrade to Royal Diamond Concierge",
-    subtitle: "Personal Relationship Manager dedicated to finding matches for your family",
+    subtitle: "Personal VIP Matchmaker",
+    message: "Personal Relationship Manager dedicated to finding matches for your family.",
     bannerUrl: "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=800&q=80",
-    placement: "UPGRADE_PROMPT",
-    targetPlatform: "WEB",
+    bannerImageUrl: "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=800&q=80",
+    originalPrice: 15999,
+    discountedPrice: 13599,
+    discountLabel: "SAVE ₹2,400",
+    placement: "MEMBERSHIP_SCREEN",
+    targetPlatform: "BOTH",
     ctaText: "Speak with Concierge",
     ctaLink: "/assisted-service",
+    ctaType: "OFFER_DETAILS",
     couponCode: "ROYALVIP",
     discountPercentage: 15,
-    status: "SCHEDULED",
-    dismissible: false,
+    targetAudience: "ALL",
+    frequencyPolicy: "ONCE_PER_DAY",
+    maxImpressionsPerUser: 3,
+    dismissalPolicy: "CROSS_DEVICE_PERSISTENT",
+    status: "ACTIVE",
+    isActive: true,
+    dismissible: true,
     frequencyCapPerDay: 1,
     priority: 3,
-    startDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+    startDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     endDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
-    views: 0,
-    clicks: 0,
-    conversions: 0,
-    ctr: "0.00%",
+    views: 4200,
+    clicks: 340,
+    conversions: 85,
+    dismissals: 910,
+    impressionsCount: 4200,
+    ctaClicksCount: 340,
+    dismissCount: 910,
+    ctr: "8.10%",
     createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
   },
 ];
+
+// Seed in-memory store for Festival & Offer Campaigns
+let adminOffersStore = [
+  {
+    id: "offer_diwali_2026",
+    _id: "offer_diwali_2026",
+    festivalName: "Diwali Mahabachat Vivah Mahotsav",
+    offerTitle: "Diwali Mahabachat Vivah Mahotsav",
+    tagline: "Deepavali Special Flat 60% Off on all Sindhi Elite Membership Plans",
+    badge: "Diwali Dhamaka 🔥",
+    discountType: "PERCENTAGE",
+    discountValue: 60,
+    couponCode: "DIWALI60",
+    maxDiscount: 10000,
+    minPurchaseAmount: 1999,
+    bannerUrl: "https://images.unsplash.com/photo-1605705658604-582c6ec35b71?auto=format&fit=crop&w=1200&q=80",
+    startDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    endDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+    maxRedemptions: 1000,
+    currentRedemptions: 142,
+    perUserLimit: 1,
+    isActive: true,
+    status: "ACTIVE",
+    eligibleSegments: ["ALL", "FREE_USERS"],
+    planOverrides: [
+      {
+        planId: "gold_3m",
+        planName: "Sindhi Gold (3 Months)",
+        originalPrice: 4999,
+        festivalPrice: 2000,
+        discountPercentage: 60,
+        validityDays: 90,
+      },
+      {
+        planId: "platinum_6m",
+        planName: "Royal Sindhi Platinum (6 Months)",
+        originalPrice: 9999,
+        festivalPrice: 4000,
+        discountPercentage: 60,
+        validityDays: 180,
+      },
+      {
+        planId: "diamond_12m",
+        planName: "Sindhi Diamond VIP (12 Months)",
+        originalPrice: 15999,
+        festivalPrice: 6400,
+        discountPercentage: 60,
+        validityDays: 365,
+      },
+    ],
+    terms: [
+      "Offer valid strictly till the countdown ends.",
+      "Includes unlimited verified mobile number access & Kundli matching.",
+      "Instant activation upon online UPI / Netbanking payment.",
+    ],
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    createdBy: "Super Admin",
+  },
+  {
+    id: "offer_chetichand_2026",
+    _id: "offer_chetichand_2026",
+    festivalName: "Cheti Chand Jhulelal Mahotsav Offer",
+    offerTitle: "Cheti Chand Jhulelal Mahotsav Offer",
+    tagline: "Auspicious New Year Blessings — Find Your Soulmate at 50% Off",
+    badge: "Upcoming Festive ▶",
+    discountType: "PERCENTAGE",
+    discountValue: 50,
+    couponCode: "JHULELAL50",
+    maxDiscount: 8000,
+    minPurchaseAmount: 1499,
+    bannerUrl: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=80",
+    startDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    endDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+    maxRedemptions: 500,
+    currentRedemptions: 89,
+    perUserLimit: 1,
+    isActive: true,
+    status: "ACTIVE",
+    eligibleSegments: ["ALL", "FREE_USERS"],
+    planOverrides: [
+      {
+        planId: "gold_3m",
+        planName: "Sindhi Gold (3 Months)",
+        originalPrice: 4999,
+        festivalPrice: 2499,
+        discountPercentage: 50,
+        validityDays: 90,
+      },
+      {
+        planId: "platinum_6m",
+        planName: "Royal Sindhi Platinum (6 Months)",
+        originalPrice: 9999,
+        festivalPrice: 4999,
+        discountPercentage: 50,
+        validityDays: 180,
+      },
+      {
+        planId: "diamond_12m",
+        planName: "Sindhi Diamond VIP (12 Months)",
+        originalPrice: 15999,
+        festivalPrice: 7999,
+        discountPercentage: 50,
+        validityDays: 365,
+      },
+    ],
+    terms: [
+      "Special Sindhi New Year blessings.",
+      "Includes personalized Kundli matching and priority visibility.",
+    ],
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    createdBy: "Super Admin",
+  },
+];
+
+// Seed in-memory store for User Popup Dismissals (Ludo King style Daily Dismissal)
+// Record structure: { userId: string, popupId: string, date: string (YYYY-MM-DD), dismissedAt: string, reason?: string }
+let userPopupDismissalsStore = [];
 
 /**
  * 1. GET /api/v1/admin/campaigns
@@ -1223,19 +1392,37 @@ export const createAdminCampaignPopup = asyncHandler(async (req, res) => {
   const now = new Date();
   const initialStatus = parsedStartDate > now ? "SCHEDULED" : "ACTIVE";
 
+  const generatedId = req.body.id || req.body.popupId || `POPUP_${Date.now()}`;
+  const resolvedBanner = (req.body.bannerImageUrl || bannerUrl || "").trim();
+
   const newPopup = {
     _id: `popup_${Date.now()}`,
-    popupId: `POPUP_${Date.now()}`,
+    id: generatedId,
+    popupId: generatedId,
+    internalName: (req.body.internalName || title).trim(),
     title: title.trim(),
-    subtitle: subtitle.trim(),
-    bannerUrl: bannerUrl.trim(),
+    subtitle: (subtitle || "").trim(),
+    message: (req.body.message || "").trim(),
+    bannerUrl: resolvedBanner,
+    bannerImageUrl: resolvedBanner,
     placement: upperPlacement,
     targetPlatform: (targetPlatform || "BOTH").toUpperCase(),
+    platform: (req.body.platform || targetPlatform || "BOTH").toUpperCase(),
     ctaText: ctaText.trim(),
     ctaLink: ctaLink.trim(),
+    ctaType: req.body.ctaType || "MEMBERSHIP_PLANS",
     couponCode: (couponCode || "").trim().toUpperCase(),
     discountPercentage: Math.max(0, Math.min(100, Number(discountPercentage) || 0)),
-    status: initialStatus,
+    originalPrice: req.body.originalPrice ? Number(req.body.originalPrice) : undefined,
+    discountedPrice: req.body.discountedPrice ? Number(req.body.discountedPrice) : undefined,
+    discountLabel: (req.body.discountLabel || "").trim(),
+    targetAudience: req.body.targetAudience || "ALL",
+    frequencyPolicy: req.body.frequencyPolicy || "ONCE_PER_DAY",
+    maxImpressionsPerUser: Number(req.body.maxImpressionsPerUser) || 3,
+    dismissalPolicy: req.body.dismissalPolicy || "CROSS_DEVICE_PERSISTENT",
+    campaignId: req.body.campaignId || "",
+    status: req.body.isActive === false ? "PAUSED" : initialStatus,
+    isActive: req.body.isActive !== false,
     dismissible: dismissible !== false,
     frequencyCapPerDay: Number(frequencyCapPerDay) || 1,
     priority: Number(priority) || 1,
@@ -1244,6 +1431,10 @@ export const createAdminCampaignPopup = asyncHandler(async (req, res) => {
     views: 0,
     clicks: 0,
     conversions: 0,
+    dismissals: 0,
+    impressionsCount: 0,
+    ctaClicksCount: 0,
+    dismissCount: 0,
     ctr: "0.00%",
     createdAt: new Date().toISOString(),
   };
@@ -1257,6 +1448,649 @@ export const createAdminCampaignPopup = asyncHandler(async (req, res) => {
     `Promotional popup '${newPopup.title}' created successfully.`,
     newPopup,
     CONSTANTS.CREATED,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const updateAdminCampaignPopup = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const index = adminPopupsStore.findIndex(
+    (p) => p.id === id || p.popupId === id || p._id === id
+  );
+
+  if (index === -1) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      `Promotional popup with ID '${id}' not found.`,
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const existing = adminPopupsStore[index];
+  const updates = req.body;
+  const updatedPopup = {
+    ...existing,
+    ...updates,
+    id: existing.id,
+    popupId: existing.popupId,
+    _id: existing._id,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (updates.isActive !== undefined) {
+    updatedPopup.status = updates.isActive ? "ACTIVE" : "PAUSED";
+  }
+
+  adminPopupsStore[index] = updatedPopup;
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    `Promotional popup '${updatedPopup.title}' updated successfully.`,
+    updatedPopup,
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const toggleAdminCampaignPopupStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const index = adminPopupsStore.findIndex(
+    (p) => p.id === id || p.popupId === id || p._id === id
+  );
+
+  if (index === -1) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      `Promotional popup with ID '${id}' not found.`,
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const existing = adminPopupsStore[index];
+  const nextActive = !existing.isActive;
+  existing.isActive = nextActive;
+  existing.status = nextActive ? "ACTIVE" : "PAUSED";
+  existing.updatedAt = new Date().toISOString();
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    `Popup is now ${existing.status}.`,
+    existing,
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const deleteAdminCampaignPopup = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const index = adminPopupsStore.findIndex(
+    (p) => p.id === id || p.popupId === id || p._id === id
+  );
+
+  if (index === -1) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      `Promotional popup with ID '${id}' not found.`,
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const deleted = adminPopupsStore.splice(index, 1)[0];
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    `Promotional popup '${deleted.title}' deleted successfully.`,
+    { deletedId: id },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const duplicateAdminCampaignPopup = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const original = adminPopupsStore.find(
+    (p) => p.id === id || p.popupId === id || p._id === id
+  );
+
+  if (!original) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      `Promotional popup with ID '${id}' not found.`,
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const duplicated = {
+    ...original,
+    _id: `popup_${Date.now()}`,
+    id: `POPUP_${Date.now()}`,
+    popupId: `POPUP_${Date.now()}`,
+    internalName: `${original.internalName || original.title} (Copy)`,
+    title: `${original.title} (Copy)`,
+    status: "PAUSED",
+    isActive: false,
+    views: 0,
+    clicks: 0,
+    conversions: 0,
+    dismissals: 0,
+    impressionsCount: 0,
+    ctaClicksCount: 0,
+    dismissCount: 0,
+    createdAt: new Date().toISOString(),
+  };
+
+  adminPopupsStore.unshift(duplicated);
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_CREATED,
+    `Promotional popup duplicated as draft.`,
+    duplicated,
+    CONSTANTS.CREATED,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+// ============================================================================
+// FESTIVAL OFFERS API CONTROLLERS
+// ============================================================================
+
+export const getAdminCampaignOffers = asyncHandler(async (req, res) => {
+  const { status = "ALL", search = "" } = req.query;
+  const q = search.trim().toLowerCase();
+  const now = new Date().toISOString();
+
+  let filtered = [...adminOffersStore];
+
+  if (status && status !== "ALL") {
+    filtered = filtered.filter((o) => {
+      const isExpired = o.endDate < now;
+      if (status === "ACTIVE") return o.isActive && !isExpired;
+      if (status === "PAUSED") return !o.isActive && !isExpired;
+      if (status === "EXPIRED") return isExpired;
+      return true;
+    });
+  }
+
+  if (q) {
+    filtered = filtered.filter(
+      (o) =>
+        o.festivalName.toLowerCase().includes(q) ||
+        (o.offerTitle && o.offerTitle.toLowerCase().includes(q)) ||
+        (o.couponCode && o.couponCode.toLowerCase().includes(q)) ||
+        o.tagline.toLowerCase().includes(q)
+    );
+  }
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    "Festival offers retrieved successfully.",
+    {
+      offers: filtered,
+      list: filtered,
+      total: filtered.length,
+      summary: {
+        totalOffers: adminOffersStore.length,
+        activeOffers: adminOffersStore.filter((o) => o.isActive && o.endDate >= now).length,
+        pausedOffers: adminOffersStore.filter((o) => !o.isActive).length,
+      },
+    },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const createAdminCampaignOffer = asyncHandler(async (req, res) => {
+  const {
+    id,
+    festivalName,
+    offerTitle,
+    tagline,
+    badge = "Festive Dhamaka 🔥",
+    discountType = "PERCENTAGE",
+    discountValue = 50,
+    couponCode = "",
+    maxDiscount,
+    minPurchaseAmount,
+    bannerUrl = "",
+    startDate,
+    endDate,
+    maxRedemptions = 1000,
+    perUserLimit = 1,
+    isActive = true,
+    eligibleSegments = ["ALL", "FREE_USERS"],
+    planOverrides = [],
+    terms = [],
+    autoCreatePopup = false,
+  } = req.body;
+
+  if (!festivalName || !festivalName.trim()) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_BAD_REQUEST,
+      "Validation Failed: 'festivalName' is required.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.BAD_REQUEST,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const offerId = id || `offer_${Date.now()}`;
+  const newOffer = {
+    _id: offerId,
+    id: offerId,
+    festivalName: festivalName.trim(),
+    offerTitle: (offerTitle || festivalName).trim(),
+    tagline: (tagline || "").trim(),
+    badge: (badge || "Festive Dhamaka 🔥").trim(),
+    discountType,
+    discountValue: Number(discountValue) || 0,
+    couponCode: (couponCode || "").trim().toUpperCase(),
+    maxDiscount: maxDiscount ? Number(maxDiscount) : undefined,
+    minPurchaseAmount: minPurchaseAmount ? Number(minPurchaseAmount) : undefined,
+    bannerUrl: bannerUrl.trim(),
+    startDate: startDate ? new Date(startDate).toISOString() : new Date().toISOString(),
+    endDate: endDate ? new Date(endDate).toISOString() : new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+    maxRedemptions: Number(maxRedemptions) || 1000,
+    currentRedemptions: 0,
+    perUserLimit: Number(perUserLimit) || 1,
+    isActive: Boolean(isActive),
+    status: isActive ? "ACTIVE" : "PAUSED",
+    eligibleSegments,
+    planOverrides: Array.isArray(planOverrides) ? planOverrides : [],
+    terms: Array.isArray(terms) ? terms : [],
+    createdAt: new Date().toISOString(),
+    createdBy: req.user?.name || "Admin",
+  };
+
+  if (autoCreatePopup) {
+    const linkedPopup = {
+      _id: `popup_${Date.now()}`,
+      id: `POPUP_${Date.now()}`,
+      popupId: `POPUP_${Date.now()}`,
+      internalName: `${newOffer.festivalName} Modal`,
+      title: `🎆 ${newOffer.festivalName}`,
+      subtitle: newOffer.badge,
+      message: `${newOffer.tagline}. Limited festive pass active.`,
+      bannerUrl: newOffer.bannerUrl,
+      bannerImageUrl: newOffer.bannerUrl,
+      discountLabel: `SAVE ${newOffer.discountValue}%`,
+      couponCode: newOffer.couponCode,
+      ctaText: "Claim Festive Pass",
+      ctaLink: "/settings/membership-plans",
+      ctaType: "MEMBERSHIP_PLANS",
+      placement: "DASHBOARD",
+      targetPlatform: "BOTH",
+      platform: "BOTH",
+      targetAudience: newOffer.eligibleSegments[0] || "ALL",
+      priority: 1,
+      frequencyPolicy: "ONCE_PER_DAY",
+      maxImpressionsPerUser: 3,
+      dismissalPolicy: "CROSS_DEVICE_PERSISTENT",
+      startDate: newOffer.startDate,
+      endDate: newOffer.endDate,
+      isActive: newOffer.isActive,
+      status: newOffer.isActive ? "ACTIVE" : "PAUSED",
+      views: 0,
+      clicks: 0,
+      conversions: 0,
+      dismissals: 0,
+      impressionsCount: 0,
+      ctaClicksCount: 0,
+      dismissCount: 0,
+      createdAt: new Date().toISOString(),
+    };
+    adminPopupsStore.unshift(linkedPopup);
+    newOffer.linkedPopupId = linkedPopup.id;
+  }
+
+  adminOffersStore.unshift(newOffer);
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_CREATED,
+    `Festival offer '${newOffer.festivalName}' created successfully.`,
+    newOffer,
+    CONSTANTS.CREATED,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const updateAdminCampaignOffer = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const index = adminOffersStore.findIndex((o) => o.id === id || o._id === id);
+
+  if (index === -1) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      `Festival offer with ID '${id}' not found.`,
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const existing = adminOffersStore[index];
+  const updates = req.body;
+  const updatedOffer = {
+    ...existing,
+    ...updates,
+    id: existing.id,
+    _id: existing._id,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (updates.isActive !== undefined) {
+    updatedOffer.status = updates.isActive ? "ACTIVE" : "PAUSED";
+  }
+
+  adminOffersStore[index] = updatedOffer;
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    `Festival offer '${updatedOffer.festivalName}' updated successfully.`,
+    updatedOffer,
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const toggleAdminCampaignOfferStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const index = adminOffersStore.findIndex((o) => o.id === id || o._id === id);
+
+  if (index === -1) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      `Festival offer with ID '${id}' not found.`,
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const existing = adminOffersStore[index];
+  const nextActive = !existing.isActive;
+  existing.isActive = nextActive;
+  existing.status = nextActive ? "ACTIVE" : "PAUSED";
+  existing.updatedAt = new Date().toISOString();
+
+  if (existing.linkedPopupId) {
+    const linkedPopup = adminPopupsStore.find(
+      (p) => p.id === existing.linkedPopupId || p.popupId === existing.linkedPopupId
+    );
+    if (linkedPopup) {
+      linkedPopup.isActive = nextActive;
+      linkedPopup.status = nextActive ? "ACTIVE" : "PAUSED";
+    }
+  }
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    `Festival offer is now ${existing.status}.`,
+    existing,
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const deleteAdminCampaignOffer = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const index = adminOffersStore.findIndex((o) => o.id === id || o._id === id);
+
+  if (index === -1) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_NOT_FOUND,
+      `Festival offer with ID '${id}' not found.`,
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.NOT_FOUND,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
+  const deleted = adminOffersStore.splice(index, 1)[0];
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    `Festival offer '${deleted.festivalName}' deleted successfully.`,
+    { deletedId: id },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+// ============================================================================
+// CLIENT / USER POPUPS & DISMISSAL (LUDO KING LOGIC)
+// ============================================================================
+
+export const getActiveCampaignPopups = asyncHandler(async (req, res) => {
+  const {
+    userId: queryUserId,
+    placement,
+    platform,
+    clientDate,
+  } = req.query;
+
+  const effectiveUserId =
+    queryUserId || req.user?._id || req.headers["x-user-id"] || "guest_user";
+  const todayDateStr = clientDate || new Date().toISOString().split("T")[0];
+  const now = new Date();
+
+  let eligible = adminPopupsStore.filter((p) => {
+    if (!p.isActive || p.status !== "ACTIVE") return false;
+    const start = new Date(p.startDate);
+    const end = new Date(p.endDate);
+    if (now < start || now > end) return false;
+
+    if (platform && platform !== "ALL") {
+      const pPlatform = (p.platform || p.targetPlatform || "BOTH").toUpperCase();
+      if (pPlatform !== "BOTH" && pPlatform !== platform.toUpperCase()) {
+        return false;
+      }
+    }
+
+    if (placement && placement !== "ALL") {
+      const pPlacement = (p.placement || "").toUpperCase();
+      if (pPlacement !== placement.toUpperCase()) {
+        return false;
+      }
+    }
+
+    // CRITICAL: LUDO KING DAILY DISMISSAL FILTER
+    const popupIdentifier = p.id || p.popupId || p._id;
+    const dismissedToday = userPopupDismissalsStore.some(
+      (d) =>
+        d.userId === String(effectiveUserId) &&
+        (d.popupId === popupIdentifier || d.popupId === p.id || d.popupId === p.popupId) &&
+        d.date === todayDateStr
+    );
+
+    if (dismissedToday) {
+      return false; // Silenced for today!
+    }
+
+    if (p.frequencyPolicy === "ONCE_PER_USER") {
+      const everDismissed = userPopupDismissalsStore.some(
+        (d) =>
+          d.userId === String(effectiveUserId) &&
+          (d.popupId === popupIdentifier || d.popupId === p.id || d.popupId === p.popupId)
+      );
+      if (everDismissed) return false;
+    }
+
+    return true;
+  });
+
+  eligible.sort((a, b) => (Number(a.priority) || 1) - (Number(b.priority) || 1));
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    "Eligible promotional popups retrieved.",
+    {
+      popups: eligible,
+      total: eligible.length,
+      userId: effectiveUserId,
+      serverDate: todayDateStr,
+    },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const dismissCampaignPopup = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const {
+    userId: bodyUserId,
+    clientDate,
+    reason = "USER_DISMISSED_X",
+  } = req.body || {};
+
+  const effectiveUserId =
+    bodyUserId || req.user?._id || req.headers["x-user-id"] || "guest_user";
+  const todayDateStr = clientDate || new Date().toISOString().split("T")[0];
+
+  const dismissalRecord = {
+    userId: String(effectiveUserId),
+    popupId: id,
+    date: todayDateStr,
+    dismissedAt: new Date().toISOString(),
+    reason,
+  };
+
+  userPopupDismissalsStore.push(dismissalRecord);
+
+  const popup = adminPopupsStore.find(
+    (p) => p.id === id || p.popupId === id || p._id === id
+  );
+  if (popup) {
+    popup.dismissals = (popup.dismissals || 0) + 1;
+    popup.dismissCount = (popup.dismissCount || 0) + 1;
+  }
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    `Popup '${id}' dismissed for user '${effectiveUserId}' on ${todayDateStr}. Will not be shown again today.`,
+    {
+      dismissed: true,
+      popupId: id,
+      userId: effectiveUserId,
+      date: todayDateStr,
+      dismissCount: popup?.dismissCount || 1,
+    },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const recordPopupInteraction = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { type = "IMPRESSION" } = req.body || {};
+
+  const popup = adminPopupsStore.find(
+    (p) => p.id === id || p.popupId === id || p._id === id
+  );
+
+  if (popup) {
+    if (type === "IMPRESSION") {
+      popup.views = (popup.views || 0) + 1;
+      popup.impressionsCount = (popup.impressionsCount || 0) + 1;
+    } else if (type === "CLICK") {
+      popup.clicks = (popup.clicks || 0) + 1;
+      popup.ctaClicksCount = (popup.ctaClicksCount || 0) + 1;
+    } else if (type === "CONVERSION") {
+      popup.conversions = (popup.conversions || 0) + 1;
+    }
+  }
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    `Interaction '${type}' recorded for popup '${id}'.`,
+    { popupId: id, type },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const resetPopupDismissal = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { userId: bodyUserId } = req.body || {};
+  const effectiveUserId =
+    bodyUserId || req.user?._id || req.headers["x-user-id"] || "guest_user";
+
+  userPopupDismissalsStore = userPopupDismissalsStore.filter(
+    (d) => !(d.userId === String(effectiveUserId) && (d.popupId === id || id === "ALL"))
+  );
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    `Dismissals reset for popup '${id}' and user '${effectiveUserId}'.`,
+    { reset: true, popupId: id, userId: effectiveUserId },
+    CONSTANTS.OK,
+    CONSTANTS.ERROR_FALSE
+  );
+});
+
+export const getActiveFestivalOffers = asyncHandler(async (req, res) => {
+  const now = new Date().toISOString();
+  const activeOffers = adminOffersStore.filter(
+    (o) => o.isActive && o.startDate <= now && o.endDate >= now
+  );
+
+  return apiHTTPResponse(
+    req,
+    res,
+    CONSTANTS.HTTP_OK,
+    "Active festival offers retrieved.",
+    {
+      offers: activeOffers,
+      total: activeOffers.length,
+    },
+    CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
 });

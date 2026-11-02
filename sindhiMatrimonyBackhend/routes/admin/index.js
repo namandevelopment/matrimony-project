@@ -155,6 +155,15 @@ import {
   pauseAdminCampaign,
   getAdminCampaignPopups,
   createAdminCampaignPopup,
+  updateAdminCampaignPopup,
+  toggleAdminCampaignPopupStatus,
+  deleteAdminCampaignPopup,
+  duplicateAdminCampaignPopup,
+  getAdminCampaignOffers,
+  createAdminCampaignOffer,
+  updateAdminCampaignOffer,
+  toggleAdminCampaignOfferStatus,
+  deleteAdminCampaignOffer,
   getAdminCampaignAnalytics,
   deleteAdminCampaign,
   getAdminAds,
@@ -170,6 +179,17 @@ router.get("/campaigns", getAdminCampaigns);
 router.post("/campaigns", createAdminCampaign);
 router.get("/campaigns/popups", getAdminCampaignPopups);
 router.post("/campaigns/popups", createAdminCampaignPopup);
+router.put("/campaigns/popups/:id", updateAdminCampaignPopup);
+router.post("/campaigns/popups/:id/status", toggleAdminCampaignPopupStatus);
+router.delete("/campaigns/popups/:id", deleteAdminCampaignPopup);
+router.post("/campaigns/popups/:id/duplicate", duplicateAdminCampaignPopup);
+
+// 10a. Festival Offers Management (/campaigns/offers)
+router.get("/campaigns/offers", getAdminCampaignOffers);
+router.post("/campaigns/offers", createAdminCampaignOffer);
+router.put("/campaigns/offers/:id", updateAdminCampaignOffer);
+router.post("/campaigns/offers/:id/status", toggleAdminCampaignOfferStatus);
+router.delete("/campaigns/offers/:id", deleteAdminCampaignOffer);
 router.get("/campaigns/:id", getAdminCampaignDetail);
 router.put("/campaigns/:id", updateAdminCampaign);
 router.post("/campaigns/:id/launch", launchAdminCampaign);

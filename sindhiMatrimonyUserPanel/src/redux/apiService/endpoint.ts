@@ -243,4 +243,12 @@ export const ApiURL = {
   reviews: `${BASE_URL}/api/v1/reviews`,
   reviewsPublicList: `${BASE_URL}/api/v1/reviews/public-list`,
   submitReview: `${BASE_URL}/api/v1/reviews/submit`,
+
+  // =========================================================================
+  // 20. PROMOTIONAL POPUPS & FESTIVAL OFFERS (Ludo King Day Cap)
+  // =========================================================================
+  activePopups: (params: string = '') => `${BASE_URL}/api/v1/campaigns/popups/active${params ? `?${params}` : ''}`,
+  dismissPopup: (id: string) => `${BASE_URL}/api/v1/campaigns/popups/${id}/dismiss`,
+  popupInteraction: (id: string) => `${BASE_URL}/api/v1/campaigns/popups/${id}/interaction`,
+  activeOffers: `${BASE_URL}/api/v1/campaigns/offers/active`,
 };

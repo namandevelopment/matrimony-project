@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Gift,
   Plus,
@@ -7,6 +7,7 @@ import {
   Play,
   Trash2,
   Edit,
+  RefreshCw,
 } from 'lucide-react';
 import {
   type FestivalOffer,
@@ -30,8 +31,27 @@ export const FestivalOffersSection: React.FC = () => {
   });
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingOffer, setEditingOffer] = useState<FestivalOffer | null>(null);
+  const [offers, setOffers] = useState<FestivalOffer[]>(() => campaignService.getOffers());
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const offers = campaignService.getOffers();
+  useEffect(() => {
+    campaignService.syncOffersFromApi().then((fresh) => {
+      if (fresh && fresh.length > 0) setOffers(fresh);
+    });
+
+    const unsubscribe = campaignService.subscribe(() => {
+      setOffers(campaignService.getOffers());
+    });
+    return unsubscribe;
+  }, []);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    const fresh = await campaignService.syncOffersFromApi();
+    setOffers(fresh);
+    setIsRefreshing(false);
+    toast.success('Festival offers synced with backend');
+  };
 
   const filteredOffers = useMemo(() => {
     const q = filters.searchQuery.trim().toLowerCase();
@@ -116,6 +136,16 @@ export const FestivalOffersSection: React.FC = () => {
                 size="sm"
               />
             </div>
+
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition cursor-pointer shrink-0"
+              title="Sync with Backend"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-amber-600' : ''}`} />
+            </button>
 
             <button
               type="button"

@@ -232,4 +232,12 @@ export const ApiURL = {
   // 17. DEV PROFILER & TELEMETRY
   // =========================================================================
   devDashboard: `${BASE_URL}/api/v1/dev/dashboard`,
+
+  // =========================================================================
+  // 18. PROMOTIONAL POPUPS & FESTIVAL OFFERS (Ludo King Day Cap)
+  // =========================================================================
+  activePopups: (params: string = '') => `${BASE_URL}/api/v1/campaigns/popups/active${params ? `?${params}` : ''}`,
+  dismissPopup: (id: string) => `${BASE_URL}/api/v1/campaigns/popups/${id}/dismiss`,
+  popupInteraction: (id: string) => `${BASE_URL}/api/v1/campaigns/popups/${id}/interaction`,
+  activeOffers: `${BASE_URL}/api/v1/campaigns/offers/active`,
 };

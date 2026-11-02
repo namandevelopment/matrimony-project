@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Sparkles,
   Search,
@@ -9,6 +9,7 @@ import {
   Copy,
   Trash2,
   Edit,
+  RefreshCw,
 } from 'lucide-react';
 import {
   type InAppPopup,
@@ -55,8 +56,27 @@ export const PopupManagementSection: React.FC = () => {
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
   const [editingPopup, setEditingPopup] = useState<InAppPopup | null>(null);
   const [previewingPopup, setPreviewingPopup] = useState<InAppPopup | null>(null);
+  const [popups, setPopups] = useState<InAppPopup[]>(() => campaignService.getPopups());
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const popups = campaignService.getPopups();
+  useEffect(() => {
+    campaignService.syncPopupsFromApi().then((fresh) => {
+      if (fresh && fresh.length > 0) setPopups(fresh);
+    });
+
+    const unsubscribe = campaignService.subscribe(() => {
+      setPopups(campaignService.getPopups());
+    });
+    return unsubscribe;
+  }, []);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    const fresh = await campaignService.syncPopupsFromApi();
+    setPopups(fresh);
+    setIsRefreshing(false);
+    toast.success('Promotional popups synced with backend');
+  };
 
   const filteredPopups = useMemo(() => {
     const q = filterValues.searchQuery.trim().toLowerCase();
@@ -157,6 +177,17 @@ export const PopupManagementSection: React.FC = () => {
                 variant="outline"
               />
             </div>
+
+            {/* Sync Refresh Button */}
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition cursor-pointer shrink-0"
+              title="Sync with Backend"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-amber-600' : ''}`} />
+            </button>
 
             {/* Launch Interactive Simulator Button */}
             <button
