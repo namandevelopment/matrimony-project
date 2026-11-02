@@ -178,12 +178,8 @@ export const AdminLayout: React.FC = memoWithDeepEqual(() => {
     notificationService.getUnreadCount()
   );
 
-  const [pendingStoriesCount, setPendingStoriesCount] = useState<number>(() =>
-    crmDataService.getPendingSuccessStoriesCount()
-  );
-  const [pendingReviewsCount, setPendingReviewsCount] = useState<number>(() =>
-    crmDataService.getPendingReviewsCount()
-  );
+  const [pendingStoriesCount, setPendingStoriesCount] = useState<number>(0);
+  const [pendingReviewsCount, setPendingReviewsCount] = useState<number>(0);
 
   useEffect(() => {
     const unsub = crmDataService.subscribe(() => {

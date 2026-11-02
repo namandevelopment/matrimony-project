@@ -28,19 +28,24 @@ class NotificationService {
 
   private loadState() {
     if (typeof window === 'undefined') {
-      this.notifications = [...INITIAL_NOTIFICATIONS];
+      this.notifications = [];
       return;
     }
     try {
+      if (localStorage.getItem('sindi_notif_clean_v2') !== 'true') {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.setItem('sindi_notif_clean_v2', 'true');
+        this.notifications = [];
+        return;
+      }
       const data = localStorage.getItem(STORAGE_KEY);
       if (data) {
         this.notifications = JSON.parse(data);
       } else {
-        this.notifications = [...INITIAL_NOTIFICATIONS];
-        this.saveState();
+        this.notifications = [];
       }
     } catch {
-      this.notifications = [...INITIAL_NOTIFICATIONS];
+      this.notifications = [];
     }
   }
 

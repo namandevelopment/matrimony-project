@@ -44,7 +44,7 @@ export interface ReviewReplyFormValues {
 }
 
 export const ReviewsScreen: React.FC = memoWithDeepEqual(() => {
-  const [reviews, setReviews] = useState<ReviewItem[]>(() => crmDataService.getReviews());
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
 
   const {
@@ -98,8 +98,9 @@ export const ReviewsScreen: React.FC = memoWithDeepEqual(() => {
         showErrorToast: false,
       });
 
-      if (res?.data?.reviews && Array.isArray(res.data.reviews) && res.data.reviews.length > 0) {
-        const backendItems: ReviewItem[] = res.data.reviews.map((r: any) => ({
+      const rawList = res?.data?.reviews || res?.data?.list;
+      if (Array.isArray(rawList)) {
+        const backendItems: ReviewItem[] = rawList.map((r: any) => ({
           id: r.id || r._id || r.reviewId,
           reviewId: r.reviewId || r.id,
           memberId: r.memberId || 'cl_001',
@@ -121,17 +122,14 @@ export const ReviewsScreen: React.FC = memoWithDeepEqual(() => {
         }));
 
         setReviews(backendItems);
-        // Sync local storage / memory so CRM is consistent
-        backendItems.forEach((item) => {
-          crmDataService.updateReview(item.id, item);
-        });
-
         if (showNotification) {
           toast.success('Reviews synced dynamically with live database');
         }
+      } else {
+        setReviews([]);
       }
     } catch {
-      // Fallback seamlessly to local CRM data
+      setReviews([]);
     } finally {
       setIsSyncing(false);
     }

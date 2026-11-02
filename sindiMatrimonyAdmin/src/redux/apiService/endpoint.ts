@@ -168,6 +168,7 @@ export const ApiURL = {
   interestsSend: `${BASE_URL}/api/v1/matchmaking/interests/send`,
   conversationsList: `${BASE_URL}/api/v1/chat/conversations`,
   notificationsList: `${BASE_URL}/api/v1/notifications`,
+  adminNotifications: `${BASE_URL}/api/v1/admin/notifications`,
 
   // =========================================================================
   // 15. REVIEWS & TESTIMONIALS MODERATION

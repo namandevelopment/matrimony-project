@@ -75,6 +75,11 @@ class CRMDataService {
   private loadState() {
     try {
       if (typeof window === 'undefined') return;
+      if (localStorage.getItem('sindi_crm_clean_v2') !== 'true') {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.setItem('sindi_crm_clean_v2', 'true');
+        return;
+      }
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
@@ -120,16 +125,8 @@ class CRMDataService {
         } else {
           this.teamChatMessages = [];
         }
-        if (parsed.successStories && Array.isArray(parsed.successStories)) {
-          this.successStories = parsed.successStories;
-        } else {
-          this.successStories = [];
-        }
-        if (parsed.reviews && Array.isArray(parsed.reviews)) {
-          this.reviews = parsed.reviews;
-        } else {
-          this.reviews = [];
-        }
+        this.successStories = [];
+        this.reviews = [];
         if (parsed.abuseReports && Array.isArray(parsed.abuseReports)) {
           this.abuseReports = parsed.abuseReports;
         } else {

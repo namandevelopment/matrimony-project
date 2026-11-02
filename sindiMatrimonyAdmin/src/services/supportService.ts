@@ -113,19 +113,24 @@ class SupportService {
 
   private loadState() {
     if (typeof window === 'undefined') {
-      this.tickets = [...INITIAL_TICKETS];
+      this.tickets = [];
       return;
     }
     try {
+      if (localStorage.getItem('sindi_support_clean_v2') !== 'true') {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.setItem('sindi_support_clean_v2', 'true');
+        this.tickets = [];
+        return;
+      }
       const data = localStorage.getItem(STORAGE_KEY);
       if (data) {
         this.tickets = JSON.parse(data);
       } else {
-        this.tickets = [...INITIAL_TICKETS];
-        this.saveState();
+        this.tickets = [];
       }
     } catch {
-      this.tickets = [...INITIAL_TICKETS];
+      this.tickets = [];
     }
   }
 

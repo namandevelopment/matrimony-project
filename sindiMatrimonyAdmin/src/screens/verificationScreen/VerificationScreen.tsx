@@ -17,45 +17,15 @@ interface QueueItem {
 
 // Fallback dummy verification queue preserved per project guidelines
 // const DUMMY_FALLBACK_QUEUE = mockQueue;
-const mockQueue: QueueItem[] = [
-  {
-    id: '1',
-    type: 'PHOTO',
-    name: 'Karan Advani',
-    subcaste: 'Amil',
-    profileId: 'SIND001',
-    imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-    uploadedAt: '10 mins ago',
-  },
-  {
-    id: '2',
-    type: 'PHOTO',
-    name: 'Simran Chandnani',
-    subcaste: 'Baibhand',
-    profileId: 'SIND002',
-    imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
-    uploadedAt: '25 mins ago',
-  },
-  {
-    id: '3',
-    type: 'ID_PROOF',
-    name: 'Ritesh Bhatia (Aadhaar KYC)',
-    subcaste: 'Sahiti',
-    profileId: 'SIND003',
-    imageUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&auto=format&fit=crop&q=80',
-    uploadedAt: '1 hour ago',
-  },
-];
-
 export const VerificationScreen: React.FC = () => {
   // TanStack Query: Cached for 5 minutes, 0 repeated API hits on navigation
   const { data: apiVerifications, isLoading } = usePendingVerificationsQuery();
-  const [items, setItems] = useState<QueueItem[]>(mockQueue);
+  const [items, setItems] = useState<QueueItem[]>([]);
   const [rejectingItem, setRejectingItem] = useState<QueueItem | null>(null);
 
   // Sync live verifications into state when available
   useEffect(() => {
-    if (apiVerifications && Array.isArray(apiVerifications) && apiVerifications.length > 0) {
+    if (apiVerifications && Array.isArray(apiVerifications)) {
       const mapped: QueueItem[] = apiVerifications.map((v: any, idx: number) => ({
         id: String(v._id || idx + 1),
         type: v.type === 'GOVT_ID' ? 'ID_PROOF' : 'PHOTO',
@@ -72,6 +42,8 @@ export const VerificationScreen: React.FC = () => {
           : 'Recently',
       }));
       setItems(mapped);
+    } else {
+      setItems([]);
     }
   }, [apiVerifications]);
 

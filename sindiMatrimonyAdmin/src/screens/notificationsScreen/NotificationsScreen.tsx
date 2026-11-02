@@ -14,6 +14,7 @@ interface NotificationFilterValues {
   activeTab: 'ALL' | 'UNREAD' | NotificationCategory;
   searchQuery: string;
 }
+import { apiFetch, ApiURL } from '../../redux/apiService';
 import {
   NotificationsPageHeader,
   NotificationKPISection,
@@ -21,38 +22,10 @@ import {
   NotificationListSection,
 } from './component';
 
-// Sample alerts for test simulation hoisted to module scope to prevent re-allocation
-const SAMPLE_SIMULATION_ALERTS = [
-  {
-    title: 'New High-Value Lead Added',
-    message: 'Lead #LD-1099 (Kunal Advani, ₹45 LPA Business) joined via website form. Priority auto-escalated.',
-    category: 'LEAD' as const,
-    priority: 'URGENT' as const,
-    link: '/leads',
-    actionLabel: 'Open Lead #LD-1099',
-  },
-  {
-    title: 'Payment Settlement Complete',
-    message: '₹25,000 NEFT payout verified for matchmaking consultancy invoice #INV-9902.',
-    category: 'PAYMENT' as const,
-    priority: 'NORMAL' as const,
-    link: '/finance',
-    actionLabel: 'View Ledger',
-  },
-  {
-    title: 'Security Compliance Notice',
-    message: 'Portal TLS handshake renewed and verified for domain sindhimarriage.in.',
-    category: 'SECURITY' as const,
-    priority: 'LOW' as const,
-  },
-];
-
 export const NotificationsScreen: React.FC = memoWithDeepEqual(() => {
   const navigate = useNavigate();
 
-  const [notifications, setNotifications] = useState<AppNotification[]>(() =>
-    notificationService.getNotifications()
-  );
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const {
     values: filterValues,
     setFieldValue: setFilterFieldValue,
@@ -60,6 +33,39 @@ export const NotificationsScreen: React.FC = memoWithDeepEqual(() => {
     activeTab: 'ALL',
     searchQuery: '',
   });
+
+  const fetchNotificationsFromBackend = useCallback(async () => {
+    try {
+      const res = await apiFetch.get<any>(ApiURL.adminNotifications, undefined, {
+        isToken: true,
+        showErrorToast: false,
+      });
+      const list = res?.data?.notifications || res?.data?.list || res?.data;
+      if (Array.isArray(list)) {
+        const mapped: AppNotification[] = list.map((n: any, idx: number) => ({
+          id: n.id || n._id || `notif_${idx}`,
+          title: n.title || 'Notification',
+          message: n.message || '',
+          category: (n.category?.toUpperCase() || 'GENERAL') as NotificationCategory,
+          priority: (n.priority?.toUpperCase() || 'NORMAL') as NotificationPriority,
+          timestamp: n.createdAt ? (typeof n.createdAt === 'string' ? n.createdAt : new Date(n.createdAt).toISOString()) : new Date().toISOString(),
+          timeAgo: n.timeAgo || 'Recently',
+          isRead: Boolean(n.isRead),
+          link: n.actionRoute || n.link || '',
+          actionLabel: n.actionLabel || '',
+        }));
+        setNotifications(mapped);
+      } else {
+        setNotifications([]);
+      }
+    } catch {
+      setNotifications([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNotificationsFromBackend();
+  }, [fetchNotificationsFromBackend]);
 
   // Subscribe to live notification updates with cleanup
   useEffect(() => {
@@ -141,41 +147,51 @@ export const NotificationsScreen: React.FC = memoWithDeepEqual(() => {
   }, [notifications, filterValues.activeTab, filterValues.searchQuery]);
 
   // Stable event handlers
-  const handleMarkAsRead = useCallback((id: string) => {
+  const handleMarkAsRead = useCallback(async (id: string) => {
     notificationService.markAsRead(id);
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
     toast.success('Notification marked as read');
+    try {
+      await apiFetch.put(`${ApiURL.adminNotifications}/${id}/read`, {}, { isToken: true, showErrorToast: false });
+    } catch {}
   }, []);
 
   const handleMarkAsUnread = useCallback((id: string) => {
     notificationService.markAsUnread(id);
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: false } : n)));
     toast.info('Notification marked as unread');
   }, []);
 
-  const handleMarkAllAsRead = useCallback(() => {
+  const handleMarkAllAsRead = useCallback(async () => {
     notificationService.markAllAsRead();
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     toast.success('All notifications marked as read');
+    try {
+      await apiFetch.put(`${ApiURL.adminNotifications}/mark-read`, {}, { isToken: true, showErrorToast: false });
+    } catch {}
   }, []);
 
-  const handleDelete = useCallback((id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     notificationService.deleteNotification(id);
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
     toast.success('Notification removed');
+    try {
+      await apiFetch.delete(`${ApiURL.adminNotifications}/${id}`, undefined, { isToken: true, showErrorToast: false });
+    } catch {}
   }, []);
 
   const handleClearAll = useCallback(() => {
     if (window.confirm('Are you sure you want to clear all notifications?')) {
       notificationService.clearAll();
+      setNotifications([]);
       toast.info('All notifications cleared');
     }
   }, []);
 
   const handleSimulateNewAlert = useCallback(() => {
-    const randomAlert =
-      SAMPLE_SIMULATION_ALERTS[
-        Math.floor(Math.random() * SAMPLE_SIMULATION_ALERTS.length)
-      ];
-    notificationService.addNotification(randomAlert);
-    toast.success(`Simulation Alert: "${randomAlert.title}" generated!`);
-  }, []);
+    fetchNotificationsFromBackend();
+    toast.info('Refreshed alerts from live backend');
+  }, [fetchNotificationsFromBackend]);
 
   const handleNavigate = useCallback(
     (link: string) => {
