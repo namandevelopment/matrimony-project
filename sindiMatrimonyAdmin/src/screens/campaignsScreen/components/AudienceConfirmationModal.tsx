@@ -27,8 +27,8 @@ export const AudienceConfirmationModal: React.FC<AudienceConfirmationModalProps>
 
   if (!isOpen) return null;
 
-  const estimatedRecipients = campaignData.estimatedRecipients || 38400;
-  const estimatedBatches = Math.ceil(estimatedRecipients / 5000);
+  const estimatedRecipients = campaignData.estimatedRecipients ?? 0;
+  const estimatedBatches = Math.max(1, Math.ceil(estimatedRecipients / 5000));
   const estimatedDuration = `${Math.ceil(estimatedBatches * 4.5)} seconds`;
 
   return (

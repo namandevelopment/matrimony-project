@@ -18,6 +18,7 @@ import {
   campaignService,
 } from '../../../services/campaignService';
 import { toast } from '../../../toastMessage/toast';
+import { apiFetch, ApiURL } from '../../../redux/apiService';
 import { CreateNotificationModal } from '../components/CreateNotificationModal';
 import { AudienceConfirmationModal } from '../components/AudienceConfirmationModal';
 import { TestNotificationModal } from '../components/TestNotificationModal';
@@ -166,12 +167,20 @@ export const NotificationManagementSection: React.FC = () => {
     if (!confirmationCampaign) return;
     try {
       setIsDispatching(true);
-      setDispatchProgress(0);
-      await campaignService.dispatchBulkCampaign(
-        confirmationCampaign.id,
-        undefined,
-        (p) => setDispatchProgress(p)
-      );
+      setDispatchProgress(25);
+      await apiFetch.post(`${ApiURL.adminNotifications}/broadcast`, {
+        title: confirmationCampaign.title,
+        body: confirmationCampaign.message,
+        message: confirmationCampaign.message,
+        targetAudience: confirmationCampaign.targetAudience === 'ALL' ? 'ALL_USERS' : confirmationCampaign.targetAudience,
+        channel: confirmationCampaign.channels?.[0] || 'PUSH',
+        priority: confirmationCampaign.priority || 'NORMAL',
+        deepLink: confirmationCampaign.deepLink,
+        userIds: confirmationCampaign.selectedUserIds,
+        scheduledAt: confirmationCampaign.scheduledAt,
+      }, { isToken: true, showErrorToast: true });
+      setDispatchProgress(100);
+      campaignService.updateCampaign(confirmationCampaign.id, { status: 'COMPLETED' });
       toast.success(`Broadcast completed for ${confirmationCampaign.campaignName}!`);
       setConfirmationCampaign(null);
     } catch (err: any) {

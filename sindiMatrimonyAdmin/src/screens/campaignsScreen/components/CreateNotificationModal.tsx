@@ -76,27 +76,25 @@ export interface NotificationFormValues {
 const getInitialNotificationValues = (
   initialData?: NotificationCampaign | null
 ): NotificationFormValues => ({
-  campaignName: initialData?.campaignName || 'Diwali Special Vivah Dhamaka',
-  title: initialData?.title || '🎆 Exclusive Diwali Vivah Offer — Flat 60% OFF!',
-  message:
-    initialData?.message ||
-    'Celebrate this festive season by unlocking verified Sindhi life partner profiles. Limited festive rates active now!',
+  campaignName: initialData?.campaignName || '',
+  title: initialData?.title || '',
+  message: initialData?.message || '',
   detailedMessage: initialData?.detailedMessage || '',
-  imageUrl: initialData?.imageUrl || SAMPLE_NOTIFICATION_IMAGES[0].url,
-  notificationType: initialData?.notificationType || 'FESTIVAL_OFFER',
-  channels: initialData?.channels || ['IN_APP', 'MOBILE_PUSH'],
-  targetAudience: initialData?.targetAudience || 'FREE_USERS',
+  imageUrl: initialData?.imageUrl || '',
+  notificationType: initialData?.notificationType || 'GENERAL_ANNOUNCEMENT',
+  channels: initialData?.channels && initialData.channels.length > 0 ? initialData.channels : ['IN_APP', 'MOBILE_PUSH'],
+  targetAudience: initialData?.targetAudience || 'ALL',
   selectedUserIds: initialData?.selectedUserIds?.join(', ') || '',
-  deepLink: initialData?.deepLink || '/settings/membership-plans',
-  priority: initialData?.priority || 'HIGH',
-  tagsInput: initialData?.tags?.join(', ') || 'Diwali, Sale, PremiumPass',
+  deepLink: initialData?.deepLink || '',
+  priority: initialData?.priority || 'NORMAL',
+  tagsInput: initialData?.tags?.join(', ') || '',
   isScheduled: Boolean(initialData?.scheduledAt),
   scheduledDate: initialData?.scheduledAt
     ? initialData.scheduledAt.split('T')[0]
-    : new Date(Date.now() + 86400000).toISOString().split('T')[0],
+    : '',
   scheduledTime: initialData?.scheduledAt
     ? initialData.scheduledAt.split('T')[1].slice(0, 5)
-    : '18:00',
+    : '12:00',
   expiresAt: initialData?.expiresAt ? initialData.expiresAt.split('T')[0] : '',
 });
 
@@ -238,7 +236,7 @@ export const CreateNotificationModal: React.FC<CreateNotificationModalProps> = (
             />
 
             {/* Notification Title & Type */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-30">
               <div>
                 <CustomDropDown
                   label="Notification Type *"
@@ -338,14 +336,17 @@ export const CreateNotificationModal: React.FC<CreateNotificationModalProps> = (
                       key={item.id}
                       type="button"
                       onClick={() => toggleChannel(item.id as DeliveryChannel)}
-                      className={`p-2.5 rounded-xl border text-xs font-bold flex items-center gap-2 transition cursor-pointer text-left ${
+                      className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-between gap-1.5 transition cursor-pointer text-left ${
                         isChecked
-                          ? 'border-[#C81E28] bg-rose-50/80 text-[#991B1B] shadow-2xs'
+                          ? 'border-[#C81E28] bg-rose-50/90 text-[#991B1B] shadow-2xs ring-1 ring-rose-200'
                           : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                       }`}
                     >
-                      <Icon className="w-4 h-4 shrink-0" />
-                      <span className="truncate">{item.label}</span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Icon className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{item.label}</span>
+                      </div>
+                      {isChecked && <CheckCircle2 className="w-3.5 h-3.5 text-[#C81E28] shrink-0" />}
                     </button>
                   );
                 })}
@@ -353,7 +354,7 @@ export const CreateNotificationModal: React.FC<CreateNotificationModalProps> = (
             </div>
 
             {/* Target Audience */}
-            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 space-y-3">
+            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 space-y-3 relative z-20">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                   <Users className="w-4 h-4 text-[#C81E28]" />
@@ -535,8 +536,15 @@ export const CreateNotificationModal: React.FC<CreateNotificationModalProps> = (
                 </div>
 
                 {values.imageUrl && (
-                  <div className="rounded-xl overflow-hidden aspect-video max-h-32 w-full mt-2 border border-slate-700">
-                    <img src={values.imageUrl} alt="preview" className="w-full h-full object-cover" />
+                  <div className="rounded-xl overflow-hidden aspect-video max-h-32 w-full mt-2 border border-slate-700 bg-slate-800">
+                    <img
+                      src={values.imageUrl}
+                      alt="Notification banner"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = 'none';
+                      }}
+                    />
                   </div>
                 )}
               </div>
