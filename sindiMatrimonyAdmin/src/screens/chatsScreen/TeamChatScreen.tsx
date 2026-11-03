@@ -14,6 +14,7 @@ import { PageHeader } from '../../components/PageHeader';
 import { CustomTextInput } from '../../components/CustomTextInput';
 import { useInputs } from '../../customHooks/useInputs';
 import { crmDataService } from '../../services/crmDataService';
+import { useEmployeesQuery } from '../../tanstackQuery';
 import type { TeamChatMessage, Lead } from '../../types/crm.types';
 import type { Employee } from '../../types/employee.types';
 import { getStoredUser, getSimulatedUser, getActiveRole } from '../../storage';
@@ -26,6 +27,7 @@ interface TeamChatFormValues {
 export const TeamChatScreen: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { data: apiEmployees } = useEmployeesQuery();
 
   // Current session & effective user
   const storedUser = getStoredUser() || { fullName: 'Rajesh Mulchandani', role: 'SUPER_ADMIN', id: 'emp_001' };
@@ -52,10 +54,20 @@ export const TeamChatScreen: React.FC = () => {
   const [isAttachLeadModalOpen, setIsAttachLeadModalOpen] = useState(false);
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('chat');
 
+  // Sync live API employees into state when available
+  useEffect(() => {
+    if (apiEmployees && Array.isArray(apiEmployees) && apiEmployees.length > 0) {
+      setEmployees(apiEmployees as any);
+    }
+  }, [apiEmployees]);
+
   // Subscriptions to live store
   useEffect(() => {
     const unsub = crmDataService.subscribe(() => {
-      setEmployees(crmDataService.getEmployees());
+      const stored = crmDataService.getEmployees();
+      if (stored.length > 0) {
+        setEmployees(stored);
+      }
       setLeads(crmDataService.getLeads());
       setAllMessages(crmDataService.getTeamChatMessages());
     });
@@ -98,8 +110,13 @@ export const TeamChatScreen: React.FC = () => {
   }, [searchParams, employees]);
 
   const activePartner = useMemo(() => {
-    return employees.find((e) => e.id === activePartnerId) || employees[0];
-  }, [employees, activePartnerId]);
+    return (
+      employees.find((e) => e.id === activePartnerId) ||
+      employees.find((e) => e.id !== currentUserId) ||
+      employees[0] ||
+      null
+    );
+  }, [employees, activePartnerId, currentUserId]);
 
   // Mark incoming messages as read when active thread changes
   useEffect(() => {
@@ -174,7 +191,7 @@ export const TeamChatScreen: React.FC = () => {
   // Handle Send Message
   const handleSendMessage = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!chatForm.messageInput.trim() && !selectedLeadForAttachment) return;
+    if (!activePartner || (!chatForm.messageInput.trim() && !selectedLeadForAttachment)) return;
 
     crmDataService.sendTeamChatMessage({
       senderId: currentUserId,
@@ -250,7 +267,12 @@ export const TeamChatScreen: React.FC = () => {
 
           {/* Employee Channels List */}
           <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-slate-100 p-2 space-y-1">
-            {partnerList.map(({ employee, lastMessage, unreadCount }) => {
+            {partnerList.length === 0 ? (
+              <div className="p-6 text-center text-slate-400 text-xs">
+                No colleagues found.
+              </div>
+            ) : (
+              partnerList.map(({ employee, lastMessage, unreadCount }) => {
               const isSelected = employee.id === activePartnerId;
               const isEmpAdmin = employee.role === 'SUPER_ADMIN';
 
@@ -276,8 +298,9 @@ export const TeamChatScreen: React.FC = () => {
                             : 'bg-gradient-to-tr from-slate-800 to-slate-700 text-white'
                         }`}
                       >
-                        {employee.fullName
+                        {(employee.fullName || 'User')
                           .split(' ')
+                          .filter(Boolean)
                           .map((n) => n[0])
                           .join('')
                           .substring(0, 2)
@@ -322,7 +345,7 @@ export const TeamChatScreen: React.FC = () => {
                   </div>
                 </button>
               );
-            })}
+            }))}
           </div>
         </div>
 
@@ -332,56 +355,69 @@ export const TeamChatScreen: React.FC = () => {
             mobileView === 'list' ? 'hidden md:flex' : 'flex'
           }`}
         >
-          {/* Active Partner Top Bar */}
-          <div className="px-4 sm:px-6 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/50 shrink-0">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              {/* Back button on mobile */}
-              <button
-                type="button"
-                onClick={() => setMobileView('list')}
-                className="md:hidden p-1.5 -ml-1 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 transition cursor-pointer shrink-0"
-                title="Back to Staff List"
-              >
-                <ChevronLeft className="w-5 h-5 text-slate-700" />
-              </button>
+          {activePartner ? (
+            <>
+              {/* Active Partner Top Bar */}
+              <div className="px-4 sm:px-6 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/50 shrink-0">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  {/* Back button on mobile */}
+                  <button
+                    type="button"
+                    onClick={() => setMobileView('list')}
+                    className="md:hidden p-1.5 -ml-1 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 transition cursor-pointer shrink-0"
+                    title="Back to Staff List"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-slate-700" />
+                  </button>
 
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#88131B] to-amber-600 text-white font-extrabold flex items-center justify-center text-sm shadow-xs shrink-0">
-                {activePartner.fullName
-                  .split(' ')
-                  .map((n) => n[0])
-                  .join('')
-                  .substring(0, 2)
-                  .toUpperCase()}
-              </div>
-              <div className="min-w-0 truncate">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-sm font-extrabold text-slate-900 truncate">{activePartner.fullName}</h2>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
-                    {activePartner.role}
-                  </span>
-                  <span className="flex items-center gap-1 text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Online
-                  </span>
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#88131B] to-amber-600 text-white font-extrabold flex items-center justify-center text-sm shadow-xs shrink-0">
+                    {(activePartner.fullName || 'User')
+                      .split(' ')
+                      .filter(Boolean)
+                      .map((n) => n[0])
+                      .join('')
+                      .substring(0, 2)
+                      .toUpperCase()}
+                  </div>
+                  <div className="min-w-0 truncate">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-sm font-extrabold text-slate-900 truncate">{activePartner.fullName}</h2>
+                      {activePartner.role && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
+                          {activePartner.role}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1 text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Online
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-500 flex items-center gap-2 truncate">
+                      {activePartner.department && <span className="truncate">{activePartner.department}</span>}
+                      {activePartner.email && (
+                        <>
+                          <span>•</span>
+                          <span className="truncate">{activePartner.email}</span>
+                        </>
+                      )}
+                      {activePartner.mobile && (
+                        <>
+                          <span className="hidden sm:inline">•</span>
+                          <span className="hidden sm:inline">Mobile: {activePartner.mobile}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="text-[11px] text-slate-500 flex items-center gap-2 truncate">
-                  <span className="truncate">{activePartner.department}</span>
-                  <span>•</span>
-                  <span className="truncate">{activePartner.email}</span>
-                  <span className="hidden sm:inline">•</span>
-                  <span className="hidden sm:inline">Mobile: {activePartner.mobile}</span>
-                </div>
-              </div>
-            </div>
 
-            {/* Quick Link to Leads for this partner */}
-            <button
-              onClick={() => navigate(`/leads`)}
-              className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center gap-1.5 shadow-2xs transition cursor-pointer shrink-0"
-            >
-              <Contact2 className="w-3.5 h-3.5 text-slate-500" />
-              <span className="hidden sm:inline">Assigned Leads</span>
-            </button>
-          </div>
+                {/* Quick Link to Leads for this partner */}
+                <button
+                  onClick={() => navigate(`/leads`)}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center gap-1.5 shadow-2xs transition cursor-pointer shrink-0"
+                >
+                  <Contact2 className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="hidden sm:inline">Assigned Leads</span>
+                </button>
+              </div>
 
           {/* Conversation Messages Thread */}
           <div
@@ -395,7 +431,7 @@ export const TeamChatScreen: React.FC = () => {
                 </div>
                 <h3 className="text-sm font-bold text-slate-800">No Previous Messages</h3>
                 <p className="text-xs max-w-sm text-slate-500">
-                  Start an internal conversation with {activePartner.fullName}. Discuss lead assignments, follow-ups, or discount approvals.
+                  Start an internal conversation with {activePartner?.fullName || 'this colleague'}. Discuss lead assignments, follow-ups, or discount approvals.
                 </p>
               </div>
             ) : (
@@ -511,7 +547,7 @@ export const TeamChatScreen: React.FC = () => {
                 size="md"
                 value={chatForm.messageInput}
                 onChange={(e) => setChatFieldValue('messageInput', e.target.value)}
-                placeholder={`Message ${activePartner.fullName}... (Press Enter to send)`}
+                placeholder={`Message ${activePartner?.fullName || 'colleague'}... (Press Enter to send)`}
               />
             </div>
 
@@ -528,8 +564,20 @@ export const TeamChatScreen: React.FC = () => {
               <span className="hidden sm:inline">Send</span>
             </button>
           </form>
+        </>
+      ) : (
+        <div className="h-full flex flex-col items-center justify-center text-center p-8 text-slate-400 space-y-3">
+          <div className="w-14 h-14 rounded-2xl bg-rose-50 text-[#DB2F3C] flex items-center justify-center shadow-xs">
+            <MessageSquare className="w-7 h-7" />
+          </div>
+          <h3 className="text-sm font-bold text-slate-800">No Colleague Selected</h3>
+          <p className="text-xs max-w-sm text-slate-500">
+            Select an employee from the staff directory on the left to start collaborating.
+          </p>
         </div>
-      </div>
+      )}
+    </div>
+  </div>
 
       {/* Attach Lead Reference Modal */}
       {isAttachLeadModalOpen && (
