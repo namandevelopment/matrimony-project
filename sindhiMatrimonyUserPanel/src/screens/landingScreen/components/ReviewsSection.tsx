@@ -48,110 +48,6 @@ export interface ReviewStats {
   satisfactionRate: number;
 }
 
-const FALLBACK_REVIEWS: ReviewItem[] = [
-  {
-    reviewId: "REV-2026-001",
-    memberName: "Haresh Jagtiani",
-    memberRole: "Parent",
-    subcaste: "Bhaiband",
-    city: "Mumbai, Maharashtra",
-    rating: 5,
-    title: "Extremely professional and family-friendly service",
-    comment:
-      "The relationship manager took care of gotra checks and verified documents before suggesting matches. Saved our family countless hours of awkward calls. My daughter got married last month to a wonderful family from Pune!",
-    status: "APPROVED",
-    isFeatured: true,
-    adminResponse:
-      "Thank you Haresh ji! It was an absolute honour assisting your family. Wishing the newlyweds a lifetime of joy, harmony, and prosperity!",
-    createdAt: "2026-02-10",
-    helpfulCount: 42,
-  },
-  {
-    reviewId: "REV-2026-002",
-    memberName: "Pooja & Kunal Mirchandani",
-    memberRole: "Bride",
-    subcaste: "Amil",
-    city: "Jaipur, Rajasthan",
-    rating: 5,
-    title: "Kundli Milan feature and Sindhi filters are spot on!",
-    comment:
-      "The 36 Gunas breakdown and Manglik analysis directly on the portal gave our elders immense confidence. Within 3 weeks of connecting, both families met and fixed our Roka ceremony with blessings of Jhulelal.",
-    status: "APPROVED",
-    isFeatured: true,
-    adminResponse:
-      "Warmest congratulations Pooja & Kunal! May Lord Jhulelal shower eternal happiness on both your families.",
-    createdAt: "2026-03-01",
-    helpfulCount: 35,
-  },
-  {
-    reviewId: "REV-2026-003",
-    memberName: "Suresh & Varsha Lulla",
-    memberRole: "Groom",
-    subcaste: "Lohana",
-    city: "Dubai, UAE",
-    rating: 5,
-    title: "Best portal for Global Sindhi NRI Families",
-    comment:
-      "Being based in Dubai, finding a cultured Sindhi family back home was difficult. Sindhimarriage.in verified all ID proofs and phone numbers. Found my life partner in Pune seamlessly.",
-    status: "APPROVED",
-    isFeatured: true,
-    adminResponse:
-      "Thank you Suresh ji! NRI matchmaking with verified roots is our core promise. All the best to you and Varsha!",
-    createdAt: "2026-03-12",
-    helpfulCount: 28,
-  },
-  {
-    reviewId: "REV-2026-004",
-    memberName: "Neeta Advani",
-    memberRole: "Parent",
-    subcaste: "Sahiti",
-    city: "Ahmedabad, Gujarat",
-    rating: 5,
-    title: "Strict privacy features made us feel very secure",
-    comment:
-      "Photos were visible only to verified requests, and phone numbers were hidden until both families approved. Truly a dignified matchmaking space for traditional Sindhi parents.",
-    status: "APPROVED",
-    isFeatured: false,
-    adminResponse:
-      "Privacy of our daughters and families is our highest priority Neeta ji. Thank you for placing your trust in our platform.",
-    createdAt: "2026-03-20",
-    helpfulCount: 19,
-  },
-  {
-    reviewId: "REV-2026-005",
-    memberName: "Rohan & Mehek Wadhwa",
-    memberRole: "Groom",
-    subcaste: "Bhaiband",
-    city: "Bengaluru, Karnataka",
-    rating: 5,
-    title: "Found our match in 45 days!",
-    comment:
-      "The relationship manager team was proactive in coordinating initial conference calls between parents. Very polite and knowledgeable about Sindhi rituals. Highly recommended!",
-    status: "APPROVED",
-    isFeatured: true,
-    adminResponse:
-      "Heartiest congratulations Rohan and Mehek! Blessed to have played a small part in your beautiful union.",
-    createdAt: "2026-04-02",
-    helpfulCount: 31,
-  },
-  {
-    reviewId: "REV-2026-006",
-    memberName: "Simran Chhabria",
-    memberRole: "Bride",
-    subcaste: "Larkana",
-    city: "Indore, Madhya Pradesh",
-    rating: 5,
-    title: "Transparent and genuine profiles",
-    comment:
-      "Unlike generic matrimony portals full of inactive accounts, every match we connected with on Sindhimarriage was responsive and serious about marriage. Got engaged last week!",
-    status: "APPROVED",
-    isFeatured: false,
-    adminResponse:
-      "Congratulations Simran! Wishing you both a lifetime of companionship, health, and happiness.",
-    createdAt: "2026-04-10",
-    helpfulCount: 24,
-  },
-];
 
 const DEFAULT_STATS: ReviewStats = {
   totalReviews: 540,
@@ -169,7 +65,7 @@ const FILTER_TABS = [
 ];
 
 export const ReviewsSection: React.FC = memo(() => {
-  const [reviews, setReviews] = useState<ReviewItem[]>(FALLBACK_REVIEWS);
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [stats, setStats] = useState<ReviewStats>(DEFAULT_STATS);
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
   const [isModalOpen, setIsModalOpen] = useState(false);

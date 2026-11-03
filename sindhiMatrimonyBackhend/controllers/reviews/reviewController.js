@@ -13,7 +13,7 @@ import {
 import { apiHTTPResponse, asyncHandler } from "../../utils/globalFunction.js";
 
 // In-memory runtime cache for serverless / offline resilience
-let inMemoryReviews = [...DEFAULT_REVIEWS];
+let inMemoryReviews = [];
 
 /**
  * 🌟 1. GET PUBLIC REVIEWS (Approved Only)
@@ -33,7 +33,7 @@ export const getPublicReviews = asyncHandler(async (req, res) => {
       // Auto-seed if database is currently empty
       if (reviews.length === 0) {
         try {
-          await Review.insertMany(DEFAULT_REVIEWS);
+          await Review.insertMany([]);
           reviews = await Review.find({ status: "APPROVED" })
             .sort({ isFeatured: -1, createdAt: -1 })
             .lean();
