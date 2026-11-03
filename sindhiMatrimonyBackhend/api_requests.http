@@ -3573,3 +3573,39 @@ Content-Type: application/json
     "isRead": false
   }
 ]
+
+### ============================================================================
+### 16. USER ANALYTICS & TELEMETRY API ENDPOINTS
+### ============================================================================
+
+### 16.1 Get User Analytics Sessions & Dynamic KPIs (Today)
+GET {{baseUrl}}/admin/analytics/user-sessions?timeframe=TODAY
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 16.2 Get User Analytics Sessions & Dynamic KPIs (Last 7 Days)
+GET {{baseUrl}}/admin/analytics/user-sessions?timeframe=7D
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 16.3 Get User Analytics Sessions & Dynamic KPIs (Last 30 Days)
+GET {{baseUrl}}/admin/analytics/user-sessions?timeframe=30D
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### 16.4 Record User Session / Telemetry Event
+POST {{baseUrl}}/admin/analytics/user-sessions
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userId": "u_102",
+  "name": "Rohan Chandiramani",
+  "memberId": "SM-4932",
+  "phone": "+91 98233 87654",
+  "platform": "WEB_PANEL",
+  "deviceInfo": "Chrome on macOS (Desktop)",
+  "eventType": "LOGIN",
+  "screen": "Dashboard"
+}
+

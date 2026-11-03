@@ -1255,7 +1255,12 @@ export const getPlansList = asyncHandler(async (req, res) => {
 // ============================================================================
 // 8. USER ANALYTICS & TELEMETRY SESSIONS (Google / Firebase Analytics style)
 // ============================================================================
+const nowMs = Date.now();
+const hMs = 60 * 60 * 1000;
+const dMs = 24 * hMs;
+
 export const inMemoryUserSessions = [
+  // --- TODAY'S SESSIONS (Past 0-12 hours) ---
   {
     id: "sess_1",
     userId: "u_101",
@@ -1265,11 +1270,12 @@ export const inMemoryUserSessions = [
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
     platform: "MOBILE_APP",
     deviceInfo: "Android 14 (OnePlus 11)",
-    loginTime: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-    logoutTime: new Date(Date.now() - 3.5 * 60 * 60 * 1000).toISOString(),
+    loginTime: new Date(nowMs - 3.8 * hMs).toISOString(),
+    logoutTime: new Date(nowMs - 3.3 * hMs).toISOString(),
     sessionDurationMinutes: 28,
     screensVisited: ["Home Feed", "Daily Horoscope", "Recommendations", "Payment & Upgrade Plans"],
     visitedPaymentScreen: true,
+    viewedPlan: "Sindhi Gold (3 Months)",
     engagementScore: "HIGH",
     status: "LOGGED_OUT",
   },
@@ -1282,11 +1288,12 @@ export const inMemoryUserSessions = [
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
     platform: "WEB_PANEL",
     deviceInfo: "Chrome on macOS (Desktop)",
-    loginTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    loginTime: new Date(nowMs - 1.8 * hMs).toISOString(),
     logoutTime: null,
     sessionDurationMinutes: 45,
-    screensVisited: ["Dashboard", "Member Search", "Kundli Match", "Festival Offers"],
+    screensVisited: ["Dashboard", "Member Search", "Kundli Match", "Festival Offers", "Payment Checkout"],
     visitedPaymentScreen: true,
+    viewedPlan: "Royal Sindhi Platinum (6 Months)",
     engagementScore: "HIGH",
     status: "ACTIVE_NOW",
   },
@@ -1299,11 +1306,12 @@ export const inMemoryUserSessions = [
     avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150",
     platform: "MOBILE_APP",
     deviceInfo: "iOS 18.1 (iPhone 15 Pro)",
-    loginTime: new Date(Date.now() - 90 * 60 * 1000).toISOString(),
-    logoutTime: new Date(Date.now() - 75 * 60 * 1000).toISOString(),
+    loginTime: new Date(nowMs - 1.5 * hMs).toISOString(),
+    logoutTime: new Date(nowMs - 1.25 * hMs).toISOString(),
     sessionDurationMinutes: 15,
     screensVisited: ["Home Feed", "Interests Received", "Chat Messaging"],
     visitedPaymentScreen: false,
+    viewedPlan: null,
     engagementScore: "MEDIUM",
     status: "LOGGED_OUT",
   },
@@ -1316,41 +1324,398 @@ export const inMemoryUserSessions = [
     avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
     platform: "MOBILE_APP",
     deviceInfo: "Android 13 (Samsung S23)",
-    loginTime: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
+    loginTime: new Date(nowMs - 35 * 60 * 1000).toISOString(),
     logoutTime: null,
     sessionDurationMinutes: 22,
     screensVisited: ["Home Feed", "Profile Edit", "Upgrade Screen"],
     visitedPaymentScreen: true,
+    viewedPlan: "Sindhi Diamond VIP (12 Months)",
     engagementScore: "HIGH",
     status: "ACTIVE_NOW",
+  },
+  {
+    id: "sess_5",
+    userId: "u_105",
+    name: "Ananya Motwani",
+    memberId: "SM-5341",
+    phone: "+91 98450 11998",
+    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150",
+    platform: "WEB_PANEL",
+    deviceInfo: "Safari on iPadOS",
+    loginTime: new Date(nowMs - 5 * hMs).toISOString(),
+    logoutTime: new Date(nowMs - 4.8 * hMs).toISOString(),
+    sessionDurationMinutes: 12,
+    screensVisited: ["Home Feed", "Browse Profiles"],
+    visitedPaymentScreen: false,
+    viewedPlan: null,
+    engagementScore: "LOW",
+    status: "LOGGED_OUT",
+  },
+  {
+    id: "sess_6",
+    userId: "u_106",
+    name: "Deepak Chawla",
+    memberId: "SM-5490",
+    phone: "+91 98110 55443",
+    avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150",
+    platform: "MOBILE_APP",
+    deviceInfo: "Android 14 (Pixel 8)",
+    loginTime: new Date(nowMs - 6.5 * hMs).toISOString(),
+    logoutTime: new Date(nowMs - 6.0 * hMs).toISOString(),
+    sessionDurationMinutes: 33,
+    screensVisited: ["Home Feed", "Kundli Report", "Prime Plans", "Payment Screen"],
+    visitedPaymentScreen: true,
+    viewedPlan: "Diwali Mahabachat Vivah (Flat 60% OFF)",
+    engagementScore: "HIGH",
+    status: "LOGGED_OUT",
+  },
+  {
+    id: "sess_7",
+    userId: "u_107",
+    name: "Mehak Jagtiani",
+    memberId: "SM-5512",
+    phone: "+91 98330 99881",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
+    platform: "MOBILE_APP",
+    deviceInfo: "iOS 18 (iPhone 14)",
+    loginTime: new Date(nowMs - 20 * 60 * 1000).toISOString(),
+    logoutTime: null,
+    sessionDurationMinutes: 18,
+    screensVisited: ["Home Feed", "Matches", "Contact Info View", "Upgrade Screen"],
+    visitedPaymentScreen: true,
+    viewedPlan: "Royal Sindhi Platinum (6 Months)",
+    engagementScore: "HIGH",
+    status: "ACTIVE_NOW",
+  },
+  {
+    id: "sess_8",
+    userId: "u_108",
+    name: "Naveen Bhambhani",
+    memberId: "SM-5601",
+    phone: "+91 97654 32109",
+    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
+    platform: "WEB_PANEL",
+    deviceInfo: "Edge on Windows 11",
+    loginTime: new Date(nowMs - 8 * hMs).toISOString(),
+    logoutTime: new Date(nowMs - 7.5 * hMs).toISOString(),
+    sessionDurationMinutes: 30,
+    screensVisited: ["Dashboard", "Shortlists", "Settings"],
+    visitedPaymentScreen: false,
+    viewedPlan: null,
+    engagementScore: "MEDIUM",
+    status: "LOGGED_OUT",
+  },
+
+  // --- PAST 2 - 7 DAYS SESSIONS ---
+  {
+    id: "sess_9",
+    userId: "u_109",
+    name: "Priyanka Malkani",
+    memberId: "SM-5710",
+    phone: "+91 98211 44556",
+    avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150",
+    platform: "MOBILE_APP",
+    deviceInfo: "Android 14 (Samsung S24)",
+    loginTime: new Date(nowMs - 1.2 * dMs).toISOString(),
+    logoutTime: new Date(nowMs - 1.15 * dMs).toISOString(),
+    sessionDurationMinutes: 40,
+    screensVisited: ["Home Feed", "Kundli Match", "Pricing Plans", "Payment Screen"],
+    visitedPaymentScreen: true,
+    viewedPlan: "Sindhi Gold (3 Months)",
+    engagementScore: "HIGH",
+    status: "LOGGED_OUT",
+  },
+  {
+    id: "sess_10",
+    userId: "u_110",
+    name: "Sunil Wadhwa",
+    memberId: "SM-5822",
+    phone: "+91 98920 66778",
+    avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150",
+    platform: "WEB_PANEL",
+    deviceInfo: "Firefox on macOS",
+    loginTime: new Date(nowMs - 2.1 * dMs).toISOString(),
+    logoutTime: new Date(nowMs - 2.05 * dMs).toISOString(),
+    sessionDurationMinutes: 24,
+    screensVisited: ["Dashboard", "Matches", "Chat"],
+    visitedPaymentScreen: false,
+    viewedPlan: null,
+    engagementScore: "MEDIUM",
+    status: "LOGGED_OUT",
+  },
+  {
+    id: "sess_11",
+    userId: "u_111",
+    name: "Ritu Chhabria",
+    memberId: "SM-5930",
+    phone: "+91 98451 22334",
+    avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150",
+    platform: "MOBILE_APP",
+    deviceInfo: "iOS 17.5 (iPhone 13)",
+    loginTime: new Date(nowMs - 2.8 * dMs).toISOString(),
+    logoutTime: new Date(nowMs - 2.75 * dMs).toISOString(),
+    sessionDurationMinutes: 35,
+    screensVisited: ["Home Feed", "Festival Offers", "Upgrade Screen"],
+    visitedPaymentScreen: true,
+    viewedPlan: "Cheti Chand Jhulelal Offer (50% OFF)",
+    engagementScore: "HIGH",
+    status: "LOGGED_OUT",
+  },
+  {
+    id: "sess_12",
+    userId: "u_112",
+    name: "Manish Vaswani",
+    memberId: "SM-6011",
+    phone: "+91 98222 77889",
+    avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150",
+    platform: "WEB_PANEL",
+    deviceInfo: "Chrome on Windows 10",
+    loginTime: new Date(nowMs - 3.4 * dMs).toISOString(),
+    logoutTime: new Date(nowMs - 3.35 * dMs).toISOString(),
+    sessionDurationMinutes: 20,
+    screensVisited: ["Dashboard", "Kundli Match", "Pricing Plans"],
+    visitedPaymentScreen: true,
+    viewedPlan: "Sindhi Diamond VIP (12 Months)",
+    engagementScore: "HIGH",
+    status: "LOGGED_OUT",
+  },
+  {
+    id: "sess_13",
+    userId: "u_113",
+    name: "Riya Keswani",
+    memberId: "SM-6124",
+    phone: "+91 97118 88990",
+    avatar: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=150",
+    platform: "MOBILE_APP",
+    deviceInfo: "Android 13 (Vivo V29)",
+    loginTime: new Date(nowMs - 4.2 * dMs).toISOString(),
+    logoutTime: new Date(nowMs - 4.15 * dMs).toISOString(),
+    sessionDurationMinutes: 18,
+    screensVisited: ["Home Feed", "Explore Profiles"],
+    visitedPaymentScreen: false,
+    viewedPlan: null,
+    engagementScore: "LOW",
+    status: "LOGGED_OUT",
+  },
+  {
+    id: "sess_14",
+    userId: "u_114",
+    name: "Harsh Gidwani",
+    memberId: "SM-6235",
+    phone: "+91 98334 11223",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
+    platform: "MOBILE_APP",
+    deviceInfo: "iOS 18 (iPhone 15)",
+    loginTime: new Date(nowMs - 5.1 * dMs).toISOString(),
+    logoutTime: new Date(nowMs - 5.0 * dMs).toISOString(),
+    sessionDurationMinutes: 48,
+    screensVisited: ["Home Feed", "Chat", "Festival Deals", "Payment Screen"],
+    visitedPaymentScreen: true,
+    viewedPlan: "Royal Sindhi Platinum (6 Months)",
+    engagementScore: "HIGH",
+    status: "LOGGED_OUT",
+  },
+  {
+    id: "sess_15",
+    userId: "u_115",
+    name: "Divya Wadhwa",
+    memberId: "SM-6340",
+    phone: "+91 98205 66779",
+    avatar: "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=150",
+    platform: "WEB_PANEL",
+    deviceInfo: "Safari on macOS",
+    loginTime: new Date(nowMs - 6.2 * dMs).toISOString(),
+    logoutTime: new Date(nowMs - 6.15 * dMs).toISOString(),
+    sessionDurationMinutes: 26,
+    screensVisited: ["Dashboard", "Shortlists", "Profile Edit"],
+    visitedPaymentScreen: false,
+    viewedPlan: null,
+    engagementScore: "MEDIUM",
+    status: "LOGGED_OUT",
+  },
+
+  // --- PAST 8 - 30 DAYS SESSIONS ---
+  {
+    id: "sess_16",
+    userId: "u_116",
+    name: "Gaurav Hiranandani",
+    memberId: "SM-6455",
+    phone: "+91 99880 12345",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+    platform: "MOBILE_APP",
+    deviceInfo: "Android 14 (OnePlus 12)",
+    loginTime: new Date(nowMs - 9.5 * dMs).toISOString(),
+    logoutTime: new Date(nowMs - 9.4 * dMs).toISOString(),
+    sessionDurationMinutes: 38,
+    screensVisited: ["Home Feed", "Recommendations", "Payment Upgrade"],
+    visitedPaymentScreen: true,
+    viewedPlan: "Sindhi Gold (3 Months)",
+    engagementScore: "HIGH",
+    status: "LOGGED_OUT",
+  },
+  {
+    id: "sess_17",
+    userId: "u_117",
+    name: "Komal Rohra",
+    memberId: "SM-6560",
+    phone: "+91 98114 55667",
+    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150",
+    platform: "WEB_PANEL",
+    deviceInfo: "Chrome on Windows 11",
+    loginTime: new Date(nowMs - 14.2 * dMs).toISOString(),
+    logoutTime: new Date(nowMs - 14.15 * dMs).toISOString(),
+    sessionDurationMinutes: 19,
+    screensVisited: ["Dashboard", "Kundli Match"],
+    visitedPaymentScreen: false,
+    viewedPlan: null,
+    engagementScore: "LOW",
+    status: "LOGGED_OUT",
+  },
+  {
+    id: "sess_18",
+    userId: "u_118",
+    name: "Sanjay Asrani",
+    memberId: "SM-6672",
+    phone: "+91 98223 99887",
+    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
+    platform: "MOBILE_APP",
+    deviceInfo: "Android 13 (Realme GT)",
+    loginTime: new Date(nowMs - 21.0 * dMs).toISOString(),
+    logoutTime: new Date(nowMs - 20.95 * dMs).toISOString(),
+    sessionDurationMinutes: 52,
+    screensVisited: ["Home Feed", "Matches", "Pricing Plans", "Payment Screen"],
+    visitedPaymentScreen: true,
+    viewedPlan: "Sindhi Diamond VIP (12 Months)",
+    engagementScore: "HIGH",
+    status: "LOGGED_OUT",
+  },
+  {
+    id: "sess_19",
+    userId: "u_119",
+    name: "Sapna Mirchandani",
+    memberId: "SM-6780",
+    phone: "+91 98450 33221",
+    avatar: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=150",
+    platform: "WEB_PANEL",
+    deviceInfo: "Chrome on macOS",
+    loginTime: new Date(nowMs - 26.5 * dMs).toISOString(),
+    logoutTime: new Date(nowMs - 26.45 * dMs).toISOString(),
+    sessionDurationMinutes: 30,
+    screensVisited: ["Dashboard", "Browse", "Upgrade Plans"],
+    visitedPaymentScreen: true,
+    viewedPlan: "Royal Sindhi Platinum (6 Months)",
+    engagementScore: "HIGH",
+    status: "LOGGED_OUT",
   },
 ];
 
 export const getUserAnalyticsSessions = asyncHandler(async (req, res) => {
-  const { platform, status, search } = req.query;
-  let list = [...inMemoryUserSessions];
+  const { platform, status, search, timeframe = "TODAY" } = req.query;
+  const now = Date.now();
+  const ONE_DAY = 24 * 60 * 60 * 1000;
 
+  // 1. Timeframe filtering
+  let cutoff = now - ONE_DAY;
+  if (timeframe === "7D") {
+    cutoff = now - 7 * ONE_DAY;
+  } else if (timeframe === "30D") {
+    cutoff = now - 30 * ONE_DAY;
+  }
+
+  // Active pool filtered by selected timeframe
+  const timeframeList = inMemoryUserSessions.filter(
+    (s) => new Date(s.loginTime).getTime() >= cutoff
+  );
+
+  // 2. Sub-filters for table
+  let filtered = [...timeframeList];
   if (platform && platform !== "ALL") {
-    list = list.filter((s) => s.platform === platform);
+    filtered = filtered.filter((s) => s.platform === platform);
   }
   if (status && status !== "ALL") {
-    list = list.filter((s) => s.status === status);
+    if (status === "PAYMENT_VISITED") {
+      filtered = filtered.filter((s) => s.visitedPaymentScreen);
+    } else {
+      filtered = filtered.filter((s) => s.status === status);
+    }
   }
   if (search) {
     const q = search.toLowerCase();
-    list = list.filter((s) =>
-      s.name.toLowerCase().includes(q) ||
-      s.memberId.toLowerCase().includes(q) ||
-      s.phone.includes(q)
+    filtered = filtered.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        s.memberId.toLowerCase().includes(q) ||
+        s.phone.includes(q) ||
+        (s.viewedPlan && s.viewedPlan.toLowerCase().includes(q))
     );
   }
 
-  const activeUsersToday = list.filter((s) => s.status === "ACTIVE_NOW").length;
-  const paymentVisitsToday = list.filter((s) => s.visitedPaymentScreen).length;
-  const mobileCount = list.filter((s) => s.platform === "MOBILE_APP").length;
-  const webCount = list.filter((s) => s.platform === "WEB_PANEL").length;
-  const totalDuration = list.reduce((acc, s) => acc + s.sessionDurationMinutes, 0);
-  const avgEngagementMinutes = list.length > 0 ? Math.round(totalDuration / list.length) : 0;
+  // 3. Dynamic Summary Stats computed from timeframeList
+  const activeUsersToday = timeframeList.filter((s) => s.status === "ACTIVE_NOW").length;
+  const paymentVisitsToday = timeframeList.filter((s) => s.visitedPaymentScreen).length;
+  const mobileCount = timeframeList.filter((s) => s.platform === "MOBILE_APP").length;
+  const webCount = timeframeList.filter((s) => s.platform === "WEB_PANEL").length;
+  const totalDuration = timeframeList.reduce((acc, s) => acc + (s.sessionDurationMinutes || 0), 0);
+  const avgEngagementMinutes = timeframeList.length > 0 ? Math.round(totalDuration / timeframeList.length) : 0;
+
+  // 4. Dynamic Activity Trend Graph according to timeframe
+  let hourlyActivity = [];
+  let chartTitle = "Today's Hourly User Engagement & Traffic Spikes";
+
+  if (timeframe === "TODAY") {
+    chartTitle = "Today's Hourly User Engagement & Traffic Spikes";
+    const hourSlots = ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"];
+    hourlyActivity = hourSlots.map((h) => {
+      const targetH = parseInt(h.split(":")[0], 10);
+      const matches = timeframeList.filter((s) => {
+        const d = new Date(s.loginTime);
+        const sH = d.getHours();
+        return sH >= targetH - 1 && sH <= targetH + 1;
+      });
+      return {
+        hour: h,
+        logins: matches.length,
+        logouts: matches.filter((s) => s.status === "LOGGED_OUT").length,
+        paymentVisits: matches.filter((s) => s.visitedPaymentScreen).length,
+      };
+    });
+  } else if (timeframe === "7D") {
+    chartTitle = "Last 7 Days Daily User Engagement & Trend";
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now - i * ONE_DAY);
+      const dayName = days[d.getDay()];
+      const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      const dayEnd = dayStart + ONE_DAY;
+      const matches = timeframeList.filter((s) => {
+        const t = new Date(s.loginTime).getTime();
+        return t >= dayStart && t < dayEnd;
+      });
+      hourlyActivity.push({
+        hour: dayName,
+        logins: matches.length,
+        logouts: matches.filter((s) => s.status === "LOGGED_OUT").length,
+        paymentVisits: matches.filter((s) => s.visitedPaymentScreen).length,
+      });
+    }
+  } else {
+    chartTitle = "Last 30 Days Weekly User Traffic & Spikes";
+    const weekLabels = ["Week 1", "Week 2", "Week 3", "Week 4"];
+    for (let w = 3; w >= 0; w--) {
+      const wStart = now - (w + 1) * 7.5 * ONE_DAY;
+      const wEnd = now - w * 7.5 * ONE_DAY;
+      const matches = timeframeList.filter((s) => {
+        const t = new Date(s.loginTime).getTime();
+        return t >= wStart && t < wEnd;
+      });
+      hourlyActivity.push({
+        hour: weekLabels[3 - w],
+        logins: matches.length,
+        logouts: matches.filter((s) => s.status === "LOGGED_OUT").length,
+        paymentVisits: matches.filter((s) => s.visitedPaymentScreen).length,
+      });
+    }
+  }
 
   return apiHTTPResponse(
     req,
@@ -1358,15 +1723,19 @@ export const getUserAnalyticsSessions = asyncHandler(async (req, res) => {
     CONSTANTS.HTTP_OK,
     "User analytics sessions retrieved successfully.",
     {
-      sessions: list,
+      timeframe,
+      sessions: filtered,
+      totalCount: filtered.length,
       summary: {
-        totalLoginsToday: list.length,
-        totalLogoutsToday: list.filter((s) => s.status === "LOGGED_OUT").length,
+        totalLoginsToday: timeframeList.length,
+        totalLogoutsToday: timeframeList.filter((s) => s.status === "LOGGED_OUT").length,
         activeUsersToday,
         paymentScreenVisitsToday: paymentVisitsToday,
         avgEngagementMinutes,
         mobileCount,
         webCount,
+        chartTitle,
+        hourlyActivity,
       },
     },
     CONSTANTS.OK,

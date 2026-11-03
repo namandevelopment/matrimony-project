@@ -47,6 +47,7 @@ export const ApiURL = {
   dashboardChartsOverview: `${BASE_URL}/api/v1/admin/dashboard/charts`,
   dashboardCharts: (type: string) => `${BASE_URL}/api/v1/admin/dashboard/charts/${type}`,
   dashboard: `${BASE_URL}/api/v1/admin/dashboard/stats`,
+  userAnalyticsSessions: `${BASE_URL}/api/v1/admin/analytics/user-sessions`,
   mobileHomeFeed: `${BASE_URL}/api/v1/dashboard/mobile-home`,
   homeBanners: `${BASE_URL}/api/v1/dashboard/banners`,
 
