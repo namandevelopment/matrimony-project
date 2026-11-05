@@ -1,6 +1,7 @@
 import { asyncHandler, apiHTTPResponse } from "../../utils/globalFunction.js";
 import * as CONSTANTS from "../../utils/constants.js";
-import { IN_MEMORY_LEADS, STAFF_EMPLOYEES } from "../../services/realDataService.js";
+import { Lead, Employee } from "../../models/index.js";
+import mongoose from "mongoose";
 
 /**
  * POST /api/v1/admin/leads
@@ -46,10 +47,11 @@ export const createAdminLead = asyncHandler(async (req, res) => {
     );
   }
 
-  // Duplicate Check
-  const existingLead = IN_MEMORY_LEADS.find(
-    (l) => l.mobile?.replace(/\D/g, "") === cleanPhone
-  );
+  // Duplicate Check in MongoDB
+  let existingLead = null;
+  if (mongoose.connection.readyState === 1) {
+    existingLead = await Lead.findOne({ mobile: `+91 ${cleanPhone.slice(-10)}` });
+  }
   if (existingLead) {
     return apiHTTPResponse(
       req,
@@ -63,19 +65,21 @@ export const createAdminLead = asyncHandler(async (req, res) => {
   }
 
   // Assign staff owner
-  const assignedOwner =
-    STAFF_EMPLOYEES.find((s) => s._id === ownerId || s.employeeId === ownerId) ||
-    STAFF_EMPLOYEES[1] || {
-      _id: "staff_default",
-      fullName: "Pooja Advani",
-      email: "pooja.advani@sindhimatrimony.com",
-    };
+  let assignedOwner = null;
+  if (mongoose.connection.readyState === 1 && ownerId) {
+    if (mongoose.Types.ObjectId.isValid(ownerId)) {
+      assignedOwner = await Employee.findById(ownerId);
+    }
+    if (!assignedOwner) {
+      assignedOwner = await Employee.findOne({ employeeId: ownerId });
+    }
+  }
 
-  const newLeadId = `LD-${1600 + IN_MEMORY_LEADS.length}`;
-  const now = new Date().toISOString();
+  const leadTotalCount = mongoose.connection.readyState === 1 ? await Lead.countDocuments() : 0;
+  const newLeadId = `LD-${1600 + leadTotalCount + 1}`;
+  const now = new Date();
 
-  const newLead = {
-    _id: `lead_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+  const newLeadData = {
     leadId: newLeadId,
     name: name.trim(),
     candidateProfileId: `SM_MANUAL_${Date.now()}`,
@@ -89,36 +93,40 @@ export const createAdminLead = asyncHandler(async (req, res) => {
     priority: ["HIGH", "MEDIUM", "LOW"].includes(priority?.toUpperCase())
       ? priority.toUpperCase()
       : "MEDIUM",
+    assignedEmployeeId: assignedOwner ? String(assignedOwner._id) : (ownerId || null),
     owner: {
-      _id: assignedOwner._id,
-      name: assignedOwner.fullName || assignedOwner.name,
-      email: assignedOwner.email,
+      _id: assignedOwner ? String(assignedOwner._id) : (ownerId || "unassigned"),
+      name: assignedOwner?.fullName || "Unassigned",
+      email: assignedOwner?.email || "",
     },
     slaStatus: "ON_TIME",
     notes: notes
       ? [
           {
-            _id: `note_${Date.now()}`,
             noteText: notes.trim(),
-            author: req.user?.name || "Staff Member",
+            author: req.user?.fullName || req.user?.name || "Staff Member",
             createdAt: now,
           },
         ]
       : [],
     timeline: [
       {
-        _id: `time_${Date.now()}`,
         type: "LEAD_CREATED",
-        description: `Lead created manually by ${req.user?.name || "Staff"} via Admin Portal`,
+        description: `Lead created manually by ${req.user?.fullName || req.user?.name || "Staff"} via Admin Portal`,
         timestamp: now,
       },
     ],
-    nextFollowUp: new Date(Date.now() + 4 * 3600000).toISOString(),
+    nextFollowUp: new Date(Date.now() + 4 * 3600000),
     lastContactedAt: null,
     createdAt: now,
   };
 
-  IN_MEMORY_LEADS.unshift(newLead);
+  let savedLead = null;
+  if (mongoose.connection.readyState === 1) {
+    savedLead = await Lead.create(newLeadData);
+  } else {
+    savedLead = { ...newLeadData, _id: `lead_${Date.now()}` };
+  }
 
   return apiHTTPResponse(
     req,
@@ -138,28 +146,24 @@ export const createAdminLead = asyncHandler(async (req, res) => {
 export const exportLeadsCSV = asyncHandler(async (req, res) => {
   const { search = "", status = "ALL", source = "ALL", priority = "ALL" } = req.query;
 
-  let filtered = [...IN_MEMORY_LEADS];
-
+  const mongoQuery = {};
   if (search) {
-    const s = search.toLowerCase();
-    filtered = filtered.filter(
-      (l) =>
-        l.name?.toLowerCase().includes(s) ||
-        l.leadId?.toLowerCase().includes(s) ||
-        l.mobile?.includes(s) ||
-        l.city?.toLowerCase().includes(s) ||
-        l.subcaste?.toLowerCase().includes(s)
-    );
+    const s = String(search).trim();
+    mongoQuery.$or = [
+      { name: { $regex: s, $options: "i" } },
+      { leadId: { $regex: s, $options: "i" } },
+      { mobile: { $regex: s, $options: "i" } },
+      { city: { $regex: s, $options: "i" } },
+      { subcaste: { $regex: s, $options: "i" } },
+    ];
   }
+  if (status && status !== "ALL") mongoQuery.status = status.toUpperCase();
+  if (source && source !== "ALL") mongoQuery.source = source.toUpperCase();
+  if (priority && priority !== "ALL") mongoQuery.priority = priority.toUpperCase();
 
-  if (status && status !== "ALL") {
-    filtered = filtered.filter((l) => l.status === status.toUpperCase());
-  }
-  if (source && source !== "ALL") {
-    filtered = filtered.filter((l) => l.source === source.toUpperCase());
-  }
-  if (priority && priority !== "ALL") {
-    filtered = filtered.filter((l) => l.priority === priority.toUpperCase());
+  let filtered = [];
+  if (mongoose.connection.readyState === 1) {
+    filtered = await Lead.find(mongoQuery).sort({ createdAt: -1 }).lean();
   }
 
   // Generate CSV rows

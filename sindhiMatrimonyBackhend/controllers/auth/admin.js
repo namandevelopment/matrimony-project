@@ -63,7 +63,7 @@ async function ensureSuperAdminInMongo() {
     for (const seed of seedStaffData) {
       const existing = await Employee.findOne({ email: seed.email.toLowerCase() });
       if (!existing) {
-        const hashedPassword = await hashPassword(seed.password);
+        const hashedPassword = await hashPassword(seed.password || "Admin@1234");
         await Employee.create({
           employeeId: seed.employeeId,
           fullName: seed.fullName,
@@ -72,16 +72,16 @@ async function ensureSuperAdminInMongo() {
           phone: seed.mobile,
           password: hashedPassword,
           role: seed.role,
-          roleCode: seed.roleCode,
+          roleCode: seed.roleCode || ROLES[seed.role] || ROLES.SUPER_ADMIN,
           department: seed.department,
-          designation: seed.designation,
-          team: seed.team,
-          recordScope: seed.recordScope,
-          permissions: seed.permissions,
-          allowedSections: seed.allowedSections,
-          isActive: seed.isActive,
-          isChatEnabled: seed.isChatEnabled,
-          isMfaEnabled: seed.isMfaEnabled,
+          designation: seed.designation || seed.fullName,
+          team: seed.team || seed.teamName,
+          recordScope: seed.recordScope || RECORD_SCOPE.ALL,
+          permissions: seed.permissions || FULL_SUPER_ADMIN_PERMISSIONS,
+          allowedSections: seed.allowedSections || ALL_ADMIN_SECTIONS,
+          isActive: seed.isActive !== false,
+          isChatEnabled: seed.isChatEnabled !== false,
+          isMfaEnabled: seed.isMfaEnabled || false,
         });
         logMessage(`👑 Default ${seed.role} account created in MongoDB: ${seed.email}`, null, "info");
       }
@@ -146,7 +146,7 @@ export const adminLogin = asyncHandler(async (req, res) => {
       employee = await Employee.findOne({ email: cleanEmail }).select("+password +mfaSecret");
       if (employee) isFromMongo = true;
     } catch (dbErr) {
-      logMessage("MongoDB query fallback to in-memory staff cache:", dbErr?.message, "warn");
+      logMessage("MongoDB employee query error:", dbErr?.message, "warn");
     }
   }
 
@@ -180,13 +180,8 @@ export const adminLogin = asyncHandler(async (req, res) => {
   if (isFromMongo && employee.password) {
     isPasswordValid = await verifyPassword(employee.password, password);
   } else {
-    // In-memory or direct string comparison
+    // Direct string comparison if unhashed
     isPasswordValid = employee.password === password;
-  }
-
-  // In test / offline development mode, accept Admin@1234
-  if (!isPasswordValid && password === "Admin@1234") {
-    isPasswordValid = true;
   }
 
   if (!isPasswordValid) {
@@ -233,8 +228,8 @@ export const adminLogin = asyncHandler(async (req, res) => {
 
   // If MFA was required and code was provided directly in login body, verify code
   if (mfaRequired && mfaCode) {
-    const validCodes = ["1234", "0000", "123456", "000000"];
-    if (!validCodes.includes(String(mfaCode).trim())) {
+    const isMfaValid = Boolean(employee.mfaSecret && employee.mfaSecret === String(mfaCode).trim());
+    if (!isMfaValid) {
       return apiHTTPResponse(
         req,
         res,
@@ -247,7 +242,7 @@ export const adminLogin = asyncHandler(async (req, res) => {
     }
   }
 
-  // 6. Generate Tokens
+  // 6. Generate Tokens (15-min access, 7-day refresh per session policy)
   const tokenPayload = {
     id: employee._id ? String(employee._id) : employee.id,
     employeeId: employee.employeeId || "EMP001",
@@ -256,8 +251,8 @@ export const adminLogin = asyncHandler(async (req, res) => {
     roleCode: employee.roleCode || ROLES.SUPER_ADMIN,
   };
 
-  const accessToken = signToken(tokenPayload, "2d");
-  const refreshToken = generateRefreshToken(tokenPayload, "30d");
+  const accessToken = signToken(tokenPayload, "15m");
+  const refreshToken = generateRefreshToken(tokenPayload, "7d");
 
   // Update last login
   if (isFromMongo) {
@@ -317,26 +312,11 @@ export const verifyAdminMfa = asyncHandler(async (req, res) => {
     );
   }
 
-  // Verify TOTP (Accept 1234 as primary master test bypass, 123456 as fallback)
-  const cleanCode = String(totpCode).trim();
-  const validCodes = ["1234", "0000", "123456", "000000"];
-  if (!validCodes.includes(cleanCode)) {
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_UNAUTHORIZED,
-      "Invalid TOTP verification code. Try again.",
-      CONSTANTS.DATA_NULL,
-      CONSTANTS.UNAUTHORIZED,
-      CONSTANTS.ERROR_TRUE
-    );
-  }
-
   // Fetch employee
   let employee = null;
   if (mongoose.connection.readyState === 1 && decoded.id) {
     try {
-      employee = await Employee.findById(decoded.id);
+      employee = await Employee.findById(decoded.id).select("+mfaSecret");
     } catch (_) {}
   }
 
@@ -352,6 +332,21 @@ export const verifyAdminMfa = asyncHandler(async (req, res) => {
     );
   }
 
+  // Verify TOTP / MFA code against employee secret
+  const cleanCode = String(totpCode).trim();
+  const isMfaMatch = Boolean(employee.mfaSecret && employee.mfaSecret === cleanCode);
+  if (!isMfaMatch) {
+    return apiHTTPResponse(
+      req,
+      res,
+      CONSTANTS.HTTP_UNAUTHORIZED,
+      "Invalid MFA verification code.",
+      CONSTANTS.DATA_NULL,
+      CONSTANTS.UNAUTHORIZED,
+      CONSTANTS.ERROR_TRUE
+    );
+  }
+
   const tokenPayload = {
     id: employee._id ? String(employee._id) : employee.id,
     employeeId: employee.employeeId || "EMP001",
@@ -360,8 +355,8 @@ export const verifyAdminMfa = asyncHandler(async (req, res) => {
     roleCode: employee.roleCode || ROLES.SUPER_ADMIN,
   };
 
-  const accessToken = signToken(tokenPayload, "2d");
-  const refreshToken = generateRefreshToken(tokenPayload, "30d");
+  const accessToken = signToken(tokenPayload, "15m");
+  const refreshToken = generateRefreshToken(tokenPayload, "7d");
   const formattedEmployee = formatEmployeeResponse(employee);
 
   return apiHTTPResponse(
@@ -390,9 +385,17 @@ export const getAdminProfile = asyncHandler(async (req, res) => {
   const currentUserEmail = req.auth?.email || req.user?.email;
 
   let employee = null;
-  if (mongoose.connection.readyState === 1 && currentUserId) {
+  if (mongoose.connection.readyState === 1) {
     try {
-      employee = await Employee.findById(currentUserId);
+      if (currentUserId && mongoose.Types.ObjectId.isValid(currentUserId)) {
+        employee = await Employee.findById(currentUserId);
+      }
+      if (!employee && currentUserId) {
+        employee = await Employee.findOne({ employeeId: currentUserId });
+      }
+      if (!employee && currentUserEmail) {
+        employee = await Employee.findOne({ email: String(currentUserEmail).toLowerCase() });
+      }
     } catch (_) {}
   }
 

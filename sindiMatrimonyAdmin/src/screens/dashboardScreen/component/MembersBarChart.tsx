@@ -15,19 +15,19 @@ export interface MembersBarChartProps {
 }
 
 export const defaultDailyActivity: DailyActivityItem[] = [
-  { day: 'Sat', deposit: 490, withdraw: 210 },
-  { day: 'Sun', deposit: 260, withdraw: 310 },
-  { day: 'Mon', deposit: 310, withdraw: 290 },
-  { day: 'Tue', deposit: 450, withdraw: 410 },
-  { day: 'Wed', deposit: 180, withdraw: 310 },
-  { day: 'Thu', deposit: 340, withdraw: 460 },
-  { day: 'Fri', deposit: 395, withdraw: 380 },
+  { day: 'Mon', deposit: 0, withdraw: 0 },
+  { day: 'Tue', deposit: 0, withdraw: 0 },
+  { day: 'Wed', deposit: 0, withdraw: 0 },
+  { day: 'Thu', deposit: 0, withdraw: 0 },
+  { day: 'Fri', deposit: 0, withdraw: 0 },
+  { day: 'Sat', deposit: 0, withdraw: 0 },
+  { day: 'Sun', deposit: 0, withdraw: 0 },
 ];
 
 export const MembersBarChart: React.FC<MembersBarChartProps> = memoWithDeepEqual(({
   title = 'Members Overview',
   data = defaultDailyActivity,
-  totalInteractions = '4,495',
+  totalInteractions = '0',
 }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const maxVal = 500;

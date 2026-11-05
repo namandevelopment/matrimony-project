@@ -14,12 +14,7 @@ export interface PlansPieChartProps {
   slices?: PlanSlice[];
 }
 
-export const defaultPlanSlices: PlanSlice[] = [
-  { label: 'Free Tier', percentage: 40, count: 15774, color: '#0F172A' },
-  { label: 'Silver Plan', percentage: 15, count: 5915, color: '#F97316' },
-  { label: 'Gold Royal', percentage: 25, count: 9858, color: '#D946EF' },
-  { label: 'Diamond / NRI', percentage: 20, count: 7887, color: '#4F46E5' },
-];
+export const defaultPlanSlices: PlanSlice[] = [];
 
 export const PlansPieChart: React.FC<PlansPieChartProps> = memoWithDeepEqual(({
   title = 'Content & Plans',
@@ -69,37 +64,45 @@ export const PlansPieChart: React.FC<PlansPieChartProps> = memoWithDeepEqual(({
 
       {/* Circular Donut Visualization (Centered in flex-1) */}
       <div className="relative flex-1 flex items-center justify-center py-2">
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="rotate-[-90deg]">
-          {slices.map((slice, idx) => {
-            const strokeDasharray = `${(slice.percentage / 100) * circumference} ${circumference}`;
-            const strokeDashoffset = -((accumulatedPercent / 100) * circumference);
-            accumulatedPercent += slice.percentage;
-            const isHovered = activeIdx === idx;
+        {slices.length === 0 ? (
+          <div className="text-center text-slate-400 text-xs font-medium py-10">
+            No subscription plans data available
+          </div>
+        ) : (
+          <>
+            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="rotate-[-90deg]">
+              {slices.map((slice, idx) => {
+                const strokeDasharray = `${(slice.percentage / 100) * circumference} ${circumference}`;
+                const strokeDashoffset = -((accumulatedPercent / 100) * circumference);
+                accumulatedPercent += slice.percentage;
+                const isHovered = activeIdx === idx;
 
-            return (
-              <circle
-                key={slice.label}
-                cx={size / 2}
-                cy={size / 2}
-                r={radius}
-                fill="transparent"
-                stroke={slice.color}
-                strokeWidth={isHovered ? strokeWidth + 4 : strokeWidth}
-                strokeDasharray={strokeDasharray}
-                strokeDashoffset={strokeDashoffset}
-                className="transition-all duration-300 cursor-pointer"
-                onMouseEnter={() => setActiveIdx(idx)}
-                onMouseLeave={() => setActiveIdx(null)}
-              />
-            );
-          })}
-        </svg>
+                return (
+                  <circle
+                    key={slice.label}
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    fill="transparent"
+                    stroke={slice.color}
+                    strokeWidth={isHovered ? strokeWidth + 4 : strokeWidth}
+                    strokeDasharray={strokeDasharray}
+                    strokeDashoffset={strokeDashoffset}
+                    className="transition-all duration-300 cursor-pointer"
+                    onMouseEnter={() => setActiveIdx(idx)}
+                    onMouseLeave={() => setActiveIdx(null)}
+                  />
+                );
+              })}
+            </svg>
 
-        {/* Center label */}
-        <div className="absolute text-center pointer-events-none">
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total</div>
-          <div className="text-sm font-black text-slate-900">100%</div>
-        </div>
+            {/* Center label */}
+            <div className="absolute text-center pointer-events-none">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total</div>
+              <div className="text-sm font-black text-slate-900">100%</div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Symmetrical Bottom Footer */}

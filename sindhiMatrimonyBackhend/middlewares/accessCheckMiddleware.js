@@ -1,65 +1,110 @@
 import {
   HTTP_FORBIDDEN,
+  HTTP_UNAUTHORIZED,
   FORBIDDEN,
+  UNAUTHORIZED,
   DATA_NULL,
   ERROR_TRUE,
 } from "../utils/constants.js";
 import { apiHTTPResponse } from "../utils/globalFunction.js";
-import { ROLES, RECORD_SCOPE } from "../utils/variables.js";
+import Employee from "../models/employees/employee.model.js";
+import Role from "../models/roles/role.model.js";
+import mongoose from "mongoose";
 
 /**
  * Access Check Middleware:
- * 1. Verifies granular screen/action permission.
- * 2. Injects req.recordScope filter for data isolation (e.g. Telecallers only see their assigned leads).
+ * 1. Verifies staff authentication & ACTIVE status.
+ * 2. Enforces section access (allowedSections) & granular permissions.
+ * 3. Injects req.recordScope query filter (ALL, OWN, ASSIGNED, TEAM, REGION).
  */
-export const accessCheck = (screenId, action = "read") => (req, res, next) => {
+export const accessCheck = (sectionId, action = "view") => async (req, res, next) => {
   const auth = req.auth;
 
   if (!auth) {
     return apiHTTPResponse(
       req,
       res,
-      HTTP_FORBIDDEN,
+      HTTP_UNAUTHORIZED,
       "Access denied. User not authenticated.",
+      DATA_NULL,
+      UNAUTHORIZED,
+      ERROR_TRUE
+    );
+  }
+
+  // 1. Fetch live employee status & clearance from MongoDB
+  let employee = null;
+  if (mongoose.connection.readyState === 1 && (auth.id || auth.employeeId)) {
+    try {
+      if (mongoose.Types.ObjectId.isValid(auth.id)) {
+        employee = await Employee.findById(auth.id);
+      }
+      if (!employee && auth.employeeId) {
+        employee = await Employee.findOne({ employeeId: auth.employeeId });
+      }
+    } catch (_) {}
+  }
+
+  // Status check: immediately reject deactivated or suspended accounts
+  if (employee && (employee.status === "INACTIVE" || employee.status === "SUSPENDED" || employee.isActive === false)) {
+    return apiHTTPResponse(
+      req,
+      res,
+      HTTP_FORBIDDEN,
+      `Your account has been ${employee.status.toLowerCase()}. Access revoked.`,
       DATA_NULL,
       FORBIDDEN,
       ERROR_TRUE
     );
   }
 
-  // Super Admin has full bypass on all screens and actions
-  if (auth.role === ROLES.SUPER_ADMIN) {
-    req.recordScope = {}; // Unrestricted access
+  const roleCode = String(employee?.role || auth.role || "").toUpperCase();
+
+  // 2. Super Admin full enterprise bypass
+  if (roleCode === "SUPER_ADMIN") {
+    req.recordScope = {};
+    req.effectiveEmployee = employee;
     return next();
   }
 
-  // Determine Record Scope based on employee role and branch
-  if (auth.role === ROLES.TELECALLER) {
-    // Telecaller is restricted to records assigned to their employeeId
-    req.recordScope = { assignedTo: auth.userId || auth.employeeId };
-  } else if (auth.role === ROLES.MATCHMAKER) {
-    // Matchmaker sees assigned candidate profiles or branch profiles
-    req.recordScope = auth.branchId
-      ? { $or: [{ assignedMatchmaker: auth.userId }, { branchId: auth.branchId }] }
-      : { assignedMatchmaker: auth.userId };
-  } else if (auth.role === ROLES.ADMIN) {
-    // Branch Admin sees everything within their branch
-    req.recordScope = auth.branchId ? { branchId: auth.branchId } : {};
-  } else {
-    req.recordScope = {};
+  // 3. Resolve role-based allowedSections and permissions
+  let roleDoc = null;
+  if (mongoose.connection.readyState === 1 && (employee?.roleId || roleCode)) {
+    try {
+      if (employee?.roleId) {
+        roleDoc = await Role.findById(employee.roleId);
+      }
+      if (!roleDoc && roleCode) {
+        roleDoc = await Role.findOne({ code: roleCode });
+      }
+    } catch (_) {}
   }
 
-  // Check granular permission if permissions array is present in JWT
-  if (Array.isArray(auth.permissions) && auth.permissions.length > 0) {
-    const hasClearance = auth.permissions.some(
-      (p) => p.screen === screenId && (p.actions?.includes(action) || p.actions?.includes("ALL"))
+  const allowedSections = roleDoc?.allowedSections || employee?.allowedSections || ["dashboard"];
+  const permissions = roleDoc?.permissions || employee?.permissions || {};
+
+  // 4. Section Clearance Check
+  if (sectionId && !allowedSections.includes(sectionId)) {
+    return apiHTTPResponse(
+      req,
+      res,
+      HTTP_FORBIDDEN,
+      `Access denied: Your role [${roleCode}] does not have clearance for section '${sectionId}'.`,
+      DATA_NULL,
+      FORBIDDEN,
+      ERROR_TRUE
     );
-    if (!hasClearance) {
+  }
+
+  // 5. Granular Action Check
+  if (sectionId && action && permissions[sectionId]) {
+    const sectionPerms = permissions[sectionId];
+    if (sectionPerms[action] === false) {
       return apiHTTPResponse(
         req,
         res,
         HTTP_FORBIDDEN,
-        `You do not have permission to ${action} on ${screenId}.`,
+        `Permission denied: You do not have permission to '${action}' in '${sectionId}'.`,
         DATA_NULL,
         FORBIDDEN,
         ERROR_TRUE
@@ -67,6 +112,47 @@ export const accessCheck = (screenId, action = "read") => (req, res, next) => {
     }
   }
 
+  // 6. Injects req.recordScope query filter for database query isolation
+  const scope = employee?.recordScope || auth.recordScope || "OWN";
+  const empId = employee?.employeeId || auth.employeeId;
+
+  if (scope === "ALL") {
+    req.recordScope = {};
+  } else if (scope === "ASSIGNED") {
+    req.recordScope = { assignedEmployeeId: empId };
+  } else if (scope === "TEAM") {
+    req.recordScope = employee?.teamId ? { teamId: employee.teamId } : { assignedEmployeeId: empId };
+  } else if (scope === "REGION") {
+    req.recordScope = employee?.regions && employee.regions.length > 0
+      ? { city: { $in: employee.regions } }
+      : { assignedEmployeeId: empId };
+  } else {
+    // OWN: Strictly created by or assigned to self
+    req.recordScope = {
+      $or: [{ createdBy: empId }, { assignedEmployeeId: empId }],
+    };
+  }
+
+  req.effectiveEmployee = employee;
+  next();
+};
+
+/**
+ * Restricted strictly to SUPER_ADMIN role
+ */
+export const requireSuperAdmin = (req, res, next) => {
+  const role = String(req.auth?.role || "").toUpperCase();
+  if (role !== "SUPER_ADMIN") {
+    return apiHTTPResponse(
+      req,
+      res,
+      HTTP_FORBIDDEN,
+      "Super Administrator privilege required for this action.",
+      DATA_NULL,
+      FORBIDDEN,
+      ERROR_TRUE
+    );
+  }
   next();
 };
 

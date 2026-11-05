@@ -31,7 +31,7 @@ export interface KPIGridProps {
 export const defaultKpiCards: KPICardData[] = [
   {
     id: 'total_members',
-    value: '39,434',
+    value: '0',
     label: 'Total Members',
     icon: Users,
     badgeBg: 'bg-rose-600',
@@ -39,7 +39,7 @@ export const defaultKpiCards: KPICardData[] = [
   },
   {
     id: 'male_profiles',
-    value: '24,895',
+    value: '0',
     label: 'Male Profiles',
     icon: UserCheck,
     badgeBg: 'bg-blue-600',
@@ -47,7 +47,7 @@ export const defaultKpiCards: KPICardData[] = [
   },
   {
     id: 'female_profiles',
-    value: '14,508',
+    value: '0',
     label: 'Female Profiles',
     icon: Heart,
     badgeBg: 'bg-pink-600',
@@ -55,7 +55,7 @@ export const defaultKpiCards: KPICardData[] = [
   },
   {
     id: 'inactive_members',
-    value: '3',
+    value: '0',
     label: 'Inactive Members',
     icon: UserX,
     badgeBg: 'bg-rose-900',
@@ -63,7 +63,7 @@ export const defaultKpiCards: KPICardData[] = [
   },
   {
     id: 'total_revenue',
-    value: '₹32,400.00',
+    value: '₹0',
     label: 'Total Revenue',
     icon: IndianRupee,
     badgeBg: 'bg-amber-600',
@@ -71,7 +71,7 @@ export const defaultKpiCards: KPICardData[] = [
   },
   {
     id: 'membership_plans',
-    value: '6',
+    value: '0',
     label: 'Membership Plans',
     icon: CreditCard,
     badgeBg: 'bg-amber-500',
@@ -79,7 +79,7 @@ export const defaultKpiCards: KPICardData[] = [
   },
   {
     id: 'total_blogs',
-    value: '1',
+    value: '0',
     label: 'Total Blogs',
     icon: BookOpen,
     badgeBg: 'bg-emerald-600',
@@ -96,22 +96,19 @@ export const defaultKpiCards: KPICardData[] = [
   },
 ];
 
-// Fallback dummy cards preserved per project requirement
-// export const DUMMY_FALLBACK_KPI_CARDS = defaultKpiCards;
-
 export function createKpiCardsFromStats(stats: any): KPICardData[] {
   if (!stats) return defaultKpiCards;
 
-  const total = stats.totalMembers ?? stats.totalRegistrations?.value ?? 150;
-  const male = stats.maleProfiles ?? Math.round(total * 0.62);
-  const female = stats.femaleProfiles ?? Math.max(0, total - male);
-  const inactive = stats.inactiveMembers ?? 4;
-  const rawRev = stats.totalRevenueNumeric ?? stats.totalRevenue?.value ?? stats.totalRevenue ?? 385000;
+  const total = stats.totalMembers ?? stats.totalRegistrations?.value ?? 0;
+  const male = stats.maleProfiles ?? 0;
+  const female = stats.femaleProfiles ?? 0;
+  const inactive = stats.inactiveMembers ?? 0;
+  const rawRev = stats.totalRevenueNumeric ?? stats.totalRevenue?.value ?? stats.totalRevenue ?? 0;
   const revenue = typeof rawRev === 'number'
     ? `₹${Number(rawRev).toLocaleString('en-IN')}`
-    : String(rawRev);
-  const plans = stats.membershipPlans != null ? String(stats.membershipPlans) : '6';
-  const blogs = stats.totalBlogs != null ? String(stats.totalBlogs) : '1';
+    : String(rawRev || '₹0');
+  const plans = stats.membershipPlans != null ? String(stats.membershipPlans) : '0';
+  const blogs = stats.totalBlogs != null ? String(stats.totalBlogs) : '0';
 
   return [
     {

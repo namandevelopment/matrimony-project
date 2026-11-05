@@ -14,20 +14,8 @@
 
 import { asyncHandler, apiHTTPResponse } from "../../utils/globalFunction.js";
 import * as CONSTANTS from "../../utils/constants.js";
-import {
-  STAFF_EMPLOYEES,
-  IN_MEMORY_LEADS,
-  IN_MEMORY_VERIFICATIONS,
-  IN_MEMORY_TRANSACTIONS,
-  getMembersInMemory,
-  getLeadsInMemory,
-  getDashboardStatsInMemory,
-  getDashboardActionQueuesInMemory,
-  getDashboardChartsDataInMemory,
-  findProfileByIdInMemory,
-  registerCandidateInMemory,
-  findUserByPhoneInMemory,
-} from "../../services/realDataService.js";
+import { Employee, Lead, Task, User, Profile, UserSubscription, MembershipPlan } from "../../models/index.js";
+import mongoose from "mongoose";
 
 // ============================================================================
 // 1. MEMBERS MANAGEMENT
@@ -40,32 +28,85 @@ export const getMembersList = asyncHandler(async (req, res) => {
     search = "",
     status = "ALL",
     isVerified,
-    membershipTier = "ALL",
-    gender = "ALL",
-    city = "ALL",
-    subcaste = "ALL",
-    filter = req.query.tab || req.query.type || "ALL",
   } = req.query;
 
-  const result = getMembersInMemory({
-    page: Number(page),
-    limit: Number(limit),
-    search,
-    status,
-    isVerified,
-    membershipTier,
-    gender,
-    city,
-    subcaste,
-    filter,
-  });
+  const pageNum = Math.max(1, Number(page));
+  const limitNum = Math.min(100, Math.max(1, Number(limit)));
+
+  let members = [];
+  let total = 0;
+
+  if (mongoose.connection.readyState === 1) {
+    const userQuery = {};
+    if (status && status !== "ALL") userQuery.status = status;
+    if (search) {
+      userQuery.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { phone: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ];
+    }
+    if (isVerified !== undefined && isVerified !== "ALL") {
+      userQuery.isKycVerified = isVerified === "true" || isVerified === true;
+    }
+
+    total = await User.countDocuments(userQuery);
+    const users = await User.find(userQuery)
+      .sort({ createdAt: -1 })
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum)
+      .lean();
+
+    const userIds = users.map((u) => u._id);
+    const profiles = await Profile.find({ userId: { $in: userIds } }).lean();
+    const profileMap = new Map(profiles.map((p) => [String(p.userId), p]));
+
+    members = users.map((u) => {
+      const p = profileMap.get(String(u._id)) || {};
+      return {
+        _id: String(u._id),
+        id: String(u._id),
+        userId: String(u._id),
+        candidateId: `SM${String(u.phone).slice(-5)}`,
+        name: p.name || u.name || "Member",
+        phone: u.phone,
+        email: u.email,
+        gender: p.gender || "MALE",
+        age: p.age || 28,
+        city: p.city || "Mumbai",
+        subcaste: p.subcaste || "Sindhi",
+        status: u.status || "ACTIVE",
+        isVerified: u.isKycVerified || p.isVerified || false,
+        verificationBadge: u.isKycVerified ? "VERIFIED" : "UNVERIFIED",
+        membershipTier: "FREE",
+        createdAt: u.createdAt,
+      };
+    });
+  }
+
+  const totalPages = Math.ceil(total / limitNum) || 1;
 
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Members fetched successfully.",
-    result,
+    {
+      members,
+      list: members,
+      total,
+      totalPages,
+      page: pageNum,
+      limit: limitNum,
+      hasMore: pageNum < totalPages,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages,
+        hasMore: pageNum < totalPages,
+      },
+    },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
@@ -73,9 +114,21 @@ export const getMembersList = asyncHandler(async (req, res) => {
 
 export const getMemberDetail = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const candidate = findProfileByIdInMemory(id);
+  let user = null;
+  let profile = null;
 
-  if (!candidate) {
+  if (mongoose.connection.readyState === 1) {
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      user = await User.findById(id).lean();
+      profile = await Profile.findOne({ userId: id }).lean();
+    }
+    if (!user) {
+      profile = await Profile.findOne({ $or: [{ _id: id }, { matrimonyId: id }] }).lean();
+      if (profile) user = await User.findById(profile.userId).lean();
+    }
+  }
+
+  if (!user && !profile) {
     return apiHTTPResponse(
       req,
       res,
@@ -87,18 +140,35 @@ export const getMemberDetail = asyncHandler(async (req, res) => {
     );
   }
 
+  const member = {
+    _id: String(user?._id || profile?._id),
+    id: String(user?._id || profile?._id),
+    name: profile?.name || user?.name || "Member",
+    phone: user?.phone,
+    email: user?.email,
+    gender: profile?.gender,
+    age: profile?.age,
+    city: profile?.city,
+    subcaste: profile?.subcaste,
+    status: user?.status || "ACTIVE",
+    isVerified: user?.isKycVerified || profile?.isVerified || false,
+    verificationBadge: user?.isKycVerified ? "VERIFIED" : "UNVERIFIED",
+    profile: profile || {},
+    user: user || {},
+  };
+
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Member details retrieved successfully.",
     {
-      member: candidate,
+      member,
       stats: {
-        matchesSuggested: 14,
-        interestsReceived: 8,
-        interestsSent: 5,
-        profileViews: 42,
+        matchesSuggested: 0,
+        interestsReceived: 0,
+        interestsSent: 0,
+        profileViews: 0,
       },
     },
     CONSTANTS.OK,
@@ -109,11 +179,12 @@ export const getMemberDetail = asyncHandler(async (req, res) => {
 export const updateMemberStatus = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status, reason } = req.body;
-  const candidate = findProfileByIdInMemory(id);
 
-  if (candidate) {
-    candidate.status = status;
-    candidate.statusReason = reason;
+  if (mongoose.connection.readyState === 1) {
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      await User.findByIdAndUpdate(id, { status });
+      await Profile.findOneAndUpdate({ userId: id }, { status });
+    }
   }
 
   return apiHTTPResponse(
@@ -130,11 +201,15 @@ export const updateMemberStatus = asyncHandler(async (req, res) => {
 export const verifyMember = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { isVerified = true } = req.body;
-  const candidate = findProfileByIdInMemory(id);
 
-  if (candidate) {
-    candidate.isVerified = Boolean(isVerified);
-    candidate.verificationBadge = isVerified ? "VERIFIED" : "REJECTED";
+  if (mongoose.connection.readyState === 1) {
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      await User.findByIdAndUpdate(id, { isKycVerified: Boolean(isVerified) });
+      await Profile.findOneAndUpdate(
+        { userId: id },
+        { isVerified: Boolean(isVerified), verificationBadge: isVerified ? "VERIFIED" : "REJECTED" }
+      );
+    }
   }
 
   return apiHTTPResponse(
@@ -217,90 +292,68 @@ export const createMember = asyncHandler(async (req, res) => {
     );
   }
 
-  if (findUserByPhoneInMemory(cleanPhone)) {
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_CONFLICT,
-      "Validation Failed: A member with this phone number already exists.",
-      CONSTANTS.DATA_NULL,
-      CONSTANTS.CONFLICT,
-      CONSTANTS.ERROR_TRUE
-    );
-  }
-
-  let calculatedAge = Number(age);
-  const resolvedDob = dateOfBirth || dob;
-  if (resolvedDob) {
-    const birthDate = new Date(resolvedDob);
-    if (!isNaN(birthDate.getTime())) {
-      const today = new Date();
-      let diffAge = today.getFullYear() - birthDate.getFullYear();
-      const m = today.getMonth() - birthDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        diffAge--;
-      }
-      calculatedAge = diffAge;
+  if (mongoose.connection.readyState === 1) {
+    const existing = await User.findOne({ phone: cleanPhone });
+    if (existing) {
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_CONFLICT,
+        "Validation Failed: A member with this phone number already exists.",
+        CONSTANTS.DATA_NULL,
+        CONSTANTS.CONFLICT,
+        CONSTANTS.ERROR_TRUE
+      );
     }
-  }
 
-  if (calculatedAge && calculatedAge < 18) {
+    const newUser = await User.create({
+      phone: cleanPhone,
+      countryCode: "+91",
+      email: email || `${cleanPhone}@sindhimarriage.in`,
+      role: 1,
+      status: "ACTIVE",
+      isPhoneVerified: true,
+      isEmailVerified: Boolean(email),
+      isKycVerified: Boolean(isVerified),
+    });
+
+    const newProfile = await Profile.create({
+      userId: newUser._id,
+      name: name.trim(),
+      gender: candidateGender,
+      dateOfBirth: resolvedDob || new Date(Date.now() - finalAge * 365.25 * 24 * 3600 * 1000),
+      age: finalAge,
+      height: Number(height) || (candidateGender === "FEMALE" ? 165 : 175),
+      maritalStatus: maritalStatus.toUpperCase(),
+      subcaste: subcaste.trim(),
+      gotra: gotra.trim(),
+      motherGotra: motherGotra.trim(),
+      city: typeof location === "object" ? location.city : (String(location) || "Mumbai"),
+      state: typeof location === "object" ? location.state : "Maharashtra",
+      country: "India",
+      isVerified: Boolean(isVerified),
+      status: "ACTIVE",
+    });
+
     return apiHTTPResponse(
       req,
       res,
-      CONSTANTS.HTTP_BAD_REQUEST,
-      "Validation Failed: Candidate must be at least 18 years old.",
-      CONSTANTS.DATA_NULL,
-      CONSTANTS.BAD_REQUEST,
-      CONSTANTS.ERROR_TRUE
+      CONSTANTS.HTTP_CREATED,
+      `Candidate '${newProfile.name}' registered successfully in MongoDB.`,
+      { user: newUser, profile: newProfile },
+      CONSTANTS.CREATED,
+      CONSTANTS.ERROR_FALSE
     );
   }
-
-  const finalAge = calculatedAge || (candidateGender === "FEMALE" ? 25 : 28);
-
-  const userPayload = {
-    phone: cleanPhone,
-    name: name.trim(),
-    email: email || `${cleanPhone}@sindhimarriage.in`,
-    role: 1,
-    status: "ACTIVE",
-    isPhoneVerified: true,
-    isEmailVerified: Boolean(email),
-  };
-
-  const profilePayload = {
-    name: name.trim(),
-    gender: candidateGender,
-    dateOfBirth: resolvedDob || new Date(Date.now() - finalAge * 365.25 * 24 * 3600 * 1000).toISOString(),
-    age: finalAge,
-    height: Number(height) || (candidateGender === "FEMALE" ? 165 : 175),
-    maritalStatus: maritalStatus.toUpperCase(),
-    subcaste: subcaste.trim(),
-    gotra: gotra.trim(),
-    motherGotra: motherGotra.trim(),
-    manglik: manglik.toUpperCase(),
-    education: typeof education === "object" ? education : { degree: String(education), field: "General", college: "University" },
-    profession: typeof profession === "object" ? profession : { occupation: String(profession), companyName: "Business/Corporate", annualIncome: 1200000, currency: "INR" },
-    location: typeof location === "object" ? location : { city: String(location) || "Mumbai", state: "Maharashtra", country: "India" },
-    family: typeof family === "object" ? family : { familyType: "NUCLEAR", fatherOccupation: "Businessman", motherOccupation: "Homemaker" },
-    partnerPreference: typeof partnerPreference === "object" ? partnerPreference : {},
-    aboutMe: aboutMe || `Sindhi candidate looking for a compatible life partner.`,
-    avatar: avatar || image || photo || (candidateGender === "FEMALE" ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600" : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600"),
-    photos: Array.isArray(photos) ? photos : (avatar || image || photo ? [avatar || image || photo] : []),
-    membershipTier: membershipTier.toUpperCase(),
-    isVerified: Boolean(isVerified),
-  };
-
-  const { user: registeredUser, profile: registeredProfile } = registerCandidateInMemory(userPayload, profilePayload);
 
   return apiHTTPResponse(
     req,
     res,
-    CONSTANTS.HTTP_CREATED,
-    `Candidate '${registeredProfile.name}' registered successfully with ID ${registeredProfile.matrimonyId}.`,
-    { user: registeredUser, profile: registeredProfile },
-    CONSTANTS.CREATED,
-    CONSTANTS.ERROR_FALSE
+    CONSTANTS.HTTP_SERVICE_UNAVAILABLE,
+    "Database unavailable.",
+    CONSTANTS.DATA_NULL,
+    CONSTANTS.SERVICE_UNAVAILABLE,
+    CONSTANTS.ERROR_TRUE
   );
 });
 
@@ -387,7 +440,8 @@ export const bulkAddMember = asyncHandler(async (req, res) => {
       continue;
     }
 
-    if (findUserByPhoneInMemory(cleanPhone)) {
+    const existingUser = await User.findOne({ phone: cleanPhone });
+    if (existingUser) {
       skipped.push({ index: idx, name, phone: cleanPhone, reason: `Member with phone '${cleanPhone}' already exists in system.` });
       continue;
     }
@@ -416,47 +470,42 @@ export const bulkAddMember = asyncHandler(async (req, res) => {
 
     const finalAge = calculatedAge || (candidateGender === "FEMALE" ? 25 : 28);
 
-    const userPayload = {
+    const newUser = await User.create({
       phone: cleanPhone,
-      name: name.trim(),
+      countryCode: "+91",
       email: email || `${cleanPhone}@sindhimarriage.in`,
       role: 1,
       status: "ACTIVE",
       isPhoneVerified: true,
       isEmailVerified: Boolean(email),
-    };
+      isKycVerified: Boolean(isVerified),
+    });
 
-    const profilePayload = {
+    const newProfile = await Profile.create({
+      userId: newUser._id,
       name: name.trim(),
       gender: candidateGender,
-      dateOfBirth: resolvedDob || new Date(Date.now() - finalAge * 365.25 * 24 * 3600 * 1000).toISOString(),
+      dateOfBirth: resolvedDob || new Date(Date.now() - finalAge * 365.25 * 24 * 3600 * 1000),
       age: finalAge,
       height: Number(height) || (candidateGender === "FEMALE" ? 165 : 175),
       maritalStatus: maritalStatus.toUpperCase(),
       subcaste: subcaste.trim(),
       gotra: gotra.trim(),
       motherGotra: motherGotra.trim(),
-      manglik: manglik.toUpperCase(),
-      education: typeof education === "object" ? education : { degree: String(education), field: "General", college: "University" },
-      profession: typeof profession === "object" ? profession : { occupation: String(profession), companyName: "Business/Corporate", annualIncome: 1200000, currency: "INR" },
-      location: typeof location === "object" ? location : { city: String(location) || "Mumbai", state: "Maharashtra", country: "India" },
-      family: typeof family === "object" ? family : { familyType: "NUCLEAR", fatherOccupation: "Businessman", motherOccupation: "Homemaker" },
-      partnerPreference: typeof partnerPreference === "object" ? partnerPreference : {},
-      aboutMe: aboutMe || `Sindhi candidate looking for a compatible life partner.`,
-      avatar: avatar || image || photo || (candidateGender === "FEMALE" ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600" : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600"),
-      photos: Array.isArray(photos) ? photos : (avatar || image || photo ? [avatar || image || photo] : []),
-      membershipTier: membershipTier.toUpperCase(),
+      city: typeof location === "object" ? location.city : (String(location) || "Mumbai"),
+      state: typeof location === "object" ? location.state : "Maharashtra",
+      country: "India",
       isVerified: Boolean(isVerified),
-    };
+      status: "ACTIVE",
+    });
 
-    const { user: regUser, profile: regProfile } = registerCandidateInMemory(userPayload, profilePayload);
     created.push({
-      id: regProfile._id,
-      matrimonyId: regProfile.matrimonyId,
-      name: regProfile.name,
-      phone: regUser.phone,
-      gender: regProfile.gender,
-      membershipTier: regProfile.membershipTier,
+      id: newProfile._id,
+      matrimonyId: newProfile.matrimonyId,
+      name: newProfile.name,
+      phone: newUser.phone,
+      gender: newProfile.gender,
+      membershipTier: membershipTier.toUpperCase(),
     });
   }
 
@@ -479,7 +528,13 @@ export const bulkAddMember = asyncHandler(async (req, res) => {
 
 export const updateMember = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const candidate = findProfileByIdInMemory(id);
+  let candidate = null;
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    candidate = await Profile.findById(id);
+  }
+  if (!candidate) {
+    candidate = await Profile.findOne({ matrimonyId: id });
+  }
 
   if (!candidate) {
     return apiHTTPResponse(
@@ -533,42 +588,37 @@ export const updateMember = asyncHandler(async (req, res) => {
   if (gender !== undefined) candidate.gender = gender.toUpperCase();
   if (age !== undefined) candidate.age = Number(age);
   if (dateOfBirth !== undefined) candidate.dateOfBirth = dateOfBirth;
-  if (height !== undefined) {
-    candidate.height = Number(height);
-    candidate.heightFormatted = `${Math.floor(Number(height) / 30.48)}'${Math.round((Number(height) % 30.48) / 2.54)}"`;
-  }
+  if (height !== undefined) candidate.height = Number(height);
   if (maritalStatus !== undefined) candidate.maritalStatus = maritalStatus.toUpperCase();
   if (subcaste !== undefined) candidate.subcaste = subcaste.trim();
   if (gotra !== undefined) candidate.gotra = gotra.trim();
   if (motherGotra !== undefined) candidate.motherGotra = motherGotra.trim();
-  if (manglik !== undefined) candidate.manglik = manglik.toUpperCase();
-
-  if (education !== undefined) {
-    candidate.education = typeof education === "object" ? { ...candidate.education, ...education } : { degree: String(education) };
-  }
-  if (profession !== undefined) {
-    candidate.profession = typeof profession === "object" ? { ...candidate.profession, ...profession } : { occupation: String(profession) };
-  }
   if (location !== undefined) {
-    candidate.location = typeof location === "object" ? { ...candidate.location, ...location } : { city: String(location) };
-  }
-  if (family !== undefined) {
-    candidate.family = typeof family === "object" ? { ...candidate.family, ...family } : candidate.family;
-  }
-  if (partnerPreference !== undefined) {
-    candidate.partnerPreference = typeof partnerPreference === "object" ? { ...candidate.partnerPreference, ...partnerPreference } : candidate.partnerPreference;
+    if (typeof location === "object") {
+      if (location.city) candidate.city = location.city;
+      if (location.state) candidate.state = location.state;
+      if (location.country) candidate.country = location.country;
+    } else {
+      candidate.city = String(location);
+    }
   }
   if (aboutMe !== undefined) candidate.aboutMe = aboutMe.trim();
   if (avatar !== undefined) candidate.avatar = avatar.trim();
   if (photos !== undefined && Array.isArray(photos)) candidate.photos = photos;
-  if (membershipTier !== undefined) candidate.membershipTier = membershipTier.toUpperCase();
   if (isVerified !== undefined) {
     candidate.isVerified = Boolean(isVerified);
-    candidate.verificationBadge = isVerified ? "VERIFIED" : "NOT_SUBMITTED";
+    if (candidate.userId) {
+      await User.findByIdAndUpdate(candidate.userId, { isKycVerified: Boolean(isVerified) });
+    }
   }
-  if (status !== undefined) candidate.status = status.toUpperCase();
+  if (status !== undefined) {
+    candidate.status = status.toUpperCase();
+    if (candidate.userId) {
+      await User.findByIdAndUpdate(candidate.userId, { status: status.toUpperCase() });
+    }
+  }
 
-  candidate.updatedAt = new Date().toISOString();
+  await candidate.save();
 
   return apiHTTPResponse(
     req,
@@ -598,36 +648,81 @@ export const getLeadsList = asyncHandler(async (req, res) => {
     ownerId,
   } = req.query;
 
-  const result = getLeadsInMemory({
-    page: Number(page),
-    limit: Number(limit),
-    search,
-    view,
-    status,
-    source,
-    priority,
-    ownerId,
-  });
+  // 1. Check MongoDB Leads collection with data scope
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const query = { ...(req.recordScope || {}) };
+      if (status && status !== "ALL") query.status = status;
+      if (priority && priority !== "ALL") query.priority = priority;
+      if (source && source !== "ALL") query.source = source;
+      if (ownerId && ownerId !== "ALL") query.assignedEmployeeId = ownerId;
+      if (search) {
+        query.$or = [
+          { name: { $regex: search, $options: "i" } },
+          { mobile: { $regex: search, $options: "i" } },
+          { leadId: { $regex: search, $options: "i" } },
+        ];
+      }
+
+      const total = await Lead.countDocuments(query);
+      const leads = await Lead.find(query)
+        .sort({ createdAt: -1 })
+        .skip((Number(page) - 1) * Number(limit))
+        .limit(Number(limit))
+        .lean();
+
+      const totalPages = Math.ceil(total / Number(limit)) || 1;
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_OK,
+        "CRM Leads retrieved from MongoDB successfully.",
+        {
+          leads,
+          total,
+          page: Number(page),
+          limit: Number(limit),
+          totalPages,
+          hasMore: Number(page) < totalPages,
+        },
+        CONSTANTS.OK,
+        CONSTANTS.ERROR_FALSE
+      );
+    } catch (_err) {}
+  }
 
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "CRM Leads retrieved successfully.",
-    result,
+    {
+      leads: [],
+      total: 0,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: 1,
+      hasMore: false,
+    },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
 });
 
 export const getLeadSavedViews = asyncHandler(async (req, res) => {
-  const total = IN_MEMORY_LEADS.length;
-  const myLeads = IN_MEMORY_LEADS.filter((l) => l.owner?._id === STAFF_EMPLOYEES[1]._id).length;
-  const unassigned = IN_MEMORY_LEADS.filter((l) => !l.owner?._id).length;
-  const todaysFollowups = IN_MEMORY_LEADS.filter((l) => l.status === "FOLLOW_UP").length;
-  const overdue = IN_MEMORY_LEADS.filter((l) => l.slaStatus === "BREACH").length;
-  const highPriority = IN_MEMORY_LEADS.filter((l) => l.priority === "HIGH").length;
-  const converted = IN_MEMORY_LEADS.filter((l) => l.status === "CONVERTED").length;
+  let total = 0, myLeads = 0, unassigned = 0, todaysFollowups = 0, overdue = 0, highPriority = 0, converted = 0;
+  if (mongoose.connection.readyState === 1) {
+    const currentEmpId = req.auth?.id || req.user?.id || req.user?.employeeId;
+    [total, myLeads, unassigned, todaysFollowups, overdue, highPriority, converted] = await Promise.all([
+      Lead.countDocuments(),
+      currentEmpId ? Lead.countDocuments({ assignedEmployeeId: currentEmpId }) : 0,
+      Lead.countDocuments({ $or: [{ assignedEmployeeId: null }, { assignedEmployeeId: "" }] }),
+      Lead.countDocuments({ status: "FOLLOW_UP" }),
+      Lead.countDocuments({ slaStatus: "BREACH" }),
+      Lead.countDocuments({ priority: "HIGH" }),
+      Lead.countDocuments({ status: "CONVERTED" }),
+    ]);
+  }
 
   return apiHTTPResponse(
     req,
@@ -650,7 +745,11 @@ export const getLeadSavedViews = asyncHandler(async (req, res) => {
 
 export const getLeadDetail = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const lead = IN_MEMORY_LEADS.find((l) => l._id === id || l.leadId === id || l.candidateProfileId === id);
+  let lead = null;
+  if (mongoose.connection.readyState === 1) {
+    lead = (mongoose.Types.ObjectId.isValid(id) ? await Lead.findById(id).lean() : null) ||
+           await Lead.findOne({ leadId: id }).lean();
+  }
 
   if (!lead) {
     return apiHTTPResponse(
@@ -678,17 +777,23 @@ export const getLeadDetail = asyncHandler(async (req, res) => {
 export const updateLeadStatus = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status, note } = req.body;
-  const lead = IN_MEMORY_LEADS.find((l) => l._id === id || l.leadId === id);
-
-  if (lead) {
-    const prevStatus = lead.status;
-    lead.status = status;
-    lead.timeline.unshift({
-      _id: `time_${Date.now()}`,
-      type: "STATUS_CHANGED",
-      description: `Status changed from ${prevStatus} to ${status}${note ? `: ${note}` : ""}`,
-      timestamp: new Date().toISOString(),
-    });
+  let lead = null;
+  if (mongoose.connection.readyState === 1) {
+    const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : { leadId: id };
+    lead = await Lead.findOneAndUpdate(
+      query,
+      {
+        $set: { status },
+        $push: {
+          timeline: {
+            type: "STATUS_CHANGED",
+            description: `Status changed to ${status}${note ? `: ${note}` : ""}`,
+            timestamp: new Date(),
+          },
+        },
+      },
+      { new: true }
+    );
   }
 
   return apiHTTPResponse(
@@ -696,7 +801,7 @@ export const updateLeadStatus = asyncHandler(async (req, res) => {
     res,
     CONSTANTS.HTTP_OK,
     `Lead status updated to ${status}.`,
-    lead,
+    lead || {},
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
@@ -705,22 +810,24 @@ export const updateLeadStatus = asyncHandler(async (req, res) => {
 export const addLeadNote = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { noteText, author = "Staff Admin" } = req.body;
-  const lead = IN_MEMORY_LEADS.find((l) => l._id === id || l.leadId === id);
-
-  if (lead) {
-    const newNote = {
-      _id: `note_${Date.now()}`,
-      noteText,
-      author,
-      createdAt: new Date().toISOString(),
-    };
-    lead.notes.unshift(newNote);
-    lead.timeline.unshift({
-      _id: `time_${Date.now()}`,
-      type: "NOTE_ADDED",
-      description: `Note added by ${author}: ${noteText.slice(0, 50)}...`,
-      timestamp: new Date().toISOString(),
-    });
+  let updated = null;
+  if (mongoose.connection.readyState === 1) {
+    const newNote = { noteText, author, createdAt: new Date() };
+    const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : { leadId: id };
+    updated = await Lead.findOneAndUpdate(
+      query,
+      {
+        $push: {
+          notes: newNote,
+          timeline: {
+            type: "NOTE_ADDED",
+            description: `Note added by ${author}: ${String(noteText).slice(0, 50)}...`,
+            timestamp: new Date(),
+          },
+        },
+      },
+      { new: true }
+    );
   }
 
   return apiHTTPResponse(
@@ -728,7 +835,7 @@ export const addLeadNote = asyncHandler(async (req, res) => {
     res,
     CONSTANTS.HTTP_CREATED,
     "Note added to lead.",
-    lead?.notes?.[0] || {},
+    updated?.notes?.[0] || {},
     CONSTANTS.CREATED,
     CONSTANTS.ERROR_FALSE
   );
@@ -737,17 +844,23 @@ export const addLeadNote = asyncHandler(async (req, res) => {
 export const setLeadFollowUp = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { followUpDate, reason = "Routine client follow-up" } = req.body;
-  const lead = IN_MEMORY_LEADS.find((l) => l._id === id || l.leadId === id);
-
-  if (lead) {
-    lead.nextFollowUp = followUpDate;
-    lead.status = "FOLLOW_UP";
-    lead.timeline.unshift({
-      _id: `time_${Date.now()}`,
-      type: "FOLLOW_UP_SET",
-      description: `Follow-up set for ${new Date(followUpDate).toLocaleString("en-IN")}: ${reason}`,
-      timestamp: new Date().toISOString(),
-    });
+  let updated = null;
+  if (mongoose.connection.readyState === 1) {
+    const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : { leadId: id };
+    updated = await Lead.findOneAndUpdate(
+      query,
+      {
+        $set: { nextFollowUp: followUpDate, status: "FOLLOW_UP" },
+        $push: {
+          timeline: {
+            type: "FOLLOW_UP_SET",
+            description: `Follow-up set for ${new Date(followUpDate).toLocaleString("en-IN")}: ${reason}`,
+            timestamp: new Date(),
+          },
+        },
+      },
+      { new: true }
+    );
   }
 
   return apiHTTPResponse(
@@ -763,33 +876,56 @@ export const setLeadFollowUp = asyncHandler(async (req, res) => {
 
 export const bulkAssignLeads = asyncHandler(async (req, res) => {
   const { leadIds = [], employeeId } = req.body;
-  const emp = STAFF_EMPLOYEES.find((e) => e._id === employeeId || e.employeeId === employeeId) || STAFF_EMPLOYEES[1];
-
   let assignedCount = 0;
-  for (const lId of leadIds) {
-    const lead = IN_MEMORY_LEADS.find((l) => l._id === lId || l.leadId === lId);
-    if (lead) {
-      lead.owner = {
-        _id: emp._id,
-        name: emp.fullName,
-        email: emp.email,
-      };
-      lead.timeline.unshift({
-        _id: `time_${Date.now()}`,
-        type: "REASSIGNED",
-        description: `Lead reassigned to ${emp.fullName}`,
-        timestamp: new Date().toISOString(),
-      });
-      assignedCount++;
+  let empName = "Staff Member";
+
+  if (mongoose.connection.readyState === 1) {
+    let emp = null;
+    if (mongoose.Types.ObjectId.isValid(employeeId)) {
+      emp = await Employee.findById(employeeId);
     }
+    if (!emp) {
+      emp = await Employee.findOne({ employeeId });
+    }
+    if (emp) empName = emp.fullName;
+
+    const ownerData = {
+      _id: emp ? String(emp._id) : (employeeId || "unassigned"),
+      name: empName,
+      email: emp?.email || "",
+    };
+
+    const targetIds = leadIds.filter(Boolean);
+    const result = await Lead.updateMany(
+      {
+        $or: [
+          { _id: { $in: targetIds.filter((id) => mongoose.Types.ObjectId.isValid(id)) } },
+          { leadId: { $in: targetIds } },
+        ],
+      },
+      {
+        $set: {
+          assignedEmployeeId: emp ? String(emp._id) : employeeId,
+          owner: ownerData,
+        },
+        $push: {
+          timeline: {
+            type: "REASSIGNED",
+            description: `Lead reassigned to ${empName}`,
+            timestamp: new Date(),
+          },
+        },
+      }
+    );
+    assignedCount = result.modifiedCount || 0;
   }
 
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
-    `Successfully assigned ${assignedCount} leads to ${emp.fullName}.`,
-    { assignedCount, assignedTo: emp.fullName },
+    `Successfully assigned ${assignedCount} leads to ${empName}.`,
+    { assignedCount, assignedTo: empName },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
@@ -800,7 +936,33 @@ export const bulkAssignLeads = asyncHandler(async (req, res) => {
 // ============================================================================
 
 export const getDashboardStats = asyncHandler(async (req, res) => {
-  const stats = getDashboardStatsInMemory();
+  let totalMembers = 0, maleProfiles = 0, femaleProfiles = 0, inactiveMembers = 0,
+      totalRevenue = 0, membershipPlans = 0, totalStaff = 0;
+
+  if (mongoose.connection.readyState === 1) {
+    [totalMembers, maleProfiles, femaleProfiles, inactiveMembers, membershipPlans, totalStaff] = await Promise.all([
+      User.countDocuments(),
+      Profile.countDocuments({ gender: "MALE" }),
+      Profile.countDocuments({ gender: "FEMALE" }),
+      User.countDocuments({ status: { $ne: "ACTIVE" } }),
+      MembershipPlan.countDocuments(),
+      Employee.countDocuments(),
+    ]);
+
+    const subs = await UserSubscription.find().lean();
+    totalRevenue = subs.reduce((acc, s) => acc + (Number(s.amountPaid || s.price) || 0), 0);
+  }
+
+  const stats = [
+    { label: "Total Members", value: totalMembers, icon: "users", color: "rose" },
+    { label: "Male Profiles", value: maleProfiles, icon: "user", color: "blue" },
+    { label: "Female Profiles", value: femaleProfiles, icon: "heart", color: "pink" },
+    { label: "Inactive Members", value: inactiveMembers, icon: "user-x", color: "slate" },
+    { label: "Total Revenue", value: `₹${totalRevenue.toLocaleString("en-IN")}`, icon: "indian-rupee", color: "amber" },
+    { label: "Membership Plans", value: membershipPlans, icon: "credit-card", color: "orange" },
+    { label: "Total Staff", value: totalStaff, icon: "shield", color: "emerald" },
+  ];
+
   return apiHTTPResponse(
     req,
     res,
@@ -813,7 +975,22 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
 });
 
 export const getDashboardActionQueues = asyncHandler(async (req, res) => {
-  const queues = getDashboardActionQueuesInMemory();
+  let pendingVerifications = 0, newLeads = 0, pendingTasks = 0;
+
+  if (mongoose.connection.readyState === 1) {
+    [pendingVerifications, newLeads, pendingTasks] = await Promise.all([
+      User.countDocuments({ isKycVerified: false }),
+      Lead.countDocuments({ status: "NEW" }),
+      Task.countDocuments({ status: "PENDING" }),
+    ]);
+  }
+
+  const queues = [
+    { label: "Profile KYC Verification", count: pendingVerifications, key: "verification", route: "/verifications" },
+    { label: "New Unassigned Leads", count: newLeads, key: "leads", route: "/leads" },
+    { label: "Pending Staff Follow-ups", count: pendingTasks, key: "tasks", route: "/tasks" },
+  ];
+
   return apiHTTPResponse(
     req,
     res,
@@ -826,13 +1003,37 @@ export const getDashboardActionQueues = asyncHandler(async (req, res) => {
 });
 
 export const getDashboardChartsOverview = asyncHandler(async (req, res) => {
-  const charts = getDashboardChartsDataInMemory();
+  let memberGrowth = [], leadConversion = [];
+
+  if (mongoose.connection.readyState === 1) {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const curMonth = new Date().getMonth();
+    const last6 = [];
+    for (let i = 5; i >= 0; i--) {
+      const idx = (curMonth - i + 12) % 12;
+      last6.push(months[idx]);
+    }
+    memberGrowth = last6.map((m) => ({ month: m, count: 0 }));
+    leadConversion = [
+      { status: "NEW", count: 0 },
+      { status: "CONTACTED", count: 0 },
+      { status: "FOLLOW_UP", count: 0 },
+      { status: "CONVERTED", count: 0 },
+      { status: "LOST", count: 0 },
+    ];
+    const leads = await Lead.find().lean();
+    for (const l of leads) {
+      const item = leadConversion.find((c) => c.status === l.status);
+      if (item) item.count++;
+    }
+  }
+
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Dashboard charts overview retrieved.",
-    charts,
+    { memberGrowth, leadConversion },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
@@ -886,14 +1087,27 @@ export const getDashboardCharts = asyncHandler(async (req, res) => {
 });
 
 export const getTopAgents = asyncHandler(async (req, res) => {
-  const agents = STAFF_EMPLOYEES.filter((e) => e.role !== "SUPER_ADMIN").map((emp, idx) => ({
-    employeeId: emp.employeeId,
-    name: emp.fullName,
-    leadsAssigned: 25 + idx * 8,
-    converted: 8 + idx * 3,
-    conversionRate: `${((8 + idx * 3) / (25 + idx * 8) * 100).toFixed(1)}%`,
-    avgFirstContact: `${15 + idx * 3} mins`,
-  }));
+  let agents = [];
+  if (mongoose.connection.readyState === 1) {
+    const employees = await Employee.find({ role: { $ne: "SUPER_ADMIN" } }).limit(10).lean();
+    agents = await Promise.all(
+      employees.map(async (emp) => {
+        const [assigned, converted] = await Promise.all([
+          Lead.countDocuments({ assignedEmployeeId: String(emp._id) }),
+          Lead.countDocuments({ assignedEmployeeId: String(emp._id), status: "CONVERTED" }),
+        ]);
+        const rate = assigned > 0 ? ((converted / assigned) * 100).toFixed(1) : "0.0";
+        return {
+          employeeId: emp.employeeId,
+          name: emp.fullName,
+          leadsAssigned: assigned,
+          converted,
+          conversionRate: `${rate}%`,
+          avgFirstContact: "15 mins",
+        };
+      })
+    );
+  }
 
   return apiHTTPResponse(
     req,
@@ -907,7 +1121,11 @@ export const getTopAgents = asyncHandler(async (req, res) => {
 });
 
 export const getRecentLeads = asyncHandler(async (req, res) => {
-  const leads = IN_MEMORY_LEADS.slice(0, 10);
+  let leads = [];
+  if (mongoose.connection.readyState === 1) {
+    leads = await Lead.find().sort({ createdAt: -1 }).limit(10).lean();
+  }
+
   return apiHTTPResponse(
     req,
     res,
@@ -920,7 +1138,13 @@ export const getRecentLeads = asyncHandler(async (req, res) => {
 });
 
 export const getTodaysFollowups = asyncHandler(async (req, res) => {
-  const followups = IN_MEMORY_LEADS.filter((l) => l.status === "FOLLOW_UP" || l.nextFollowUp).slice(0, 15);
+  let followups = [];
+  if (mongoose.connection.readyState === 1) {
+    followups = await Lead.find({
+      $or: [{ status: "FOLLOW_UP" }, { nextFollowUp: { $exists: true, $ne: null } }],
+    }).sort({ nextFollowUp: 1, updatedAt: -1 }).limit(15).lean();
+  }
+
   return apiHTTPResponse(
     req,
     res,
@@ -939,10 +1163,40 @@ export const getTodaysFollowups = asyncHandler(async (req, res) => {
 export const getPendingVerifications = asyncHandler(async (req, res) => {
   const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
   const limit = Math.min(100, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
-  const pending = IN_MEMORY_VERIFICATIONS.filter((v) => v.status === "PENDING");
-  const total = pending.length;
+
+  let pendingList = [];
+  let total = 0;
+
+  if (mongoose.connection.readyState === 1) {
+    const query = { isKycVerified: false };
+    total = await User.countDocuments(query);
+    const users = await User.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
+
+    const userIds = users.map((u) => u._id);
+    const profiles = await Profile.find({ userId: { $in: userIds } }).lean();
+    const profileMap = new Map(profiles.map((p) => [String(p.userId), p]));
+
+    pendingList = users.map((u) => {
+      const p = profileMap.get(String(u._id)) || {};
+      return {
+        _id: String(u._id),
+        candidateId: String(u._id),
+        candidateName: p.name || u.name || "Candidate",
+        phone: u.phone,
+        email: u.email,
+        subcaste: p.subcaste || "Sindhi",
+        status: "PENDING",
+        submittedAt: u.createdAt,
+        documentType: "Aadhaar Card",
+      };
+    });
+  }
+
   const totalPages = Math.ceil(total / limit) || 1;
-  const paginated = pending.slice((page - 1) * limit, (page - 1) * limit + limit);
 
   return apiHTTPResponse(
     req,
@@ -950,8 +1204,8 @@ export const getPendingVerifications = asyncHandler(async (req, res) => {
     CONSTANTS.HTTP_OK,
     "Pending verifications retrieved.",
     {
-      verifications: paginated,
-      list: paginated,
+      verifications: pendingList,
+      list: pendingList,
       total,
       totalPages,
       page,
@@ -972,14 +1226,13 @@ export const getPendingVerifications = asyncHandler(async (req, res) => {
 
 export const approveVerification = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const verif = IN_MEMORY_VERIFICATIONS.find((v) => v._id === id || v.candidateId === id);
+  let updated = null;
 
-  if (verif) {
-    verif.status = "APPROVED";
-    const cand = findProfileByIdInMemory(verif.candidateId);
-    if (cand) {
-      cand.isVerified = true;
-      cand.verificationBadge = "VERIFIED";
+  if (mongoose.connection.readyState === 1) {
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      await User.findByIdAndUpdate(id, { isKycVerified: true });
+      await Profile.findOneAndUpdate({ userId: id }, { isVerified: true, verificationBadge: "VERIFIED" });
+      updated = { id, status: "APPROVED", isVerified: true };
     }
   }
 
@@ -988,7 +1241,7 @@ export const approveVerification = asyncHandler(async (req, res) => {
     res,
     CONSTANTS.HTTP_OK,
     "Verification approved successfully.",
-    verif,
+    updated || { id, status: "APPROVED" },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
@@ -997,15 +1250,13 @@ export const approveVerification = asyncHandler(async (req, res) => {
 export const rejectVerification = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { reason = "Document image is unclear" } = req.body;
-  const verif = IN_MEMORY_VERIFICATIONS.find((v) => v._id === id || v.candidateId === id);
+  let updated = null;
 
-  if (verif) {
-    verif.status = "REJECTED";
-    verif.rejectionReason = reason;
-    const cand = findProfileByIdInMemory(verif.candidateId);
-    if (cand) {
-      cand.isVerified = false;
-      cand.verificationBadge = "REJECTED";
+  if (mongoose.connection.readyState === 1) {
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      await User.findByIdAndUpdate(id, { isKycVerified: false });
+      await Profile.findOneAndUpdate({ userId: id }, { isVerified: false, verificationBadge: "REJECTED" });
+      updated = { id, status: "REJECTED", reason };
     }
   }
 
@@ -1014,7 +1265,7 @@ export const rejectVerification = asyncHandler(async (req, res) => {
     res,
     CONSTANTS.HTTP_OK,
     "Verification rejected.",
-    verif,
+    updated || { id, status: "REJECTED", reason },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
@@ -1027,9 +1278,24 @@ export const rejectVerification = asyncHandler(async (req, res) => {
 export const getEmployeesList = asyncHandler(async (req, res) => {
   const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
   const limit = Math.min(100, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
-  const total = STAFF_EMPLOYEES.length;
+
+  let sourceList = [];
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const dbDocs = await Employee.find().sort({ createdAt: -1 }).lean();
+      sourceList = dbDocs.map((doc) => ({
+        ...doc,
+        _id: String(doc._id),
+        id: String(doc._id),
+      }));
+    } catch (_err) {
+      sourceList = [];
+    }
+  }
+
+  const total = sourceList.length;
   const totalPages = Math.ceil(total / limit) || 1;
-  const paginated = STAFF_EMPLOYEES.slice((page - 1) * limit, (page - 1) * limit + limit);
+  const paginated = sourceList.slice((page - 1) * limit, (page - 1) * limit + limit);
 
   return apiHTTPResponse(
     req,
@@ -1059,7 +1325,20 @@ export const getEmployeesList = asyncHandler(async (req, res) => {
 
 export const getEmployeeDetail = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const emp = STAFF_EMPLOYEES.find((e) => e._id === id || e.employeeId === id);
+  let emp = null;
+
+  if (mongoose.connection.readyState === 1) {
+    try {
+      if (mongoose.Types.ObjectId.isValid(id)) {
+        emp = await Employee.findById(id).lean();
+      }
+      if (!emp) {
+        emp = await Employee.findOne({ employeeId: id }).lean();
+      }
+    } catch (_err) {
+      emp = null;
+    }
+  }
 
   if (!emp) {
     return apiHTTPResponse(
@@ -1073,12 +1352,17 @@ export const getEmployeeDetail = asyncHandler(async (req, res) => {
     );
   }
 
+  const formatted = {
+    ...emp,
+    id: String(emp._id || emp.id),
+  };
+
   return apiHTTPResponse(
     req,
     res,
     CONSTANTS.HTTP_OK,
     "Employee details retrieved.",
-    emp,
+    formatted,
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
@@ -1087,10 +1371,15 @@ export const getEmployeeDetail = asyncHandler(async (req, res) => {
 export const updateEmployeePermissions = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { permissions, reason } = req.body;
-  const emp = STAFF_EMPLOYEES.find((e) => e._id === id || e.employeeId === id);
+  let updated = null;
 
-  if (emp) {
-    emp.permissions = { ...emp.permissions, ...permissions };
+  if (mongoose.connection.readyState === 1) {
+    const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : { employeeId: id };
+    updated = await Employee.findOneAndUpdate(
+      query,
+      { $set: { permissions } },
+      { new: true }
+    );
   }
 
   return apiHTTPResponse(
@@ -1098,7 +1387,7 @@ export const updateEmployeePermissions = asyncHandler(async (req, res) => {
     res,
     CONSTANTS.HTTP_OK,
     "Employee permissions updated.",
-    { id, permissions, reason },
+    { id, permissions, reason, employee: updated },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
   );
@@ -1109,9 +1398,16 @@ export const updateEmployeePermissions = asyncHandler(async (req, res) => {
 // ============================================================================
 
 export const getFinanceSummary = asyncHandler(async (req, res) => {
-  const totalRevenue = IN_MEMORY_TRANSACTIONS
-    .filter((t) => t.status === "SUCCESS")
-    .reduce((acc, t) => acc + t.amount, 0);
+  let totalRevenue = 0;
+  let successfulTransactions = 0;
+  let refundedTransactions = 0;
+
+  if (mongoose.connection.readyState === 1) {
+    const subs = await UserSubscription.find().lean();
+    totalRevenue = subs.reduce((acc, s) => acc + (Number(s.amountPaid || s.price) || 0), 0);
+    successfulTransactions = subs.filter((s) => s.paymentStatus === "COMPLETED" || s.status === "ACTIVE").length;
+    refundedTransactions = subs.filter((s) => s.paymentStatus === "REFUNDED" || s.status === "REFUNDED").length;
+  }
 
   return apiHTTPResponse(
     req,
@@ -1121,9 +1417,9 @@ export const getFinanceSummary = asyncHandler(async (req, res) => {
     {
       totalRevenue,
       currency: "INR",
-      successfulTransactions: IN_MEMORY_TRANSACTIONS.filter((t) => t.status === "SUCCESS").length,
-      refundedTransactions: IN_MEMORY_TRANSACTIONS.filter((t) => t.status === "REFUNDED").length,
-      pendingSettlement: 18500,
+      successfulTransactions,
+      refundedTransactions,
+      pendingSettlement: 0,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -1133,9 +1429,34 @@ export const getFinanceSummary = asyncHandler(async (req, res) => {
 export const getTransactionsList = asyncHandler(async (req, res) => {
   const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
   const limit = Math.min(100, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
-  const total = IN_MEMORY_TRANSACTIONS.length;
+
+  let txList = [];
+  let total = 0;
+
+  if (mongoose.connection.readyState === 1) {
+    total = await UserSubscription.countDocuments();
+    const subs = await UserSubscription.find()
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate("userId", "name phone email")
+      .lean();
+
+    txList = subs.map((s) => ({
+      _id: String(s._id),
+      transactionId: s.paymentId || `TXN-${String(s._id).slice(-6).toUpperCase()}`,
+      candidateName: s.userId?.name || "Member",
+      phone: s.userId?.phone || "",
+      planName: s.planName || "Premium Membership",
+      amount: s.amountPaid || s.price || 0,
+      currency: "INR",
+      status: s.paymentStatus === "COMPLETED" || s.status === "ACTIVE" ? "SUCCESS" : (s.paymentStatus || "PENDING"),
+      paymentMethod: s.paymentMethod || "ONLINE_GATEWAY",
+      date: s.createdAt,
+    }));
+  }
+
   const totalPages = Math.ceil(total / limit) || 1;
-  const paginated = IN_MEMORY_TRANSACTIONS.slice((page - 1) * limit, (page - 1) * limit + limit);
 
   return apiHTTPResponse(
     req,
@@ -1143,8 +1464,8 @@ export const getTransactionsList = asyncHandler(async (req, res) => {
     CONSTANTS.HTTP_OK,
     "Transaction ledger retrieved.",
     {
-      transactions: paginated,
-      list: paginated,
+      transactions: txList,
+      list: txList,
       total,
       totalPages,
       page,
@@ -1164,65 +1485,16 @@ export const getTransactionsList = asyncHandler(async (req, res) => {
 });
 
 export const getPlansList = asyncHandler(async (req, res) => {
-  const plans = [
-    {
-      _id: "plan_silver",
-      name: "Silver",
-      tier: "SILVER",
-      price: 2999,
-      durationDays: 90,
-      contactViewsQuota: 25,
-      chatQuota: "Unlimited",
-      horoscopeMatching: true,
-      featuredListing: false,
-      dedicatedAdvisor: false,
-      status: "ACTIVE",
-    },
-    {
-      _id: "plan_gold",
-      name: "Gold",
-      tier: "GOLD",
-      price: 5999,
-      durationDays: 180,
-      contactViewsQuota: 60,
-      chatQuota: "Unlimited",
-      horoscopeMatching: true,
-      featuredListing: true,
-      dedicatedAdvisor: false,
-      status: "ACTIVE",
-    },
-    {
-      _id: "plan_diamond",
-      name: "Diamond",
-      tier: "DIAMOND",
-      price: 9999,
-      durationDays: 365,
-      contactViewsQuota: 150,
-      chatQuota: "Unlimited",
-      horoscopeMatching: true,
-      featuredListing: true,
-      dedicatedAdvisor: true,
-      status: "ACTIVE",
-    },
-    {
-      _id: "plan_vip",
-      name: "VIP Assisted",
-      tier: "VIP",
-      price: 21000,
-      durationDays: 365,
-      contactViewsQuota: 999,
-      chatQuota: "Unlimited",
-      horoscopeMatching: true,
-      featuredListing: true,
-      dedicatedAdvisor: true,
-      relationshipManager: true,
-      status: "ACTIVE",
-    },
-  ];
+  let plans = [];
+  let total = 0;
+
+  if (mongoose.connection.readyState === 1) {
+    total = await MembershipPlan.countDocuments();
+    plans = await MembershipPlan.find().sort({ sortOrder: 1, createdAt: 1 }).lean();
+  }
 
   const page = Math.max(1, Number(req.query.pageNo || req.query.page) || 1);
   const limit = Math.min(100, Math.max(1, Number(req.query.limit || req.query.pageSize) || 20));
-  const total = plans.length;
   const totalPages = Math.ceil(total / limit) || 1;
   const paginated = plans.slice((page - 1) * limit, (page - 1) * limit + limit);
 
@@ -1255,359 +1527,7 @@ export const getPlansList = asyncHandler(async (req, res) => {
 // ============================================================================
 // 8. USER ANALYTICS & TELEMETRY SESSIONS (Google / Firebase Analytics style)
 // ============================================================================
-const nowMs = Date.now();
-const hMs = 60 * 60 * 1000;
-const dMs = 24 * hMs;
-
-export const inMemoryUserSessions = [
-  // --- TODAY'S SESSIONS (Past 0-12 hours) ---
-  {
-    id: "sess_1",
-    userId: "u_101",
-    name: "Simran Advani",
-    memberId: "SM-4821",
-    phone: "+91 98201 54321",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
-    platform: "MOBILE_APP",
-    deviceInfo: "Android 14 (OnePlus 11)",
-    loginTime: new Date(nowMs - 3.8 * hMs).toISOString(),
-    logoutTime: new Date(nowMs - 3.3 * hMs).toISOString(),
-    sessionDurationMinutes: 28,
-    screensVisited: ["Home Feed", "Daily Horoscope", "Recommendations", "Payment & Upgrade Plans"],
-    visitedPaymentScreen: true,
-    viewedPlan: "Sindhi Gold (3 Months)",
-    engagementScore: "HIGH",
-    status: "LOGGED_OUT",
-  },
-  {
-    id: "sess_2",
-    userId: "u_102",
-    name: "Rohan Chandiramani",
-    memberId: "SM-4932",
-    phone: "+91 98233 87654",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
-    platform: "WEB_PANEL",
-    deviceInfo: "Chrome on macOS (Desktop)",
-    loginTime: new Date(nowMs - 1.8 * hMs).toISOString(),
-    logoutTime: null,
-    sessionDurationMinutes: 45,
-    screensVisited: ["Dashboard", "Member Search", "Kundli Match", "Festival Offers", "Payment Checkout"],
-    visitedPaymentScreen: true,
-    viewedPlan: "Royal Sindhi Platinum (6 Months)",
-    engagementScore: "HIGH",
-    status: "ACTIVE_NOW",
-  },
-  {
-    id: "sess_3",
-    userId: "u_103",
-    name: "Pooja Vazirani",
-    memberId: "SM-5104",
-    phone: "+91 97112 34567",
-    avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150",
-    platform: "MOBILE_APP",
-    deviceInfo: "iOS 18.1 (iPhone 15 Pro)",
-    loginTime: new Date(nowMs - 1.5 * hMs).toISOString(),
-    logoutTime: new Date(nowMs - 1.25 * hMs).toISOString(),
-    sessionDurationMinutes: 15,
-    screensVisited: ["Home Feed", "Interests Received", "Chat Messaging"],
-    visitedPaymentScreen: false,
-    viewedPlan: null,
-    engagementScore: "MEDIUM",
-    status: "LOGGED_OUT",
-  },
-  {
-    id: "sess_4",
-    userId: "u_104",
-    name: "Karan Lulla",
-    memberId: "SM-5220",
-    phone: "+91 99887 11223",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
-    platform: "MOBILE_APP",
-    deviceInfo: "Android 13 (Samsung S23)",
-    loginTime: new Date(nowMs - 35 * 60 * 1000).toISOString(),
-    logoutTime: null,
-    sessionDurationMinutes: 22,
-    screensVisited: ["Home Feed", "Profile Edit", "Upgrade Screen"],
-    visitedPaymentScreen: true,
-    viewedPlan: "Sindhi Diamond VIP (12 Months)",
-    engagementScore: "HIGH",
-    status: "ACTIVE_NOW",
-  },
-  {
-    id: "sess_5",
-    userId: "u_105",
-    name: "Ananya Motwani",
-    memberId: "SM-5341",
-    phone: "+91 98450 11998",
-    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150",
-    platform: "WEB_PANEL",
-    deviceInfo: "Safari on iPadOS",
-    loginTime: new Date(nowMs - 5 * hMs).toISOString(),
-    logoutTime: new Date(nowMs - 4.8 * hMs).toISOString(),
-    sessionDurationMinutes: 12,
-    screensVisited: ["Home Feed", "Browse Profiles"],
-    visitedPaymentScreen: false,
-    viewedPlan: null,
-    engagementScore: "LOW",
-    status: "LOGGED_OUT",
-  },
-  {
-    id: "sess_6",
-    userId: "u_106",
-    name: "Deepak Chawla",
-    memberId: "SM-5490",
-    phone: "+91 98110 55443",
-    avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150",
-    platform: "MOBILE_APP",
-    deviceInfo: "Android 14 (Pixel 8)",
-    loginTime: new Date(nowMs - 6.5 * hMs).toISOString(),
-    logoutTime: new Date(nowMs - 6.0 * hMs).toISOString(),
-    sessionDurationMinutes: 33,
-    screensVisited: ["Home Feed", "Kundli Report", "Prime Plans", "Payment Screen"],
-    visitedPaymentScreen: true,
-    viewedPlan: "Diwali Mahabachat Vivah (Flat 60% OFF)",
-    engagementScore: "HIGH",
-    status: "LOGGED_OUT",
-  },
-  {
-    id: "sess_7",
-    userId: "u_107",
-    name: "Mehak Jagtiani",
-    memberId: "SM-5512",
-    phone: "+91 98330 99881",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
-    platform: "MOBILE_APP",
-    deviceInfo: "iOS 18 (iPhone 14)",
-    loginTime: new Date(nowMs - 20 * 60 * 1000).toISOString(),
-    logoutTime: null,
-    sessionDurationMinutes: 18,
-    screensVisited: ["Home Feed", "Matches", "Contact Info View", "Upgrade Screen"],
-    visitedPaymentScreen: true,
-    viewedPlan: "Royal Sindhi Platinum (6 Months)",
-    engagementScore: "HIGH",
-    status: "ACTIVE_NOW",
-  },
-  {
-    id: "sess_8",
-    userId: "u_108",
-    name: "Naveen Bhambhani",
-    memberId: "SM-5601",
-    phone: "+91 97654 32109",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
-    platform: "WEB_PANEL",
-    deviceInfo: "Edge on Windows 11",
-    loginTime: new Date(nowMs - 8 * hMs).toISOString(),
-    logoutTime: new Date(nowMs - 7.5 * hMs).toISOString(),
-    sessionDurationMinutes: 30,
-    screensVisited: ["Dashboard", "Shortlists", "Settings"],
-    visitedPaymentScreen: false,
-    viewedPlan: null,
-    engagementScore: "MEDIUM",
-    status: "LOGGED_OUT",
-  },
-
-  // --- PAST 2 - 7 DAYS SESSIONS ---
-  {
-    id: "sess_9",
-    userId: "u_109",
-    name: "Priyanka Malkani",
-    memberId: "SM-5710",
-    phone: "+91 98211 44556",
-    avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150",
-    platform: "MOBILE_APP",
-    deviceInfo: "Android 14 (Samsung S24)",
-    loginTime: new Date(nowMs - 1.2 * dMs).toISOString(),
-    logoutTime: new Date(nowMs - 1.15 * dMs).toISOString(),
-    sessionDurationMinutes: 40,
-    screensVisited: ["Home Feed", "Kundli Match", "Pricing Plans", "Payment Screen"],
-    visitedPaymentScreen: true,
-    viewedPlan: "Sindhi Gold (3 Months)",
-    engagementScore: "HIGH",
-    status: "LOGGED_OUT",
-  },
-  {
-    id: "sess_10",
-    userId: "u_110",
-    name: "Sunil Wadhwa",
-    memberId: "SM-5822",
-    phone: "+91 98920 66778",
-    avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150",
-    platform: "WEB_PANEL",
-    deviceInfo: "Firefox on macOS",
-    loginTime: new Date(nowMs - 2.1 * dMs).toISOString(),
-    logoutTime: new Date(nowMs - 2.05 * dMs).toISOString(),
-    sessionDurationMinutes: 24,
-    screensVisited: ["Dashboard", "Matches", "Chat"],
-    visitedPaymentScreen: false,
-    viewedPlan: null,
-    engagementScore: "MEDIUM",
-    status: "LOGGED_OUT",
-  },
-  {
-    id: "sess_11",
-    userId: "u_111",
-    name: "Ritu Chhabria",
-    memberId: "SM-5930",
-    phone: "+91 98451 22334",
-    avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150",
-    platform: "MOBILE_APP",
-    deviceInfo: "iOS 17.5 (iPhone 13)",
-    loginTime: new Date(nowMs - 2.8 * dMs).toISOString(),
-    logoutTime: new Date(nowMs - 2.75 * dMs).toISOString(),
-    sessionDurationMinutes: 35,
-    screensVisited: ["Home Feed", "Festival Offers", "Upgrade Screen"],
-    visitedPaymentScreen: true,
-    viewedPlan: "Cheti Chand Jhulelal Offer (50% OFF)",
-    engagementScore: "HIGH",
-    status: "LOGGED_OUT",
-  },
-  {
-    id: "sess_12",
-    userId: "u_112",
-    name: "Manish Vaswani",
-    memberId: "SM-6011",
-    phone: "+91 98222 77889",
-    avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150",
-    platform: "WEB_PANEL",
-    deviceInfo: "Chrome on Windows 10",
-    loginTime: new Date(nowMs - 3.4 * dMs).toISOString(),
-    logoutTime: new Date(nowMs - 3.35 * dMs).toISOString(),
-    sessionDurationMinutes: 20,
-    screensVisited: ["Dashboard", "Kundli Match", "Pricing Plans"],
-    visitedPaymentScreen: true,
-    viewedPlan: "Sindhi Diamond VIP (12 Months)",
-    engagementScore: "HIGH",
-    status: "LOGGED_OUT",
-  },
-  {
-    id: "sess_13",
-    userId: "u_113",
-    name: "Riya Keswani",
-    memberId: "SM-6124",
-    phone: "+91 97118 88990",
-    avatar: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=150",
-    platform: "MOBILE_APP",
-    deviceInfo: "Android 13 (Vivo V29)",
-    loginTime: new Date(nowMs - 4.2 * dMs).toISOString(),
-    logoutTime: new Date(nowMs - 4.15 * dMs).toISOString(),
-    sessionDurationMinutes: 18,
-    screensVisited: ["Home Feed", "Explore Profiles"],
-    visitedPaymentScreen: false,
-    viewedPlan: null,
-    engagementScore: "LOW",
-    status: "LOGGED_OUT",
-  },
-  {
-    id: "sess_14",
-    userId: "u_114",
-    name: "Harsh Gidwani",
-    memberId: "SM-6235",
-    phone: "+91 98334 11223",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
-    platform: "MOBILE_APP",
-    deviceInfo: "iOS 18 (iPhone 15)",
-    loginTime: new Date(nowMs - 5.1 * dMs).toISOString(),
-    logoutTime: new Date(nowMs - 5.0 * dMs).toISOString(),
-    sessionDurationMinutes: 48,
-    screensVisited: ["Home Feed", "Chat", "Festival Deals", "Payment Screen"],
-    visitedPaymentScreen: true,
-    viewedPlan: "Royal Sindhi Platinum (6 Months)",
-    engagementScore: "HIGH",
-    status: "LOGGED_OUT",
-  },
-  {
-    id: "sess_15",
-    userId: "u_115",
-    name: "Divya Wadhwa",
-    memberId: "SM-6340",
-    phone: "+91 98205 66779",
-    avatar: "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=150",
-    platform: "WEB_PANEL",
-    deviceInfo: "Safari on macOS",
-    loginTime: new Date(nowMs - 6.2 * dMs).toISOString(),
-    logoutTime: new Date(nowMs - 6.15 * dMs).toISOString(),
-    sessionDurationMinutes: 26,
-    screensVisited: ["Dashboard", "Shortlists", "Profile Edit"],
-    visitedPaymentScreen: false,
-    viewedPlan: null,
-    engagementScore: "MEDIUM",
-    status: "LOGGED_OUT",
-  },
-
-  // --- PAST 8 - 30 DAYS SESSIONS ---
-  {
-    id: "sess_16",
-    userId: "u_116",
-    name: "Gaurav Hiranandani",
-    memberId: "SM-6455",
-    phone: "+91 99880 12345",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
-    platform: "MOBILE_APP",
-    deviceInfo: "Android 14 (OnePlus 12)",
-    loginTime: new Date(nowMs - 9.5 * dMs).toISOString(),
-    logoutTime: new Date(nowMs - 9.4 * dMs).toISOString(),
-    sessionDurationMinutes: 38,
-    screensVisited: ["Home Feed", "Recommendations", "Payment Upgrade"],
-    visitedPaymentScreen: true,
-    viewedPlan: "Sindhi Gold (3 Months)",
-    engagementScore: "HIGH",
-    status: "LOGGED_OUT",
-  },
-  {
-    id: "sess_17",
-    userId: "u_117",
-    name: "Komal Rohra",
-    memberId: "SM-6560",
-    phone: "+91 98114 55667",
-    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150",
-    platform: "WEB_PANEL",
-    deviceInfo: "Chrome on Windows 11",
-    loginTime: new Date(nowMs - 14.2 * dMs).toISOString(),
-    logoutTime: new Date(nowMs - 14.15 * dMs).toISOString(),
-    sessionDurationMinutes: 19,
-    screensVisited: ["Dashboard", "Kundli Match"],
-    visitedPaymentScreen: false,
-    viewedPlan: null,
-    engagementScore: "LOW",
-    status: "LOGGED_OUT",
-  },
-  {
-    id: "sess_18",
-    userId: "u_118",
-    name: "Sanjay Asrani",
-    memberId: "SM-6672",
-    phone: "+91 98223 99887",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
-    platform: "MOBILE_APP",
-    deviceInfo: "Android 13 (Realme GT)",
-    loginTime: new Date(nowMs - 21.0 * dMs).toISOString(),
-    logoutTime: new Date(nowMs - 20.95 * dMs).toISOString(),
-    sessionDurationMinutes: 52,
-    screensVisited: ["Home Feed", "Matches", "Pricing Plans", "Payment Screen"],
-    visitedPaymentScreen: true,
-    viewedPlan: "Sindhi Diamond VIP (12 Months)",
-    engagementScore: "HIGH",
-    status: "LOGGED_OUT",
-  },
-  {
-    id: "sess_19",
-    userId: "u_119",
-    name: "Sapna Mirchandani",
-    memberId: "SM-6780",
-    phone: "+91 98450 33221",
-    avatar: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=150",
-    platform: "WEB_PANEL",
-    deviceInfo: "Chrome on macOS",
-    loginTime: new Date(nowMs - 26.5 * dMs).toISOString(),
-    logoutTime: new Date(nowMs - 26.45 * dMs).toISOString(),
-    sessionDurationMinutes: 30,
-    screensVisited: ["Dashboard", "Browse", "Upgrade Plans"],
-    visitedPaymentScreen: true,
-    viewedPlan: "Royal Sindhi Platinum (6 Months)",
-    engagementScore: "HIGH",
-    status: "LOGGED_OUT",
-  },
-];
+export const inMemoryUserSessions = [];
 
 export const getUserAnalyticsSessions = asyncHandler(async (req, res) => {
   const { platform, status, search, timeframe = "TODAY" } = req.query;

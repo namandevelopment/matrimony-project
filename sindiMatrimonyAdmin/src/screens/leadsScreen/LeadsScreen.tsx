@@ -31,15 +31,14 @@ import {
   LeadDetailModal,
 } from './component';
 import { useInputs } from '../../customHooks/useInputs';
-import { useLeadsQuery } from '../../tanstackQuery';
-
-const FALLBACK_USER = Object.freeze({ fullName: 'Rajesh Mulchandani', role: 'SUPER_ADMIN', id: 'emp_001' });
+import { useLeadsQuery, useEmployeesQuery, useProfileQuery } from '../../tanstackQuery';
 
 export const LeadsScreen: React.FC = memoWithDeepEqual(() => {
   usePerformanceTracker('LeadsScreen');
 
   // TanStack Query: Cached for 5 minutes, 0 repeated API hits on navigation
   const { leads: apiLeads, isLoading: isLeadsLoading } = useLeadsQuery();
+  const { data: apiEmployees } = useEmployeesQuery();
 
   // Fallback dummy leads preserved per project guidelines
   // const initialFallbackLeads = crmDataService.getLeads();
@@ -48,12 +47,26 @@ export const LeadsScreen: React.FC = memoWithDeepEqual(() => {
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSyncedLeadsRef = useRef<any>(null);
 
-  // Cached session & role detection
-  const storedUser = useMemo(() => getStoredUser() || FALLBACK_USER, []);
+  // Cached session & role detection (always from getProfile API / storage, zero hardcoded fallback)
+  const { data: profileResponse } = useProfileQuery();
+  const liveUser = useMemo(() => {
+    const raw = (profileResponse as any)?.data || (profileResponse as any)?.employee || (profileResponse as any)?.user || profileResponse;
+    if (raw && (raw.id || raw._id || raw.email)) {
+      return {
+        ...raw,
+        id: String(raw._id || raw.id),
+        fullName: raw.fullName || raw.name || raw.email,
+        role: raw.role || 'CRM_AGENT',
+      };
+    }
+    return null;
+  }, [profileResponse]);
+
+  const storedUser = useMemo(() => getStoredUser(), []);
   const simulatedUser = getSimulatedUser();
   const activeRoleOverride = getActiveRole();
-  const effectiveUser = simulatedUser || storedUser;
-  const effectiveRole = activeRoleOverride || effectiveUser.role || 'SUPER_ADMIN';
+  const effectiveUser = simulatedUser || liveUser || storedUser || { fullName: 'Staff Member', role: 'CRM_AGENT', id: 'emp_current' };
+  const effectiveRole = activeRoleOverride || effectiveUser?.role || 'CRM_AGENT';
   const isSuperAdmin = effectiveRole === 'SUPER_ADMIN';
 
   /**
@@ -116,6 +129,14 @@ export const LeadsScreen: React.FC = memoWithDeepEqual(() => {
       updateState({ leads: apiLeads as any });
     }
   }, [apiLeads, updateState]);
+
+  // Sync live API employees into state
+  useEffect(() => {
+    const list = Array.isArray(apiEmployees) ? apiEmployees : (apiEmployees?.employees || apiEmployees?.list);
+    if (Array.isArray(list) && list.length > 0) {
+      updateState({ employees: list as any });
+    }
+  }, [apiEmployees, updateState]);
 
   // Clean up auto-dismiss timer on unmount
   useEffect(() => {

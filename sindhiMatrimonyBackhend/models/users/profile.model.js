@@ -195,6 +195,16 @@ const profileSchema = new Schema(
       type: String,
       index: true,
     },
+    assignedEmployeeId: {
+      type: String,
+      default: null,
+      index: true,
+    },
+    assignedMatchmakerId: {
+      type: String,
+      default: null,
+      index: true,
+    },
     ...addTimeStamp(),
   },
   {

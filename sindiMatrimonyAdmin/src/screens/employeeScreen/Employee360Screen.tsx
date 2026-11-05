@@ -21,6 +21,7 @@ import {
   Volume2,
 } from 'lucide-react';
 import { crmDataService } from '../../services/crmDataService';
+import { useEmployeeDetailQuery, useEmployeesQuery } from '../../tanstackQuery';
 import type { Employee } from '../../types/employee.types';
 import type {
   ClientProfile,
@@ -69,6 +70,9 @@ export const Employee360Screen: React.FC = () => {
   const params = useParams<{ employeeId?: string; id?: string }>();
   const navigate = useNavigate();
   const rawId = params.employeeId || params.id || 'emp_003';
+
+  const { data: detailData } = useEmployeeDetailQuery(rawId);
+  const { data: apiEmployees } = useEmployeesQuery();
 
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
@@ -177,6 +181,22 @@ export const Employee360Screen: React.FC = () => {
     });
     return unsubscribe;
   }, [rawId, dateRange]);
+
+  useEffect(() => {
+    if (detailData) {
+      const liveEmp = (detailData as any).data || detailData;
+      if (liveEmp && liveEmp.fullName) {
+        setEmployee(liveEmp as any);
+      }
+    }
+  }, [detailData]);
+
+  useEffect(() => {
+    const list = Array.isArray(apiEmployees) ? apiEmployees : (apiEmployees?.employees || apiEmployees?.list);
+    if (Array.isArray(list) && list.length > 0) {
+      setAllEmployees(list as any);
+    }
+  }, [apiEmployees]);
 
   const tabs: TabItem[] = useMemo(
     () => [

@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import Review from "../../models/reviews/review.model.js";
-import { DEFAULT_REVIEWS } from "../../constants/reviewSeed.js";
 import {
   HTTP_OK,
   HTTP_CREATED,

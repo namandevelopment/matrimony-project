@@ -69,7 +69,25 @@ function errorHandler(err, req, res, next) {
       );
     }
 
-    // 4. Mongoose CastError (e.g. invalid ObjectId format)
+    // 4. Database Connection & Buffering Errors
+    if (
+      err.name === "MongooseServerSelectionError" ||
+      err.name === "MongoNetworkError" ||
+      err.message?.includes("before initial connection is complete") ||
+      err.message?.includes("buffering timed out")
+    ) {
+      return apiHTTPResponse(
+        req,
+        res,
+        CONSTANTS.HTTP_SERVICE_UNAVAILABLE,
+        "Database service is currently unavailable. Please ensure database connection is established.",
+        CONSTANTS.DATA_NULL,
+        CONSTANTS.SERVICE_UNAVAILABLE,
+        CONSTANTS.ERROR_TRUE
+      );
+    }
+
+    // 5. Mongoose CastError (e.g. invalid ObjectId format)
     if (err.name === "CastError") {
       return apiHTTPResponse(
         req,

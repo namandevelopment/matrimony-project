@@ -10,9 +10,9 @@ interface HeroSectionProps {
 const HeroSectionComponent: React.FC<HeroSectionProps> = ({ onLoginClick }) => {
   return (
     <section className="relative w-full overflow-hidden bg-stone-950 text-white flex flex-col justify-center items-center min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-4.5rem)]">
-      {/* Background Couples Collage Grid (Fixed to Viewport with GPU acceleration, zero clip-path repaints) */}
+      {/* Background Couples Collage Grid */}
       <div
-        className="fixed inset-0 z-0 pointer-events-none overflow-hidden transform-gpu will-change-transform"
+        className="absolute inset-0 z-0 pointer-events-none overflow-hidden"
         aria-hidden="true"
       >
         <picture className="absolute inset-0 w-full h-full">
@@ -37,8 +37,8 @@ const HeroSectionComponent: React.FC<HeroSectionProps> = ({ onLoginClick }) => {
         </picture>
 
         {/* Cinematic dark gradient overlays for contrast & luxury feel */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/35 to-black/65 transform-gpu" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,rgba(0,0,0,0.45)_100%)] transform-gpu" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/35 to-black/65" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,rgba(0,0,0,0.45)_100%)]" />
       </div>
 
       {/* Main Hero Container: fills full viewport height so on initial view there is zero bottom gap */}

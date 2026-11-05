@@ -73,16 +73,22 @@ input[type="radio"]:focus-visible {
 }
 
 /* Remove and hide scrollbars completely while keeping scroll functionality */
-* {
+html, body, .no-scrollbar {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
 
-*::-webkit-scrollbar {
+html::-webkit-scrollbar, body::-webkit-scrollbar, .no-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome, Safari and Opera */
   width: 0;
   height: 0;
   background: transparent;
+}
+
+/* Rendering Isolation for 60/120 FPS buttery smooth scrolling */
+.optimize-scroll {
+  content-visibility: auto;
+  contain-intrinsic-size: 700px;
 }
 
 /* Subtle Floating Chat Micro-Animations */

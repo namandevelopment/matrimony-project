@@ -15,8 +15,6 @@ interface QueueItem {
   uploadedAt: string;
 }
 
-// Fallback dummy verification queue preserved per project guidelines
-// const DUMMY_FALLBACK_QUEUE = mockQueue;
 export const VerificationScreen: React.FC = () => {
   // TanStack Query: Cached for 5 minutes, 0 repeated API hits on navigation
   const { data: apiVerifications, isLoading } = usePendingVerificationsQuery();

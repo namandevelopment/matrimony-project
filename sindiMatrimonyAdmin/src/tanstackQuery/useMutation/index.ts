@@ -329,6 +329,64 @@ export const usePauseCampaignMutation = () => {
   });
 };
 
+/** Create / Add Staff Employee */
+export const useCreateEmployeeMutation = () => {
+  return useApiMutation({
+    invalidateQueries: [QUERY_KEYS.employees(), QUERY_KEYS.dashboardStats, QUERY_KEYS.auditLogs()],
+  });
+};
+
+/** Update Staff Employee Full Profile */
+export const useUpdateEmployeeMutation = (employeeId?: string) => {
+  return useApiMutation({
+    invalidateQueries: employeeId
+      ? [QUERY_KEYS.employeeDetail(employeeId), QUERY_KEYS.employees(), QUERY_KEYS.auditLogs()]
+      : [QUERY_KEYS.employees(), QUERY_KEYS.auditLogs()],
+  });
+};
+
+/** Update Employee Status (ACTIVE, INACTIVE, SUSPENDED) */
+export const useUpdateEmployeeStatusMutation = (employeeId?: string) => {
+  return useApiMutation({
+    invalidateQueries: employeeId
+      ? [QUERY_KEYS.employeeDetail(employeeId), QUERY_KEYS.employees(), QUERY_KEYS.auditLogs()]
+      : [QUERY_KEYS.employees(), QUERY_KEYS.auditLogs()],
+  });
+};
+
+/** Administrative Reset of Employee Password */
+export const useResetEmployeePasswordMutation = () => {
+  return useApiMutation({
+    invalidateQueries: [QUERY_KEYS.auditLogs()],
+  });
+};
+
+/** Permanent Deletion of Employee (SUPER_ADMIN only) */
+export const useDeleteEmployeeMutation = () => {
+  return useApiMutation({
+    invalidateQueries: [QUERY_KEYS.employees(), QUERY_KEYS.leads(), QUERY_KEYS.auditLogs()],
+  });
+};
+
+/** Custom Roles Mutations */
+export const useCreateRoleMutation = () => {
+  return useApiMutation({
+    invalidateQueries: [QUERY_KEYS.roles, QUERY_KEYS.auditLogs()],
+  });
+};
+
+export const useUpdateRoleMutation = () => {
+  return useApiMutation({
+    invalidateQueries: [QUERY_KEYS.roles, QUERY_KEYS.employees(), QUERY_KEYS.auditLogs()],
+  });
+};
+
+export const useDeleteRoleMutation = () => {
+  return useApiMutation({
+    invalidateQueries: [QUERY_KEYS.roles, QUERY_KEYS.auditLogs()],
+  });
+};
+
 /** Update Employee Permissions */
 export const useUpdateEmployeePermissionsMutation = (employeeId?: string) => {
   return useApiMutation({

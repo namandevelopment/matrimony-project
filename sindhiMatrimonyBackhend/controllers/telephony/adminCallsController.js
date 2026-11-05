@@ -1,74 +1,10 @@
 import { asyncHandler, apiHTTPResponse } from "../../utils/globalFunction.js";
 import * as CONSTANTS from "../../utils/constants.js";
-import { IN_MEMORY_LEADS, STAFF_EMPLOYEES } from "../../services/realDataService.js";
+import { Lead } from "../../models/index.js";
+import mongoose from "mongoose";
 
 // Telephony call records store
-let callLogsStore = [
-  {
-    _id: "call_901",
-    callId: "CL-901",
-    leadId: "LD-1501",
-    candidateName: "Kunal Ahuja",
-    phoneNumber: "+91 9820011223",
-    callerStaffId: "staff_002",
-    callerStaffName: "Pooja Advani",
-    direction: "OUTBOUND",
-    disposition: "CONNECTED",
-    durationSeconds: 245,
-    durationFormatted: "4m 5s",
-    notes: "Detailed consultation completed. Candidate approved proposal for Simran Chandnani.",
-    recordingUrl: "https://s3.ap-south-1.amazonaws.com/sindhi-matrimony-calls/rec_901.mp3",
-    calledAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-  },
-  {
-    _id: "call_902",
-    callId: "CL-902",
-    leadId: "LD-1502",
-    candidateName: "Simran Chandnani",
-    phoneNumber: "+91 9820022334",
-    callerStaffId: "staff_002",
-    callerStaffName: "Pooja Advani",
-    direction: "OUTBOUND",
-    disposition: "CONNECTED",
-    durationSeconds: 180,
-    durationFormatted: "3m 0s",
-    notes: "Spoke to candidate's mother. Positive feedback on Kunal's bio-data. Family conference planned.",
-    recordingUrl: "https://s3.ap-south-1.amazonaws.com/sindhi-matrimony-calls/rec_902.mp3",
-    calledAt: new Date(Date.now() - 3600000 * 1).toISOString(),
-  },
-  {
-    _id: "call_903",
-    callId: "CL-903",
-    leadId: "LD-1503",
-    candidateName: "Rohan Advani",
-    phoneNumber: "+91 9820033445",
-    callerStaffId: "staff_001",
-    callerStaffName: "Rajesh Vazirani",
-    direction: "OUTBOUND",
-    disposition: "NOT_ANSWERED",
-    durationSeconds: 0,
-    durationFormatted: "0s",
-    notes: "Ringing no answer. Auto-scheduled callback in 3 hours.",
-    recordingUrl: null,
-    calledAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-  },
-  {
-    _id: "call_904",
-    callId: "CL-904",
-    leadId: "LD-1504",
-    candidateName: "Ananya Wadhwa",
-    phoneNumber: "+91 9820044556",
-    callerStaffId: "staff_003",
-    callerStaffName: "Deepak Mirchandani",
-    direction: "OUTBOUND",
-    disposition: "BUSY",
-    durationSeconds: 0,
-    durationFormatted: "0s",
-    notes: "Line busy. Sent WhatsApp nudge.",
-    recordingUrl: null,
-    calledAt: new Date(Date.now() - 3600000 * 8).toISOString(),
-  },
-];
+let callLogsStore = [];
 
 /**
  * 1. GET /api/v1/admin/calls
@@ -188,7 +124,7 @@ export const logCallOutcome = asyncHandler(async (req, res) => {
   const secs = durationNum % 60;
   const durationFormatted = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 
-  const staffName = req.user?.name || req.user?.fullName || "Staff Matchmaker";
+  const staffName = req.user?.fullName || req.user?.name || "Staff Matchmaker";
   const staffId = req.user?.id || req.user?._id || "staff_001";
   const now = new Date().toISOString();
   const callId = `CL-${900 + callLogsStore.length + 1}`;
@@ -213,21 +149,26 @@ export const logCallOutcome = asyncHandler(async (req, res) => {
 
   callLogsStore.unshift(newLog);
 
-  // If tied to lead, update lead's last contacted timestamp & notes
-  if (leadId) {
-    const lead = IN_MEMORY_LEADS.find((l) => l._id === leadId || l.leadId === leadId);
-    if (lead) {
-      lead.lastContactedAt = now;
+  // If tied to lead, update MongoDB Lead last contacted timestamp & timeline
+  if (leadId && mongoose.connection.readyState === 1) {
+    try {
+      const query = mongoose.Types.ObjectId.isValid(leadId) ? { _id: leadId } : { leadId };
+      const updateDoc = {
+        lastContactedAt: new Date(),
+        $push: {
+          timeline: {
+            event: "CALL_LOGGED",
+            description: `[Call Logged: ${upperDisp} (${durationFormatted})] ${notes}`,
+            performedBy: staffName,
+            timestamp: new Date(),
+          },
+        },
+      };
       if (nextFollowUpDate) {
-        lead.nextFollowUp = new Date(nextFollowUpDate).toISOString();
+        updateDoc.nextFollowUp = new Date(nextFollowUpDate);
       }
-      lead.notes.unshift({
-        _id: `note_call_${Date.now()}`,
-        noteText: `[Call Logged: ${upperDisp} (${durationFormatted})] ${notes}`,
-        author: staffName,
-        createdAt: now,
-      });
-    }
+      await Lead.findOneAndUpdate(query, updateDoc);
+    } catch {}
   }
 
   return apiHTTPResponse(

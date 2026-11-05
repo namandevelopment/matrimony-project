@@ -39,30 +39,44 @@ const employeeSchema = new Schema(
       type: String,
       select: false, // Hidden by default for security
     },
-    role: {
-      type: String,
-      default: "SUPER_ADMIN",
+    roleId: {
+      type: Schema.Types.ObjectId,
+      ref: "Role",
+      default: null,
       index: true,
     },
-    roleCode: {
-      type: Number,
-      default: ROLES.SUPER_ADMIN,
+    role: {
+      type: String,
+      default: "CRM_AGENT",
+      index: true,
+    },
+    status: {
+      type: String,
+      enum: ["ACTIVE", "INACTIVE", "SUSPENDED"],
+      default: "ACTIVE",
+      index: true,
     },
     department: {
       type: String,
-      default: "Executive Management",
+      default: "Sales & CRM",
     },
     designation: {
       type: String,
-      default: "Super Administrator",
+      default: "CRM Sales Executive",
+    },
+    teamId: {
+      type: String,
+      default: null,
+      index: true,
     },
     team: {
       type: String,
-      default: "Executive Leadership",
+      default: "CRM Team",
     },
     managerId: {
       type: String,
       default: null,
+      index: true,
     },
     managerName: {
       type: String,
@@ -71,7 +85,7 @@ const employeeSchema = new Schema(
     recordScope: {
       type: String,
       enum: ["ALL", "BRANCH", "OWN", "ASSIGNED", "TEAM", "REGION"],
-      default: "ALL",
+      default: "OWN",
     },
     permissions: {
       type: Schema.Types.Mixed,
@@ -156,6 +170,14 @@ const employeeSchema = new Schema(
     avatarUrl: {
       type: String,
       default: "",
+    },
+    createdBy: {
+      type: String,
+      default: "SYSTEM",
+    },
+    updatedBy: {
+      type: String,
+      default: "SYSTEM",
     },
   },
   {

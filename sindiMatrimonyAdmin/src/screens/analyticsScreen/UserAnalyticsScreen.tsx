@@ -51,8 +51,15 @@ export const UserAnalyticsScreen: React.FC = () => {
   // Subscribe to service updates
   useEffect(() => {
     const unsub = userAnalyticsService.subscribe(() => setTick((t) => t + 1));
-    userAnalyticsService.fetchSessionsFromApi(timeFilter);
     return () => unsub();
+  }, []);
+
+  // Fetch telemetry whenever timeFilter changes
+  useEffect(() => {
+    setIsRefreshing(true);
+    userAnalyticsService.fetchSessionsFromApi(timeFilter).finally(() => {
+      setIsRefreshing(false);
+    });
   }, [timeFilter]);
 
   const handleTabChange = (newTab: 'overview' | 'sessions' | 'payments') => {
@@ -71,11 +78,8 @@ export const UserAnalyticsScreen: React.FC = () => {
     setSearchParams(params);
   };
 
-  const handleTimeframeChange = async (newTf: 'TODAY' | '7D' | '30D') => {
+  const handleTimeframeChange = (newTf: 'TODAY' | '7D' | '30D') => {
     setTimeFilter(newTf);
-    setIsRefreshing(true);
-    await userAnalyticsService.fetchSessionsFromApi(newTf);
-    setIsRefreshing(false);
   };
 
   const handleRefresh = async () => {
@@ -159,27 +163,24 @@ export const UserAnalyticsScreen: React.FC = () => {
             <button
               type="button"
               onClick={() => handleTimeframeChange('TODAY')}
-              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                timeFilter === 'TODAY' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${timeFilter === 'TODAY' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               Today
             </button>
             <button
               type="button"
               onClick={() => handleTimeframeChange('7D')}
-              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                timeFilter === '7D' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${timeFilter === '7D' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               Last 7 Days
             </button>
             <button
               type="button"
               onClick={() => handleTimeframeChange('30D')}
-              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                timeFilter === '30D' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${timeFilter === '30D' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               Last 30 Days
             </button>
@@ -201,11 +202,10 @@ export const UserAnalyticsScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => handleTabChange('overview')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-            activeTab === 'overview'
-              ? 'bg-[#C81E28] text-white shadow-xs'
-              : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900'
-          }`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'overview'
+            ? 'bg-[#C81E28] text-white shadow-xs'
+            : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900'
+            }`}
         >
           <Activity className="w-4 h-4" />
           <span>Live Overview &amp; KPIs</span>
@@ -214,18 +214,16 @@ export const UserAnalyticsScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => handleTabChange('sessions')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-            activeTab === 'sessions'
-              ? 'bg-[#C81E28] text-white shadow-xs'
-              : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900'
-          }`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'sessions'
+            ? 'bg-[#C81E28] text-white shadow-xs'
+            : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900'
+            }`}
         >
           <LogIn className="w-4 h-4" />
           <span>Login &amp; Session Logs</span>
           <span
-            className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-              activeTab === 'sessions' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
-            }`}
+            className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${activeTab === 'sessions' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
+              }`}
           >
             {summary.totalLoginsToday}
           </span>
@@ -234,18 +232,16 @@ export const UserAnalyticsScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => handleTabChange('payments')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-            activeTab === 'payments'
-              ? 'bg-[#C81E28] text-white shadow-xs'
-              : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900'
-          }`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'payments'
+            ? 'bg-[#C81E28] text-white shadow-xs'
+            : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900'
+            }`}
         >
           <CreditCard className="w-4 h-4" />
           <span>Payment &amp; Offer Visits</span>
           <span
-            className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-              activeTab === 'payments' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
-            }`}
+            className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${activeTab === 'payments' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
+              }`}
           >
             {summary.paymentScreenVisitsToday}
           </span>
@@ -328,15 +324,15 @@ export const UserAnalyticsScreen: React.FC = () => {
                     (timeFilter === 'TODAY'
                       ? "Today's Hourly User Engagement & Traffic Spikes"
                       : timeFilter === '7D'
-                      ? 'Last 7 Days Daily User Engagement & Trend'
-                      : 'Last 30 Days Weekly User Traffic & Spikes')}
+                        ? 'Last 7 Days Daily User Engagement & Trend'
+                        : 'Last 30 Days Weekly User Traffic & Spikes')}
                 </h3>
                 <p className="text-[11px] text-slate-500">
                   {timeFilter === 'TODAY'
                     ? 'Distribution of logins, logouts, and payment screen visits across 24 hours'
                     : timeFilter === '7D'
-                    ? 'Daily volume of logins, exits, and payment intent across the past 7 days'
-                    : 'Aggregated weekly activity and traffic spikes over the past 30 days'}
+                      ? 'Daily volume of logins, exits, and payment intent across the past 7 days'
+                      : 'Aggregated weekly activity and traffic spikes over the past 30 days'}
                 </p>
               </div>
               <div className="flex items-center gap-3 text-xs font-bold">
@@ -480,27 +476,24 @@ export const UserAnalyticsScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setPlatformFilter('ALL')}
-                className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                  platformFilter === 'ALL' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${platformFilter === 'ALL' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 All Platforms
               </button>
               <button
                 type="button"
                 onClick={() => setPlatformFilter('MOBILE_APP')}
-                className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                  platformFilter === 'MOBILE_APP' ? 'bg-white text-rose-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${platformFilter === 'MOBILE_APP' ? 'bg-white text-rose-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 <Smartphone className="w-3.5 h-3.5" /> Mobile
               </button>
               <button
                 type="button"
                 onClick={() => setPlatformFilter('WEB_PANEL')}
-                className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                  platformFilter === 'WEB_PANEL' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${platformFilter === 'WEB_PANEL' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 <Globe className="w-3.5 h-3.5" /> Web
               </button>
@@ -512,36 +505,32 @@ export const UserAnalyticsScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setEventFilter('ALL')}
-                  className={`px-2.5 py-1.5 rounded-lg transition cursor-pointer ${
-                    eventFilter === 'ALL' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  className={`px-2.5 py-1.5 rounded-lg transition cursor-pointer ${eventFilter === 'ALL' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
                 >
                   All Events
                 </button>
                 <button
                   type="button"
                   onClick={() => setEventFilter('ACTIVE_NOW')}
-                  className={`px-2.5 py-1.5 rounded-lg transition cursor-pointer ${
-                    eventFilter === 'ACTIVE_NOW' ? 'bg-white text-emerald-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  className={`px-2.5 py-1.5 rounded-lg transition cursor-pointer ${eventFilter === 'ACTIVE_NOW' ? 'bg-white text-emerald-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
                 >
                   Active Now
                 </button>
                 <button
                   type="button"
                   onClick={() => setEventFilter('PAYMENT_VISITED')}
-                  className={`px-2.5 py-1.5 rounded-lg transition cursor-pointer ${
-                    eventFilter === 'PAYMENT_VISITED' ? 'bg-white text-amber-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  className={`px-2.5 py-1.5 rounded-lg transition cursor-pointer ${eventFilter === 'PAYMENT_VISITED' ? 'bg-white text-amber-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
                 >
                   Payment Visited
                 </button>
                 <button
                   type="button"
                   onClick={() => setEventFilter('LOGGED_OUT')}
-                  className={`px-2.5 py-1.5 rounded-lg transition cursor-pointer ${
-                    eventFilter === 'LOGGED_OUT' ? 'bg-white text-slate-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  className={`px-2.5 py-1.5 rounded-lg transition cursor-pointer ${eventFilter === 'LOGGED_OUT' ? 'bg-white text-slate-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
                 >
                   Logged Out
                 </button>
@@ -620,11 +609,10 @@ export const UserAnalyticsScreen: React.FC = () => {
                       <td className="py-3.5 px-4">
                         <div className="space-y-0.5">
                           <span
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold border ${
-                              s.platform === 'MOBILE_APP'
-                                ? 'bg-rose-50 text-rose-700 border-rose-200'
-                                : 'bg-blue-50 text-blue-700 border-blue-200'
-                            }`}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold border ${s.platform === 'MOBILE_APP'
+                              ? 'bg-rose-50 text-rose-700 border-rose-200'
+                              : 'bg-blue-50 text-blue-700 border-blue-200'
+                              }`}
                           >
                             {s.platform === 'MOBILE_APP' ? (
                               <Smartphone className="w-3 h-3" />
@@ -716,11 +704,10 @@ export const UserAnalyticsScreen: React.FC = () => {
                           </div>
                         ) : (
                           <span
-                            className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                              s.status === 'ACTIVE_NOW'
-                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                : 'bg-slate-100 text-slate-700 border-slate-200'
-                            }`}
+                            className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${s.status === 'ACTIVE_NOW'
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                              : 'bg-slate-100 text-slate-700 border-slate-200'
+                              }`}
                           >
                             {s.status === 'ACTIVE_NOW' ? 'Active Now' : 'Logged Out'}
                           </span>

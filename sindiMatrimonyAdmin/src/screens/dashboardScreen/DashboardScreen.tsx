@@ -16,16 +16,6 @@ import {
   useMembersQuery,
 } from '../../tanstackQuery';
 
-// Fallback CSV template hoisted outside component
-const FALLBACK_CSV_DATA = [
-  'S.No,Name,Profession,Email,JoinedOn,Status',
-  '1,JITAMITRA DHARMADHIKARY,Software Architect,jitamitra@example.com,10 Oct 2026,Active',
-  '2,ABHISHEK SINGH RAIZADA,Real Estate,abhishek.r@example.com,08 Oct 2026,Active',
-  '3,SACHIN CHAUHAN,Civil Services,sachin.c@example.com,08 Oct 2026,Active',
-  '4,HARSHIT PUROHIT,Chartered Accountant,harshit.p@example.com,08 Oct 2026,Active',
-  '5,MANISH KUMAR,Data Scientist,manish.k@example.com,07 Oct 2026,Active',
-].join('\n');
-
 export const DashboardScreen: React.FC = memoWithDeepEqual(() => {
   // Track render cycle & durations inside Performance Profiler
   usePerformanceTracker('DashboardScreen');
@@ -69,18 +59,18 @@ export const DashboardScreen: React.FC = memoWithDeepEqual(() => {
   }, [statsData]);
 
   const totalMembersCount = useMemo(() => {
-    if (statsData?.totalMembers) {
+    if (statsData?.totalMembers != null) {
       return Number(statsData.totalMembers).toLocaleString('en-IN');
     }
-    if (statsData?.totalRegistrations?.value) {
+    if (statsData?.totalRegistrations?.value != null) {
       return Number(statsData.totalRegistrations.value).toLocaleString('en-IN');
     }
-    return '150';
+    return '0';
   }, [statsData]);
 
   // Map live API members to RecentRegistrationsTable format
   const recentMembers = useMemo(() => {
-    if (!apiMembers || apiMembers.length === 0) return undefined;
+    if (!apiMembers || apiMembers.length === 0) return [];
     return apiMembers.slice(0, 6).map((m: any, idx: number) => {
       const rawDate = m.createdAt || m.updatedAt;
       const formattedDate = rawDate
@@ -117,7 +107,7 @@ export const DashboardScreen: React.FC = memoWithDeepEqual(() => {
     }
 
     exportTimerRef.current = setTimeout(() => {
-      let csvContent = FALLBACK_CSV_DATA;
+      let csvContent = 'S.No,Profile ID,Name,Gender,Subcaste,Gotra,City,Joined On,Status\n';
 
       if (apiMembers && apiMembers.length > 0) {
         const rows = [

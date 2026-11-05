@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { asyncHandler, apiHTTPResponse, logMessage, isDeltaEqual, isDataEqual, cleanEntity } from "../../utils/globalFunction.js";
 import * as CONSTANTS from "../../utils/constants.js";
 import * as CONSTANTS_MSG from "../../utils/constantsMessage.js";
-import { User, Profile, PartnerPreference } from "../../models/index.js";
+import { User, Profile, PartnerPreference, Employee } from "../../models/index.js";
 import { updateDocumentByQueryAndData } from "../../services/serviceGlobal.js";
 import { isInterestSentToCandidate } from "../matchmaking/interestsController.js";
 
@@ -63,6 +63,33 @@ export const getProfile = asyncHandler(async (req, res) => {
     ]);
 
     if (!user) {
+      const emp = await Employee.findOne({
+        $or: [
+          ...(myUserId && mongoose.Types.ObjectId.isValid(myUserId) ? [{ _id: myUserId }] : []),
+          ...(req.auth?.email ? [{ email: String(req.auth.email).toLowerCase() }] : []),
+          ...(myUserId ? [{ employeeId: String(myUserId) }] : []),
+        ],
+      }).lean();
+
+      if (emp) {
+        return apiHTTPResponse(
+          req,
+          res,
+          CONSTANTS.HTTP_OK,
+          "Admin profile retrieved successfully.",
+          {
+            ...emp,
+            id: String(emp._id),
+            _id: String(emp._id),
+            userId: String(emp._id),
+            name: emp.fullName,
+            role: emp.role || "CRM_AGENT",
+          },
+          CONSTANTS.OK,
+          CONSTANTS.ERROR_FALSE
+        );
+      }
+
       return apiHTTPResponse(
         req,
         res,

@@ -58,5 +58,6 @@ export async function seedSuperAdmin() {
     });
     logMessage("✅ Super Admin employee account created: admin@sindhimarriage.in", null, "info");
   }
+}
 
 export default seedSuperAdmin;

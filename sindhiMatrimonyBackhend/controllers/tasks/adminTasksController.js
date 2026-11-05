@@ -1,64 +1,7 @@
 import { asyncHandler, apiHTTPResponse } from "../../utils/globalFunction.js";
 import * as CONSTANTS from "../../utils/constants.js";
-import { STAFF_EMPLOYEES } from "../../services/realDataService.js";
-
-// Store for staff daily tasks
-let staffTasksStore = [
-  {
-    _id: "tsk_601",
-    taskId: "TSK-601",
-    title: "Call Candidate Kunal Ahuja regarding document KYC",
-    description: "Follow up on Aadhar card upload and horoscope details.",
-    dueDate: new Date(Date.now() + 3600000 * 2).toISOString(),
-    priority: "HIGH",
-    status: "PENDING",
-    category: "FOLLOW_UP",
-    leadId: "LD-1501",
-    candidateProfileId: "SM10001",
-    assignedTo: {
-      _id: "staff_002",
-      name: "Pooja Advani",
-      email: "pooja.advani@sindhimatrimony.com",
-    },
-    createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-  },
-  {
-    _id: "tsk_602",
-    taskId: "TSK-602",
-    title: "Schedule Family Intro Call for Simran & Kunal",
-    description: "Both candidates accepted mutual interest. Confirm convenient weekend slot.",
-    dueDate: new Date(Date.now() + 3600000 * 6).toISOString(),
-    priority: "HIGH",
-    status: "PENDING",
-    category: "MATCHMAKING",
-    leadId: "LD-1502",
-    candidateProfileId: "SM10002",
-    assignedTo: {
-      _id: "staff_001",
-      name: "Rajesh Vazirani",
-      email: "rajesh.vazirani@sindhimatrimony.com",
-    },
-    createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
-  },
-  {
-    _id: "tsk_603",
-    taskId: "TSK-603",
-    title: "Verify Offline Payment Bank Cheque",
-    description: "Verify clearance of ₹25,000 cheque from HDFC Bank for Royal Sindhi Plan.",
-    dueDate: new Date(Date.now() - 3600000 * 10).toISOString(),
-    priority: "MEDIUM",
-    status: "OVERDUE",
-    category: "FINANCE",
-    leadId: null,
-    candidateProfileId: "SM10003",
-    assignedTo: {
-      _id: "staff_003",
-      name: "Deepak Mirchandani",
-      email: "deepak.mirchandani@sindhimatrimony.com",
-    },
-    createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
-  },
-];
+import { Task, Employee } from "../../models/index.js";
+import mongoose from "mongoose";
 
 /**
  * 1. GET /api/v1/admin/tasks
@@ -67,54 +10,70 @@ let staffTasksStore = [
 export const getStaffTasks = asyncHandler(async (req, res) => {
   const { status = "ALL", priority = "ALL", assignedToId, search = "" } = req.query;
 
-  const now = Date.now();
-  // Auto-mark overdue tasks
-  for (const t of staffTasksStore) {
-    if (t.status === "PENDING" && new Date(t.dueDate).getTime() < now) {
-      t.status = "OVERDUE";
-    }
-  }
+  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query?.pageSize || req.query?.limit, 10) || 10));
+  const skip = (page - 1) * limit;
 
-  let filtered = [...staffTasksStore];
+  const query = {};
 
   if (status && status !== "ALL") {
-    filtered = filtered.filter((t) => t.status === status.toUpperCase());
+    query.status = status.toUpperCase();
   }
 
   if (priority && priority !== "ALL") {
-    filtered = filtered.filter((t) => t.priority === priority.toUpperCase());
+    query.priority = priority.toUpperCase();
   }
 
   if (assignedToId) {
-    filtered = filtered.filter(
-      (t) => t.assignedTo?._id === assignedToId || t.assignedTo?.email === assignedToId
-    );
+    query.$or = [
+      { assignedEmployeeId: assignedToId },
+      { "assignedTo._id": assignedToId },
+    ];
   }
 
-  if (search) {
-    const s = search.toLowerCase();
-    filtered = filtered.filter(
-      (t) =>
-        t.title?.toLowerCase().includes(s) ||
-        t.taskId?.toLowerCase().includes(s) ||
-        t.description?.toLowerCase().includes(s)
-    );
+  if (search && search.trim()) {
+    const sRegex = { $regex: search.trim(), $options: "i" };
+    query.$or = [
+      { title: sRegex },
+      { taskId: sRegex },
+      { description: sRegex },
+    ];
+  }
+
+  let tasks = [];
+  let total = 0;
+  let dueToday = 0;
+  let overdue = 0;
+  let completed = 0;
+
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+
+      [tasks, total, dueToday, overdue, completed] = await Promise.all([
+        Task.find(query).sort({ dueDate: 1 }).skip(skip).limit(limit).lean(),
+        Task.countDocuments(query),
+        Task.countDocuments({ status: "PENDING", dueDate: { $gte: startOfDay, $lte: endOfDay } }),
+        Task.countDocuments({ status: "OVERDUE" }),
+        Task.countDocuments({ status: "COMPLETED" }),
+      ]);
+    } catch {
+      tasks = [];
+      total = 0;
+    }
   }
 
   const counts = {
-    total: staffTasksStore.length,
-    dueToday: staffTasksStore.filter((t) => t.status === "PENDING").length,
-    overdue: staffTasksStore.filter((t) => t.status === "OVERDUE").length,
-    completed: staffTasksStore.filter((t) => t.status === "COMPLETED").length,
+    total,
+    dueToday,
+    overdue,
+    completed,
   };
 
-  const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
-  const limit = Math.min(100, Math.max(1, parseInt(req.query?.pageSize || req.query?.limit, 10) || 10));
-
-  const total = filtered.length;
   const totalPages = Math.ceil(total / limit) || 1;
-  const startIdx = (page - 1) * limit;
-  const paginatedTasks = filtered.slice(startIdx, startIdx + limit);
 
   return apiHTTPResponse(
     req,
@@ -135,8 +94,8 @@ export const getStaffTasks = asyncHandler(async (req, res) => {
         totalPages,
         hasMore: page < totalPages,
       },
-      tasks: paginatedTasks,
-      list: paginatedTasks,
+      tasks,
+      list: tasks,
     },
     CONSTANTS.OK,
     CONSTANTS.ERROR_FALSE
@@ -156,6 +115,7 @@ export const createStaffTask = asyncHandler(async (req, res) => {
     category = "FOLLOW_UP",
     assignedToId,
     leadId,
+    leadName = "",
     candidateProfileId,
   } = req.body;
 
@@ -171,38 +131,45 @@ export const createStaffTask = asyncHandler(async (req, res) => {
     );
   }
 
-  const assignedStaff =
-    STAFF_EMPLOYEES.find((s) => s._id === assignedToId || s.employeeId === assignedToId) ||
-    STAFF_EMPLOYEES[0] || {
-      _id: "staff_default",
-      fullName: "Staff Member",
-      email: "staff@sindhimatrimony.com",
-    };
+  let assignedStaff = null;
+  if (mongoose.connection.readyState === 1 && assignedToId) {
+    try {
+      if (mongoose.Types.ObjectId.isValid(assignedToId)) {
+        assignedStaff = await Employee.findById(assignedToId).select("fullName employeeId email").lean();
+      }
+      if (!assignedStaff) {
+        assignedStaff = await Employee.findOne({ employeeId: assignedToId }).select("fullName employeeId email").lean();
+      }
+    } catch {
+      assignedStaff = null;
+    }
+  }
 
-  const taskId = `TSK-${600 + staffTasksStore.length + 1}`;
-  const now = new Date().toISOString();
+  const count = await Task.countDocuments();
+  const taskId = `TSK-${Date.now().toString().slice(-4)}${count + 1}`;
 
-  const newTask = {
-    _id: `tsk_${Date.now()}`,
+  const taskPayload = {
     taskId,
     title: title.trim(),
     description: description.trim(),
-    dueDate: dueDate ? new Date(dueDate).toISOString() : new Date(Date.now() + 3600000 * 24).toISOString(),
-    priority: ["HIGH", "MEDIUM", "LOW"].includes(priority?.toUpperCase()) ? priority.toUpperCase() : "MEDIUM",
+    dueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 3600000 * 24),
+    priority: ["HIGH", "MEDIUM", "LOW", "URGENT"].includes(priority?.toUpperCase()) ? priority.toUpperCase() : "MEDIUM",
     status: "PENDING",
     category: category.toUpperCase(),
     leadId: leadId || null,
+    leadName: leadName || "",
     candidateProfileId: candidateProfileId || null,
+    assignedEmployeeId: assignedStaff?.employeeId || assignedToId || "UNASSIGNED",
+    assignedEmployeeName: assignedStaff?.fullName || "Staff Member",
     assignedTo: {
-      _id: assignedStaff._id,
-      name: assignedStaff.fullName || assignedStaff.name,
-      email: assignedStaff.email,
+      _id: assignedStaff?._id || assignedToId,
+      name: assignedStaff?.fullName || "Staff Member",
+      email: assignedStaff?.email || "",
     },
-    createdBy: req.user?.name || "Admin",
-    createdAt: now,
+    createdBy: req.user?.fullName || req.user?.name || "Admin",
   };
 
-  staffTasksStore.unshift(newTask);
+  const newTask = await Task.create(taskPayload);
 
   return apiHTTPResponse(
     req,
@@ -223,7 +190,35 @@ export const updateStaffTask = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status, rescheduledDate, notes = "" } = req.body;
 
-  const task = staffTasksStore.find((t) => t._id === id || t.taskId === id);
+  let query = { taskId: id };
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    query = { $or: [{ _id: id }, { taskId: id }] };
+  }
+
+  const updateFields = {};
+
+  if (status) {
+    const upperStatus = status.toUpperCase();
+    if (["COMPLETED", "PENDING", "CANCELLED", "OVERDUE"].includes(upperStatus)) {
+      updateFields.status = upperStatus;
+      if (upperStatus === "COMPLETED") {
+        updateFields.completedAt = new Date();
+        updateFields.completedBy = req.user?.name || req.user?.fullName || "Staff Member";
+      }
+    }
+  }
+
+  if (rescheduledDate) {
+    updateFields.dueDate = new Date(rescheduledDate);
+    updateFields.status = "PENDING";
+    updateFields.rescheduledAt = new Date();
+  }
+
+  if (notes) {
+    updateFields.completionNotes = notes.trim();
+  }
+
+  const task = await Task.findOneAndUpdate(query, updateFields, { new: true });
 
   if (!task) {
     return apiHTTPResponse(
@@ -236,29 +231,6 @@ export const updateStaffTask = asyncHandler(async (req, res) => {
       CONSTANTS.ERROR_TRUE
     );
   }
-
-  if (status) {
-    const upperStatus = status.toUpperCase();
-    if (["COMPLETED", "PENDING", "CANCELLED", "OVERDUE"].includes(upperStatus)) {
-      task.status = upperStatus;
-      if (upperStatus === "COMPLETED") {
-        task.completedAt = new Date().toISOString();
-        task.completedBy = req.user?.name || "Staff Member";
-      }
-    }
-  }
-
-  if (rescheduledDate) {
-    task.dueDate = new Date(rescheduledDate).toISOString();
-    task.status = "PENDING";
-    task.rescheduledAt = new Date().toISOString();
-  }
-
-  if (notes) {
-    task.completionNotes = notes.trim();
-  }
-
-  task.updatedAt = new Date().toISOString();
 
   return apiHTTPResponse(
     req,

@@ -48,6 +48,7 @@ export {
   useAuditLogsQuery,
   useSubcastesQuery,
   useGotrasQuery,
+  useRolesQuery,
 } from './useQuery';
 
 // 4. Mutation Hooks (Equivalent to Redux useDispatch/index.tsx)
@@ -72,6 +73,14 @@ export {
   useRejectRefundMutation,
   useCreateCampaignMutation,
   usePauseCampaignMutation,
+  useCreateEmployeeMutation,
+  useUpdateEmployeeMutation,
+  useUpdateEmployeeStatusMutation,
+  useResetEmployeePasswordMutation,
+  useDeleteEmployeeMutation,
+  useCreateRoleMutation,
+  useUpdateRoleMutation,
+  useDeleteRoleMutation,
   useUpdateEmployeePermissionsMutation,
 } from './useMutation';
 

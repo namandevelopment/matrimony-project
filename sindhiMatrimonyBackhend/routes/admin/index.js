@@ -79,12 +79,39 @@ router.post("/verifications/:id/approve", approveVerification);
 router.post("/verifications/:id/reject", rejectVerification);
 
 // 5. Employees & RBAC
-import { createStaffEmployee, updateStaffEmployeeStatus } from "../../controllers/employees/adminEmployeeExtendedController.js";
-router.get("/employees", getEmployeesList);
-router.post("/employees", createStaffEmployee);
-router.get("/employees/:id", getEmployeeDetail);
-router.put("/employees/:id/permissions", updateEmployeePermissions);
-router.put("/employees/:id/status", updateStaffEmployeeStatus);
+import { accessCheck, requireSuperAdmin } from "../../middlewares/accessCheckMiddleware.js";
+import {
+  createStaffEmployee,
+  updateStaffEmployee,
+  updateStaffEmployeeStatus,
+  resetEmployeePassword,
+  deleteStaffEmployee,
+} from "../../controllers/employees/adminEmployeeExtendedController.js";
+import {
+  getRolesList,
+  createRole,
+  updateRole,
+  deleteRole,
+  getAuditLogsList,
+} from "../../controllers/roles/adminRoleController.js";
+
+router.get("/employees", accessCheck("employees", "view"), getEmployeesList);
+router.post("/employees", accessCheck("employees", "create"), createStaffEmployee);
+router.get("/employees/:id", accessCheck("employees", "view"), getEmployeeDetail);
+router.put("/employees/:id", accessCheck("employees", "edit"), updateStaffEmployee);
+router.put("/employees/:id/permissions", accessCheck("employees", "edit"), updateEmployeePermissions);
+router.put("/employees/:id/status", accessCheck("employees", "edit"), updateStaffEmployeeStatus);
+router.put("/employees/:id/reset-password", accessCheck("employees", "edit"), resetEmployeePassword);
+router.delete("/employees/:id", requireSuperAdmin, deleteStaffEmployee);
+
+// 5b. Custom Roles Management (SUPER_ADMIN only for mutation)
+router.get("/roles", accessCheck("employees", "view"), getRolesList);
+router.post("/roles", requireSuperAdmin, createRole);
+router.put("/roles/:id", requireSuperAdmin, updateRole);
+router.delete("/roles/:id", requireSuperAdmin, deleteRole);
+
+// 5c. Compliance Audit Logs
+router.get("/audit-logs", accessCheck("employees", "view"), getAuditLogsList);
 
 import {
   getAdminReviews,

@@ -6,7 +6,7 @@
 // - Local Dev: http://localhost:5001 (Unified Backend API Gateway)
 // - Production: https://sindhi-matrimony-backend.vercel.app
 export const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ||
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/api(\/v1)?\/?$/, '') ||
   (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:5001'
     : 'https://sindhi-matrimony-backend.vercel.app');

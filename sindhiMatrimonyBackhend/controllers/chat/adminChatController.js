@@ -1,77 +1,51 @@
 import { asyncHandler, apiHTTPResponse } from "../../utils/globalFunction.js";
 import * as CONSTANTS from "../../utils/constants.js";
-import { STAFF_EMPLOYEES } from "../../services/realDataService.js";
+import { Employee } from "../../models/index.js";
+import mongoose from "mongoose";
 import { getIO } from "../../socket/socket.js";
 
-// In-Memory store for internal staff team chat
-let staffMessagesStore = [
-  {
-    _id: "smsg_1",
-    senderId: "staff_002",
-    senderName: "Pooja Advani",
-    receiverId: "staff_001",
-    receiverName: "Rajesh Vazirani",
-    messageText: "Hi Rajesh, please review the proposal for Kunal Ahuja (SM10001).",
-    leadRef: {
-      leadId: "LD-1501",
-      candidateName: "Kunal Ahuja",
-      profileId: "SM10001",
-    },
-    isRead: true,
-    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-  },
-  {
-    _id: "smsg_2",
-    senderId: "staff_001",
-    senderName: "Rajesh Vazirani",
-    receiverId: "staff_002",
-    receiverName: "Pooja Advani",
-    messageText: "Reviewed. Alliance looks promising. I will follow up with Simran's family.",
-    leadRef: null,
-    isRead: true,
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    _id: "smsg_3",
-    senderId: "staff_003",
-    senderName: "Deepak Mirchandani",
-    receiverId: "staff_001",
-    receiverName: "Rajesh Vazirani",
-    messageText: "Aadhar verification approved for candidate SM10005.",
-    leadRef: null,
-    isRead: false,
-    createdAt: new Date(Date.now() - 1800000).toISOString(),
-  },
-];
+// In-Memory store for internal staff team chat messages
+let staffMessagesStore = [];
 
 /**
  * 1. GET /api/v1/admin/chat/conversations
  * List active 1-on-1 conversations for the staff member
  */
 export const getStaffConversations = asyncHandler(async (req, res) => {
-  const currentUserId = req.user?.id || req.user?.userId || "staff_001";
+  const currentUserId = String(req.user?.id || req.user?.userId || req.user?._id || "");
+
+  // Load real active employees from MongoDB
+  let staffList = [];
+  if (mongoose.connection.readyState === 1) {
+    try {
+      staffList = await Employee.find({ status: "ACTIVE" }).select("fullName email role avatar status employeeId").lean();
+    } catch {
+      staffList = [];
+    }
+  }
 
   // Build conversations grouped by partner
   const conversationsMap = new Map();
 
-  for (const staff of STAFF_EMPLOYEES) {
-    if (staff._id === currentUserId) continue;
+  for (const staff of staffList) {
+    const sId = String(staff._id);
+    if (sId === currentUserId || staff.employeeId === currentUserId) continue;
 
     // Find last message between currentUserId and this staff member
     const relevantMsgs = staffMessagesStore.filter(
       (m) =>
-        (m.senderId === currentUserId && m.receiverId === staff._id) ||
-        (m.senderId === staff._id && m.receiverId === currentUserId)
+        (m.senderId === currentUserId && (m.receiverId === sId || m.receiverId === staff.employeeId)) ||
+        ((m.senderId === sId || m.senderId === staff.employeeId) && m.receiverId === currentUserId)
     );
 
     const lastMsg = relevantMsgs.length > 0 ? relevantMsgs[relevantMsgs.length - 1] : null;
     const unreadCount = staffMessagesStore.filter(
-      (m) => m.senderId === staff._id && m.receiverId === currentUserId && !m.isRead
+      (m) => (m.senderId === sId || m.senderId === staff.employeeId) && m.receiverId === currentUserId && !m.isRead
     ).length;
 
-    conversationsMap.set(staff._id, {
-      partnerId: staff._id,
-      partnerName: staff.fullName || staff.name,
+    conversationsMap.set(sId, {
+      partnerId: sId,
+      partnerName: staff.fullName || "Team Member",
       partnerRole: staff.role,
       partnerEmail: staff.email,
       partnerAvatar: staff.avatar || null,
@@ -133,7 +107,8 @@ export const getStaffConversations = asyncHandler(async (req, res) => {
  * Conversation message history between logged in staff and partner
  */
 export const getStaffMessages = asyncHandler(async (req, res) => {
-  const currentUserId = req.user?.id || req.user?.userId || "staff_001";
+  const currentUserId = String(req.user?.id || req.user?.userId || req.user?._id || "");
+  const { partnerId } = req.params;
   const page = Math.max(1, parseInt(req.query?.pageNo || req.query?.page, 10) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query?.pageSize || req.query?.limit, 10) || 50));
 
@@ -157,11 +132,27 @@ export const getStaffMessages = asyncHandler(async (req, res) => {
     )
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-  const partnerInfo = STAFF_EMPLOYEES.find((s) => s._id === partnerId) || {
-    _id: partnerId,
-    fullName: "Staff Member",
-    role: "STAFF",
-  };
+  let partnerInfo = null;
+  if (mongoose.connection.readyState === 1) {
+    try {
+      if (mongoose.Types.ObjectId.isValid(partnerId)) {
+        partnerInfo = await Employee.findById(partnerId).select("fullName email role avatar status employeeId").lean();
+      }
+      if (!partnerInfo) {
+        partnerInfo = await Employee.findOne({ employeeId: partnerId }).select("fullName email role avatar status employeeId").lean();
+      }
+    } catch {
+      partnerInfo = null;
+    }
+  }
+
+  if (!partnerInfo) {
+    partnerInfo = {
+      _id: partnerId,
+      fullName: "Team Member",
+      role: "STAFF",
+    };
+  }
 
   const total = threadMessages.length;
   const totalPages = Math.ceil(total / limit) || 1;
@@ -206,7 +197,7 @@ export const getStaffMessages = asyncHandler(async (req, res) => {
  * Send message with optional lead card reference
  */
 export const sendStaffMessage = asyncHandler(async (req, res) => {
-  const currentUserId = req.user?.id || req.user?.userId || "staff_001";
+  const currentUserId = String(req.user?.id || req.user?.userId || req.user?._id || "");
   const currentUserName = req.user?.name || req.user?.fullName || "Staff Admin";
 
   const { receiverId, messageText, leadRef = null } = req.body;
@@ -235,10 +226,23 @@ export const sendStaffMessage = asyncHandler(async (req, res) => {
     );
   }
 
-  const receiver = STAFF_EMPLOYEES.find((s) => s._id === receiverId) || {
-    _id: receiverId,
-    fullName: "Team Member",
-  };
+  let receiver = null;
+  if (mongoose.connection.readyState === 1) {
+    try {
+      if (mongoose.Types.ObjectId.isValid(receiverId)) {
+        receiver = await Employee.findById(receiverId).select("fullName email role").lean();
+      }
+      if (!receiver) {
+        receiver = await Employee.findOne({ employeeId: receiverId }).select("fullName email role").lean();
+      }
+    } catch {
+      receiver = null;
+    }
+  }
+
+  if (!receiver) {
+    receiver = { _id: receiverId, fullName: "Team Member" };
+  }
 
   const newMessage = {
     _id: `smsg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,

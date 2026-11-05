@@ -35,6 +35,8 @@ const LandingScreenComponent: React.FC = () => {
     const user = Storage.getItemSync<any>("user");
     if (user?.isOnboardingComplete) {
       router.replace("/dashboard");
+    } else if (window.location.hash === "#login") {
+      setIsLoginModalOpen(true);
     }
   }, [router]);
 
@@ -68,13 +70,19 @@ const LandingScreenComponent: React.FC = () => {
         <TrustBadges communityName="Sindhis" />
 
         {/* 4. Our Process (4-Step Matrimonial Journey) */}
-        <OurProcessSection />
+        <div className="optimize-scroll">
+          <OurProcessSection />
+        </div>
 
         {/* 5. Real Member Reviews & Stories (Admin Moderated) */}
-        <ReviewsSection />
+        <div className="optimize-scroll">
+          <ReviewsSection />
+        </div>
 
         {/* 6. SEO Descriptive Content Section */}
-        <AboutSection />
+        <div className="optimize-scroll">
+          <AboutSection />
+        </div>
       </main>
 
       {/* 5. Footer */}

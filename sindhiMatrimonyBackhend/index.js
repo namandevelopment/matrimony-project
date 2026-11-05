@@ -10,6 +10,9 @@ import { logMessage } from "./utils/globalFunction.js";
 import { initializeRedis } from "./services/serviceRedis.js";
 import connectDB from "./models/connection.js";
 import { initializeSocket } from "./socket/socket.js";
+import { seedInitialRoles } from "./services/roleSeederService.js";
+import { migrateLegacyCRMDataToMongo } from "./services/crmMigrationService.js";
+import { seedSuperAdmin } from "./script/seeders/seedSuperAdmin.js";
 
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
@@ -18,6 +21,9 @@ const PORT = process.env.PORT || 5000;
   try {
     // 1. Connect MongoDB
     await connectDB();
+    await seedInitialRoles();
+    await seedSuperAdmin();
+    await migrateLegacyCRMDataToMongo();
 
     // 2. Initialize Redis Client & Pub/Sub
     await initializeRedis();

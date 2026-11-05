@@ -13,6 +13,10 @@ import OurProcess from "./common/ourProcess.model.js";
 import HelpSupport from "./support/helpSupport.model.js";
 import SupportTicket from "./support/supportTicket.model.js";
 import Employee from "./employees/employee.model.js";
+import Role from "./roles/role.model.js";
+import AuditLog from "./audit/auditLog.model.js";
+import Lead from "./leads/lead.model.js";
+import Task from "./tasks/task.model.js";
 import Advertisement from "./campaigns/advertisement.model.js";
 import HomeBanner from "./campaigns/homeBanner.model.js";
 import ContactUnlock from "./matchmaking/contactUnlock.model.js";
@@ -42,6 +46,10 @@ export {
   HelpSupport,
   SupportTicket,
   Employee,
+  Role,
+  AuditLog,
+  Lead,
+  Task,
   Advertisement,
   HomeBanner,
   Notification,
@@ -69,6 +77,10 @@ export const Models = {
   HelpSupport,
   SupportTicket,
   Employee,
+  Role,
+  AuditLog,
+  Lead,
+  Task,
   Advertisement,
   HomeBanner,
   Notification,

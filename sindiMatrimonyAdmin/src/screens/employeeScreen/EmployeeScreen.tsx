@@ -16,6 +16,8 @@ import {
   Sliders,
   History,
   Lock,
+  KeyRound,
+  Trash2,
   AlertTriangle,
   ExternalLink,
   MessageSquare,
@@ -42,14 +44,23 @@ import type { Role, RecordScope, EmployeePermissions } from '../../types/auth.ty
 import type { Employee, PermissionChangeAudit } from '../../types/employee.types';
 import { setSimulatedUser } from '../../storage';
 import { toast } from '../../toastMessage/toast';
-import { validateName, validateEmail, validateMobileNumber } from '../../utils/ValidationsFuctions';
+import { validateName, validateEmail, validateMobileNumber, validatePassword } from '../../utils/ValidationsFuctions';
 import { useInputs } from '../../customHooks/useInputs';
-import { useEmployeesQuery } from '../../tanstackQuery';
+import {
+  useEmployeesQuery,
+  useCreateEmployeeMutation,
+  useUpdateEmployeeStatusMutation,
+  useResetEmployeePasswordMutation,
+  useDeleteEmployeeMutation,
+  useAuditLogsQuery,
+} from '../../tanstackQuery';
+import ApiURL from '../../redux/apiService/endpoint';
 
 export interface EmployeeFormValues {
   fullName: string;
   employeeId: string;
   email: string;
+  password: string;
   mobile: string;
   role: Role;
   roles: Role[];
@@ -66,6 +77,7 @@ const INITIAL_EMPLOYEE_VALUES: EmployeeFormValues = {
   fullName: '',
   employeeId: '',
   email: '',
+  password: '',
   mobile: '',
   role: 'CRM_AGENT',
   roles: ['CRM_AGENT'],
@@ -83,6 +95,11 @@ export const EmployeeScreen: React.FC = () => {
 
   // TanStack Query: Cached for 5 minutes, 0 repeated API hits on navigation
   const { data: apiEmployees, isLoading } = useEmployeesQuery();
+  const createEmployeeMutation = useCreateEmployeeMutation();
+  const updateStatusMutation = useUpdateEmployeeStatusMutation();
+  const resetPasswordMutation = useResetEmployeePasswordMutation();
+  const deleteEmployeeMutation = useDeleteEmployeeMutation();
+  const { auditLogs: serverAuditLogs } = useAuditLogsQuery();
 
   // Fallback dummy staff accounts preserved per project guidelines
   // const initialFallbackEmployees = initialMockEmployees;
@@ -97,8 +114,9 @@ export const EmployeeScreen: React.FC = () => {
 
   // Sync live API employees into state when available (5 minutes cache)
   useEffect(() => {
-    if (apiEmployees && Array.isArray(apiEmployees)) {
-      setEmployees(apiEmployees as any);
+    const list = Array.isArray(apiEmployees) ? apiEmployees : (apiEmployees?.employees || apiEmployees?.list);
+    if (Array.isArray(list)) {
+      setEmployees(list as any);
     }
   }, [apiEmployees]);
 
@@ -119,26 +137,7 @@ export const EmployeeScreen: React.FC = () => {
 
   // Audit Logs
   const [auditLogs, setAuditLogs] = useState<PermissionChangeAudit[]>([
-    {
-      id: 'aud_1',
-      employeeId: 'EMP004',
-      changedBy: 'Rajesh Mulchandani (EMP001)',
-      changedAt: '2025-03-12 14:30',
-      reason: 'Promoted to CRM Senior Agent - lead quota expanded to 25',
-      oldRole: 'CRM_AGENT',
-      newRole: 'CRM_AGENT',
-      permissionDiff: 'maxLeadCapacity: 15 → 25',
-    },
-    {
-      id: 'aud_2',
-      employeeId: 'EMP010',
-      changedBy: 'Kavita Chhabria (EMP002)',
-      changedAt: '2025-03-15 10:15',
-      reason: 'Employee on medical leave - temporarily suspended',
-      oldRole: 'CRM_AGENT',
-      newRole: 'CRM_AGENT',
-      permissionDiff: 'isActive: true → false',
-    },
+
   ]);
 
   // useInputs Form State for Add / Provision Employee
@@ -159,6 +158,9 @@ export const EmployeeScreen: React.FC = () => {
 
       const emailErr = validateEmail(vals.email);
       if (emailErr) errs.email = emailErr;
+
+      const passwordErr = validatePassword(vals.password);
+      if (passwordErr) errs.password = passwordErr;
 
       const mobileErr = validateMobileNumber(vals.mobile);
       if (mobileErr) errs.mobile = mobileErr;
@@ -294,7 +296,7 @@ export const EmployeeScreen: React.FC = () => {
     setIsAddModalOpen(true);
   };
 
-  const handleSaveNewEmployee = (e: React.FormEvent) => {
+  const handleSaveNewEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     setEmployeeSubmitAttempted(true);
     if (!validateEmployeeForm()) {
@@ -302,6 +304,8 @@ export const EmployeeScreen: React.FC = () => {
         toast.error(employeeErrors.fullName);
       } else if (employeeErrors.email) {
         toast.error(employeeErrors.email);
+      } else if (employeeErrors.password) {
+        toast.error(employeeErrors.password);
       } else if (employeeErrors.mobile) {
         toast.error(employeeErrors.mobile);
       } else if (employeeErrors.employeeId) {
@@ -323,12 +327,13 @@ export const EmployeeScreen: React.FC = () => {
         ? formData.allowedSections
         : Array.from(new Set(assignedRoles.flatMap((r) => getDefaultAllowedSectionsForRole(r))));
 
-    const newEmp: Employee = {
-      id: `emp_${Date.now()}`,
+    const newEmpPayload = {
       employeeId: formData.employeeId.trim() || `EMP${String(employees.length + 1).padStart(3, '0')}`,
       fullName: formData.fullName.trim(),
       email: formData.email.trim(),
+      password: formData.password,
       mobile: formData.mobile.trim(),
+      phone: formData.mobile.trim(),
       role: primaryRole,
       roles: assignedRoles,
       department: formData.department.trim(),
@@ -342,38 +347,87 @@ export const EmployeeScreen: React.FC = () => {
       activeLeadsCount: 0,
       regions: formData.regions.split(',').map((s) => s.trim()).filter(Boolean),
       languages: formData.languages.split(',').map((s) => s.trim()).filter(Boolean),
-      lastActiveAt: 'Never',
-      createdAt: new Date().toISOString().split('T')[0],
     };
 
-    crmDataService.addEmployee(newEmp);
-    setEmployees(crmDataService.getEmployees());
-    setIsAddModalOpen(false);
-    toast.success(`Employee ${newEmp.fullName} (${newEmp.employeeId}) created with ${assignedRoles.length} roles & ${assignedSections.length} sections!`);
+    try {
+      const response: any = await createEmployeeMutation.mutateAsync({
+        url: ApiURL.createEmployee,
+        method: 'POST',
+        data: newEmpPayload,
+      });
+
+      const serverEmp = response?.data || response || {};
+      const newEmp: Employee = {
+        ...newEmpPayload,
+        id: serverEmp._id || serverEmp.id || `emp_${Date.now()}`,
+        lastActiveAt: 'Never',
+        createdAt: new Date().toISOString().split('T')[0],
+      };
+
+      crmDataService.addEmployee(newEmp);
+      setEmployees((prev) => [newEmp, ...prev.filter((e) => e.employeeId !== newEmp.employeeId)]);
+      setIsAddModalOpen(false);
+      toast.success(`Employee ${newEmp.fullName} (${newEmp.employeeId}) created on server with ${assignedRoles.length} roles & ${assignedSections.length} sections!`);
+    } catch (err: any) {
+      toast.error(err?.message || err?.response?.data?.message || 'Failed to create employee on server.');
+    }
   };
 
-  const handleToggleStatus = useCallback((emp: Employee) => {
-    const nextState = !emp.isActive;
-    crmDataService.updateEmployee(emp.id, { isActive: nextState });
-    setEmployees(crmDataService.getEmployees());
+  const handleToggleStatus = useCallback(async (emp: Employee) => {
+    const nextStatus = emp.isActive ? 'SUSPENDED' : 'ACTIVE';
+    try {
+      await updateStatusMutation.mutateAsync({
+        url: ApiURL.updateEmployeeStatus(emp.id || (emp as any)._id),
+        method: 'PUT',
+        data: { status: nextStatus, reason: `Status toggled to ${nextStatus}` },
+      });
+      setEmployees((prev) =>
+        prev.map((e) =>
+          e.id === emp.id || e.employeeId === emp.employeeId
+            ? { ...e, isActive: nextStatus === 'ACTIVE', status: nextStatus as any }
+            : e
+        )
+      );
+      toast.info(`Employee ${emp.fullName} is now ${nextStatus === 'ACTIVE' ? 'Active' : 'Suspended'}`);
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update status on server.');
+    }
+  }, [updateStatusMutation]);
 
-    // Audit log
-    setAuditLogs((prev) => [
-      {
-        id: `aud_${Date.now()}`,
-        employeeId: emp.employeeId,
-        changedBy: 'Super Administrator (EMP001)',
-        changedAt: new Date().toLocaleString(),
-        reason: nextState ? 'Account manually re-activated' : 'Account temporarily deactivated',
-        oldRole: emp.role,
-        newRole: emp.role,
-        permissionDiff: `isActive: ${emp.isActive} → ${nextState}`,
-      },
-      ...prev,
-    ]);
+  const handleDeleteEmployee = useCallback(async (emp: Employee) => {
+    if (!window.confirm(`Are you sure you want to PERMANENTLY delete employee ${emp.fullName} (${emp.employeeId})? This will preserve an immutable audit snapshot and cannot be undone.`)) {
+      return;
+    }
+    try {
+      await deleteEmployeeMutation.mutateAsync({
+        url: ApiURL.deleteEmployee(emp.id || (emp as any)._id),
+        method: 'DELETE',
+      });
+      setEmployees((prev) => prev.filter((e) => e.id !== emp.id && e.employeeId !== emp.employeeId));
+      toast.success(`Employee ${emp.fullName} (${emp.employeeId}) permanently deleted.`);
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to delete employee.');
+    }
+  }, [deleteEmployeeMutation]);
 
-    toast.info(`Employee ${emp.fullName} is now ${nextState ? 'Active' : 'Suspended'}`);
-  }, []);
+  const handleResetPassword = useCallback(async (emp: Employee) => {
+    const newPass = window.prompt(`Enter new administrative password for ${emp.fullName} (min 8 characters):`);
+    if (!newPass) return;
+    if (newPass.length < 8) {
+      toast.error('Password must be at least 8 characters long.');
+      return;
+    }
+    try {
+      await resetPasswordMutation.mutateAsync({
+        url: ApiURL.resetEmployeePassword(emp.id || (emp as any)._id),
+        method: 'PUT',
+        data: { newPassword: newPass },
+      });
+      toast.success(`Password for ${emp.fullName} reset successfully on server!`);
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to reset employee password.');
+    }
+  }, [resetPasswordMutation]);
 
   const handleOpenPermissions = useCallback((emp: Employee) => {
     setSelectedEmployee(emp);
@@ -537,9 +591,8 @@ export const EmployeeScreen: React.FC = () => {
         return (
           <div>
             <span
-              className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold border ${
-                scopeColors[emp.recordScope] || 'bg-slate-50 text-slate-600 border-slate-200'
-              }`}
+              className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold border ${scopeColors[emp.recordScope] || 'bg-slate-50 text-slate-600 border-slate-200'
+                }`}
             >
               SCOPE: {emp.recordScope}
             </span>
@@ -648,11 +701,10 @@ export const EmployeeScreen: React.FC = () => {
           <button
             onClick={() => handleToggleStatus(emp)}
             title={emp.isActive ? 'Deactivate Employee' : 'Activate Employee'}
-            className={`p-1.5 rounded-lg border text-[11px] transition font-semibold flex items-center gap-1 ${
-              emp.isActive
+            className={`p-1.5 rounded-lg border text-[11px] transition font-semibold flex items-center gap-1 ${emp.isActive
                 ? 'text-rose-600 border-rose-200 hover:bg-rose-50'
                 : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'
-            }`}
+              }`}
           >
             {emp.isActive ? (
               <XCircle className="w-3.5 h-3.5" />
@@ -661,10 +713,28 @@ export const EmployeeScreen: React.FC = () => {
             )}
             <span className="hidden sm:inline">{emp.isActive ? 'Suspend' : 'Activate'}</span>
           </button>
+
+          {/* Reset Password */}
+          <button
+            onClick={() => handleResetPassword(emp)}
+            title="Reset Password"
+            className="p-1.5 rounded-lg border border-slate-200 hover:border-amber-400 hover:bg-amber-50 text-slate-600 hover:text-amber-700 text-[11px] transition font-semibold"
+          >
+            <KeyRound className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Permanent Deletion (SUPER_ADMIN) */}
+          <button
+            onClick={() => handleDeleteEmployee(emp)}
+            title="Permanently Delete Employee"
+            className="p-1.5 rounded-lg border border-slate-200 hover:border-rose-400 hover:bg-rose-50 text-slate-400 hover:text-rose-600 text-[11px] transition font-semibold"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
         </div>
       ),
     },
-  ], [navigate, handleSimulateEmployee, handleOpenPermissions, handleToggleStatus]);
+  ], [navigate, handleSimulateEmployee, handleOpenPermissions, handleToggleStatus, handleResetPassword, handleDeleteEmployee]);
 
   return (
     <div className="space-y-5">
@@ -832,22 +902,22 @@ export const EmployeeScreen: React.FC = () => {
 
       {/* ================= ADD / EDIT EMPLOYEE MODAL ================= */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden my-8 animate-scale-up">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-3 sm:p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up">
+            <div className="shrink-0 px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div className="flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-[#DB2F3C]" />
                 <h3 className="text-sm font-bold text-slate-900">Add New Organization Employee</h3>
               </div>
               <button
                 onClick={() => setIsAddModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSaveNewEmployee} className="p-6 space-y-4">
+            <form onSubmit={handleSaveNewEmployee} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <CustomTextInput
                   label="Full Name *"
@@ -884,6 +954,17 @@ export const EmployeeScreen: React.FC = () => {
                   onChange={(e) => setEmployeeFieldValue('mobile', e.target.value)}
                   placeholder="+91 98200 00000"
                   error={(employeeSubmitAttempted || employeeTouched.mobile) ? employeeErrors.mobile : undefined}
+                  size="sm"
+                />
+
+                <CustomTextInput
+                  label="Login Password *"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setEmployeeFieldValue('password', e.target.value)}
+                  placeholder="Set initial staff password"
+                  error={(employeeSubmitAttempted || employeeTouched.password) ? employeeErrors.password : undefined}
+                  helperText="Min 8 chars: uppercase, lowercase, number & special symbol"
                   size="sm"
                 />
 
@@ -1041,11 +1122,10 @@ export const EmployeeScreen: React.FC = () => {
                     return (
                       <label
                         key={sec.id}
-                        className={`flex items-start gap-2 p-2 rounded-xl border text-xs cursor-pointer transition select-none ${
-                          isChecked
+                        className={`flex items-start gap-2 p-2 rounded-xl border text-xs cursor-pointer transition select-none ${isChecked
                             ? 'bg-white border-rose-300 ring-1 ring-rose-200 shadow-2xs'
                             : 'bg-white/60 border-slate-200 hover:bg-white text-slate-600'
-                        }`}
+                          }`}
                       >
                         <input
                           type="checkbox"
@@ -1073,7 +1153,7 @@ export const EmployeeScreen: React.FC = () => {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2 sticky bottom-0 bg-white/95 backdrop-blur-xs pb-1 mt-4">
                 <CustomButton
                   variant="outline"
                   size="sm"
@@ -1082,7 +1162,13 @@ export const EmployeeScreen: React.FC = () => {
                 >
                   Cancel
                 </CustomButton>
-                <CustomButton variant="primary" size="sm" type="submit">
+                <CustomButton
+                  variant="primary"
+                  size="sm"
+                  type="submit"
+                  isLoading={createEmployeeMutation.isPending}
+                  disabled={createEmployeeMutation.isPending}
+                >
                   Save & Provision Access
                 </CustomButton>
               </div>
@@ -1093,9 +1179,9 @@ export const EmployeeScreen: React.FC = () => {
 
       {/* ================= GRANULAR PERMISSION MATRIX MODAL ================= */}
       {isPermissionModalOpen && selectedEmployee && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl overflow-hidden my-8 animate-scale-up">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-3 sm:p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up">
+            <div className="shrink-0 px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div className="flex items-center gap-2">
                 <Sliders className="w-5 h-5 text-[#DB2F3C]" />
                 <div>
@@ -1116,7 +1202,7 @@ export const EmployeeScreen: React.FC = () => {
               </button>
             </div>
 
-            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+            <div className="p-4 sm:p-6 space-y-6 flex-1 overflow-y-auto">
               {/* Reset to Role Default */}
               <div className="flex items-center justify-between bg-amber-50 p-3 rounded-xl border border-amber-200">
                 <div className="flex items-center gap-2">
@@ -1202,11 +1288,10 @@ export const EmployeeScreen: React.FC = () => {
                     return (
                       <label
                         key={sec.id}
-                        className={`flex items-start gap-2 p-2 rounded-xl border text-xs cursor-pointer transition select-none ${
-                          isChecked
+                        className={`flex items-start gap-2 p-2 rounded-xl border text-xs cursor-pointer transition select-none ${isChecked
                             ? 'bg-white border-rose-300 ring-1 ring-rose-200 shadow-2xs'
                             : 'bg-white/60 border-slate-200 hover:bg-white text-slate-600'
-                        }`}
+                          }`}
                       >
                         <input
                           type="checkbox"
@@ -1413,9 +1498,9 @@ export const EmployeeScreen: React.FC = () => {
 
       {/* ================= AUDIT LOGS MODAL ================= */}
       {isAuditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl overflow-hidden my-8 animate-scale-up">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-3 sm:p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up">
+            <div className="shrink-0 px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div className="flex items-center gap-2">
                 <History className="w-5 h-5 text-indigo-600" />
                 <h3 className="text-sm font-bold text-slate-900">
@@ -1430,25 +1515,31 @@ export const EmployeeScreen: React.FC = () => {
               </button>
             </div>
 
-            <div className="p-6 max-h-[60vh] overflow-y-auto space-y-3">
-              {auditLogs.map((log) => (
+            <div className="p-4 sm:p-6 flex-1 overflow-y-auto space-y-3">
+              {((serverAuditLogs && serverAuditLogs.length > 0 ? serverAuditLogs : auditLogs) as any[]).map((log) => (
                 <div
-                  key={log.id}
+                  key={log._id || log.id}
                   className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1.5"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-900 font-mono">
-                      Target: {log.employeeId}
+                      Target: {log.targetEmployeeId || log.employeeId || 'System'} {log.targetNameSnapshot ? `(${log.targetNameSnapshot})` : ''}
                     </span>
-                    <span className="text-[10px] text-slate-400 font-medium">{log.changedAt}</span>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      {log.timestamp ? new Date(log.timestamp).toLocaleString() : log.changedAt}
+                    </span>
                   </div>
                   <div className="text-xs text-slate-700">
-                    <span className="font-semibold text-slate-900">Reason:</span> {log.reason}
+                    <span className="font-semibold text-slate-900">{log.action || 'Action'}:</span> {log.description || log.reason}
                   </div>
-                  <div className="text-[11px] text-indigo-700 font-mono bg-indigo-50/80 px-2 py-0.5 rounded border border-indigo-100 inline-block">
-                    {log.permissionDiff}
+                  {(log.permissionDiff || log.module) && (
+                    <div className="text-[11px] text-indigo-700 font-mono bg-indigo-50/80 px-2 py-0.5 rounded border border-indigo-100 inline-block">
+                      {log.permissionDiff || `Module: ${log.module}`}
+                    </div>
+                  )}
+                  <div className="text-[10px] text-slate-400">
+                    Changed by: {log.actorNameSnapshot ? `${log.actorNameSnapshot} (${log.actorEmployeeId})` : (log.changedBy || 'Admin')}
                   </div>
-                  <div className="text-[10px] text-slate-400">Changed by: {log.changedBy}</div>
                 </div>
               ))}
             </div>

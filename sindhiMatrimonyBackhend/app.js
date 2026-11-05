@@ -18,6 +18,7 @@ import corsMiddleware from "./middlewares/corsMiddleware.js";
 import devPerformanceTracker from "./middlewares/devPerformanceTracker.js";
 import devApiTrackerRoutes from "./routes/dev/apiTrackerRoutes.js";
 import attachMongooseProfiler from "./utils/mongooseProfilerPlugin.js";
+import mongoose from "mongoose";
 import connectDB from "./models/connection.js";
 import jwtLib from "jsonwebtoken";
 
@@ -28,15 +29,11 @@ const app = express();
 const API_END_POINT_V1 = process.env.API_END_POINT_V1 || "/api/v1/";
 
 // Ensure DB connection for serverless cold-starts on Vercel
-let dbPromise = null;
 app.use(async (req, res, next) => {
-  if (!dbPromise) {
-    dbPromise = connectDB().catch((err) => {
+  if (mongoose.connection.readyState !== 1) {
+    await connectDB().catch((err) => {
       console.warn("MongoDB connection notice:", err?.message || err);
     });
-  }
-  if (process.env.VERCEL === "1") {
-    await Promise.race([dbPromise, new Promise((resolve) => setTimeout(resolve, 800))]);
   }
   next();
 });
@@ -57,6 +54,12 @@ app.get(["/", "/health"], (req, res) => {
 app.use(devPerformanceTracker);
 
 // Security, Compression & Parsing Pipeline
+app.use((req, res, next) => {
+  if (req.url.startsWith("/api/v1/api/v1/")) {
+    req.url = req.url.replace(/^\/api\/v1\/api\/v1\//, "/api/v1/");
+  }
+  next();
+});
 app.use(corsMiddleware());
 app.use(
   compression({
@@ -149,6 +152,8 @@ const ONBOARDING_ALLOWED_OPERATIONS = new Set([
   "GET:/api/v1/master/dropdowns",
   "GET:/api/v1/plans",
   "GET:/api/v1/plans/public-list",
+  "GET:/api/v1/reviews",
+  "GET:/api/v1/reviews/public-list",
   "GET:/health",
   "GET:/",
 ]);

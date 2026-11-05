@@ -15,57 +15,6 @@ export interface RecentRegistrationsTableProps {
   members?: RecentMemberItem[];
 }
 
-export const defaultRecentMembers: RecentMemberItem[] = [
-  {
-    sNo: 1,
-    name: 'JITAMITRA DHARMADHIKARY',
-    businessType: 'Software Architect',
-    email: 'jitamitra@example.com',
-    joinedOn: '10 Oct 2026',
-    status: 'Active',
-  },
-  {
-    sNo: 2,
-    name: 'ABHISHEK SINGH RAIZADA',
-    businessType: 'Business & Real Estate',
-    email: 'abhishek.r@example.com',
-    joinedOn: '08 Oct 2026',
-    status: 'Active',
-  },
-  {
-    sNo: 3,
-    name: 'SACHIN CHAUHAN',
-    businessType: 'Civil Services',
-    email: 'sachin.c@example.com',
-    joinedOn: '08 Oct 2026',
-    status: 'Active',
-  },
-  {
-    sNo: 4,
-    name: 'HARSHIT PUROHIT',
-    businessType: 'Chartered Accountant',
-    email: 'harshit.p@example.com',
-    joinedOn: '08 Oct 2026',
-    status: 'Active',
-  },
-  {
-    sNo: 5,
-    name: 'MANISH KUMAR',
-    businessType: 'Senior Data Scientist',
-    email: 'manish.k@example.com',
-    joinedOn: '07 Oct 2026',
-    status: 'Active',
-  },
-  {
-    sNo: 6,
-    name: 'VARUN ROHRA (LOHANA)',
-    businessType: 'FinTech Entrepreneur',
-    email: 'varun.rohra@example.com',
-    joinedOn: '07 Oct 2026',
-    status: 'Active',
-  },
-];
-
 interface RecentMemberRowProps {
   member: RecentMemberItem;
 }
@@ -100,7 +49,7 @@ export const RecentMemberRow: React.FC<RecentMemberRowProps> = memoWithDeepEqual
 RecentMemberRow.displayName = 'RecentMemberRow';
 
 export const RecentRegistrationsTable: React.FC<RecentRegistrationsTableProps> = memoWithDeepEqual(({
-  members = defaultRecentMembers,
+  members = [],
 }) => {
   return (
     <div className="bg-white rounded-3xl border border-slate-200/80 shadow-2xs overflow-hidden">
@@ -134,9 +83,17 @@ export const RecentRegistrationsTable: React.FC<RecentRegistrationsTableProps> =
 
           {/* Table Body */}
           <tbody className="divide-y divide-slate-100 text-xs">
-            {members.map((member) => (
-              <RecentMemberRow key={member.sNo} member={member} />
-            ))}
+            {members.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-8 text-center text-slate-400 font-medium">
+                  No registered community members found yet.
+                </td>
+              </tr>
+            ) : (
+              members.map((member) => (
+                <RecentMemberRow key={member.sNo} member={member} />
+              ))
+            )}
           </tbody>
         </table>
       </div>

@@ -615,7 +615,7 @@ export const registerStep = asyncHandler(async (req, res) => {
     let refreshToken = undefined;
     if (currentStep === 3) {
       if (regSessionToken) {
-        removeKey(`reg_session:${regSessionToken}`).catch(() => {});
+        removeKey(`reg_session:${regSessionToken}`).catch(() => { });
       }
       const primaryProfile = await Profile.findOne({ userId: user._id, isPrimary: true }).catch(() => null);
       const tokenPayload = {
@@ -1730,48 +1730,6 @@ export const createSecondaryProfile = asyncHandler(async (req, res) => {
  */
 export const getMyProfiles = asyncHandler(async (req, res) => {
   const userId = req.user?.userId || req.user?.id || req.user?._id;
-
-  // Offline / standalone test mode
-  if (mongoose.connection.readyState !== 1) {
-    const activeId = req.user?.activeProfileId || "6ad489ad614f5e626dacf8c8";
-    return apiHTTPResponse(
-      req,
-      res,
-      CONSTANTS.HTTP_OK,
-      CONSTANTS_MSG.RECORD_FOUND,
-      {
-        totalProfiles: 2,
-        maxProfilesAllowed: 4,
-        activeProfileId: activeId,
-        profiles: [
-          {
-            _id: activeId,
-            name: "Rohan Advani",
-            profileFor: "MYSELF",
-            gender: "MALE",
-            subcaste: "Bhaiband",
-            role: "OWNER",
-            isOwner: true,
-            isActive: true,
-            status: "ACTIVE",
-          },
-          {
-            _id: "67b34a12c8e312a0f9000002",
-            name: "Simran Advani",
-            profileFor: "DAUGHTER",
-            gender: "FEMALE",
-            subcaste: "Bhaiband",
-            role: "OWNER",
-            isOwner: true,
-            isActive: false,
-            status: "ACTIVE",
-          },
-        ],
-      },
-      CONSTANTS.OK,
-      CONSTANTS.ERROR_FALSE
-    );
-  }
 
   const [user, ownedProfiles, grants] = await Promise.all([
     User.findById(userId).select("activeProfileId maxProfilesAllowed phone").lean(),

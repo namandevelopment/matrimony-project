@@ -63,6 +63,7 @@ export const QUERY_KEYS = {
   pendingRefunds: ['admin', 'finance', 'refunds', 'pending'] as const,
   subscriptions: (filters: Record<string, any> = {}) => ['admin', 'subscriptions', filters] as const,
   campaigns: ['admin', 'campaigns'] as const,
+  roles: ['admin', 'roles'] as const,
   employees: (filters: Record<string, any> = {}) => ['admin', 'employees', filters] as const,
   employeeDetail: (id: string) => ['admin', 'employees', id] as const,
   auditLogs: (filters: Record<string, any> = {}) => ['admin', 'audit-logs', filters] as const,

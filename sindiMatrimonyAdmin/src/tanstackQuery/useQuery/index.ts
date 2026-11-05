@@ -476,6 +476,14 @@ export const useEmployeesQuery = (filters: Record<string, any> = {}) => {
   });
 };
 
+/** Admin Roles Query */
+export const useRolesQuery = () => {
+  return useApiQuery({
+    queryKey: QUERY_KEYS.roles,
+    url: ApiURL.getRoles,
+  });
+};
+
 /** Admin Employee Detail Query */
 export const useEmployeeDetailQuery = (id: string, enabled = true) => {
   return useApiQuery({

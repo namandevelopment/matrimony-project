@@ -14,6 +14,7 @@ import { CustomTextInput } from '../../components/CustomTextInput';
 import { CustomDropDown } from '../../components/CustomDropDown';
 import { toast } from '../../toastMessage/toast';
 import { useInputs } from '../../customHooks/useInputs';
+import { useEmployeesQuery } from '../../tanstackQuery';
 
 export interface TasksScreenState {
   tasks: FollowUpTask[];
@@ -34,6 +35,9 @@ export interface TaskFormValues {
 }
 
 export const TasksScreen: React.FC = () => {
+  const { data: apiEmployees } = useEmployeesQuery();
+  const employeeList: any[] = Array.isArray(apiEmployees) ? apiEmployees : (apiEmployees?.employees || apiEmployees?.list || crmDataService.getEmployees());
+
   const {
     values: uiState,
     setFieldValue: setUiFieldValue,
@@ -432,8 +436,8 @@ export const TasksScreen: React.FC = () => {
                 label="Assigned Employee"
                 value={form.assignedEmployeeId}
                 onChange={(val) => setFormFieldValue('assignedEmployeeId', String(val))}
-                options={crmDataService.getEmployees().map((emp) => ({
-                  value: emp.id,
+                options={employeeList.map((emp) => ({
+                  value: emp.id || emp._id,
                   label: `${emp.fullName} (${emp.employeeId}) — ${emp.role}`,
                 }))}
                 size="sm"

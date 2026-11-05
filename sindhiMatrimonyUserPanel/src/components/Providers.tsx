@@ -20,13 +20,10 @@ function FirebaseInitializer() {
 
 function MasterDataInitializer() {
   const dispatch = useDispatch<AppDispatch>();
-  const dropdowns = useSelector(selectMasterDropdowns);
 
   useEffect(() => {
-    if (!dropdowns || Object.keys(dropdowns).length === 0) {
-      get_Master_Dropdowns_Call(dispatch);
-    }
-  }, [dispatch, dropdowns]);
+    get_Master_Dropdowns_Call(dispatch);
+  }, [dispatch]);
 
   return null;
 }

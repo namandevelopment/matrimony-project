@@ -14,7 +14,7 @@ import { PageHeader } from '../../components/PageHeader';
 import { CustomTextInput } from '../../components/CustomTextInput';
 import { useInputs } from '../../customHooks/useInputs';
 import { crmDataService } from '../../services/crmDataService';
-import { useEmployeesQuery } from '../../tanstackQuery';
+import { useEmployeesQuery, useProfileQuery } from '../../tanstackQuery';
 import type { TeamChatMessage, Lead } from '../../types/crm.types';
 import type { Employee } from '../../types/employee.types';
 import { getStoredUser, getSimulatedUser, getActiveRole } from '../../storage';
@@ -28,13 +28,26 @@ export const TeamChatScreen: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { data: apiEmployees } = useEmployeesQuery();
+  const { data: profileResponse } = useProfileQuery();
+  const liveUser = useMemo(() => {
+    const raw = (profileResponse as any)?.data || (profileResponse as any)?.employee || (profileResponse as any)?.user || profileResponse;
+    if (raw && (raw.id || raw._id || raw.email)) {
+      return {
+        ...raw,
+        id: String(raw._id || raw.id),
+        fullName: raw.fullName || raw.name || raw.email,
+        role: raw.role || 'CRM_AGENT',
+      };
+    }
+    return null;
+  }, [profileResponse]);
 
-  // Current session & effective user
-  const storedUser = getStoredUser() || { fullName: 'Rajesh Mulchandani', role: 'SUPER_ADMIN', id: 'emp_001' };
+  // Current session & effective user (always from getProfile API / storage)
+  const storedUser = getStoredUser();
   const simulatedUser = getSimulatedUser();
   const activeRoleOverride = getActiveRole();
-  const effectiveUser = simulatedUser || storedUser;
-  const effectiveRole = activeRoleOverride || effectiveUser.role || 'SUPER_ADMIN';
+  const effectiveUser = simulatedUser || liveUser || storedUser || { fullName: 'Staff Member', role: 'CRM_AGENT', id: 'emp_current' };
+  const effectiveRole = activeRoleOverride || effectiveUser?.role || 'CRM_AGENT';
   const isSuperAdmin = effectiveRole === 'SUPER_ADMIN';
 
   // State
@@ -56,8 +69,9 @@ export const TeamChatScreen: React.FC = () => {
 
   // Sync live API employees into state when available
   useEffect(() => {
-    if (apiEmployees && Array.isArray(apiEmployees) && apiEmployees.length > 0) {
-      setEmployees(apiEmployees as any);
+    const list = Array.isArray(apiEmployees) ? apiEmployees : (apiEmployees?.employees || apiEmployees?.list);
+    if (Array.isArray(list)) {
+      setEmployees(list as any);
     }
   }, [apiEmployees]);
 
@@ -203,12 +217,12 @@ export const TeamChatScreen: React.FC = () => {
       content: chatForm.messageInput.trim() || (selectedLeadForAttachment ? `Sharing reference for lead: ${selectedLeadForAttachment.name}` : ''),
       leadReference: selectedLeadForAttachment
         ? {
-            leadId: selectedLeadForAttachment.leadId,
-            leadName: selectedLeadForAttachment.name,
-            status: selectedLeadForAttachment.status,
-            subcaste: selectedLeadForAttachment.subcaste,
-            mobile: selectedLeadForAttachment.mobile,
-          }
+          leadId: selectedLeadForAttachment.leadId,
+          leadName: selectedLeadForAttachment.name,
+          status: selectedLeadForAttachment.status,
+          subcaste: selectedLeadForAttachment.subcaste,
+          mobile: selectedLeadForAttachment.mobile,
+        }
         : undefined,
     });
 
@@ -238,9 +252,8 @@ export const TeamChatScreen: React.FC = () => {
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden flex flex-col md:grid md:grid-cols-12 h-[calc(100vh-225px)] min-h-[500px] max-h-[760px]">
         {/* Left Column: Team Channel Directory (4 cols) */}
         <div
-          className={`md:col-span-4 border-r border-slate-200 flex flex-col bg-slate-50/60 h-full min-h-0 ${
-            mobileView === 'chat' ? 'hidden md:flex' : 'flex'
-          }`}
+          className={`md:col-span-4 border-r border-slate-200 flex flex-col bg-slate-50/60 h-full min-h-0 ${mobileView === 'chat' ? 'hidden md:flex' : 'flex'
+            }`}
         >
           {/* Header & Search */}
           <div className="p-4 border-b border-slate-200 space-y-3 bg-white shrink-0">
@@ -273,87 +286,84 @@ export const TeamChatScreen: React.FC = () => {
               </div>
             ) : (
               partnerList.map(({ employee, lastMessage, unreadCount }) => {
-              const isSelected = employee.id === activePartnerId;
-              const isEmpAdmin = employee.role === 'SUPER_ADMIN';
+                const isSelected = employee.id === activePartnerId;
+                const isEmpAdmin = employee.role === 'SUPER_ADMIN';
 
-              return (
-                <button
-                  key={employee.id}
-                  onClick={() => {
-                    setActivePartnerId(employee.id);
-                    setMobileView('chat');
-                  }}
-                  className={`w-full text-left p-3 rounded-2xl transition-all flex items-center justify-between gap-3 cursor-pointer ${
-                    isSelected
+                return (
+                  <button
+                    key={employee.id}
+                    onClick={() => {
+                      setActivePartnerId(employee.id);
+                      setMobileView('chat');
+                    }}
+                    className={`w-full text-left p-3 rounded-2xl transition-all flex items-center justify-between gap-3 cursor-pointer ${isSelected
                       ? 'bg-gradient-to-r from-red-50 to-amber-50/60 border border-red-200 shadow-xs'
                       : 'hover:bg-slate-100/80 border border-transparent'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="relative shrink-0">
-                      <div
-                        className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-xs shadow-xs ${
-                          isEmpAdmin
+                      }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="relative shrink-0">
+                        <div
+                          className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-xs shadow-xs ${isEmpAdmin
                             ? 'bg-gradient-to-tr from-[#88131B] to-rose-600 text-white'
                             : 'bg-gradient-to-tr from-slate-800 to-slate-700 text-white'
-                        }`}
-                      >
-                        {(employee.fullName || 'User')
-                          .split(' ')
-                          .filter(Boolean)
-                          .map((n) => n[0])
-                          .join('')
-                          .substring(0, 2)
-                          .toUpperCase()}
+                            }`}
+                        >
+                          {(employee.fullName || 'User')
+                            .split(' ')
+                            .filter(Boolean)
+                            .map((n) => n[0])
+                            .join('')
+                            .substring(0, 2)
+                            .toUpperCase()}
+                        </div>
+                        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
                       </div>
-                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
-                    </div>
 
-                    <div className="truncate min-w-0">
-                      <div className="flex items-center gap-1.5 truncate">
-                        <span className="text-xs font-bold text-slate-900 truncate">
-                          {employee.fullName}
-                        </span>
-                        {isEmpAdmin && (
-                          <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200 shrink-0">
-                            Super Admin
+                      <div className="truncate min-w-0">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="text-xs font-bold text-slate-900 truncate">
+                            {employee.fullName}
                           </span>
+                          {isEmpAdmin && (
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200 shrink-0">
+                              Super Admin
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-500 truncate flex items-center gap-1">
+                          <span>{employee.designation || employee.role}</span>
+                        </div>
+                        {lastMessage && (
+                          <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                            {lastMessage.content}
+                          </div>
                         )}
                       </div>
-                      <div className="text-[11px] text-slate-500 truncate flex items-center gap-1">
-                        <span>{employee.designation || employee.role}</span>
-                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-1 shrink-0">
                       {lastMessage && (
-                        <div className="text-[10px] text-slate-400 truncate mt-0.5">
-                          {lastMessage.content}
-                        </div>
+                        <span className="text-[9px] text-slate-400 font-mono">
+                          {lastMessage.timestamp}
+                        </span>
+                      )}
+                      {unreadCount > 0 && (
+                        <span className="w-5 h-5 rounded-full bg-[#DB2F3C] text-white text-[10px] font-extrabold flex items-center justify-center shadow-xs">
+                          {unreadCount}
+                        </span>
                       )}
                     </div>
-                  </div>
-
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    {lastMessage && (
-                      <span className="text-[9px] text-slate-400 font-mono">
-                        {lastMessage.timestamp}
-                      </span>
-                    )}
-                    {unreadCount > 0 && (
-                      <span className="w-5 h-5 rounded-full bg-[#DB2F3C] text-white text-[10px] font-extrabold flex items-center justify-center shadow-xs">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              );
-            }))}
+                  </button>
+                );
+              }))}
           </div>
         </div>
 
         {/* Right Column: Active Chat Thread (8 cols) */}
         <div
-          className={`md:col-span-8 flex flex-col bg-white h-full min-h-0 ${
-            mobileView === 'list' ? 'hidden md:flex' : 'flex'
-          }`}
+          className={`md:col-span-8 flex flex-col bg-white h-full min-h-0 ${mobileView === 'list' ? 'hidden md:flex' : 'flex'
+            }`}
         >
           {activePartner ? (
             <>
@@ -419,165 +429,161 @@ export const TeamChatScreen: React.FC = () => {
                 </button>
               </div>
 
-          {/* Conversation Messages Thread */}
-          <div
-            ref={chatMessagesContainerRef}
-            className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4 bg-gradient-to-b from-slate-50/30 to-white"
-          >
-            {threadMessages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-8 text-slate-400 space-y-2">
-                <div className="w-12 h-12 rounded-2xl bg-rose-50 text-[#DB2F3C] flex items-center justify-center shadow-xs">
-                  <MessageSquare className="w-6 h-6" />
-                </div>
-                <h3 className="text-sm font-bold text-slate-800">No Previous Messages</h3>
-                <p className="text-xs max-w-sm text-slate-500">
-                  Start an internal conversation with {activePartner?.fullName || 'this colleague'}. Discuss lead assignments, follow-ups, or discount approvals.
-                </p>
-              </div>
-            ) : (
-              threadMessages.map((msg) => {
-                const isSentByMe = msg.senderId === currentUserId;
-
-                return (
-                  <div
-                    key={msg.id}
-                    className={`flex flex-col ${isSentByMe ? 'items-end' : 'items-start'} space-y-1 animate-in fade-in duration-100`}
-                  >
-                    <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-medium px-1">
-                      <span className="font-bold text-slate-600">{msg.senderName}</span>
-                      <span>•</span>
-                      <span>{msg.timestamp}</span>
-                    </div>
-
-                    <div
-                      className={`max-w-[85%] sm:max-w-[78%] rounded-3xl p-4 shadow-xs text-xs leading-relaxed space-y-2 break-words ${
-                        isSentByMe
-                          ? 'bg-gradient-to-r from-[#88131B] via-[#941A22] to-[#7B0F16] text-white rounded-br-xs'
-                          : 'bg-white border border-slate-200 text-slate-800 rounded-bl-xs shadow-2xs'
-                      }`}
-                    >
-                      <p className="font-medium whitespace-pre-wrap break-words">{msg.content}</p>
-
-                      {/* Attached Lead Reference Card */}
-                      {msg.leadReference && (
-                        <div
-                          className={`p-3 rounded-2xl border text-xs flex items-center justify-between gap-3 ${
-                            isSentByMe
-                              ? 'bg-black/20 border-white/20 text-white'
-                              : 'bg-amber-50/70 border-amber-200 text-amber-950'
-                          }`}
-                        >
-                          <div className="min-w-0">
-                            <div className="font-bold flex items-center gap-1.5 truncate">
-                              <Contact2 className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-                              <span className="truncate">{msg.leadReference.leadName}</span>
-                              <span className="text-[10px] opacity-80 font-mono">
-                                ({msg.leadReference.leadId})
-                              </span>
-                            </div>
-                            <div className="text-[10px] opacity-80 mt-0.5">
-                              Subcaste: {msg.leadReference.subcaste} • Status: {msg.leadReference.status}
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => navigate('/leads')}
-                            className="px-2.5 py-1 rounded-lg bg-white text-slate-900 font-extrabold text-[10px] hover:bg-slate-100 transition shadow-2xs shrink-0 cursor-pointer"
-                          >
-                            Open Lead →
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {/* Quick Action Prompt Chips */}
-          <div className="px-4 sm:px-6 py-2 border-t border-slate-100 bg-slate-50/70 flex items-center gap-1.5 overflow-x-auto text-xs shrink-0">
-            <span className="text-[10px] font-bold text-slate-400 shrink-0 flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-amber-500" /> Quick Replies:
-            </span>
-            {[
-              'Please prioritize the 5 high-priority Bhaiband leads assigned today.',
-              'Approved! You may offer the customer a 10% community discount.',
-              'Customer requested senior matchmaker call. Taking over follow-up.',
-              'Please log what response came from Karan Advani.',
-              'All assigned follow-ups completed for the morning shift.',
-            ].map((chip, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleSendQuickAction(chip)}
-                className="px-2.5 py-1 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-[10px] font-medium border border-slate-200 transition shrink-0 cursor-pointer shadow-2xs"
+              {/* Conversation Messages Thread */}
+              <div
+                ref={chatMessagesContainerRef}
+                className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4 bg-gradient-to-b from-slate-50/30 to-white"
               >
-                {chip.length > 40 ? chip.substring(0, 40) + '...' : chip}
-              </button>
-            ))}
-          </div>
+                {threadMessages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-8 text-slate-400 space-y-2">
+                    <div className="w-12 h-12 rounded-2xl bg-rose-50 text-[#DB2F3C] flex items-center justify-center shadow-xs">
+                      <MessageSquare className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-800">No Previous Messages</h3>
+                    <p className="text-xs max-w-sm text-slate-500">
+                      Start an internal conversation with {activePartner?.fullName || 'this colleague'}. Discuss lead assignments, follow-ups, or discount approvals.
+                    </p>
+                  </div>
+                ) : (
+                  threadMessages.map((msg) => {
+                    const isSentByMe = msg.senderId === currentUserId;
 
-          {/* Message Input Box */}
-          <form
-            onSubmit={handleSendMessage}
-            className="p-3 sm:p-4 border-t border-slate-200 bg-white flex items-center gap-2 shrink-0"
-          >
-            {/* Attach Lead Button */}
-            <button
-              type="button"
-              onClick={() => setIsAttachLeadModalOpen(true)}
-              title="Attach a lead reference into this message"
-              className={`p-2.5 rounded-2xl border transition cursor-pointer shrink-0 flex items-center gap-1 text-xs font-bold ${
-                selectedLeadForAttachment
-                  ? 'bg-amber-100 text-amber-900 border-amber-300'
-                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-              }`}
-            >
-              <Paperclip className="w-4 h-4 text-slate-500" />
-              {selectedLeadForAttachment && (
-                <span className="hidden sm:inline text-[11px] font-bold truncate max-w-[100px]">
-                  {selectedLeadForAttachment.name}
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`flex flex-col ${isSentByMe ? 'items-end' : 'items-start'} space-y-1 animate-in fade-in duration-100`}
+                      >
+                        <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-medium px-1">
+                          <span className="font-bold text-slate-600">{msg.senderName}</span>
+                          <span>•</span>
+                          <span>{msg.timestamp}</span>
+                        </div>
+
+                        <div
+                          className={`max-w-[85%] sm:max-w-[78%] rounded-3xl p-4 shadow-xs text-xs leading-relaxed space-y-2 break-words ${isSentByMe
+                            ? 'bg-gradient-to-r from-[#88131B] via-[#941A22] to-[#7B0F16] text-white rounded-br-xs'
+                            : 'bg-white border border-slate-200 text-slate-800 rounded-bl-xs shadow-2xs'
+                            }`}
+                        >
+                          <p className="font-medium whitespace-pre-wrap break-words">{msg.content}</p>
+
+                          {/* Attached Lead Reference Card */}
+                          {msg.leadReference && (
+                            <div
+                              className={`p-3 rounded-2xl border text-xs flex items-center justify-between gap-3 ${isSentByMe
+                                ? 'bg-black/20 border-white/20 text-white'
+                                : 'bg-amber-50/70 border-amber-200 text-amber-950'
+                                }`}
+                            >
+                              <div className="min-w-0">
+                                <div className="font-bold flex items-center gap-1.5 truncate">
+                                  <Contact2 className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                                  <span className="truncate">{msg.leadReference.leadName}</span>
+                                  <span className="text-[10px] opacity-80 font-mono">
+                                    ({msg.leadReference.leadId})
+                                  </span>
+                                </div>
+                                <div className="text-[10px] opacity-80 mt-0.5">
+                                  Subcaste: {msg.leadReference.subcaste} • Status: {msg.leadReference.status}
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => navigate('/leads')}
+                                className="px-2.5 py-1 rounded-lg bg-white text-slate-900 font-extrabold text-[10px] hover:bg-slate-100 transition shadow-2xs shrink-0 cursor-pointer"
+                              >
+                                Open Lead →
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Quick Action Prompt Chips */}
+              <div className="px-4 sm:px-6 py-2 border-t border-slate-100 bg-slate-50/70 flex items-center gap-1.5 overflow-x-auto text-xs shrink-0">
+                <span className="text-[10px] font-bold text-slate-400 shrink-0 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-500" /> Quick Replies:
                 </span>
-              )}
-            </button>
+                {[
+                  'Please prioritize the 5 high-priority Bhaiband leads assigned today.',
+                  'Approved! You may offer the customer a 10% community discount.',
+                  'Customer requested senior matchmaker call. Taking over follow-up.',
+                  'Please log what response came from Karan Advani.',
+                  'All assigned follow-ups completed for the morning shift.',
+                ].map((chip, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSendQuickAction(chip)}
+                    className="px-2.5 py-1 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-[10px] font-medium border border-slate-200 transition shrink-0 cursor-pointer shadow-2xs"
+                  >
+                    {chip.length > 40 ? chip.substring(0, 40) + '...' : chip}
+                  </button>
+                ))}
+              </div>
 
-            <div className="flex-1">
-              <CustomTextInput
-                size="md"
-                value={chatForm.messageInput}
-                onChange={(e) => setChatFieldValue('messageInput', e.target.value)}
-                placeholder={`Message ${activePartner?.fullName || 'colleague'}... (Press Enter to send)`}
-              />
+              {/* Message Input Box */}
+              <form
+                onSubmit={handleSendMessage}
+                className="p-3 sm:p-4 border-t border-slate-200 bg-white flex items-center gap-2 shrink-0"
+              >
+                {/* Attach Lead Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsAttachLeadModalOpen(true)}
+                  title="Attach a lead reference into this message"
+                  className={`p-2.5 rounded-2xl border transition cursor-pointer shrink-0 flex items-center gap-1 text-xs font-bold ${selectedLeadForAttachment
+                    ? 'bg-amber-100 text-amber-900 border-amber-300'
+                    : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                    }`}
+                >
+                  <Paperclip className="w-4 h-4 text-slate-500" />
+                  {selectedLeadForAttachment && (
+                    <span className="hidden sm:inline text-[11px] font-bold truncate max-w-[100px]">
+                      {selectedLeadForAttachment.name}
+                    </span>
+                  )}
+                </button>
+
+                <div className="flex-1">
+                  <CustomTextInput
+                    size="md"
+                    value={chatForm.messageInput}
+                    onChange={(e) => setChatFieldValue('messageInput', e.target.value)}
+                    placeholder={`Message ${activePartner?.fullName || 'colleague'}... (Press Enter to send)`}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={!chatForm.messageInput.trim() && !selectedLeadForAttachment}
+                  className={`px-5 py-3 rounded-2xl font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer shrink-0 ${chatForm.messageInput.trim() || selectedLeadForAttachment
+                    ? 'bg-gradient-to-r from-[#88131B] to-red-700 text-white hover:from-red-800 hover:to-red-900'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    }`}
+                >
+                  <Send className="w-4 h-4" />
+                  <span className="hidden sm:inline">Send</span>
+                </button>
+              </form>
+            </>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-center p-8 text-slate-400 space-y-3">
+              <div className="w-14 h-14 rounded-2xl bg-rose-50 text-[#DB2F3C] flex items-center justify-center shadow-xs">
+                <MessageSquare className="w-7 h-7" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-800">No Colleague Selected</h3>
+              <p className="text-xs max-w-sm text-slate-500">
+                Select an employee from the staff directory on the left to start collaborating.
+              </p>
             </div>
-
-            <button
-              type="submit"
-              disabled={!chatForm.messageInput.trim() && !selectedLeadForAttachment}
-              className={`px-5 py-3 rounded-2xl font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer shrink-0 ${
-                chatForm.messageInput.trim() || selectedLeadForAttachment
-                  ? 'bg-gradient-to-r from-[#88131B] to-red-700 text-white hover:from-red-800 hover:to-red-900'
-                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-              }`}
-            >
-              <Send className="w-4 h-4" />
-              <span className="hidden sm:inline">Send</span>
-            </button>
-          </form>
-        </>
-      ) : (
-        <div className="h-full flex flex-col items-center justify-center text-center p-8 text-slate-400 space-y-3">
-          <div className="w-14 h-14 rounded-2xl bg-rose-50 text-[#DB2F3C] flex items-center justify-center shadow-xs">
-            <MessageSquare className="w-7 h-7" />
-          </div>
-          <h3 className="text-sm font-bold text-slate-800">No Colleague Selected</h3>
-          <p className="text-xs max-w-sm text-slate-500">
-            Select an employee from the staff directory on the left to start collaborating.
-          </p>
+          )}
         </div>
-      )}
-    </div>
-  </div>
+      </div>
 
       {/* Attach Lead Reference Modal */}
       {isAttachLeadModalOpen && (

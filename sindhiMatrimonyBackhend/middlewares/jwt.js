@@ -43,7 +43,7 @@ export const publicPaths = [
   // Public Catalog, Stories & Reviews
   /^\/api\/v1\/plans(\/.*)?$/,
   /^\/api\/v1\/stories\/public-list$/,
-  /^\/api\/v1\/reviews(\/(public-list|submit))?$/,
+  /^(\/api\/v1)?\/api\/v1\/reviews(\/(public-list|submit))?$/,
   /^\/api\/v1\/common\/reviews(\/.*)?$/,
 
   // Public Dynamic Content, Policies & Support Gateway (Privacy Policy, Terms, Process, FAQs)

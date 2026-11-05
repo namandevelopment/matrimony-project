@@ -223,66 +223,6 @@ export const LoginScreen: React.FC = () => {
       const errMsg = apiErr?.message || 'Login failed. Please check your credentials or server connection.';
       setFieldValue('errorMessage', errMsg);
       toast.error(errMsg);
-
-      /* =========================================================================
-       * DUMMY DATA / OFFLINE SIMULATION FALLBACK (PRESERVED AS REQUESTED)
-       * [DO NOT REMOVE - COMMENTED OUT AS FALLBACK PER USER SPECIFICATION]
-       * =========================================================================
-       * const matchedEmployee = crmDataService.getEmployeeByEmail(cleanEmail);
-       *
-       * // If Super Admin role, require 2FA/MFA security step
-       * if (!values.mfaStep && (cleanEmail.includes('admin') || matchedEmployee?.role === 'SUPER_ADMIN')) {
-       *   setValues({
-       *     mfaStep: true,
-       *     submitted: false,
-       *   });
-       *   toast.info('Super Admin MFA verification code required');
-       * } else {
-       *   clearSimulatedUser();
-       *
-       *   let loggedInUser: any;
-       *   if (matchedEmployee) {
-       *     loggedInUser = {
-       *       id: matchedEmployee.id,
-       *       employeeId: matchedEmployee.employeeId,
-       *       fullName: matchedEmployee.fullName,
-       *       email: matchedEmployee.email,
-       *       mobile: matchedEmployee.mobile,
-       *       role: matchedEmployee.role,
-       *       department: matchedEmployee.department,
-       *       recordScope: matchedEmployee.recordScope,
-       *       permissions: matchedEmployee.permissions,
-       *       allowedSections: matchedEmployee.allowedSections || getDefaultAllowedSectionsForRole(matchedEmployee.role),
-       *       isChatEnabled: matchedEmployee.isChatEnabled,
-       *     };
-       *     toast.success(`Login successful! Welcome ${matchedEmployee.fullName} (${loggedInUser.allowedSections.length} sidebar sections accessible).`);
-       *   } else {
-       *     const isSuper = cleanEmail.includes('admin');
-       *     const defaultRole = isSuper ? 'SUPER_ADMIN' : 'EMPLOYEE';
-       *     loggedInUser = {
-       *       id: `emp_${Date.now()}`,
-       *       employeeId: isSuper ? 'EMP001' : 'EMP_USER',
-       *       fullName: isSuper ? 'Super Administrator' : 'Office Employee',
-       *       email: cleanEmail,
-       *       role: defaultRole,
-       *       department: isSuper ? 'Executive Management' : 'Sales & CRM',
-       *       recordScope: isSuper ? 'ALL' : 'OWN',
-       *       isChatEnabled: true,
-       *       allowedSections: getDefaultAllowedSectionsForRole(defaultRole as any),
-       *       permissions: {
-       *         leads: { view: true, edit: true, call: true },
-       *         members: { view: true },
-       *         chat: { receive: true, initiate: true },
-       *       },
-       *     };
-       *     toast.success(`Login successful! Logged in as ${loggedInUser.fullName}.`);
-       *   }
-       *
-       *   setToken(`mock_jwt_${loggedInUser.employeeId}_token_2026`);
-       *   setStoredUser(loggedInUser);
-       *   navigate('/');
-       * }
-       * ========================================================================= */
     }
   };
 

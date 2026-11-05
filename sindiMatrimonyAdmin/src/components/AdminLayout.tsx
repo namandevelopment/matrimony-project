@@ -30,9 +30,11 @@ import {
   ShieldAlert,
   Megaphone,
   LineChart,
+  User,
 } from 'lucide-react';
 import { crmDataService } from '../services/crmDataService';
 import { notificationService } from '../services/notificationService';
+import { useProfileQuery } from '../tanstackQuery';
 import {
   getStoredUser,
   setStoredUser,
@@ -175,11 +177,31 @@ export const AdminLayout: React.FC = memoWithDeepEqual(() => {
     prefetchScreens();
   }, []);
 
-  const storedUser = useMemo(() => getStoredUser() || { fullName: 'Super Admin', role: 'SUPER_ADMIN' }, []);
+  const { data: profileResponse } = useProfileQuery();
+  const liveUser = useMemo(() => {
+    const raw = (profileResponse as any)?.data || (profileResponse as any)?.employee || (profileResponse as any)?.user || profileResponse;
+    if (raw && (raw.id || raw._id || raw.email)) {
+      return {
+        ...raw,
+        id: String(raw._id || raw.id),
+        fullName: raw.fullName || raw.name || raw.email || 'Staff Member',
+        role: raw.role || 'CRM_AGENT',
+      };
+    }
+    return null;
+  }, [profileResponse]);
+
+  useEffect(() => {
+    if (liveUser) {
+      setStoredUser(liveUser);
+    }
+  }, [liveUser]);
+
+  const storedUser = useMemo(() => getStoredUser(), []);
   const simulatedUser = getSimulatedUser();
-  const effectiveUser = simulatedUser || storedUser;
+  const effectiveUser = simulatedUser || liveUser || storedUser || { fullName: 'Staff Member', role: 'CRM_AGENT' };
   const [activeRoleOverride, setActiveRoleOverride] = useState<string | null>(getActiveRole());
-  const effectiveRole = (activeRoleOverride || effectiveUser.role || 'SUPER_ADMIN') as Role;
+  const effectiveRole = (activeRoleOverride || effectiveUser?.role || 'CRM_AGENT') as Role;
 
   const [unreadChatCount, setUnreadChatCount] = useState<number>(() =>
     crmDataService.getUnreadMessageCount(effectiveUser.id || 'emp_001')
@@ -656,16 +678,12 @@ export const AdminLayout: React.FC = memoWithDeepEqual(() => {
 
               {/* Profile Avatar */}
               <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-slate-200">
-                <img
-                  src={IMAGES.userAvatar}
-                  alt={effectiveUser.fullName}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-8 h-8 rounded-full object-cover border border-slate-200 shadow-2xs"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLElement).style.display = 'none';
-                  }}
-                />
+                <div
+                  title={effectiveUser.fullName}
+                  className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 shadow-2xs"
+                >
+                  <User className="w-4 h-4 text-slate-600" />
+                </div>
               </div>
             </div>
           </header>

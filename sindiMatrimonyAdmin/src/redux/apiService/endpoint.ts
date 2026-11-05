@@ -139,8 +139,19 @@ export const ApiURL = {
   // 11. EMPLOYEES & RBAC
   // =========================================================================
   getEmployees: `${BASE_URL}/api/v1/admin/employees`,
+  createEmployee: `${BASE_URL}/api/v1/admin/employees`,
   getEmployeeDetail: (id: string) => `${BASE_URL}/api/v1/admin/employees/${id}`,
+  updateEmployee: (id: string) => `${BASE_URL}/api/v1/admin/employees/${id}`,
+  deleteEmployee: (id: string) => `${BASE_URL}/api/v1/admin/employees/${id}`,
+  updateEmployeeStatus: (id: string) => `${BASE_URL}/api/v1/admin/employees/${id}/status`,
+  resetEmployeePassword: (id: string) => `${BASE_URL}/api/v1/admin/employees/${id}/reset-password`,
   updateEmployeePermissions: (id: string) => `${BASE_URL}/api/v1/admin/employees/${id}/permissions`,
+
+  // Roles & Custom RBAC
+  getRoles: `${BASE_URL}/api/v1/admin/roles`,
+  createRole: `${BASE_URL}/api/v1/admin/roles`,
+  updateRole: (id: string) => `${BASE_URL}/api/v1/admin/roles/${id}`,
+  deleteRole: (id: string) => `${BASE_URL}/api/v1/admin/roles/${id}`,
 
   // =========================================================================
   // 12. AUDIT LOGS

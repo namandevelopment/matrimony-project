@@ -17,6 +17,7 @@ import { CustomTextInput } from '../../components/CustomTextInput';
 import { CustomDropDown } from '../../components/CustomDropDown';
 import { getStoredUser, getSimulatedUser, getActiveRole } from '../../storage';
 import { useInputs } from '../../customHooks/useInputs';
+import { useEmployeesQuery, useProfileQuery } from '../../tanstackQuery';
 
 export interface CallsFilterValues {
   filterStatus: string;
@@ -27,16 +28,38 @@ export interface CallsFilterValues {
 export const CallsScreen: React.FC = () => {
   const navigate = useNavigate();
 
-  // Role detection
-  const storedUser = getStoredUser() || { fullName: 'Rajesh Mulchandani', role: 'SUPER_ADMIN', id: 'emp_001' };
+  // Role detection (always from getProfile API / storage, zero hardcoded fallback)
+  const { data: profileResponse } = useProfileQuery();
+  const liveUser = useMemo(() => {
+    const raw = (profileResponse as any)?.data || (profileResponse as any)?.employee || (profileResponse as any)?.user || profileResponse;
+    if (raw && (raw.id || raw._id || raw.email)) {
+      return {
+        ...raw,
+        id: String(raw._id || raw.id),
+        fullName: raw.fullName || raw.name || raw.email,
+        role: raw.role || 'CRM_AGENT',
+      };
+    }
+    return null;
+  }, [profileResponse]);
+
+  const storedUser = getStoredUser();
   const simulatedUser = getSimulatedUser();
   const activeRoleOverride = getActiveRole();
-  const effectiveUser = simulatedUser || storedUser;
-  const effectiveRole = activeRoleOverride || effectiveUser.role || 'SUPER_ADMIN';
+  const effectiveUser = simulatedUser || liveUser || storedUser || { fullName: 'Staff Member', role: 'CRM_AGENT', id: 'emp_current' };
+  const effectiveRole = activeRoleOverride || effectiveUser?.role || 'CRM_AGENT';
   const isSuperAdmin = effectiveRole === 'SUPER_ADMIN';
 
   const [calls, setCalls] = useState<CallLog[]>([]);
+  const { data: apiEmployees } = useEmployeesQuery();
   const [employees, setEmployees] = useState<Employee[]>(() => crmDataService.getEmployees());
+
+  useEffect(() => {
+    const list = Array.isArray(apiEmployees) ? apiEmployees : (apiEmployees?.employees || apiEmployees?.list);
+    if (Array.isArray(list) && list.length > 0) {
+      setEmployees(list as Employee[]);
+    }
+  }, [apiEmployees]);
   const { values: filters, setFieldValue } = useInputs<CallsFilterValues>({
     filterStatus: 'ALL',
     staffFilter: 'ALL',

@@ -12,9 +12,9 @@
 
 ### Base URLs:
 ### 1. Local Development (Port 5001)
-# @baseUrl = http://localhost:5001/api/v1
+@baseUrl = http://localhost:5001/api/v1
 ### 2. Vercel Live Production
-@baseUrl = https://sindhi-matrimony-backend.vercel.app/api/v1
+# @baseUrl = https://sindhi-matrimony-backend.vercel.app/api/v1
 @authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3YjM0YTEyYzhlMzEyYTBmOTAwMDNlOCIsInVzZXJJZCI6IjY3YjM0YTEyYzhlMzEyYTBmOTAwMDNlOCIsInJvbGUiOjEsInBob25lIjoiOTg3NjU0MzIxMCIsInByb2ZpbGVJZCI6IjY3YjM0YTEyYzhlMzEyYTBmOTAwMDAwYSIsImFjdGl2ZVByb2ZpbGVJZCI6IjY3YjM0YTEyYzhlMzEyYTBmOTAwMDAwYSIsInByb2ZpbGVSb2xlIjoiT1dORVIiLCJzY29wZSI6IkZVTExfQUNDRVNTIiwiY2xpZW50UGxhdGZvcm0iOiJXRUIiLCJpYXQiOjE3OTMwOTI0OTcsImV4cCI6MTc5MzI2NTI5N30.iGXmviPxCq2W1qcbvWHDvQ4KGmvOpr9U4orh-mGRIf8
 @refreshToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhZGI3OGU3NDVkYWQ2ZDRhZTQ2ZjdkOSIsInBob25lIjoiOTg4NzA4MTgwMCIsInJvbGUiOjEsInR5cGUiOiJyZWZyZXNoIn0.sample_refresh_token_hash
 @profileId = 6ad467f1c77f327e52a82dfc
@@ -58,7 +58,7 @@ Content-Type: application/json
   "otp": "1234",
   "purpose": "REGISTER",
   "countryCode": "+91",
-  "token": "8872c21b6e396ea7ee6b82c8",
+  "token": "e520aa7c-77f1-4457-8408-f62f6e620ed0",
   "step": 2
 }
 
@@ -113,6 +113,7 @@ Content-Type: application/json
 
 {
   "phone": "9876543210",
+  "fcmToken": "c_sample_firebase_device_token_xyz123",
   "password": "Password123@"
 }
 
@@ -3608,4 +3609,230 @@ Content-Type: application/json
   "eventType": "LOGIN",
   "screen": "Dashboard"
 }
+
+### 16.5 Record User Session Event (Payment Screen Visited - Simran Advani)
+POST {{baseUrl}}/admin/analytics/user-sessions
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userId": "u_101",
+  "name": "Simran Advani",
+  "memberId": "SM-4821",
+  "phone": "+91 98201 54321",
+  "platform": "MOBILE_APP",
+  "deviceInfo": "Android 14 (OnePlus 11)",
+  "eventType": "LOGIN",
+  "screen": "PAYMENT_UPGRADE"
+}
+
+### 16.6 Record User Session Event (Karan Lulla - Diamond Plan Viewer)
+POST {{baseUrl}}/admin/analytics/user-sessions
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userId": "u_104",
+  "name": "Karan Lulla",
+  "memberId": "SM-5220",
+  "phone": "+91 99887 11223",
+  "platform": "MOBILE_APP",
+  "deviceInfo": "Android 13 (Samsung S23)",
+  "eventType": "LOGIN",
+  "screen": "PAYMENT_UPGRADE"
+}
+
+### 16.7 Record User Session Logout
+POST {{baseUrl}}/admin/analytics/user-sessions
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userId": "u_101",
+  "eventType": "LOGOUT"
+}
+
+### ============================================================================
+### 25. PAYMENT & OFFER SCREEN VISIT INTENT TRACKING
+### ============================================================================
+
+### 25.1 Record Screen Visit (Simran Advani - Payment Upgrade)
+POST {{baseUrl}}/plans/visits
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "userId": "user_67890",
+  "name": "Simran Advani",
+  "memberId": "SM-4821",
+  "phone": "+91 98201 54321",
+  "email": "simran.advani@gmail.com",
+  "city": "Mumbai, Maharashtra",
+  "screen": "PAYMENT_UPGRADE",
+  "screenTitle": "Payment & Membership Upgrade Plans",
+  "metadata": {
+    "planViewed": "Sindhi Gold (3 Months)"
+  }
+}
+
+### 25.2 Record Screen Visit (Rohan Chandiramani - Festival Offer)
+POST {{baseUrl}}/plans/visits
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "userId": "user_67891",
+  "name": "Rohan Chandiramani",
+  "memberId": "SM-4932",
+  "phone": "+91 98233 87654",
+  "email": "rohan.c@outlook.com",
+  "city": "Pune, Maharashtra",
+  "screen": "FESTIVAL_OFFERS",
+  "screenTitle": "Diwali Special 50% Off Offer",
+  "metadata": {
+    "discountPercent": 50
+  }
+}
+
+### 25.3 Record Screen Visit (Pooja Vazirani)
+POST {{baseUrl}}/plans/visits
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "userId": "user_67892",
+  "name": "Pooja Vazirani",
+  "memberId": "SM-5104",
+  "phone": "+91 97112 34567",
+  "email": "pooja.v@gmail.com",
+  "city": "Ahmedabad, Gujarat",
+  "screen": "PAYMENT_UPGRADE",
+  "screenTitle": "Payment & Membership Upgrade Plans"
+}
+
+### 25.4 Get All Screen Visits Intent Queue (Admin)
+GET {{baseUrl}}/plans/visits
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### ============================================================================
+### 26. MEMBERSHIP PLANS MANAGEMENT (ADMIN CRUD)
+### ============================================================================
+
+### 26.1 Create Silver Membership Plan
+POST {{baseUrl}}/admin/plans
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Silver Tier",
+  "price": 1499,
+  "originalPrice": 2499,
+  "durationDays": 30,
+  "tier": "SILVER",
+  "tagline": "Essential starter package for active discovery",
+  "description": "Essential starter package for active discovery",
+  "contactViewsQuota": 10,
+  "features": [
+    "Send unlimited Connect / Rishta interests",
+    "Unlock 10 verified Phone & WhatsApp contacts",
+    "Direct chat messaging with all candidates (Unlimited)",
+    "Basic Kundli & 36 Guna Milan report",
+    "Valid for 1 Month"
+  ],
+  "badge": null,
+  "status": "ACTIVE"
+}
+
+### 26.2 Create Gold Membership Plan
+POST {{baseUrl}}/admin/plans
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Gold Tier",
+  "price": 2999,
+  "originalPrice": 5999,
+  "durationDays": 90,
+  "tier": "GOLD",
+  "tagline": "Most popular choice for serious candidates & families",
+  "description": "Most popular choice for serious candidates & families",
+  "contactViewsQuota": 35,
+  "features": [
+    "Everything in Silver Tier included",
+    "Unlock 35 verified Phone & WhatsApp contacts",
+    "Unlimited direct chat messaging for 3 full months",
+    "View candidates who visited your profile",
+    "Priority profile placement in daily recommendations feed",
+    "Full Vedic Kundli matching breakdown with Ashta Kootas",
+    "Instant SMS & WhatsApp alert notifications",
+    "Valid for 3 Months"
+  ],
+  "badge": "MOST POPULAR",
+  "status": "ACTIVE"
+}
+
+### 26.3 Create Diamond Membership Plan
+POST {{baseUrl}}/admin/plans
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Diamond Tier",
+  "price": 4999,
+  "originalPrice": 11999,
+  "durationDays": 180,
+  "tier": "GOLD",
+  "tagline": "High-visibility package with premium matchmaking perks",
+  "description": "High-visibility package with premium matchmaking perks",
+  "contactViewsQuota": 75,
+  "features": [
+    "Everything in Gold Tier included",
+    "Unlock 75 verified Phone & WhatsApp contacts",
+    "Unlimited direct chat messaging for 6 full months",
+    "Featured Candidate badge on profile card",
+    "Standout profile highlighting in search results",
+    "Exclusive access to newly registered NRI & Verified profiles",
+    "Valid for 6 Months"
+  ],
+  "badge": "BEST VALUE",
+  "status": "ACTIVE"
+}
+
+### 26.4 Create VIP Assisted Matchmaking Plan
+POST {{baseUrl}}/admin/plans
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "VIP Assisted Matchmaking",
+  "price": 14999,
+  "originalPrice": 29999,
+  "durationDays": 365,
+  "tier": "VIP",
+  "tagline": "White-glove matrimonial assistance by senior Sindhi matchmaker",
+  "description": "White-glove matrimonial assistance by senior Sindhi matchmaker",
+  "contactViewsQuota": 200,
+  "features": [
+    "Everything in Diamond Tier included",
+    "Dedicated Senior Sindhi Relationship Manager",
+    "Handpicked weekly profile recommendations personally vetted by staff",
+    "Matchmaker arranges and mediates introductory calls between families",
+    "Gotra & Nukh background verification check by community elders",
+    "Unlock up to 200 verified Phone & WhatsApp contacts",
+    "Unlimited direct chat messaging for 12 Months",
+    "Valid for 12 Months"
+  ],
+  "badge": "VIP DEDICATED",
+  "status": "ACTIVE"
+}
+
+### 26.5 List All Plans (Public)
+GET {{baseUrl}}/plans
+Content-Type: application/json
+
+### 26.6 List All Plans (Admin)
+GET {{baseUrl}}/admin/plans
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
 

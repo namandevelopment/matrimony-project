@@ -11,7 +11,7 @@ export interface DashboardHeroBannerProps {
 
 export const DashboardHeroBanner: React.FC<DashboardHeroBannerProps> = memoWithDeepEqual(({
   adminName = 'Admin',
-  totalMembers = '39,434',
+  totalMembers = '0',
   onAddMember,
   onExportCsv,
 }) => {
