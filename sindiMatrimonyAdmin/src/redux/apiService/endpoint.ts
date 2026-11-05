@@ -13,19 +13,23 @@ const getEnvVar = (key: string): string | undefined => {
   return undefined;
 };
 
+const isBrowserLocal =
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+const envApiUrl = getEnvVar('VITE_API_URL')?.replace(/\/api\/?$/, '');
+
 export const BASE_URL =
-  getEnvVar('VITE_API_URL')?.replace(/\/api\/?$/, '') ||
-  (typeof window !== 'undefined' &&
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'http://localhost:5001'
-    : 'https://sindhi-matrimony-backend.vercel.app');
+  !isBrowserLocal
+    ? (envApiUrl && !envApiUrl.includes('localhost') ? envApiUrl : 'https://sindhi-matrimony-backend.vercel.app')
+    : (envApiUrl || 'http://localhost:5001');
+
+const envSocketUrl = getEnvVar('VITE_SOCKET_URL');
 
 export const SOCKET_URL =
-  getEnvVar('VITE_SOCKET_URL') ||
-  (typeof window !== 'undefined' &&
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'http://localhost:5001'
-    : 'https://sindhi-matrimony-backend.vercel.app');
+  !isBrowserLocal
+    ? (envSocketUrl && !envSocketUrl.includes('localhost') ? envSocketUrl : 'https://sindhi-matrimony-backend.vercel.app')
+    : (envSocketUrl || 'http://localhost:5001');
 
 export const ApiURL = {
   // =========================================================================

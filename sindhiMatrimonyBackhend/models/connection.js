@@ -12,12 +12,11 @@ let isConnected = false;
 const connectDB = async (url) => {
   if (mongoose.connection.readyState === 1 || isConnected) return;
 
-  const targetUrl = url || process.env.MONGODB_URI || process.env.DB_STRING || "mongodb://127.0.0.1:27017/sindhi_matrimony";
+  const ATLAS_URI = "mongodb+srv://namandevelopment_db_user:j1OAW2teTXxgJpf0@cluster0.lya73ao.mongodb.net/sindhi_matrimony?retryWrites=true&w=majority";
+  let targetUrl = url || process.env.MONGODB_URI || process.env.DB_STRING;
 
-  // On Vercel, if DB_STRING is pointing to local or unconfigured template, serve in-memory instantly
-  if (process.env.VERCEL === "1" && (targetUrl.includes("127.0.0.1") || targetUrl.includes("localhost") || targetUrl.includes("<username>"))) {
-    logMessage("ℹ️ Vercel environment detected without remote Atlas URI. Serving with in-memory persistence and instant response.", null, "info");
-    return;
+  if (!targetUrl || targetUrl.includes("127.0.0.1") || targetUrl.includes("localhost") || targetUrl.includes("<username>")) {
+    targetUrl = ATLAS_URI;
   }
 
   const isVercel = process.env.VERCEL === "1";
